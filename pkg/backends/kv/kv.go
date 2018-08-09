@@ -1,6 +1,7 @@
 package kv
 
 import (
+	"fmt"
 	"github.com/v3io/frames/pkg/common"
 	"github.com/v3io/v3io-go-http"
 	"github.com/v3io/v3io-tsdb/pkg/utils"
@@ -17,9 +18,13 @@ func NewKVBackend(ctx *common.DataContext) (common.DataBackend, error) {
 
 func (kv *KVBackend) ReadRequest(request *common.DataRequest) (common.MessageIterator, error) {
 
-	tablePath := request.Table + "/"
+	tablePath := request.Table
+	if request.Limit == 0 {
+		request.Limit = 64
+	}
 
 	input := v3io.GetItemsInput{Path: tablePath, Filter: request.Filter, AttributeNames: request.Columns}
+	fmt.Println(input, request)
 	iter, err := utils.NewAsyncItemsCursor(kv.ctx.Container, &input, kv.ctx.Workers, request.ShardingKeys)
 	if err != nil {
 		return nil, err
