@@ -5,6 +5,7 @@ import (
 	"github.com/v3io/frames/pkg/common"
 	"github.com/v3io/v3io-go-http"
 	"github.com/v3io/v3io-tsdb/pkg/utils"
+	"strings"
 )
 
 type KVBackend struct {
@@ -16,11 +17,15 @@ func NewKVBackend(ctx *common.DataContext) (common.DataBackend, error) {
 	return &newKVBackend, nil
 }
 
-func (kv *KVBackend) ReadRequest(request *common.DataRequest) (common.MessageIterator, error) {
+func (kv *KVBackend) ReadRequest(request *common.DataReadRequest) (common.MessageIterator, error) {
 
 	tablePath := request.Table
-	if request.Limit == 0 {
-		request.Limit = 64
+	if !strings.HasSuffix(tablePath, "/") {
+		tablePath += "/"
+	}
+
+	if request.MaxInMessage == 0 {
+		request.MaxInMessage = 64
 	}
 
 	input := v3io.GetItemsInput{Path: tablePath, Filter: request.Filter, AttributeNames: request.Columns}
@@ -36,7 +41,7 @@ func (kv *KVBackend) ReadRequest(request *common.DataRequest) (common.MessageIte
 
 type KVIterator struct {
 	ctx     *common.DataContext
-	request *common.DataRequest
+	request *common.DataReadRequest
 	iter    *utils.AsyncItemsCursor
 	err     error
 	currMsg *common.Message
@@ -45,29 +50,52 @@ type KVIterator struct {
 func (ki *KVIterator) Next() bool {
 
 	message := common.Message{}
-	message.Columns = map[string][]interface{}{}
+	if ki.request.RowLayout {
+		message.Rows = []map[string]interface{}{}
+	} else {
+		message.Columns = map[string][]interface{}{}
+	}
+	var i int
 
-	for i := 0; i < ki.request.Limit; i++ {
-		if ki.iter.Next() {
-			row := ki.iter.GetFields()
+	for ki.iter.Next() {
+		i++
+		row := ki.iter.GetFields()
+
+		if ki.request.RowLayout {
+			message.Rows = append(message.Rows, row)
+		} else {
 			for name, field := range row {
 				if col, ok := message.Columns[name]; ok {
 					col = append(col, field)
 					message.Columns[name] = col
 				} else {
-					col = make([]interface{}, i)
+					col = make([]interface{}, i-1)
 					col = append(col, field)
 					message.Columns[name] = col
 				}
 			}
 
-		} else {
-			if ki.iter.Err() != nil {
-				ki.err = ki.iter.Err()
+			// fill columns with nil if there was no value
+			for name, col := range message.Columns {
+				if len(col) < i {
+					message.Columns[name] = append(col, nil)
+				}
 			}
-			ki.currMsg = &message
-			return false
 		}
+
+		if i == ki.request.MaxInMessage {
+			ki.currMsg = &message
+			return true
+		}
+	}
+
+	if ki.iter.Err() != nil {
+		ki.err = ki.iter.Err()
+		return false
+	}
+
+	if i == 0 {
+		return false
 	}
 
 	ki.currMsg = &message

@@ -17,7 +17,7 @@ func main() {
 		panic(err)
 	}
 
-	cfg := v3ioConfig{}
+	cfg := common.V3ioConfig{}
 	err = yaml.Unmarshal(data, &cfg)
 	if err != nil {
 		panic(err)
@@ -33,43 +33,48 @@ func main() {
 		panic(err)
 	}
 
-	iter, err := backend.ReadRequest(&common.DataRequest{
-		Table:        "sandp500/0/",
-		Columns:      []string{"__name", "__size"},
-		Filter:       "",
-		ShardingKeys: []string{},
+	if true {
+		readExample(backend)
+	} else {
+		writeExample(backend)
+	}
+}
+
+func readExample(backend common.DataBackend) error {
+	iter, err := backend.ReadRequest(&common.DataReadRequest{
+		Table:     "test",
+		Columns:   []string{"__name", "__size", "user", "age", "city"},
+		Filter:    "",
+		RowLayout: false,
 	})
 
 	if err != nil {
-		panic(err)
+		return err
 	}
 
 	for iter.Next() {
-		fmt.Println(iter.At())
+		fmt.Println(iter.At().Rows)
+		fmt.Println(iter.At().Columns)
 	}
 
-	if iter.Err() != nil {
-		panic(iter.Err())
-	}
-
+	return iter.Err()
 }
 
-type v3ioConfig struct {
-	// V3IO Connection details: Url, Data container, relative path for this dataset, credentials
-	V3ioUrl   string `json:"v3ioUrl"`
-	Container string `json:"container"`
-	Path      string `json:"path"`
-	Username  string `json:"username"`
-	Password  string `json:"password"`
+func writeExample(backend common.DataBackend) error {
 
-	// Set logging level: debug | info | warn | error (info by default)
-	Verbose string `json:"verbose,omitempty"`
-	// Number of parallel V3IO worker routines
-	Workers      int `json:"workers"`
-	DefaultLimit int `json:"limit,omitempty"`
+	return backend.WriteRequest(&common.DataWriteRequest{
+		Table: "test",
+		Key:   "user",
+		Rows: []map[string]interface{}{
+			{"user": "joe", "age": 5, "city": "tel-aviv"},
+			{"user": "ben", "age": 7, "city": "bon"},
+			{"user": "amit", "age": 12},
+			{"user": "kim", "age": 23, "city": "london"},
+		},
+	})
 }
 
-func NewContext(cfg v3ioConfig) (*common.DataContext, error) {
+func NewContext(cfg common.V3ioConfig) (*common.DataContext, error) {
 	logger, _ := utils.NewLogger(cfg.Verbose)
 	container, err := utils.CreateContainer(
 		logger, cfg.V3ioUrl, cfg.Container, cfg.Username, cfg.Password, cfg.Workers)
