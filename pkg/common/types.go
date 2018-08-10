@@ -28,6 +28,7 @@ type MessageAppender interface {
 	WaitForComplete(timeout time.Duration) error
 }
 
+// Message sent over the wire with multiple columns and data points
 type Message struct {
 	// Name of column(s) used as index, TODO: if more than one separate with ","
 	IndexCol string
@@ -37,6 +38,9 @@ type Message struct {
 
 	// If we send in column orientations
 	Columns map[string][]interface{} `msgpack:columns,omitempty"`
+
+	// For Writes, Will we get more message chunks (in a stream), if not we can complete
+	HaveMore bool
 }
 
 type DataReadRequest struct {
@@ -81,6 +85,10 @@ type DataWriteRequest struct {
 	Type string
 	// Table name (path)
 	Table string
+	// Data message sent with the write request (in case of a stream multiple messages can follow)
+	ImmidiateData *Message
+	// Will we get more message chunks (in a stream), if not we can complete
+	HaveMore bool
 }
 
 type V3ioConfig struct {

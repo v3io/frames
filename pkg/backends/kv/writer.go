@@ -32,6 +32,13 @@ func (kv *KVBackend) WriteRequest(request *common.DataWriteRequest) (common.Mess
 		commChan:     make(chan int, 2),
 	}
 	appender.respWaitLoop(10 * time.Second)
+
+	if request.ImmidiateData != nil {
+		err := appender.Add(request.ImmidiateData)
+		if err != nil {
+			return &appender, err
+		}
+	}
 	return &appender, nil
 }
 
