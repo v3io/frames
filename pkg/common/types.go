@@ -14,7 +14,7 @@ type DataContext struct {
 
 type DataBackend interface {
 	ReadRequest(request *DataReadRequest) (MessageIterator, error)
-	WriteRequest(request *DataWriteRequest) error // TODO: use Appender for write streaming
+	WriteRequest(request *DataWriteRequest) (MessageAppender, error) // TODO: use Appender for write streaming
 }
 
 type MessageIterator interface {
@@ -23,15 +23,20 @@ type MessageIterator interface {
 	At() *Message
 }
 
+type MessageAppender interface {
+	Add(message *Message) error
+	WaitForComplete(timeout time.Duration) error
+}
+
 type Message struct {
+	// Name of column(s) used as index, TODO: if more than one separate with ","
+	IndexCol string
+
 	// List of labels
 	Labels map[string]string `msgpack:"labels,omitempty"`
 
 	// If we send in column orientations
 	Columns map[string][]interface{} `msgpack:columns,omitempty"`
-
-	// If we send in row orientations
-	Rows []map[string]interface{} `msgpack:"rows,omitempty"`
 }
 
 type DataReadRequest struct {
@@ -76,16 +81,6 @@ type DataWriteRequest struct {
 	Type string
 	// Table name (path)
 	Table string
-
-	// Name of column(s) used as index, TODO: if more than one separate with ","
-	Key string
-
-	// List of labels
-	Labels map[string]string `msgpack:"labels,omitempty"`
-	// If we send in column orientations
-	Columns map[string][]interface{} `msgpack:columns,omitempty"`
-	// If we send in row orientations
-	Rows []map[string]interface{} `msgpack:"rows,omitempty"`
 }
 
 type V3ioConfig struct {

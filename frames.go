@@ -6,7 +6,7 @@ import (
 	"github.com/pkg/errors"
 	"github.com/v3io/frames/pkg/backends/kv"
 	"github.com/v3io/frames/pkg/common"
-	"github.com/v3io/v3io-tsdb/pkg/utils"
+	"github.com/v3io/frames/pkg/utils"
 	"io/ioutil"
 )
 
@@ -33,7 +33,7 @@ func main() {
 		panic(err)
 	}
 
-	if true {
+	if false {
 		readExample(backend)
 	} else {
 		writeExample(backend)
@@ -53,7 +53,6 @@ func readExample(backend common.DataBackend) error {
 	}
 
 	for iter.Next() {
-		fmt.Println(iter.At().Rows)
 		fmt.Println(iter.At().Columns)
 	}
 
@@ -62,16 +61,34 @@ func readExample(backend common.DataBackend) error {
 
 func writeExample(backend common.DataBackend) error {
 
-	return backend.WriteRequest(&common.DataWriteRequest{
-		Table: "test",
-		Key:   "user",
-		Rows: []map[string]interface{}{
-			{"user": "joe", "age": 5, "city": "tel-aviv"},
-			{"user": "ben", "age": 7, "city": "bon"},
-			{"user": "amit", "age": 12},
-			{"user": "kim", "age": 23, "city": "london"},
-		},
+	rows := []map[string]interface{}{
+		{"user": "joe", "age": 5, "city": "tel-aviv"},
+		{"user": "ben", "age": 7, "city": "bon"},
+		{"user": "amit", "age": 12},
+		{"user": "kim", "age": 23, "city": "london"},
+	}
+
+	columns := map[string][]interface{}{}
+	for i, row := range rows {
+		kv.Rows2Col(&columns, &row, i)
+	}
+	fmt.Println(columns)
+
+	appender, err := backend.WriteRequest(&common.DataWriteRequest{Table: "test"})
+	if err != nil {
+		return err
+	}
+
+	err = appender.Add(&common.Message{
+		IndexCol: "user",
+		Columns:  columns,
 	})
+
+	if err != nil {
+		return err
+	}
+
+	return appender.WaitForComplete(0)
 }
 
 func NewContext(cfg common.V3ioConfig) (*common.DataContext, error) {
