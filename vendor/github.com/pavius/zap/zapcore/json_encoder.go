@@ -28,16 +28,12 @@ import (
 	"time"
 	"unicode/utf8"
 
-	"go.uber.org/zap/buffer"
-	"go.uber.org/zap/internal/bufferpool"
+	"github.com/pavius/zap/buffer"
+	"github.com/pavius/zap/internal/bufferpool"
 )
 
-const (
-	// For JSON-escaping; see jsonEncoder.safeAddString below.
-	_hex = "0123456789abcdef"
-	// Initial buffer size for encoders.
-	_initialBufSize = 1024
-)
+// For JSON-escaping; see jsonEncoder.safeAddString below.
+const _hex = "0123456789abcdef"
 
 var _jsonPool = sync.Pool{New: func() interface{} {
 	return &jsonEncoder{}
@@ -96,6 +92,11 @@ func (enc *jsonEncoder) AddObject(key string, obj ObjectMarshaler) error {
 
 func (enc *jsonEncoder) AddBinary(key string, val []byte) {
 	enc.AddString(key, base64.StdEncoding.EncodeToString(val))
+}
+
+func (enc *jsonEncoder) AddByteString(key string, val []byte) {
+	enc.addKey(key)
+	enc.AppendByteString(val)
 }
 
 func (enc *jsonEncoder) AddBool(key string, val bool) {
@@ -173,6 +174,13 @@ func (enc *jsonEncoder) AppendObject(obj ObjectMarshaler) error {
 func (enc *jsonEncoder) AppendBool(val bool) {
 	enc.addElementSeparator()
 	enc.buf.AppendBool(val)
+}
+
+func (enc *jsonEncoder) AppendByteString(val []byte) {
+	enc.addElementSeparator()
+	enc.buf.AppendByte('"')
+	enc.safeAddByteString(val)
+	enc.buf.AppendByte('"')
 }
 
 func (enc *jsonEncoder) AppendComplex128(val complex128) {
@@ -294,12 +302,23 @@ func (enc *jsonEncoder) EncodeEntry(ent Entry, fields []Field) (*buffer.Buffer, 
 	}
 	if ent.LoggerName != "" && final.NameKey != "" {
 		final.addKey(final.NameKey)
-		final.AppendString(ent.LoggerName)
+		cur := final.buf.Len()
+		final.EncodeLoggerName(ent.LoggerName, final)
+		if cur == final.buf.Len() {
+			// User-supplied EncodeLoggerName was a no-op. Fall back to strings to
+			// keep output JSON valid.
+			final.AppendString(ent.LoggerName)
+		}
 	}
 	if ent.Caller.Defined && final.CallerKey != "" {
-		// NOTE: we add the field here for parity compromise with text
-		// prepending, while not actually mutating the message string.
-		final.AddString(final.CallerKey, ent.Caller.String())
+		final.addKey(final.CallerKey)
+		cur := final.buf.Len()
+		final.EncodeCaller(ent.Caller, final)
+		if cur == final.buf.Len() {
+			// User-supplied EncodeCaller was a no-op. Fall back to strings to
+			// keep output JSON valid.
+			final.AppendString(ent.Caller.String())
+		}
 	}
 	if final.MessageKey != "" {
 		final.addKey(enc.MessageKey)
@@ -315,7 +334,11 @@ func (enc *jsonEncoder) EncodeEntry(ent Entry, fields []Field) (*buffer.Buffer, 
 		final.AddString(final.StacktraceKey, ent.Stack)
 	}
 	final.buf.AppendByte('}')
-	final.buf.AppendByte('\n')
+	if final.LineEnding != "" {
+		final.buf.AppendString(final.LineEnding)
+	} else {
+		final.buf.AppendString(DefaultLineEnding)
+	}
 
 	ret := final.buf
 	putJSONEncoder(final)
@@ -378,40 +401,72 @@ func (enc *jsonEncoder) appendFloat(val float64, bitSize int) {
 // user from browser vulnerabilities or JSONP-related problems.
 func (enc *jsonEncoder) safeAddString(s string) {
 	for i := 0; i < len(s); {
-		if b := s[i]; b < utf8.RuneSelf {
+		if enc.tryAddRuneSelf(s[i]) {
 			i++
-			if 0x20 <= b && b != '\\' && b != '"' {
-				enc.buf.AppendByte(b)
-				continue
-			}
-			switch b {
-			case '\\', '"':
-				enc.buf.AppendByte('\\')
-				enc.buf.AppendByte(b)
-			case '\n':
-				enc.buf.AppendByte('\\')
-				enc.buf.AppendByte('n')
-			case '\r':
-				enc.buf.AppendByte('\\')
-				enc.buf.AppendByte('r')
-			case '\t':
-				enc.buf.AppendByte('\\')
-				enc.buf.AppendByte('t')
-			default:
-				// Encode bytes < 0x20, except for the escape sequences above.
-				enc.buf.AppendString(`\u00`)
-				enc.buf.AppendByte(_hex[b>>4])
-				enc.buf.AppendByte(_hex[b&0xF])
-			}
 			continue
 		}
-		c, size := utf8.DecodeRuneInString(s[i:])
-		if c == utf8.RuneError && size == 1 {
-			enc.buf.AppendString(`\ufffd`)
+		r, size := utf8.DecodeRuneInString(s[i:])
+		if enc.tryAddRuneError(r, size) {
 			i++
 			continue
 		}
 		enc.buf.AppendString(s[i : i+size])
 		i += size
 	}
+}
+
+// safeAddByteString is no-alloc equivalent of safeAddString(string(s)) for s []byte.
+func (enc *jsonEncoder) safeAddByteString(s []byte) {
+	for i := 0; i < len(s); {
+		if enc.tryAddRuneSelf(s[i]) {
+			i++
+			continue
+		}
+		r, size := utf8.DecodeRune(s[i:])
+		if enc.tryAddRuneError(r, size) {
+			i++
+			continue
+		}
+		enc.buf.Write(s[i : i+size])
+		i += size
+	}
+}
+
+// tryAddRuneSelf appends b if it is valid UTF-8 character represented in a single byte.
+func (enc *jsonEncoder) tryAddRuneSelf(b byte) bool {
+	if b >= utf8.RuneSelf {
+		return false
+	}
+	if 0x20 <= b && b != '\\' && b != '"' {
+		enc.buf.AppendByte(b)
+		return true
+	}
+	switch b {
+	case '\\', '"':
+		enc.buf.AppendByte('\\')
+		enc.buf.AppendByte(b)
+	case '\n':
+		enc.buf.AppendByte('\\')
+		enc.buf.AppendByte('n')
+	case '\r':
+		enc.buf.AppendByte('\\')
+		enc.buf.AppendByte('r')
+	case '\t':
+		enc.buf.AppendByte('\\')
+		enc.buf.AppendByte('t')
+	default:
+		// Encode bytes < 0x20, except for the escape sequences above.
+		enc.buf.AppendString(`\u00`)
+		enc.buf.AppendByte(_hex[b>>4])
+		enc.buf.AppendByte(_hex[b&0xF])
+	}
+	return true
+}
+
+func (enc *jsonEncoder) tryAddRuneError(r rune, size int) bool {
+	if r == utf8.RuneError && size == 1 {
+		enc.buf.AppendString(`\ufffd`)
+		return true
+	}
+	return false
 }

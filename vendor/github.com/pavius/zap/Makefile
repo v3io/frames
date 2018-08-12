@@ -3,13 +3,13 @@ export GO15VENDOREXPERIMENT=1
 BENCH_FLAGS ?= -cpuprofile=cpu.pprof -memprofile=mem.pprof -benchmem
 PKGS ?= $(shell glide novendor)
 # Many Go tools take file globs or directories as arguments instead of packages.
-PKG_FILES ?= *.go zapcore benchmarks buffer testutils internal/bufferpool internal/exit internal/multierror internal/observer
+PKG_FILES ?= *.go zapcore benchmarks buffer zapgrpc zaptest zaptest/observer internal/bufferpool internal/exit internal/color
 
 # The linting tools evolve with each Go version, so run them only on the latest
 # stable release.
 GO_VERSION := $(shell go version | cut -d " " -f 3)
 GO_MINOR_VERSION := $(word 2,$(subst ., ,$(GO_VERSION)))
-LINTABLE_MINOR_VERSIONS := 7
+LINTABLE_MINOR_VERSIONS := 8
 ifneq ($(filter $(LINTABLE_MINOR_VERSIONS),$(GO_MINOR_VERSION)),)
 SHOULD_LINT := true
 endif
@@ -61,11 +61,16 @@ endif
 test:
 	go test -race $(PKGS)
 
-.PHONY: coveralls
-coveralls:
-	goveralls -service=travis-ci .
+.PHONY: cover
+cover:
+	./scripts/cover.sh $(PKGS)
 
 .PHONY: bench
 BENCH ?= .
 bench:
 	@$(foreach pkg,$(PKGS),go test -bench=$(BENCH) -run="^$$" $(BENCH_FLAGS) $(pkg);)
+
+.PHONY: updatereadme
+updatereadme:
+	rm -f README.md
+	cat .readme.tmpl | go run internal/readme/readme.go > README.md

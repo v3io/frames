@@ -23,7 +23,7 @@ package zap
 import (
 	"flag"
 
-	"go.uber.org/zap/zapcore"
+	"github.com/pavius/zap/zapcore"
 )
 
 // LevelFlag defines a Level flag with specified name, default value and

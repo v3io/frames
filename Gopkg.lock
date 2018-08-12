@@ -54,13 +54,17 @@
   revision = "4a2bd2f9ef28a241ed7e3a67afa4ee8a7f1fa1ed"
 
 [[projects]]
+  branch = "nuclio"
   name = "github.com/pavius/zap"
   packages = [
     ".",
+    "buffer",
+    "internal/bufferpool",
+    "internal/color",
+    "internal/exit",
     "zapcore"
   ]
-  revision = "72313cde80537dd4dc9b7b80eda6d7ed796c4232"
-  version = "v1.0.0-rc.1"
+  revision = "8d52692529b8954a4a5f92c32efa7850383a11e2"
 
 [[projects]]
   name = "github.com/pkg/errors"
@@ -93,20 +97,14 @@
 [[projects]]
   name = "go.uber.org/atomic"
   packages = ["."]
-  revision = "9e99152552a6ce13fa3b2ce4a9c4fb117cca4506"
+  revision = "1ea20fb1cbb1cc08cbd0d913a96dead89aa18289"
+  version = "v1.3.2"
 
 [[projects]]
-  name = "go.uber.org/zap"
-  packages = [
-    "buffer",
-    "internal/bufferpool",
-    "internal/color",
-    "internal/exit",
-    "internal/multierror",
-    "zapcore"
-  ]
-  revision = "9cabc84638b70e564c3dab2766efcb1ded2aac9f"
-  version = "v1.4.1"
+  name = "go.uber.org/multierr"
+  packages = ["."]
+  revision = "3c4937480c32f4c13a875a1829af76c98ca3d40a"
+  version = "v1.1.0"
 
 [[projects]]
   branch = "master"
@@ -123,6 +121,6 @@
 [solve-meta]
   analyzer-name = "dep"
   analyzer-version = 1
-  inputs-digest = "5bea98548bc4264808079cbde0c9dea11bd5687241482f5ee8540f39c4350cec"
+  inputs-digest = "4794f1d2fc8809eded0fd92741ee38179da2014a31edd869f638c33b5f165057"
   solver-name = "gps-cdcl"
   solver-version = 1

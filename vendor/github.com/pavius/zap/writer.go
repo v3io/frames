@@ -24,8 +24,9 @@ import (
 	"io/ioutil"
 	"os"
 
-	"go.uber.org/zap/internal/multierror"
-	"go.uber.org/zap/zapcore"
+	"github.com/pavius/zap/zapcore"
+
+	"go.uber.org/multierr"
 )
 
 // Open is a high-level wrapper that takes a variadic number of paths, opens or
@@ -36,21 +37,24 @@ import (
 // Passing no paths returns a no-op WriteSyncer. The special paths "stdout" and
 // "stderr" are interpreted as os.Stdout and os.Stderr, respectively.
 func Open(paths ...string) (zapcore.WriteSyncer, func(), error) {
-	if len(paths) == 0 {
-		return zapcore.AddSync(ioutil.Discard), func() {}, nil
+	writers, close, err := open(paths)
+	if err != nil {
+		return nil, nil, err
 	}
 
-	writers, close, err := open(paths)
-	if len(writers) == 1 {
-		return zapcore.Lock(writers[0]), close, err
-	}
-	return zapcore.Lock(zapcore.NewMultiWriteSyncer(writers...)), close, err
+	writer := CombineWriteSyncers(writers...)
+	return writer, close, nil
 }
 
 func open(paths []string) ([]zapcore.WriteSyncer, func(), error) {
-	var errs multierror.Error
+	var openErr error
 	writers := make([]zapcore.WriteSyncer, 0, len(paths))
 	files := make([]*os.File, 0, len(paths))
+	close := func() {
+		for _, f := range files {
+			f.Close()
+		}
+	}
 	for _, path := range paths {
 		switch path {
 		case "stdout":
@@ -63,16 +67,26 @@ func open(paths []string) ([]zapcore.WriteSyncer, func(), error) {
 			continue
 		}
 		f, err := os.OpenFile(path, os.O_WRONLY|os.O_APPEND|os.O_CREATE, 0644)
-		errs = errs.Append(err)
+		openErr = multierr.Append(openErr, err)
 		if err == nil {
 			writers = append(writers, f)
 			files = append(files, f)
 		}
 	}
-	close := func() {
-		for _, f := range files {
-			f.Close()
-		}
+
+	if openErr != nil {
+		close()
+		return writers, nil, openErr
 	}
-	return writers, close, errs.AsError()
+
+	return writers, close, nil
+}
+
+// CombineWriteSyncers combines multiple WriteSyncers into a single, locked
+// WriteSyncer.
+func CombineWriteSyncers(writers ...zapcore.WriteSyncer) zapcore.WriteSyncer {
+	if len(writers) == 0 {
+		return zapcore.AddSync(ioutil.Discard)
+	}
+	return zapcore.Lock(zapcore.NewMultiWriteSyncer(writers...))
 }

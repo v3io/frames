@@ -24,8 +24,13 @@ import (
 	"strings"
 	"time"
 
-	"go.uber.org/zap/buffer"
+	"github.com/pavius/zap/buffer"
 )
+
+// DefaultLineEnding defines the default line ending when writing logs.
+// Alternate line endings specified in EncoderConfig can override this
+// behavior.
+const DefaultLineEnding = "\n"
 
 // A LevelEncoder serializes a Level to a primitive type.
 type LevelEncoder func(Level, PrimitiveArrayEncoder)
@@ -36,18 +41,44 @@ func LowercaseLevelEncoder(l Level, enc PrimitiveArrayEncoder) {
 	enc.AppendString(l.String())
 }
 
+// LowercaseColorLevelEncoder serializes a Level to a lowercase string and adds coloring.
+// For example, InfoLevel is serialized to "info" and colored blue.
+func LowercaseColorLevelEncoder(l Level, enc PrimitiveArrayEncoder) {
+	s, ok := _levelToLowercaseColorString[l]
+	if !ok {
+		s = _unknownLevelColor.Add(l.String())
+	}
+	enc.AppendString(s)
+}
+
 // CapitalLevelEncoder serializes a Level to an all-caps string. For example,
 // InfoLevel is serialized to "INFO".
 func CapitalLevelEncoder(l Level, enc PrimitiveArrayEncoder) {
-	enc.AppendString(strings.ToUpper(l.String()))
+	enc.AppendString(l.CapitalString())
+}
+
+// CapitalColorLevelEncoder serializes a Level to an all-caps string and adds color.
+// For example, InfoLevel is serialized to "INFO" and colored blue.
+func CapitalColorLevelEncoder(l Level, enc PrimitiveArrayEncoder) {
+	s, ok := _levelToCapitalColorString[l]
+	if !ok {
+		s = _unknownLevelColor.Add(l.CapitalString())
+	}
+	enc.AppendString(s)
 }
 
 // UnmarshalText unmarshals text to a LevelEncoder. "capital" is unmarshaled to
-// CapitalLevelEncoder, and anything else is unmarshaled to LowercaseLevelEncoder.
+// CapitalLevelEncoder, "coloredCapital" is unmarshaled to CapitalColorLevelEncoder,
+// "colored" is unmarshaled to LowercaseColorLevelEncoder, and anything else
+// is unmarshaled to LowercaseLevelEncoder.
 func (e *LevelEncoder) UnmarshalText(text []byte) error {
 	switch string(text) {
 	case "capital":
 		*e = CapitalLevelEncoder
+	case "capitalColor":
+		*e = CapitalColorLevelEncoder
+	case "color":
+		*e = LowercaseColorLevelEncoder
 	default:
 		*e = LowercaseLevelEncoder
 	}
@@ -82,7 +113,7 @@ func EpochNanosTimeEncoder(t time.Time, enc PrimitiveArrayEncoder) {
 // ISO8601TimeEncoder serializes a time.Time to an ISO8601-formatted string
 // with millisecond precision.
 func ISO8601TimeEncoder(t time.Time, enc PrimitiveArrayEncoder) {
-	enc.AppendString(t.Format("2006-01-02T15:04:05.999Z0700"))
+	enc.AppendString(t.Format("2006-01-02T15:04:05.000Z0700"))
 }
 
 // UnmarshalText unmarshals text to a TimeEncoder. "iso8601" and "ISO8601" are
@@ -137,22 +168,80 @@ func (e *DurationEncoder) UnmarshalText(text []byte) error {
 	return nil
 }
 
+// A CallerEncoder serializes an EntryCaller to a primitive type.
+type CallerEncoder func(EntryCaller, PrimitiveArrayEncoder)
+
+// FullCallerEncoder serializes a caller in /full/path/to/package/file:line
+// format.
+func FullCallerEncoder(caller EntryCaller, enc PrimitiveArrayEncoder) {
+	// TODO: consider using a byte-oriented API to save an allocation.
+	enc.AppendString(caller.String())
+}
+
+// ShortCallerEncoder serializes a caller in package/file:line format, trimming
+// all but the final directory from the full path.
+func ShortCallerEncoder(caller EntryCaller, enc PrimitiveArrayEncoder) {
+	// TODO: consider using a byte-oriented API to save an allocation.
+	enc.AppendString(caller.TrimmedPath())
+}
+
+// UnmarshalText unmarshals text to a CallerEncoder. "full" is unmarshaled to
+// FullCallerEncoder and anything else is unmarshaled to ShortCallerEncoder.
+func (e *CallerEncoder) UnmarshalText(text []byte) error {
+	switch string(text) {
+	case "full":
+		*e = FullCallerEncoder
+	default:
+		*e = ShortCallerEncoder
+	}
+	return nil
+}
+
+// A LoggerNameEncoder serializes a LoggerName to a primitive type.
+type LoggerNameEncoder func(string, PrimitiveArrayEncoder)
+
+// FullLoggerNameEncoder serializes a logger name as is
+func FullLoggerNameEncoder(loggerName string, enc PrimitiveArrayEncoder) {
+	enc.AppendString(loggerName)
+}
+
+// CapitalLoggerNameEncoder serializes a logger name in all caps
+func CapitalLoggerNameEncoder(loggerName string, enc PrimitiveArrayEncoder) {
+	enc.AppendString(strings.ToUpper(loggerName))
+}
+
+// UnmarshalText unmarshals text to a LoggerNameEncoder. "capital" is unmarshaled to
+// CapitalLoggerNameEncoder and anything else is unmarshaled to FullLoggerNameEncoder.
+func (e *LoggerNameEncoder) UnmarshalText(text []byte) error {
+	switch string(text) {
+	case "capital":
+		*e = CapitalLoggerNameEncoder
+	default:
+		*e = FullLoggerNameEncoder
+	}
+	return nil
+}
+
 // An EncoderConfig allows users to configure the concrete encoders supplied by
 // zapcore.
 type EncoderConfig struct {
-	// Set the keys used for each log entry.
-	MessageKey    string `json:"messageKey",yaml:"messageKey"`
-	LevelKey      string `json:"levelKey",yaml:"levelKey"`
-	TimeKey       string `json:"timeKey",yaml:"timeKey"`
-	NameKey       string `json:"nameKey",yaml:"nameKey"`
-	CallerKey     string `json:"callerKey",yaml:"callerKey"`
-	StacktraceKey string `json:"stacktraceKey",yaml:"stacktraceKey"`
+	// Set the keys used for each log entry. If any key is empty, that portion
+	// of the entry is omitted.
+	MessageKey    string `json:"messageKey" yaml:"messageKey"`
+	LevelKey      string `json:"levelKey" yaml:"levelKey"`
+	TimeKey       string `json:"timeKey" yaml:"timeKey"`
+	NameKey       string `json:"nameKey" yaml:"nameKey"`
+	CallerKey     string `json:"callerKey" yaml:"callerKey"`
+	StacktraceKey string `json:"stacktraceKey" yaml:"stacktraceKey"`
+	LineEnding    string `json:"lineEnding" yaml:"lineEnding"`
 	// Configure the primitive representations of common complex types. For
 	// example, some users may want all time.Times serialized as floating-point
 	// seconds since epoch, while others may prefer ISO8601 strings.
-	EncodeLevel    LevelEncoder    `json:"levelEncoder",yaml:"levelEncoder"`
-	EncodeTime     TimeEncoder     `json:"timeEncoder",yaml:"timeEncoder"`
-	EncodeDuration DurationEncoder `json:"durationEncoder",yaml:"durationEncoder"`
+	EncodeLevel      LevelEncoder      `json:"levelEncoder" yaml:"levelEncoder"`
+	EncodeTime       TimeEncoder       `json:"timeEncoder" yaml:"timeEncoder"`
+	EncodeDuration   DurationEncoder   `json:"durationEncoder" yaml:"durationEncoder"`
+	EncodeCaller     CallerEncoder     `json:"callerEncoder" yaml:"callerEncoder"`
+	EncodeLoggerName LoggerNameEncoder `json:"nameEncoder" yaml:"nameEncoder"`
 }
 
 // ObjectEncoder is a strongly-typed, encoding-agnostic interface for adding a
@@ -164,7 +253,8 @@ type ObjectEncoder interface {
 	AddObject(key string, marshaler ObjectMarshaler) error
 
 	// Built-in types.
-	AddBinary(key string, value []byte)
+	AddBinary(key string, value []byte)     // for arbitrary bytes
+	AddByteString(key string, value []byte) // for UTF-8 encoded bytes
 	AddBool(key string, value bool)
 	AddComplex128(key string, value complex128)
 	AddComplex64(key string, value complex64)
@@ -221,6 +311,7 @@ type ArrayEncoder interface {
 type PrimitiveArrayEncoder interface {
 	// Built-in types.
 	AppendBool(bool)
+	AppendByteString([]byte) // for UTF-8 encoded bytes
 	AppendComplex128(complex128)
 	AppendComplex64(complex64)
 	AppendFloat64(float64)

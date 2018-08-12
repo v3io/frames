@@ -25,8 +25,7 @@ import (
 	"math"
 	"time"
 
-	"go.uber.org/zap/internal/bufferpool"
-	"go.uber.org/zap/zapcore"
+	"github.com/pavius/zap/zapcore"
 )
 
 // Skip constructs a no-op field.
@@ -37,7 +36,8 @@ func Skip() zapcore.Field {
 // Binary constructs a field that carries an opaque binary blob.
 //
 // Binary data is serialized in an encoding-appropriate format. For example,
-// zap's JSON encoder base64-encodes binary blobs.
+// zap's JSON encoder base64-encodes binary blobs. To log UTF-8 encoded text,
+// use ByteString.
 func Binary(key string, val []byte) zapcore.Field {
 	return zapcore.Field{Key: key, Type: zapcore.BinaryType, Interface: val}
 }
@@ -49,6 +49,13 @@ func Bool(key string, val bool) zapcore.Field {
 		ival = 1
 	}
 	return zapcore.Field{Key: key, Type: zapcore.BoolType, Integer: ival}
+}
+
+// ByteString constructs a field that carries UTF-8 encoded text as a []byte.
+// To log opaque binary blobs (which aren't necessarily valid UTF-8), use
+// Binary.
+func ByteString(key string, val []byte) zapcore.Field {
+	return zapcore.Field{Key: key, Type: zapcore.ByteStringType, Interface: val}
 }
 
 // Complex128 constructs a field that carries a complex number. Unlike most
@@ -168,35 +175,19 @@ func Stringer(key string, val fmt.Stringer) zapcore.Field {
 // Time constructs a zapcore.Field with the given key and value. The encoder
 // controls how the time is serialized.
 func Time(key string, val time.Time) zapcore.Field {
-	return zapcore.Field{Key: key, Type: zapcore.TimeType, Integer: val.UnixNano()}
-}
-
-// Error constructs a field that lazily stores err.Error() under the key
-// "error". If passed a nil error, the field is a no-op. This is purely a
-// convenience for a common error-logging idiom; use String("someFieldName",
-// err.Error()) to customize the key.
-func Error(err error) zapcore.Field {
-	if err == nil {
-		return Skip()
-	}
-	return zapcore.Field{Key: "error", Type: zapcore.ErrorType, Interface: err}
+	return zapcore.Field{Key: key, Type: zapcore.TimeType, Integer: val.UnixNano(), Interface: val.Location()}
 }
 
 // Stack constructs a field that stores a stacktrace of the current goroutine
 // under provided key. Keep in mind that taking a stacktrace is eager and
-// extremely expensive (relatively speaking); this function both makes an
-// allocation and takes ~10 microseconds.
+// expensive (relatively speaking); this function both makes an allocation and
+// takes about two microseconds.
 func Stack(key string) zapcore.Field {
-	// Try to avoid allocating a buffer.
-	buf := bufferpool.Get()
-	bs := buf.Bytes()
 	// Returning the stacktrace as a string costs an allocation, but saves us
 	// from expanding the zapcore.Field union struct to include a byte slice. Since
 	// taking a stacktrace is already so expensive (~10us), the extra allocation
 	// is okay.
-	field := String(key, takeStacktrace(bs[:cap(bs)], false))
-	bufferpool.Put(buf)
-	return field
+	return String(key, takeStacktrace())
 }
 
 // Duration constructs a field with the given key and value. The encoder
@@ -216,6 +207,10 @@ func Object(key string, val zapcore.ObjectMarshaler) zapcore.Field {
 // Any takes a key and an arbitrary value and chooses the best way to represent
 // them as a field, falling back to a reflection-based approach only if
 // necessary.
+//
+// Since byte/uint8 and rune/int32 are aliases, Any can't differentiate between
+// them. To minimize suprise, []byte values are treated as binary blobs, byte
+// values are treated as uint8, and runes are always treated as integers.
 func Any(key string, value interface{}) zapcore.Field {
 	switch val := value.(type) {
 	case zapcore.ObjectMarshaler:
@@ -284,8 +279,8 @@ func Any(key string, value interface{}) zapcore.Field {
 		return Uint16s(key, val)
 	case uint8:
 		return Uint8(key, val)
-	case []uint8:
-		return Uint8s(key, val)
+	case []byte:
+		return Binary(key, val)
 	case uintptr:
 		return Uintptr(key, val)
 	case []uintptr:
@@ -299,7 +294,7 @@ func Any(key string, value interface{}) zapcore.Field {
 	case []time.Duration:
 		return Durations(key, val)
 	case error:
-		return String(key, val.Error())
+		return NamedError(key, val)
 	case []error:
 		return Errors(key, val)
 	case fmt.Stringer:

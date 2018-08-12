@@ -23,8 +23,9 @@ package zap
 import (
 	"fmt"
 
-	"go.uber.org/zap/internal/multierror"
-	"go.uber.org/zap/zapcore"
+	"github.com/pavius/zap/zapcore"
+
+	"go.uber.org/multierr"
 )
 
 const (
@@ -200,6 +201,11 @@ func (s *SugaredLogger) Fatalw(msg string, keysAndValues ...interface{}) {
 	s.log(FatalLevel, msg, nil, keysAndValues)
 }
 
+// Sync flushes any buffered log entries.
+func (s *SugaredLogger) Sync() error {
+	return s.base.Sync()
+}
+
 func (s *SugaredLogger) log(lvl zapcore.Level, template string, fmtArgs []interface{}, context []interface{}) {
 	// If logging at this level is completely disabled, skip the overhead of
 	// string formatting.
@@ -281,9 +287,9 @@ func (p invalidPair) MarshalLogObject(enc zapcore.ObjectEncoder) error {
 type invalidPairs []invalidPair
 
 func (ps invalidPairs) MarshalLogArray(enc zapcore.ArrayEncoder) error {
-	var errs multierror.Error
+	var err error
 	for i := range ps {
-		errs = errs.Append(enc.AppendObject(ps[i]))
+		err = multierr.Append(err, enc.AppendObject(ps[i]))
 	}
-	return errs.AsError()
+	return err
 }

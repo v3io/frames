@@ -24,35 +24,65 @@ import (
 	"bytes"
 	"log"
 	"os"
+	"sync"
+)
+
+const (
+	_stdLogDefaultDepth = 2
+	_loggerWriterDepth  = 1
 )
 
 var (
-	// L is a global Logger. It defaults to a no-op implementation but can be
-	// replaced using ReplaceGlobals.
-	//
-	// Both L and S are unsynchronized, so replacing them while they're in
-	// use isn't safe.
-	L = New(nil)
-	// S is a global SugaredLogger, similar to L. It also defaults to a no-op
-	// implementation.
-	S = L.Sugar()
+	_globalMu sync.RWMutex
+	_globalL  = NewNop()
+	_globalS  = _globalL.Sugar()
 )
 
-// ReplaceGlobals replaces the global Logger L and the global SugaredLogger S,
-// and returns a function to restore the original values.
+// L returns the global Logger, which can be reconfigured with ReplaceGlobals.
 //
-// Note that replacing the global loggers isn't safe while they're being used;
-// in practice, this means that only the owner of the application's main
-// function should use this method.
-func ReplaceGlobals(logger *Logger) func() {
-	prev := *L
-	L = logger
-	S = logger.Sugar()
-	return func() { ReplaceGlobals(&prev) }
+// It's safe for concurrent use.
+func L() *Logger {
+	_globalMu.RLock()
+	l := _globalL
+	_globalMu.RUnlock()
+	return l
 }
 
-// RedirectStdLog redirects output from the standard library's "log" package to
-// the supplied logger at InfoLevel. Since zap already handles caller
+// S returns the global SugaredLogger, which can be reconfigured with
+// ReplaceGlobals.
+//
+// It's safe for concurrent use.
+func S() *SugaredLogger {
+	_globalMu.RLock()
+	s := _globalS
+	_globalMu.RUnlock()
+	return s
+}
+
+// ReplaceGlobals replaces the global Logger and the SugaredLogger, and returns
+// a function to restore the original values.
+//
+// It's safe for concurrent use.
+func ReplaceGlobals(logger *Logger) func() {
+	_globalMu.Lock()
+	prev := _globalL
+	_globalL = logger
+	_globalS = logger.Sugar()
+	_globalMu.Unlock()
+	return func() { ReplaceGlobals(prev) }
+}
+
+// NewStdLog returns a *log.Logger which writes to the supplied zap Logger at
+// InfoLevel. To redirect the standard library's package-global logging
+// functions, use RedirectStdLog instead.
+func NewStdLog(l *Logger) *log.Logger {
+	return log.New(&loggerWriter{l.WithOptions(
+		AddCallerSkip(_stdLogDefaultDepth + _loggerWriterDepth),
+	)}, "" /* prefix */, 0 /* flags */)
+}
+
+// RedirectStdLog redirects output from the standard library's package-global
+// logger to the supplied logger at InfoLevel. Since zap already handles caller
 // annotations, timestamps, etc., it automatically disables the standard
 // library's annotations and prefixing.
 //
@@ -63,7 +93,9 @@ func RedirectStdLog(l *Logger) func() {
 	prefix := log.Prefix()
 	log.SetFlags(0)
 	log.SetPrefix("")
-	log.SetOutput(&loggerWriter{l})
+	log.SetOutput(&loggerWriter{l.WithOptions(
+		AddCallerSkip(_stdLogDefaultDepth + _loggerWriterDepth),
+	)})
 	return func() {
 		log.SetFlags(flags)
 		log.SetPrefix(prefix)

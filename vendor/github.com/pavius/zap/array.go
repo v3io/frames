@@ -23,7 +23,7 @@ package zap
 import (
 	"time"
 
-	"go.uber.org/zap/zapcore"
+	"github.com/pavius/zap/zapcore"
 )
 
 // Array constructs a field with the given key and ArrayMarshaler. It provides
@@ -36,6 +36,12 @@ func Array(key string, val zapcore.ArrayMarshaler) zapcore.Field {
 // Bools constructs a field that carries a slice of bools.
 func Bools(key string, bs []bool) zapcore.Field {
 	return Array(key, bools(bs))
+}
+
+// ByteStrings constructs a field that carries a slice of []byte, each of which
+// must be UTF-8 encoded text.
+func ByteStrings(key string, bss [][]byte) zapcore.Field {
+	return Array(key, byteStringsArray(bss))
 }
 
 // Complex128s constructs a field that carries a slice of complex numbers.
@@ -138,6 +144,15 @@ type bools []bool
 func (bs bools) MarshalLogArray(arr zapcore.ArrayEncoder) error {
 	for i := range bs {
 		arr.AppendBool(bs[i])
+	}
+	return nil
+}
+
+type byteStringsArray [][]byte
+
+func (bss byteStringsArray) MarshalLogArray(arr zapcore.ArrayEncoder) error {
+	for i := range bss {
+		arr.AppendByteString(bss[i])
 	}
 	return nil
 }
@@ -300,18 +315,6 @@ type uintptrs []uintptr
 func (nums uintptrs) MarshalLogArray(arr zapcore.ArrayEncoder) error {
 	for i := range nums {
 		arr.AppendUintptr(nums[i])
-	}
-	return nil
-}
-
-type errArray []error
-
-func (errs errArray) MarshalLogArray(arr zapcore.ArrayEncoder) error {
-	for i := range errs {
-		if errs[i] == nil {
-			continue
-		}
-		arr.AppendString(errs[i].Error())
 	}
 	return nil
 }
