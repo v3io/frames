@@ -14,17 +14,20 @@ type DataContext struct {
 	Workers   int
 }
 
+// DataBackend is an interface for read/write on backend
 type DataBackend interface {
 	ReadRequest(request *DataReadRequest) (MessageIterator, error)
 	WriteRequest(request *DataWriteRequest) (MessageAppender, error) // TODO: use Appender for write streaming
 }
 
+// MessageIterator iterates over message
 type MessageIterator interface {
 	Next() bool
 	Err() error
 	At() *Message
 }
 
+// MessageAppender appends messages
 type MessageAppender interface {
 	Add(message *Message) error
 	WaitForComplete(timeout time.Duration) error
@@ -34,54 +37,66 @@ type MessageAppender interface {
 type Message struct {
 	// Name of column(s) used as index, TODO: if more than one separate with ","
 	IndexCol string
-
 	// List of labels
 	Labels map[string]string `msgpack:"labels,omitempty"`
-
 	// If we send in column orientations
-	Columns map[string][]interface{} `msgpack:columns,omitempty"`
-
+	Columns map[string][]interface{} `msgpack:"columns,omitempty"`
 	// For Writes, Will we get more message chunks (in a stream), if not we can complete
 	HaveMore bool
 }
 
+// DataReadRequest is request for reading data
 type DataReadRequest struct {
 	// nosql | tsdb | sql | stream ..
-	Type string
+	Type string `json:"type"`
 	// json | msgpack | csv
-	DataFormat string
+	DataFormat string `json:"data_format"`
 	// orgenized as rows (vs columns)
-	RowLayout bool
+	RowLayout bool `json:"row_layout"`
+
+	// TODO: Use SQL
 	// Table name (path)
-	Table string
+	Table string `json:"table"`
 	// list of requested columns (or with aggregators  e.g. SUM(salary))
-	Columns []string
+	Columns []string `json:"columns"`
 	// query filter expression (Where)
-	Filter string
+	Filter string `json:"filter"`
 	// group by expression
-	GroupBy string
+	GroupBy string `json:"group_by"`
 
 	// max rows to return in total
-	Limit int
+	Limit int `json:"limit"`
 	// maximum rows per message
-	MaxInMessage int
+	MaxInMessage int `json:"max_in_message"`
 	// for future use, throttling
-	Marker string
+	Marker string `json:"marker"`
 
-	// KV Specific fields
-	// request specific DB segments (slices)
-	Segments          []int
-	TotalSegment      int
-	ShardingKeys      []string
-	SortKeyRangeStart string
-	SortKeyRangeEnd   string
-
-	// TSDB/Col specific fields
-	StartTime time.Time
-	EndTime   time.Time
-	Step      string // duration string
+	Extra interface{} `json:"extra"`
 }
 
+// KVRead is read specific fields
+type KVRead struct {
+	// request specific DB segments (slices)
+	Segments          []int    `json:"segments"`
+	TotalSegment      int      `json:"total_segment"`
+	ShardingKeys      []string `json:"sharding_keys"`
+	SortKeyRangeStart string   `json:"sort_key_range_start"`
+	SortKeyRangeEnd   string   `json:"sort_key_range_end"`
+}
+
+// TSDBRead is TSDB specific fields
+type TSDBRead struct {
+	StartTime time.Time `json:"start_time"`
+	EndTime   time.Time `json:"end_time"`
+	StepRaw   string    `json:"step"` // time.Duration format
+}
+
+// Step return the step
+func (tr *TSDBRead) Step() (time.Duration, error) {
+	return time.ParseDuration(tr.StepRaw)
+}
+
+// DataWriteRequest is request for writing data
 type DataWriteRequest struct {
 	// nosql | tsdb | sql | stream ..
 	Type string
@@ -93,9 +108,10 @@ type DataWriteRequest struct {
 	HaveMore bool
 }
 
+// V3ioConfig is v3io configuration
 type V3ioConfig struct {
 	// V3IO Connection details: Url, Data container, relative path for this dataset, credentials
-	V3ioUrl   string `json:"v3ioUrl"`
+	V3ioURL   string `json:"v3ioUrl"`
 	Container string `json:"container"`
 	Path      string `json:"path"`
 	Username  string `json:"username"`

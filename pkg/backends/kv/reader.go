@@ -19,6 +19,11 @@ func NewKVBackend(ctx *common.DataContext) (common.DataBackend, error) {
 
 func (kv *KVBackend) ReadRequest(request *common.DataReadRequest) (common.MessageIterator, error) {
 
+	kvRequest, ok := request.Extra.(common.KVRead)
+	if !ok {
+		return nil, fmt.Errorf("not a KV request")
+	}
+
 	tablePath := request.Table
 	if !strings.HasSuffix(tablePath, "/") {
 		tablePath += "/"
@@ -30,7 +35,7 @@ func (kv *KVBackend) ReadRequest(request *common.DataReadRequest) (common.Messag
 
 	input := v3io.GetItemsInput{Path: tablePath, Filter: request.Filter, AttributeNames: request.Columns}
 	fmt.Println(input, request)
-	iter, err := utils.NewAsyncItemsCursor(kv.ctx.Container, &input, kv.ctx.Workers, request.ShardingKeys)
+	iter, err := utils.NewAsyncItemsCursor(kv.ctx.Container, &input, kv.ctx.Workers, kvRequest.ShardingKeys)
 	if err != nil {
 		return nil, err
 	}
@@ -58,6 +63,7 @@ func (ki *KVIterator) Next() bool {
 		row := ki.iter.GetFields()
 		for name, field := range row {
 			if col, ok := message.Columns[name]; ok {
+
 				col = append(col, field)
 				message.Columns[name] = col
 			} else {
