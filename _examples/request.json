@@ -1,0 +1,12 @@
+{
+  "type": "kv",
+  "data_format": "msgpack",
+  "row_layout": false,
+  "table": "empolyees",
+  "columns": ["first", "last"],
+  "filter": "age > 60",
+  "group_by": "",
+  "limit": 20,
+  "max_in_message": 0,
+  "marker": ""
+}
