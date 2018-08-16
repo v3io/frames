@@ -1,0 +1,3 @@
+include README.md LICENSE.txt
+include Pipfile Pipfile.lock
+include test_v3io_frames.py
