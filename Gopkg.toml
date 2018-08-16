@@ -10,6 +10,10 @@
   branch = "master"
   name = "github.com/nuclio/zap"
 
+[[override]]
+  name = "github.com/pavius/zap"
+  branch = "nuclio"
+
 [[constraint]]
   name = "github.com/pkg/errors"
   version = "0.8.0"
@@ -18,11 +22,10 @@
   branch = "master"
   name = "github.com/v3io/v3io-go-http"
 
-[[override]]
-  name = "github.com/pavius/zap"
-  branch = "nuclio"
+[[constraint]]
+  name = "github.com/vmihailenco/msgpack"
+  version = "3.3.3"
 
 [prune]
   go-tests = true
   unused-packages = true
-
