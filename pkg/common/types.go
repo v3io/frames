@@ -1,11 +1,13 @@
 package common
 
 import (
+	"time"
+
 	"github.com/nuclio/logger"
 	"github.com/v3io/v3io-go-http"
-	"time"
 )
 
+// DataContext is context for data
 type DataContext struct {
 	Container *v3io.Container
 	Logger    logger.Logger
