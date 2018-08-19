@@ -1,8 +1,4 @@
 [[constraint]]
-  name = "github.com/ghodss/yaml"
-  version = "1.0.0"
-
-[[constraint]]
   branch = "master"
   name = "github.com/nuclio/logger"
 
@@ -26,10 +22,11 @@
   name = "github.com/vmihailenco/msgpack"
   version = "3.3.3"
 
+[[constraint]]
+  branch = "master"
+  name = "github.com/xwb1989/sqlparser"
+
 [prune]
   go-tests = true
   unused-packages = true
 
-[[constraint]]
-  name = "github.com/BurntSushi/toml"
-  version = "0.3.0"
