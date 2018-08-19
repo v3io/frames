@@ -62,7 +62,9 @@ type DataReadRequest struct {
 	// orgenized as rows (vs columns)
 	RowLayout bool `json:"row_layout"`
 
-	// TODO: Use SQL
+	// SQL query
+	Query string `json:"query"`
+
 	// Table name (path)
 	Table string `json:"table"`
 	// list of requested columns (or with aggregators  e.g. SUM(salary))
@@ -70,7 +72,7 @@ type DataReadRequest struct {
 	// query filter expression (Where)
 	Filter string `json:"filter"`
 	// group by expression
-	GroupBy string `json:"group_by"`
+	GroupBy string `json:"group_by"` // TODO: []string? (as in SQL)
 
 	// max rows to return in total
 	Limit int `json:"limit"`

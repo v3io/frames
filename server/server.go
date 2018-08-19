@@ -129,6 +129,14 @@ func (s *Server) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	if request.Query != "" {
+		if err := s.populateQuery(request); err != nil {
+			s.logger.ErrorWith("Can't populate query", "request", request, "error", err)
+			http.Error(w, err.Error(), http.StatusBadRequest)
+			return
+		}
+	}
+
 	// TODO: Validate request
 
 	iter, err := s.backend.ReadRequest(request)
@@ -194,6 +202,35 @@ func (s *Server) Stop(ctx context.Context) error {
 	}
 
 	s.state = ReadyState
+	return nil
+}
+
+func (s *Server) populateQuery(request *frames.DataReadRequest) error {
+	sqlQuery, err := frames.ParseSQL(request.Query)
+	if err != nil {
+		return errors.Wrap(err, "Bad SQL query")
+	}
+
+	if request.Table != "" {
+		return fmt.Errorf("Both query AND table provided")
+	}
+	request.Table = sqlQuery.Table
+
+	if request.Columns != nil {
+		return fmt.Errorf("Both query AND columns provided")
+	}
+	request.Columns = sqlQuery.Columns
+
+	if request.Filter != "" {
+		return fmt.Errorf("Both query AND filter provided")
+	}
+	request.Filter = sqlQuery.Filter
+
+	if request.GroupBy != "" {
+		return fmt.Errorf("Both query AND group_by provided")
+	}
+	request.GroupBy = sqlQuery.GroupBy
+
 	return nil
 }
 
