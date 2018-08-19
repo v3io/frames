@@ -2,24 +2,26 @@ package kv
 
 import (
 	"fmt"
-	"github.com/v3io/frames/pkg/common"
-	"github.com/v3io/frames/pkg/utils"
-	"github.com/v3io/v3io-go-http"
 	"strings"
+
+	"github.com/v3io/v3io-go-http"
+
+	"github.com/v3io/frames"
+	"github.com/v3io/frames/backends/utils"
 )
 
-type KVBackend struct {
-	ctx *common.DataContext
+type Backend struct {
+	ctx *frames.DataContext
 }
 
-func NewKVBackend(ctx *common.DataContext) (common.DataBackend, error) {
-	newKVBackend := KVBackend{ctx: ctx}
-	return &newKVBackend, nil
+func NewBackend(ctx *frames.DataContext) (frames.DataBackend, error) {
+	newBackend := Backend{ctx: ctx}
+	return &newBackend, nil
 }
 
-func (kv *KVBackend) ReadRequest(request *common.DataReadRequest) (common.MessageIterator, error) {
+func (kv *Backend) ReadRequest(request *frames.DataReadRequest) (frames.MessageIterator, error) {
 
-	kvRequest, ok := request.Extra.(common.KVRead)
+	kvRequest, ok := request.Extra.(frames.KVRead)
 	if !ok {
 		return nil, fmt.Errorf("not a KV request")
 	}
@@ -35,49 +37,64 @@ func (kv *KVBackend) ReadRequest(request *common.DataReadRequest) (common.Messag
 
 	input := v3io.GetItemsInput{Path: tablePath, Filter: request.Filter, AttributeNames: request.Columns}
 	fmt.Println(input, request)
-	iter, err := utils.NewAsyncItemsCursor(kv.ctx.Container, &input, kv.ctx.Workers, kvRequest.ShardingKeys)
+	iter, err := frames.NewAsyncItemsCursor(kv.ctx.Container, &input, kv.ctx.Workers, kvRequest.ShardingKeys)
 	if err != nil {
 		return nil, err
 	}
 
-	newKVIter := KVIterator{ctx: kv.ctx, request: request, iter: iter}
+	newKVIter := Iterator{ctx: kv.ctx, request: request, iter: iter}
 	return &newKVIter, nil
 }
 
-type KVIterator struct {
-	ctx     *common.DataContext
-	request *common.DataReadRequest
-	iter    *utils.AsyncItemsCursor
+type Iterator struct {
+	ctx     *frames.DataContext
+	request *frames.DataReadRequest
+	iter    *frames.AsyncItemsCursor
 	err     error
-	currMsg *common.Message
+	currMsg *frames.Message
 }
 
-func (ki *KVIterator) Next() bool {
+func (ki *Iterator) Next() bool {
 
-	message := common.Message{}
-	message.Columns = map[string][]interface{}{}
+	message := frames.Message{}
+	message.Columns = map[string]interface{}{}
 	var i int
 
 	for ki.iter.Next() {
 		i++
 		row := ki.iter.GetFields()
 		for name, field := range row {
-			if col, ok := message.Columns[name]; ok {
-
-				col = append(col, field)
-				message.Columns[name] = col
-			} else {
-				col = make([]interface{}, i-1)
-				col = append(col, field)
+			col, ok := message.Columns[name]
+			if !ok {
+				var err error
+				col, err = utils.NewColumn(field, i-1)
+				if err != nil {
+					ki.err = err
+					return false
+				}
 				message.Columns[name] = col
 			}
+
+			col, err := utils.AppendValue(col, field)
+			if err != nil {
+				ki.err = err
+				return false
+			}
+			message.Columns[name] = col
 		}
 
 		// fill columns with nil if there was no value
 		for name, col := range message.Columns {
-			if len(col) < i {
-				message.Columns[name] = append(col, nil)
+			if _, ok := row[name]; ok {
+				continue
 			}
+			var err error
+			col, err = utils.AppendNil(col)
+			if err != nil {
+				ki.err = err
+				return false
+			}
+			message.Columns[name] = col
 		}
 
 		if i == ki.request.MaxInMessage {
@@ -99,11 +116,11 @@ func (ki *KVIterator) Next() bool {
 	return true
 }
 
-func (ki *KVIterator) Err() error {
+func (ki *Iterator) Err() error {
 	return ki.err
 }
 
-func (ki *KVIterator) At() *common.Message {
+func (ki *Iterator) At() *frames.Message {
 	return ki.currMsg
 }
 

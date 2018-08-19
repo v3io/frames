@@ -1,4 +1,4 @@
-package common
+package frames
 
 import (
 	"time"
@@ -31,18 +31,6 @@ type MessageIterator interface {
 type MessageAppender interface {
 	Add(message *Message) error
 	WaitForComplete(timeout time.Duration) error
-}
-
-// Message sent over the wire with multiple columns and data points
-type Message struct {
-	// Name of column(s) used as index, TODO: if more than one separate with ","
-	IndexCol string
-	// List of labels
-	Labels map[string]string `msgpack:"labels,omitempty"`
-	// If we send in column orientations
-	Columns map[string][]interface{} `msgpack:"columns,omitempty"`
-	// For Writes, Will we get more message chunks (in a stream), if not we can complete
-	HaveMore bool
 }
 
 // DataReadRequest is request for reading data

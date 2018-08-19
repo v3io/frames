@@ -2,13 +2,15 @@ package kv
 
 import (
 	"fmt"
-	"github.com/v3io/frames/pkg/common"
-	"github.com/v3io/v3io-go-http"
 	"strings"
 	"time"
+
+	"github.com/v3io/frames"
+
+	"github.com/v3io/v3io-go-http"
 )
 
-type KVAppender struct {
+type Appender struct {
 	//request      *common.DataWriteRequest
 	container    *v3io.Container
 	tablePath    string
@@ -18,14 +20,14 @@ type KVAppender struct {
 	sent         int
 }
 
-func (kv *KVBackend) WriteRequest(request *common.DataWriteRequest) (common.MessageAppender, error) {
+func (kv *Backend) WriteRequest(request *frames.DataWriteRequest) (frames.MessageAppender, error) {
 
 	tablePath := request.Table
 	if !strings.HasSuffix(tablePath, "/") {
 		tablePath += "/"
 	}
 
-	appender := KVAppender{
+	appender := Appender{
 		container:    kv.ctx.Container,
 		tablePath:    tablePath,
 		responseChan: make(chan *v3io.Response, 1000),
@@ -42,30 +44,54 @@ func (kv *KVBackend) WriteRequest(request *common.DataWriteRequest) (common.Mess
 	return &appender, nil
 }
 
-func (a *KVAppender) Add(message *common.Message) error {
-
+func (a *Appender) Add(message *frames.Message) error {
+	/* TODO: We don't have nil values in columns
 	indexCol, ok := message.Columns[message.IndexCol]
 	// validate that we have row keys for all rows before writing
 	if !ok {
-		return fmt.Errorf("Missing indec column %s", message.IndexCol)
+		return fmt.Errorf("Missing index column %s", message.IndexCol)
 	}
+
 	for j, row := range indexCol {
 		if row == nil {
 			return fmt.Errorf("Missing row key %s in row %d", message.IndexCol, j)
 		}
 	}
+	*/
 
 	i := 0
 OuterLoop:
 	for {
-
+		// TODO: Move to utils?
 		newRow := map[string]interface{}{}
-		for name, col := range message.Columns {
-			if len(col) <= i {
-				break OuterLoop
-			}
-			if col[i] != nil {
-				newRow[name] = col[i]
+		for name := range message.Columns {
+			colType, _ := message.ColumnType(name)
+			switch colType {
+			case frames.IntType:
+				icol, _ := message.Ints(name)
+				if len(icol) <= i {
+					break OuterLoop
+				}
+
+				newRow[name] = icol[i]
+			case frames.FloatType:
+				fcol, _ := message.Floats(name)
+				if len(fcol) <= i {
+					break OuterLoop
+				}
+				newRow[name] = fcol[i]
+			case frames.StringType:
+				scol, _ := message.Strings(name)
+				if len(scol) <= i {
+					break OuterLoop
+				}
+				newRow[name] = scol[i]
+			case frames.TimeType:
+				tcol, _ := message.Times(name)
+				if len(tcol) <= i {
+					break OuterLoop
+				}
+				newRow[name] = tcol[i]
 			}
 		}
 		key := newRow[message.IndexCol]
@@ -83,14 +109,13 @@ OuterLoop:
 	return nil
 }
 
-func (a *KVAppender) WaitForComplete(timeout time.Duration) error {
-
+func (a *Appender) WaitForComplete(timeout time.Duration) error {
 	a.commChan <- a.sent
 	<-a.doneChan
 	return nil
 }
 
-func (a *KVAppender) respWaitLoop(timeout time.Duration) {
+func (a *Appender) respWaitLoop(timeout time.Duration) {
 	responses := 0
 	requests := -1
 	a.doneChan = make(chan bool)

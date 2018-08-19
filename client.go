@@ -1,30 +1,39 @@
-package v3ioframes
+package frames
 
 import (
 	"bytes"
 	"encoding/json"
 	"net/http"
 
+	"github.com/nuclio/logger"
 	"github.com/pkg/errors"
 	"github.com/vmihailenco/msgpack"
 )
-
-// Message is returned messge type
-type Message struct {
-}
 
 // Client is v3io streaming client
 type Client struct {
 	URL    string
 	apiKey string
+	logger logger.Logger
 }
 
 // NewClient returns a new client
-func NewClient(url string, apiKey string) *Client {
-	return &Client{
+func NewClient(url string, apiKey string, logger logger.Logger) (*Client, error) {
+	var err error
+	if logger == nil {
+		logger, err = NewLogger("info")
+		if err != nil {
+			return nil, errors.Wrap(err, "Can't create logger")
+		}
+	}
+
+	client := &Client{
 		URL:    url,
 		apiKey: apiKey,
+		logger: logger,
 	}
+
+	return client, nil
 }
 
 // Query runs a query on the client
@@ -61,6 +70,9 @@ func (c *Client) Query(query string) (chan *Message, error) {
 			if err := dec.Decode(msg); err != nil {
 				// TODO: log
 				return
+			}
+			if err != nil {
+				// TODO: log
 			}
 			ch <- msg
 		}

@@ -6,9 +6,9 @@ import (
 	"fmt"
 	"net/http"
 
-	"github.com/v3io/frames/pkg/backends/kv"
-	"github.com/v3io/frames/pkg/common"
-	"github.com/v3io/frames/pkg/utils"
+	"github.com/v3io/frames"
+	"github.com/v3io/frames/backends/kv"
+	"github.com/v3io/frames/backends/mock" // TODO
 
 	"github.com/nuclio/logger"
 	"github.com/pkg/errors"
@@ -44,29 +44,29 @@ type Server struct {
 	server  *http.Server
 	state   State
 
-	backend common.DataBackend
-	config  *common.V3ioConfig
-	context *common.DataContext
+	backend frames.DataBackend
+	config  *frames.V3ioConfig
+	context *frames.DataContext
 	logger  logger.Logger
 }
 
 // New creates a new server
-func New(cfg *common.V3ioConfig, addr string) (*Server, error) {
+func New(cfg *frames.V3ioConfig, addr string) (*Server, error) {
 	ctx, err := newContext(cfg)
 	if err != nil {
 		return nil, errors.Wrap(err, "Can't create context")
 	}
 
-	var backend common.DataBackend
+	var backend frames.DataBackend
 
 	if false {
-		backend, err = kv.NewKVBackend(ctx)
+		backend, err = kv.NewBackend(ctx)
 		if err != nil {
 			ctx.Logger.ErrorWith("Can't create backend", "error", err)
 			return nil, errors.Wrap(err, "Can't create backend")
 		}
 	} else {
-		backend = &MockBackend{}
+		backend = &mock.Backend{}
 	}
 
 	srv := &Server{
@@ -101,7 +101,7 @@ func (s *Server) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	}
 
 	defer r.Body.Close()
-	request := &common.DataReadRequest{}
+	request := &frames.DataReadRequest{}
 	dec := json.NewDecoder(r.Body)
 	if err := dec.Decode(request); err != nil {
 		s.logger.ErrorWith("Can't decode request", "error", err)
@@ -177,17 +177,17 @@ func (s *Server) Stop(ctx context.Context) error {
 	return nil
 }
 
-func newContext(cfg *common.V3ioConfig) (*common.DataContext, error) {
-	logger, err := utils.NewLogger(cfg.Verbose)
+func newContext(cfg *frames.V3ioConfig) (*frames.DataContext, error) {
+	logger, err := frames.NewLogger(cfg.Verbose)
 	if err != nil {
 		return nil, errors.Wrap(err, "Can't create logger")
 	}
 
-	container, err := utils.CreateContainer(
+	container, err := frames.CreateContainer(
 		logger, cfg.V3ioURL, cfg.Container, cfg.Username, cfg.Password, cfg.Workers)
 	if err != nil {
 		return nil, errors.Wrap(err, "Failed to create data container")
 	}
 
-	return &common.DataContext{Container: container, Logger: logger}, nil
+	return &frames.DataContext{Container: container, Logger: logger}, nil
 }

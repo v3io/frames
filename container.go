@@ -18,18 +18,20 @@ under the Apache 2.0 license is conditioned upon your compliance with
 such restriction.
 */
 
-package utils
+package frames
 
 import (
 	"encoding/binary"
 	"fmt"
+	"time"
+
 	"github.com/nuclio/logger"
 	"github.com/nuclio/zap"
 	"github.com/pkg/errors"
 	"github.com/v3io/v3io-go-http"
-	"time"
 )
 
+// NewLogger returns a new logger
 func NewLogger(verbose string) (logger.Logger, error) {
 	var logLevel nucliozap.Level
 	switch verbose {
@@ -52,6 +54,7 @@ func NewLogger(verbose string) (logger.Logger, error) {
 	return log, nil
 }
 
+// CreateContainer creates a new container
 func CreateContainer(logger logger.Logger, addr, cont, username, password string, workers int) (*v3io.Container, error) {
 	// create context
 	context, err := v3io.NewContext(logger, addr, workers)
@@ -74,7 +77,7 @@ func CreateContainer(logger logger.Logger, addr, cont, username, password string
 	return container, nil
 }
 
-// convert v3io blob to Int array
+// AsInt64Array convert v3io blob to Int array
 func AsInt64Array(val []byte) []uint64 {
 	var array []uint64
 	bytes := val
@@ -85,6 +88,7 @@ func AsInt64Array(val []byte) []uint64 {
 	return array
 }
 
+// DeleteTable deletes a table
 func DeleteTable(container *v3io.Container, path, filter string, workers int) error {
 
 	input := v3io.GetItemsInput{Path: path, AttributeNames: []string{"__name"}, Filter: filter}
@@ -155,9 +159,8 @@ func respWaitLoop(comm chan int, responseChan chan *v3io.Response, timeout time.
 					fmt.Println("\nResp loop timed out! ", requests, responses)
 					done <- true
 					return
-				} else {
-					active = false
 				}
+				active = false
 			}
 		}
 	}()

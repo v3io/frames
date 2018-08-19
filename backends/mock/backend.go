@@ -1,43 +1,43 @@
-package server
+package mock
 
 import (
 	"fmt"
 	"math/rand"
 
-	"github.com/v3io/frames/pkg/common"
+	"github.com/v3io/frames"
 )
 
-type MockBackend struct{}
+type Backend struct{}
 
-func (mb *MockBackend) ReadRequest(request *common.DataReadRequest) (common.MessageIterator, error) {
-	it := &MockIterator{
+func (mb *Backend) ReadRequest(request *frames.DataReadRequest) (frames.MessageIterator, error) {
+	it := &Iterator{
 		request: request,
 	}
 
 	return it, nil
 }
 
-func (mb *MockBackend) WriteRequest(request *common.DataWriteRequest) (common.MessageAppender, error) {
+func (mb *Backend) WriteRequest(request *frames.DataWriteRequest) (frames.MessageAppender, error) {
 	return nil, fmt.Errorf("write not implemented")
 }
 
-type MockIterator struct {
-	request *common.DataReadRequest
+type Iterator struct {
+	request *frames.DataReadRequest
 	count   int
 }
 
-func (it *MockIterator) Next() bool {
+func (it *Iterator) Next() bool {
 	it.count++
 	return it.count < it.request.Limit
 }
 
-func (it *MockIterator) Err() error {
+func (it *Iterator) Err() error {
 	return nil
 }
 
-func (it *MockIterator) At() *common.Message {
-	msg := &common.Message{
-		Columns: map[string][]interface{}{},
+func (it *Iterator) At() *frames.Message {
+	msg := &frames.Message{
+		Columns: map[string]interface{}{},
 	}
 
 	if it.count == 1 {

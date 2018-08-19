@@ -18,7 +18,7 @@ under the Apache 2.0 license is conditioned upon your compliance with
 such restriction.
 */
 
-package utils
+package frames
 
 import (
 	"github.com/nuclio/logger"
@@ -26,6 +26,7 @@ import (
 	"github.com/v3io/v3io-go-http"
 )
 
+// ItemsCursor iteratre over items
 type ItemsCursor interface {
 	Err() error
 	Next() bool
@@ -33,6 +34,7 @@ type ItemsCursor interface {
 	GetFields() map[string]interface{}
 }
 
+// AsyncItemsCursor is an async items cursor
 type AsyncItemsCursor struct {
 	currentItem  v3io.Item
 	currentError error
@@ -49,6 +51,7 @@ type AsyncItemsCursor struct {
 	Cnt           int
 }
 
+// NewAsyncItemsCursor return new AsyncItemsCursor
 func NewAsyncItemsCursor(
 	container *v3io.Container, input *v3io.GetItemsInput,
 	workers int, shardingKeys []string) (*AsyncItemsCursor, error) {
@@ -97,7 +100,7 @@ func NewAsyncItemsCursor(
 	return newAsyncItemsCursor, nil
 }
 
-// error returns the last error
+// Err returns the last error
 func (ic *AsyncItemsCursor) Err() error {
 	return ic.currentError
 }
@@ -177,7 +180,7 @@ func (ic *AsyncItemsCursor) NextItem() (v3io.Item, error) {
 	return ic.NextItem()
 }
 
-// gets all items
+// All gets all items
 func (ic *AsyncItemsCursor) All() ([]v3io.Item, error) {
 	var items []v3io.Item
 
@@ -192,22 +195,27 @@ func (ic *AsyncItemsCursor) All() ([]v3io.Item, error) {
 	return items, nil
 }
 
+// GetField returns a field by name
 func (ic *AsyncItemsCursor) GetField(name string) interface{} {
 	return ic.currentItem[name]
 }
 
+// GetFieldInt returns integer field by name
 func (ic *AsyncItemsCursor) GetFieldInt(name string) (int, error) {
 	return ic.currentItem.GetFieldInt(name)
 }
 
+// GetFieldString returns string field by name
 func (ic *AsyncItemsCursor) GetFieldString(name string) (string, error) {
 	return ic.currentItem.GetFieldString(name)
 }
 
+// GetFields returns All the fields
 func (ic *AsyncItemsCursor) GetFields() map[string]interface{} {
 	return ic.currentItem
 }
 
+// GetItem return the current item
 func (ic *AsyncItemsCursor) GetItem() v3io.Item {
 	return ic.currentItem
 }
