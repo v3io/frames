@@ -23,6 +23,7 @@ package frames
 import (
 	"bytes"
 	"encoding/json"
+	"io"
 	"net/http"
 
 	"github.com/nuclio/logger"
@@ -35,6 +36,7 @@ type Client struct {
 	URL    string
 	apiKey string
 	logger logger.Logger
+	err    error // last error
 }
 
 // NewClient returns a new client
@@ -80,6 +82,7 @@ func (c *Client) Query(query string) (chan *Message, error) {
 		return nil, errors.Wrap(err, "can't call API")
 	}
 
+	c.err = nil
 	ch := make(chan *Message) // TODO: Buffered channel?
 
 	go func() {
@@ -88,15 +91,21 @@ func (c *Client) Query(query string) (chan *Message, error) {
 		for {
 			msg := &Message{}
 			if err := dec.Decode(msg); err != nil {
-				// TODO: log
+				close(ch)
+				if err != io.EOF {
+					c.logger.ErrorWith("Decode error", "error", err)
+					c.err = err
+				}
 				return
-			}
-			if err != nil {
-				// TODO: log
 			}
 			ch <- msg
 		}
 	}()
 
 	return ch, nil
+}
+
+// Err returns the last query error
+func (c *Client) Err() error {
+	return c.err
 }
