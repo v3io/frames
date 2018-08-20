@@ -22,6 +22,7 @@ package frames
 
 import (
 	"fmt"
+	"reflect"
 	"time"
 )
 
@@ -38,51 +39,24 @@ type Message struct {
 }
 
 // Type is data type
-type Type int
+type Type reflect.Type
 
 // Possible data types
-const (
-	UnknownType Type = iota
-	IntType
-	FloatType
-	StringType
-	TimeType
+var (
+	IntType    Type = reflect.TypeOf([]int{})
+	FloatType  Type = reflect.TypeOf([]float64{})
+	StringType Type = reflect.TypeOf([]string{})
+	TimeType   Type = reflect.TypeOf([]time.Time{})
 )
-
-func (t Type) String() string {
-	switch t {
-	case IntType:
-		return "int"
-	case FloatType:
-		return "float"
-	case StringType:
-		return "string"
-	case TimeType:
-		return "time"
-	}
-
-	return fmt.Sprintf("Unknown Type - %d", t)
-}
 
 // ColumnType returns the column type
 func (m *Message) ColumnType(name string) (Type, error) {
 	col, ok := m.Columns[name]
 	if !ok {
-		return UnknownType, fmt.Errorf("column %q not found", name)
+		return nil, fmt.Errorf("column %q not found", name)
 	}
 
-	switch col.(type) {
-	case []int:
-		return IntType, nil
-	case []float64:
-		return FloatType, nil
-	case []string:
-		return StringType, nil
-	case []time.Time:
-		return TimeType, nil
-	}
-
-	return UnknownType, fmt.Errorf("Unknown column type - %T", col)
+	return reflect.TypeOf(col), nil
 }
 
 // Ints return column as []int
