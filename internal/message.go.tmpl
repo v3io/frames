@@ -43,10 +43,9 @@ type Type reflect.Type
 
 // Possible data types
 var (
-	IntType    Type = reflect.TypeOf([]int{})
-	FloatType  Type = reflect.TypeOf([]float64{})
-	StringType Type = reflect.TypeOf([]string{})
-	TimeType   Type = reflect.TypeOf([]time.Time{})
+{{range .}}
+	{{- .Name}}Type    Type = reflect.TypeOf([]{{.Type}}{})
+{{end}}
 )
 
 // ColumnType returns the column type
@@ -59,62 +58,19 @@ func (m *Message) ColumnType(name string) (Type, error) {
 	return reflect.TypeOf(col), nil
 }
 
-// Ints return column as []int
-func (m *Message) Ints(name string) ([]int, error) {
+{{range .}}
+// {{.Name}}s return column as []{{.Type}}
+func (m *Message) {{.Name}}s(name string) ([]{{.Type}}, error) {
 	col, ok := m.Columns[name]
 	if !ok {
 		return nil, fmt.Errorf("column %q not found", name)
 	}
 
-	typedCol, ok := col.([]int)
+	typedCol, ok := col.([]{{.Type}})
 	if !ok {
-		return nil, fmt.Errorf("column %q is not []int (type %T)", name, col)
+       		return nil, fmt.Errorf("column %q is not []{{.Type}} (type %T)", name, col)
 	}
 
 	return typedCol, nil
 }
-
-// Floats return column as []float64
-func (m *Message) Floats(name string) ([]float64, error) {
-	col, ok := m.Columns[name]
-	if !ok {
-		return nil, fmt.Errorf("column %q not found", name)
-	}
-
-	typedCol, ok := col.([]float64)
-	if !ok {
-		return nil, fmt.Errorf("column %q is not []float64 (type %T)", name, col)
-	}
-
-	return typedCol, nil
-}
-
-// Strings return column as []string
-func (m *Message) Strings(name string) ([]string, error) {
-	col, ok := m.Columns[name]
-	if !ok {
-		return nil, fmt.Errorf("column %q not found", name)
-	}
-
-	typedCol, ok := col.([]string)
-	if !ok {
-		return nil, fmt.Errorf("column %q is not []string (type %T)", name, col)
-	}
-
-	return typedCol, nil
-}
-
-// Times return column as []time.Time
-func (m *Message) Times(name string) ([]time.Time, error) {
-	col, ok := m.Columns[name]
-	if !ok {
-		return nil, fmt.Errorf("column %q not found", name)
-	}
-
-	typedCol, ok := col.([]time.Time)
-	if !ok {
-		return nil, fmt.Errorf("column %q is not []time.Time (type %T)", name, col)
-	}
-
-	return typedCol, nil
-}
+{{end}}
