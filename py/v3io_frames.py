@@ -71,8 +71,7 @@ class Client(object):
         query_obj = {
             'query': query,
             'orient': self.orient,
-            'limit': 100,
-            'columns': ['first', 'last'],
+            'limit': 100,  # TODO
         }
 
         headers = {

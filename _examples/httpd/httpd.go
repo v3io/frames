@@ -21,20 +21,22 @@ such restriction.
 package main
 
 import (
-	//	"bufio"
+	"flag"
 	"fmt"
 	"io/ioutil"
 	"log"
-	//	"os"
 	"time"
 
-	"github.com/v3io/frames"
-
 	"github.com/BurntSushi/toml"
+	"github.com/v3io/frames"
 	"github.com/v3io/frames/server"
 )
 
 func main() {
+	var port int
+	flag.IntVar(&port, "port", 8080, "port to listen on")
+	flag.Parse()
+
 	data, err := ioutil.ReadFile("config.toml")
 	if err != nil {
 		log.Fatalf("error: can't open config - %s", err)
@@ -45,7 +47,7 @@ func main() {
 		log.Fatalf("error: can't read config - %s", err)
 	}
 
-	srv, err := server.New(cfg, ":8080")
+	srv, err := server.New(cfg, fmt.Sprintf(":%d", port))
 	if err := toml.Unmarshal(data, cfg); err != nil {
 		log.Fatalf("error: can't create server - %s", err)
 	}
@@ -54,17 +56,9 @@ func main() {
 		log.Fatalf("error: can't start server - %s", err)
 	}
 
-	/*
-		fmt.Println("Server running (hit Enter to quit)")
-		rdr := bufio.NewReader(os.Stdin)
-		rdr.ReadString('\n')
-	*/
+	fmt.Println("Server running")
 	for {
 		time.Sleep(60 * time.Second)
 	}
 
-	fmt.Println("Shutting down")
-	if err = srv.Stop(nil); err != nil {
-		log.Fatalf("error: can't stop server - %s", err)
-	}
 }

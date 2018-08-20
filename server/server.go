@@ -21,7 +21,8 @@ such restriction.
 package server
 
 import (
-	"context"
+	"bufio"
+	"bytes"
 	"encoding/json"
 	"fmt"
 	"net/http"
@@ -32,6 +33,7 @@ import (
 
 	"github.com/nuclio/logger"
 	"github.com/pkg/errors"
+	"github.com/valyala/fasthttp"
 	"github.com/vmihailenco/msgpack"
 )
 
@@ -43,6 +45,10 @@ const (
 	ReadyState State = iota
 	RunningState
 	ErrorState
+)
+
+var (
+	statusPath = []byte("/_/status")
 )
 
 func (s State) String() string {
@@ -61,7 +67,7 @@ func (s State) String() string {
 // Server is HTTP server
 type Server struct {
 	address string // listen address
-	server  *http.Server
+	server  *fasthttp.Server
 	state   State
 
 	backend frames.DataBackend
@@ -99,65 +105,11 @@ func New(cfg *frames.V3ioConfig, addr string) (*Server, error) {
 	}
 
 	return srv, nil
-
 }
 
 // State returns the server state
 func (s *Server) State() State {
 	return s.state
-}
-
-func (s *Server) ServeHTTP(w http.ResponseWriter, r *http.Request) {
-	if r.URL.Path == "/_/status" {
-		fmt.Fprintf(w, "%s\n", s.State())
-		return
-	}
-
-	flusher, ok := w.(http.Flusher)
-	if !ok {
-		s.logger.Error("Not a flusher")
-		http.Error(w, "not a flusher", http.StatusInternalServerError)
-		return
-	}
-
-	defer r.Body.Close()
-	request := &frames.DataReadRequest{}
-	dec := json.NewDecoder(r.Body)
-	if err := dec.Decode(request); err != nil {
-		s.logger.ErrorWith("Can't decode request", "error", err)
-		http.Error(w, fmt.Sprintf("Bad request - %s", err), http.StatusBadRequest)
-		return
-	}
-
-	if request.Query != "" {
-		if err := s.populateQuery(request); err != nil {
-			s.logger.ErrorWith("Can't populate query", "request", request, "error", err)
-			http.Error(w, err.Error(), http.StatusBadRequest)
-			return
-		}
-	}
-
-	// TODO: Validate request
-
-	iter, err := s.backend.ReadRequest(request)
-	if err != nil {
-		s.logger.ErrorWith("Can't query", "error", err)
-		http.Error(w, fmt.Sprintf("Can't query - %s", err), http.StatusInternalServerError)
-	}
-
-	enc := msgpack.NewEncoder(w)
-	for iter.Next() {
-		if err := enc.Encode(iter.At()); err != nil {
-			s.logger.ErrorWith("Can't encode result", "error", err)
-			return
-		}
-
-		flusher.Flush()
-	}
-
-	if err := iter.Err(); err != nil {
-		s.logger.ErrorWith("Error during iteration", "error", err)
-	}
 }
 
 // Start starts the server
@@ -167,13 +119,12 @@ func (s *Server) Start() error {
 		return fmt.Errorf("bad state - %s", state)
 	}
 
-	s.server = &http.Server{
-		Addr:    s.address,
-		Handler: s,
+	s.server = &fasthttp.Server{
+		Handler: s.handler,
 	}
 
 	go func() {
-		err := s.server.ListenAndServe()
+		err := s.server.ListenAndServe(s.address)
 		if err != nil {
 			s.logger.ErrorWith("Error running HTTP server", "error", err)
 			s.state = ErrorState
@@ -184,25 +135,51 @@ func (s *Server) Start() error {
 	return nil
 }
 
-// Stop stops the server
-func (s *Server) Stop(ctx context.Context) error {
-	if state := s.State(); state != RunningState {
-		s.logger.ErrorWith("Stop from bad state", "state", state.String())
-		return fmt.Errorf("bad state - %s", state)
+func (s *Server) handler(ctx *fasthttp.RequestCtx) {
+	if bytes.Compare(ctx.Path(), statusPath) == 0 {
+		fmt.Fprintf(ctx, "%s\n", s.State())
+		return
 	}
 
-	if ctx == nil {
-		ctx = context.Background()
+	request := &frames.DataReadRequest{}
+	if err := json.Unmarshal(ctx.PostBody(), request); err != nil {
+		s.logger.ErrorWith("Can't decode request", "error", err)
+		ctx.Error(fmt.Sprintf("Bad request - %s", err), http.StatusBadRequest)
+		return
 	}
 
-	if err := s.server.Shutdown(ctx); err != nil {
-		s.logger.ErrorWith("Error shutting down", "error", err)
-		s.state = ErrorState
-		return errors.Wrap(err, "Error shutting down")
+	if request.Query != "" {
+		if err := s.populateQuery(request); err != nil {
+			s.logger.ErrorWith("Can't populate query", "request", request, "error", err)
+			ctx.Error(err.Error(), http.StatusBadRequest)
+			return
+		}
 	}
 
-	s.state = ReadyState
-	return nil
+	// TODO: Validate request
+
+	iter, err := s.backend.ReadRequest(request)
+	if err != nil {
+		s.logger.ErrorWith("Can't query", "error", err)
+		ctx.Error(fmt.Sprintf("Can't query - %s", err), http.StatusInternalServerError)
+	}
+
+	sw := func(w *bufio.Writer) {
+		enc := msgpack.NewEncoder(w)
+		for iter.Next() {
+			if err := enc.Encode(iter.At()); err != nil {
+				s.logger.ErrorWith("Can't encode result", "error", err)
+				return
+			}
+
+			w.Flush()
+		}
+
+		if err := iter.Err(); err != nil {
+			s.logger.ErrorWith("Error during iteration", "error", err)
+		}
+	}
+	ctx.SetBodyStreamWriter(sw)
 }
 
 func (s *Server) populateQuery(request *frames.DataReadRequest) error {

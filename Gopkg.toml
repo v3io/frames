@@ -26,6 +26,10 @@
   branch = "master"
   name = "github.com/xwb1989/sqlparser"
 
+[[constraint]]
+  name = "github.com/valyala/fasthttp"
+  version = "v20180529"
+
 [prune]
   go-tests = true
   unused-packages = true
