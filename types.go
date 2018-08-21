@@ -32,24 +32,25 @@ type DataContext struct {
 	Container *v3io.Container
 	Logger    logger.Logger
 	Workers   int
+	Extra     interface{}
 }
 
 // DataBackend is an interface for read/write on backend
 type DataBackend interface {
-	ReadRequest(request *DataReadRequest) (MessageIterator, error)
-	WriteRequest(request *DataWriteRequest) (MessageAppender, error) // TODO: use Appender for write streaming
+	ReadRequest(request *DataReadRequest) (FrameIterator, error)
+	WriteRequest(request *DataWriteRequest) (FrameAppender, error) // TODO: use Appender for write streaming
 }
 
-// MessageIterator iterates over message
-type MessageIterator interface {
+// FrameIterator iterates over frames
+type FrameIterator interface {
 	Next() bool
 	Err() error
-	At() *Message
+	At() Frame
 }
 
-// MessageAppender appends messages
-type MessageAppender interface {
-	Add(message *Message) error
+// FrameAppender appends frames
+type FrameAppender interface {
+	Add(frame Frame) error
 	WaitForComplete(timeout time.Duration) error
 }
 

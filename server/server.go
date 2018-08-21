@@ -28,8 +28,9 @@ import (
 	"net/http"
 
 	"github.com/v3io/frames"
-	"github.com/v3io/frames/backends/kv"
-	"github.com/v3io/frames/backends/mock" // TODO
+	//"github.com/v3io/frames/backends/kv"
+	//"github.com/v3io/frames/backends/mock" // TODO
+	"github.com/v3io/frames/backend/csv"
 
 	"github.com/nuclio/logger"
 	"github.com/pkg/errors"
@@ -83,17 +84,7 @@ func New(cfg *frames.V3ioConfig, addr string) (*Server, error) {
 		return nil, errors.Wrap(err, "Can't create context")
 	}
 
-	var backend frames.DataBackend
-
-	if false {
-		backend, err = kv.NewBackend(ctx)
-		if err != nil {
-			ctx.Logger.ErrorWith("Can't create backend", "error", err)
-			return nil, errors.Wrap(err, "Can't create backend")
-		}
-	} else {
-		backend = &mock.Backend{}
-	}
+	backend, err := csv.NewBackend(ctx)
 
 	srv := &Server{
 		address: addr,
