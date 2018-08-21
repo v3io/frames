@@ -138,6 +138,7 @@ func (s *Server) handler(ctx *fasthttp.RequestCtx) {
 	if err != nil {
 		s.logger.ErrorWith("Can't query", "error", err)
 		ctx.Error(fmt.Sprintf("Can't query - %s", err), http.StatusInternalServerError)
+		return
 	}
 
 	sw := func(w *bufio.Writer) {
