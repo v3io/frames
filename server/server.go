@@ -34,41 +34,24 @@ import (
 	"github.com/nuclio/logger"
 	"github.com/pkg/errors"
 	"github.com/valyala/fasthttp"
-	"github.com/vmihailenco/msgpack"
 )
-
-// State is server state
-type State int
 
 // Possible states
 const (
-	ReadyState State = iota
-	RunningState
-	ErrorState
+	ReadyState   = "ready"
+	RunningState = "running"
+	ErrorState   = "error"
 )
 
 var (
 	statusPath = []byte("/_/status")
 )
 
-func (s State) String() string {
-	switch s {
-	case ReadyState:
-		return "ready"
-	case RunningState:
-		return "running"
-	case ErrorState:
-		return "error"
-	}
-
-	return fmt.Sprintf("Unknown state - %d", s)
-}
-
 // Server is HTTP server
 type Server struct {
 	address string // listen address
 	server  *fasthttp.Server
-	state   State
+	state   string
 
 	backend frames.DataBackend
 	config  *frames.V3ioConfig
@@ -98,14 +81,14 @@ func New(cfg *frames.V3ioConfig, addr string) (*Server, error) {
 }
 
 // State returns the server state
-func (s *Server) State() State {
+func (s *Server) State() string {
 	return s.state
 }
 
 // Start starts the server
 func (s *Server) Start() error {
 	if state := s.State(); state != ReadyState {
-		s.logger.ErrorWith("Start from bad state", "state", state.String())
+		s.logger.ErrorWith("Start from bad state", "state", state)
 		return fmt.Errorf("bad state - %s", state)
 	}
 
@@ -155,7 +138,7 @@ func (s *Server) handler(ctx *fasthttp.RequestCtx) {
 	}
 
 	sw := func(w *bufio.Writer) {
-		enc := msgpack.NewEncoder(w)
+		enc := frames.NewEncoder(w)
 		for iter.Next() {
 			if err := enc.Encode(iter.At()); err != nil {
 				s.logger.ErrorWith("Can't encode result", "error", err)
