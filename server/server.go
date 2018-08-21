@@ -28,9 +28,8 @@ import (
 	"net/http"
 
 	"github.com/v3io/frames"
-	//"github.com/v3io/frames/backends/kv"
-	//"github.com/v3io/frames/backends/mock" // TODO
-	"github.com/v3io/frames/backend/csv"
+	//"github.com/v3io/frames/backends/kv" // TODO
+	"github.com/v3io/frames/backends/csv"
 
 	"github.com/nuclio/logger"
 	"github.com/pkg/errors"
