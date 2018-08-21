@@ -37,29 +37,72 @@ class Error(Exception):
 class MessageError(Error):
     """An error in message"""
 
+# Type string `json:"type"`
+# DataFormat string `json:"data_format"`
+# RowLayout bool `json:"row_layout"`
+# Query string `json:"query"`
+# Table string `json:"table"`
+# Columns []string `json:"columns"`
+# Filter string `json:"filter"`
+# GroupBy string `json:"group_by"` // TODO: []string? (as in SQL)
+# Limit int `json:"limit"`
+# MaxInMessage int `json:"max_in_message"`
+# Marker string `json:"marker"`
+# Extra interface{} `json:"extra"`
+
+
+class ReadRequest(object):
+    """A read request"""
+    def __init__(self, typ="", data_format="", row_layout="rows", query="",
+                 table="", columns=None, filter="", group_by="", limit="",
+                 max_in_message=0, marker="", extra=None):
+        self.type = type
+        self.data_format = data_format
+        self.row_layout = row_layout
+        self.query = query
+        self.table = table
+        self.columns = [] if columns is None else columns
+        self.filter = filter
+        self.group_by = group_by
+        self.limit = limit
+        self.max_in_message = max_in_message
+        self.marker = marker
+        self.extra = extra
+
 
 class Client(object):
     """Client is a nuclio stream client"""
 
-    def __init__(self, url, api_key='', orient='rows'):
+    def __init__(self, url, api_key=''):
         """
-        Args:
-            url: API url
-            api_key: API key
-            orient: Result orientations (rows or columns)
+        Parameters
+        ----------
+        url : string
+            Server URL
+        api_key : string
+            API key
         """
-        if orient not in ('rows', 'columns'):
-            raise ValueError('unknown orient - {!r}'.format(orient))
-
         self.url = url
         self.api_key = api_key
-        self.orient = orient
 
-    def query(self, query):
+    def read(self, typ="", data_format="", row_layout="rows", query="",
+             table="", columns=None, filter="", group_by="", limit="",
+             max_in_message=0, marker="", extra=None):
         """Run a query in nuclio
 
-        Args:
-            query: Query to run
+        Parameters
+        ----------
+        typ : str
+            Request type
+        data_format : str
+            Data format
+        row_layout : str
+            Row layout
+        query : str
+            Query in SQL format
+        table : str
+            Table to query
+        columns : []str
 
         Returns:
             A pandas DataFrame iterator
