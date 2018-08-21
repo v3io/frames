@@ -42,7 +42,7 @@ func NewLabelColumn(name string, value interface{}, size int) (*LabelColumn, err
 	case int, float64, string, time.Time:
 		// OK
 	default:
-		return nil, fmt.Errorf("unspported type - %T", value)
+		return nil, fmt.Errorf("lc unspported type - %T", value)
 	}
 
 	lc := &LabelColumn{
@@ -158,13 +158,20 @@ func (lc *LabelColumn) Append(value interface{}) error {
 	return nil
 }
 
+// LabelColumnMessage is over-the-wire LabelColumn message
+type LabelColumnMessage struct {
+	Value interface{} `msgpack:"value"`
+	Size  int         `msgpack:"size"`
+	Name  string      `msgpack:"name"`
+}
+
 // Marshal marshals to native type
-func (lc *LabelColumn) Marshal() (map[string]interface{}, error) {
-	data := map[string]interface{}{
-		"tag":   labelColumnTag,
-		"value": lc.value,
-		"size":  lc.size,
-	}
+func (lc *LabelColumn) Marshal() (interface{}, error) {
+	return &LableColumMessage{
+		Value: lc.value,
+		Size:  lc.Size,
+		Name:  lc.Name,
+	}, nil
 
 	return data, nil
 }

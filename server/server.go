@@ -131,7 +131,7 @@ func (s *Server) handler(ctx *fasthttp.RequestCtx) {
 		return
 	}
 
-	request := &frames.DataReadRequest{}
+	request := &frames.ReadRequest{}
 	if err := json.Unmarshal(ctx.PostBody(), request); err != nil {
 		s.logger.ErrorWith("Can't decode request", "error", err)
 		ctx.Error(fmt.Sprintf("Bad request - %s", err), http.StatusBadRequest)
@@ -148,7 +148,7 @@ func (s *Server) handler(ctx *fasthttp.RequestCtx) {
 
 	// TODO: Validate request
 
-	iter, err := s.backend.ReadRequest(request)
+	iter, err := s.backend.Read(request)
 	if err != nil {
 		s.logger.ErrorWith("Can't query", "error", err)
 		ctx.Error(fmt.Sprintf("Can't query - %s", err), http.StatusInternalServerError)
@@ -172,7 +172,7 @@ func (s *Server) handler(ctx *fasthttp.RequestCtx) {
 	ctx.SetBodyStreamWriter(sw)
 }
 
-func (s *Server) populateQuery(request *frames.DataReadRequest) error {
+func (s *Server) populateQuery(request *frames.ReadRequest) error {
 	sqlQuery, err := frames.ParseSQL(request.Query)
 	if err != nil {
 		return errors.Wrap(err, "Bad SQL query")

@@ -37,8 +37,8 @@ type DataContext struct {
 
 // DataBackend is an interface for read/write on backend
 type DataBackend interface {
-	ReadRequest(request *DataReadRequest) (FrameIterator, error)
-	WriteRequest(request *DataWriteRequest) (FrameAppender, error) // TODO: use Appender for write streaming
+	Read(request *ReadRequest) (FrameIterator, error)
+	Write(request *WriteRequest) (FrameAppender, error) // TODO: use Appender for write streaming
 }
 
 // FrameIterator iterates over frames
@@ -54,9 +54,9 @@ type FrameAppender interface {
 	WaitForComplete(timeout time.Duration) error
 }
 
-// DataReadRequest is request for reading data
-type DataReadRequest struct {
-	// nosql | tsdb | sql | stream ..
+// ReadRequest is request for reading data
+type ReadRequest struct {
+	// nosql | tsdb | sql | stream | csv ..
 	Type string `json:"type"`
 	// json | msgpack | csv
 	DataFormat string `json:"data_format"`
@@ -107,8 +107,8 @@ func (tr *TSDBRead) Step() (time.Duration, error) {
 	return time.ParseDuration(tr.StepRaw)
 }
 
-// DataWriteRequest is request for writing data
-type DataWriteRequest struct {
+// WriteRequest is request for writing data
+type WriteRequest struct {
 	// nosql | tsdb | sql | stream ..
 	Type string
 	// Table name (path)

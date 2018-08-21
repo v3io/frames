@@ -52,8 +52,8 @@ type FrameIterator struct {
 	frameLimit  int
 }
 
-// ReadRequest handles reading
-func (b *Backend) ReadRequest(request *frames.DataReadRequest) (frames.FrameIterator, error) {
+// Read handles reading
+func (b *Backend) Read(request *frames.ReadRequest) (frames.FrameIterator, error) {
 	file, err := os.Open(request.Table)
 	if err != nil {
 		return nil, err
@@ -241,7 +241,7 @@ func (it *FrameIterator) parseValue(value string) interface{} {
 	return value
 }
 
-// WriteRequest handles writing
-func (b *Backend) WriteRequest(request *frames.DataWriteRequest) (frames.FrameAppender, error) {
+// Write handles writing
+func (b *Backend) Write(request *frames.WriteRequest) (frames.FrameAppender, error) {
 	return nil, fmt.Errorf("not implemented")
 }

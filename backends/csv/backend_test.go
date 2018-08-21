@@ -55,7 +55,7 @@ GHCND:USW00094728,2000-01-13,13,-9999,0,39,-78,51,90,10,103,143,1539,843.7
 )
 
 func TestCSV(t *testing.T) {
-	req := &frames.DataReadRequest{}
+	req := &frames.ReadRequest{}
 	result := loadTempCSV(t, req)
 
 	nRows := totalRows(result)
@@ -85,7 +85,7 @@ func TestCSV(t *testing.T) {
 func TestLimit(t *testing.T) {
 	limit := numCSVRows - 3
 
-	req := &frames.DataReadRequest{
+	req := &frames.ReadRequest{
 		Limit: limit,
 	}
 
@@ -98,7 +98,7 @@ func TestLimit(t *testing.T) {
 func TestMaxInMessage(t *testing.T) {
 	frameLimit := numCSVRows / 3
 
-	req := &frames.DataReadRequest{
+	req := &frames.ReadRequest{
 		MaxInMessage: frameLimit,
 	}
 
@@ -123,7 +123,7 @@ func totalRows(result []frames.Frame) int {
 	return total
 }
 
-func loadTempCSV(t *testing.T, req *frames.DataReadRequest) []frames.Frame {
+func loadTempCSV(t *testing.T, req *frames.ReadRequest) []frames.Frame {
 	backend, err := NewBackend(nil)
 	if err != nil {
 		t.Fatal(err)
@@ -134,10 +134,8 @@ func loadTempCSV(t *testing.T, req *frames.DataReadRequest) []frames.Frame {
 		t.Fatal(err)
 	}
 
-	t.Logf("CSV = %s", csvPath)
 	req.Table = csvPath
-
-	it, err := backend.ReadRequest(req)
+	it, err := backend.Read(req)
 	if err != nil {
 		t.Fatal(err)
 	}

@@ -78,8 +78,11 @@ type Decoder struct {
 
 // NewDecoder returns a new decoder
 func NewDecoder(reader io.Reader) *Decoder {
+	dec := msgpack.NewDecoder(reader)
+	dec.UseDecodeInterfaceLoose(true) // int stays int
+
 	return &Decoder{
-		decoder: msgpack.NewDecoder(reader),
+		decoder: dec,
 	}
 }
 

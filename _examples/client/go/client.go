@@ -34,7 +34,12 @@ func main() {
 		log.Fatalf("Can't connect to %q - %s", url, err)
 	}
 
-	ch, err := client.Query("select first, last from employees")
+	req := &frames.ReadRequest{
+		Table: "weather.csv",
+		Limit: 23,
+	}
+
+	ch, err := client.Read(req)
 	if err != nil {
 		log.Fatalf("Can't query - %s", err)
 	}

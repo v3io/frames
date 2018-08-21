@@ -1,3 +1,6 @@
+// +build ignore
+// TEMPORARY DISABLED
+
 /*
 Copyright 2018 Iguazio Systems Ltd.
 

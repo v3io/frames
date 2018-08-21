@@ -22,12 +22,17 @@ package frames
 
 import (
 	"fmt"
+	"github.com/pkg/errors"
 	"reflect"
 	"time"
 )
 
 const (
 	sliceColumnTag = "sliceCol"
+)
+
+var (
+	ifaceSliceType = reflect.TypeOf([]interface{}{})
 )
 
 // SliceColumn is a column with slice data
@@ -50,6 +55,14 @@ func NewSliceColumn(name string, data interface{}) (*SliceColumn, error) {
 		size = len(data.([]string))
 	case TimeType:
 		size = len(data.([]time.Time))
+	// TODO: Why does this happen?
+	case ifaceSliceType:
+		data, err := convertIfaceSlice(data)
+		if err != nil {
+			return nil, errors.Wrap(err, "can't convert []interface{}")
+		}
+
+		return NewSliceColumn(name, data)
 	default:
 		return nil, fmt.Errorf("unspported data type - %T", data)
 	}
@@ -185,12 +198,98 @@ func (sc *SliceColumn) Append(value interface{}) error {
 	return nil
 }
 
+// SliceColumnMessage is SliceColum over-the-wirte message
+type SliceColumnMessage struct {
+	Name       string      `msgpack:"name"`
+	IntData    []int       `msgpack:"ints, omitempty"`
+	FloatData  []float64   `msgpack:"floats,omitempty"`
+	StringData []string    `msgpack:"strings,omitempty"`
+	TimeData   []time.Time `msgpack:"times,omitempty"`
+}
+
 // Marshal marshals to native type
-func (sc *SliceColumn) Marshal() (map[string]interface{}, error) {
+func (sc *SliceColumn) Marshal() (interface{}, error) {
+	msg := &SliceColumnMessage{
+		Name: sc.Name(),
+	}
 	data := map[string]interface{}{
 		"tag":  sliceColumnTag,
 		"data": sc.data,
+		"name": sc.Name(),
 	}
 
 	return data, nil
+}
+
+func convertIfaceSlice(data interface{}) (interface{}, error) {
+	islice, ok := data.([]interface{})
+	if !ok {
+		return nil, fmt.Errorf("data is not %s (it's %T)", ifaceSliceType, data)
+	}
+
+	if len(islice) == 0 {
+		// TODO: Should we pick a type?
+		return nil, fmt.Errorf("empty slice")
+	}
+
+	switch islice[0].(type) {
+	case int:
+		typedData := make([]int, len(islice))
+		for i, ival := range islice {
+			val, ok := ival.(int)
+			if !ok {
+				return nil, fmt.Errorf("%d: not int (%T)", i, ival)
+			}
+
+			typedData[i] = val
+			return typedData, nil
+		}
+	case float64:
+		typedData := make([]float64, len(islice))
+		for i, ival := range islice {
+			val, ok := ival.(float64)
+			if !ok {
+				return nil, fmt.Errorf("%d: not float64 (%T)", i, ival)
+			}
+
+			typedData[i] = val
+			return typedData, nil
+		}
+	case string:
+		typedData := make([]string, len(islice))
+		for i, ival := range islice {
+			val, ok := ival.(string)
+			if !ok {
+				return nil, fmt.Errorf("%d: not string (%T)", i, ival)
+			}
+
+			typedData[i] = val
+			return typedData, nil
+		}
+	case time.Time:
+		typedData := make([]time.Time, len(islice))
+		for i, ival := range islice {
+			val, ok := ival.(time.Time)
+			if !ok {
+				return nil, fmt.Errorf("%d: not time.Time (%T)", i, ival)
+			}
+
+			typedData[i] = val
+			return typedData, nil
+		}
+	// TODO: Why?
+	case *time.Time:
+		typedData := make([]time.Time, len(islice))
+		for i, ival := range islice {
+			val, ok := ival.(*time.Time)
+			if !ok {
+				return nil, fmt.Errorf("%d: not time.Time (%T)", i, ival)
+			}
+
+			typedData[i] = *val
+			return typedData, nil
+		}
+	}
+
+	return nil, fmt.Errorf("unsupported type - %T", islice[0])
 }

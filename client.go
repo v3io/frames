@@ -58,16 +58,10 @@ func NewClient(url string, apiKey string, logger logger.Logger) (*Client, error)
 	return client, nil
 }
 
-// Query runs a query on the client
-func (c *Client) Query(query string) (chan *Message, error) {
-	queryObj := map[string]interface{}{
-		"query":   query,
-		"limit":   100,
-		"columns": []string{"first", "last"},
-	}
-
+// Read runs a query on the client
+func (c *Client) Read(request *ReadRequest) (chan *Message, error) {
 	var buf bytes.Buffer
-	if err := json.NewEncoder(&buf).Encode(queryObj); err != nil {
+	if err := json.NewEncoder(&buf).Encode(request); err != nil {
 		return nil, errors.Wrap(err, "can't encode query")
 	}
 
