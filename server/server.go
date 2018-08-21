@@ -67,6 +67,9 @@ func New(cfg *frames.V3ioConfig, addr string) (*Server, error) {
 	}
 
 	backend, err := csv.NewBackend(ctx)
+	if err != nil {
+		return nil, errors.Wrap(err, "can't create backend")
+	}
 
 	srv := &Server{
 		address: addr,
