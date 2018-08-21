@@ -25,10 +25,6 @@ import (
 	"time"
 )
 
-const (
-	labelColumnTag = "labelCol"
-)
-
 // LabelColumn is a column with same value
 type LabelColumn struct {
 	name  string
@@ -167,11 +163,9 @@ type LabelColumnMessage struct {
 
 // Marshal marshals to native type
 func (lc *LabelColumn) Marshal() (interface{}, error) {
-	return &LableColumMessage{
+	return &LabelColumnMessage{
 		Value: lc.value,
-		Size:  lc.Size,
-		Name:  lc.Name,
+		Size:  lc.Len(),
+		Name:  lc.Name(),
 	}, nil
-
-	return data, nil
 }

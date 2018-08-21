@@ -19,17 +19,9 @@ func TestMarshal(t *testing.T) {
 		t.Fatal(err)
 	}
 
-	if tag := out["tag"]; tag != mapFrameTag {
-		t.Fatal("wrong tag")
-	}
-
-	columns, ok := out["columns"].([]interface{})
+	msg, ok := out.(*MapFrameMessage)
 	if !ok {
-		t.Fatal("no columns")
-	}
-
-	if len(columns) != len(frame.Columns()) {
-		t.Fatal("wrong number of columns")
+		t.Fatalf("wrong message type - %T", msg)
 	}
 }
 

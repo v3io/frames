@@ -30,7 +30,7 @@ import (
 
 // Marshaler is interface for writing native data
 type Marshaler interface {
-	Marshal() (map[string]interface{}, error) // Marshal to native type
+	Marshal() (interface{}, error) // Marshal to native type
 }
 
 // Message sent over the wire with multiple columns and data points
@@ -78,85 +78,67 @@ type Decoder struct {
 
 // NewDecoder returns a new decoder
 func NewDecoder(reader io.Reader) *Decoder {
-	dec := msgpack.NewDecoder(reader)
-	dec.UseDecodeInterfaceLoose(true) // int stays int
-
 	return &Decoder{
-		decoder: dec,
+		decoder: msgpack.NewDecoder(reader),
 	}
 }
 
 // Decode encodes a frame
 func (d *Decoder) Decode() (Frame, error) {
-	data := make(map[string]interface{})
-	if err := d.decoder.Decode(&data); err != nil {
+	msg := &MapFrameMessage{}
+	if err := d.decoder.Decode(msg); err != nil {
 		return nil, err
 	}
 
-	tag, ok := data["tag"].(string)
-	if !ok {
-		return nil, fmt.Errorf("can't find tag in message")
-	}
-
-	if tag != mapFrameTag {
-		return nil, fmt.Errorf("bad frame tag - %q", tag)
-	}
-
-	iCols, ok := data["columns"].([]interface{})
-	if !ok {
-		return nil, fmt.Errorf("bad type for columns - %T", data["columns"])
-	}
-
-	columns := make([]Column, len(iCols))
-	for i, icol := range iCols {
-		colData, ok := icol.(map[string]interface{})
-		if !ok {
-			return nil, fmt.Errorf("%d: bad type for column - %T", i, icol)
-		}
-
-		tag, ok := colData["tag"].(string)
-		if !ok {
-			return nil, fmt.Errorf("%d: no tag for column (%v)", i, icol)
-		}
-
-		name, ok := colData["name"].(string)
-		if !ok {
-			return nil, fmt.Errorf("%d: no name for column (%v)", i, icol)
-		}
-
-		switch tag {
-		case sliceColumnTag:
-			data, ok := colData["data"]
-			if !ok {
-				return nil, fmt.Errorf("%d: no data for column (%v)", i, icol)
+	columns := make([]Column, len(msg.Columns))
+	for i, name := range msg.Columns {
+		sliceColMsg, ok := msg.SliceCols[name]
+		if ok {
+			if sliceColMsg.Name != name {
+				return nil, fmt.Errorf("%d: column name mismatch %q != %q", i, name, sliceColMsg.Name)
 			}
 
-			col, err := NewSliceColumn(name, data)
+			var col Column
+			var err error
+
+			// TODO: Check only one is not null?
+			switch {
+			case sliceColMsg.IntData != nil:
+				col, err = NewSliceColumn(name, sliceColMsg.IntData)
+			case sliceColMsg.FloatData != nil:
+				col, err = NewSliceColumn(name, sliceColMsg.FloatData)
+			case sliceColMsg.StringData != nil:
+				col, err = NewSliceColumn(name, sliceColMsg.StringData)
+			case sliceColMsg.TimeData != nil:
+				col, err = NewSliceColumn(name, sliceColMsg.TimeData)
+			default:
+				return nil, fmt.Errorf("no data in column %q", name)
+			}
+
 			if err != nil {
-				return nil, errors.Wrapf(err, "%d can't create column from %v", i, icol)
+				return nil, errors.Wrapf(err, "can't create column %q from %+v", name, sliceColMsg)
 			}
 
 			columns[i] = col
-		case labelColumnTag:
-			value, ok := colData["value"]
-			if !ok {
-				return nil, fmt.Errorf("%d: no value for column (%v)", i, icol)
+			continue
+		}
+
+		labelColMsg, ok := msg.LabelCols[name]
+		if ok {
+			if labelColMsg.Name != name {
+				return nil, fmt.Errorf("%d: column name mismatch %q != %q", i, name, labelColMsg.Name)
 			}
 
-			size, ok := colData["size"].(int)
-			if !ok {
-				return nil, fmt.Errorf("%d: no size for column (%v)", i, icol)
-			}
-
-			col, err := NewLabelColumn(name, value, size)
+			col, err := NewLabelColumn(name, labelColMsg.Value, labelColMsg.Size)
 			if err != nil {
-				return nil, errors.Wrapf(err, "%d can't create column from %v", i, icol)
+				return nil, errors.Wrapf(err, "can't create column %q from %+v", name, labelColMsg)
 			}
 
 			columns[i] = col
-		default:
-			return nil, fmt.Errorf("%d: unknown column tag - %q", i, tag)
+			continue
 		}
+
+		return nil, fmt.Errorf("column %q not found", name)
 	}
 
 	return NewMapFrame(columns)

@@ -100,30 +100,43 @@ func (mf *MapFrame) Slice(start int, end int) (Frame, error) {
 	return NewMapFrame(frameSlice)
 }
 
+// MapFrameMessage is over-the-wire frame data
+type MapFrameMessage struct {
+	Columns   []string                       `msgpack:"columns"`
+	SliceCols map[string]*SliceColumnMessage `msgpack:"slice_cols,omitempty"`
+	LabelCols map[string]*LabelColumnMessage `msgpack:"label_cols,omitempty"`
+}
+
 // Marshal marshals to native type
-func (mf *MapFrame) Marshal() (map[string]interface{}, error) {
-	data := map[string]interface{}{
-		"tag": mapFrameTag,
+func (mf *MapFrame) Marshal() (interface{}, error) {
+	msg := &MapFrameMessage{
+		Columns:   mf.Columns(),
+		LabelCols: make(map[string]*LabelColumnMessage),
+		SliceCols: make(map[string]*SliceColumnMessage),
 	}
 
-	columns := make([]map[string]interface{}, len(mf.byIndex))
-	for i := range columns {
-		col := mf.byIndex[i]
+	for _, col := range mf.byIndex {
 		marshaler, ok := col.(Marshaler)
 		if !ok {
-			return nil, fmt.Errorf("column %q is not a Marshaler", col.Name())
+			return nil, fmt.Errorf("column %q is not Marshaler", col.Name())
 		}
 
-		colData, err := marshaler.Marshal()
+		colMsg, err := marshaler.Marshal()
 		if err != nil {
-			return nil, errors.Wrapf(err, "can't marshal column %q", col.Name())
+			return nil, errors.Wrapf(err, "can't marshal %q", col.Name())
 		}
 
-		columns[i] = colData
+		switch colMsg.(type) {
+		case *SliceColumnMessage:
+			msg.SliceCols[col.Name()] = colMsg.(*SliceColumnMessage)
+		case *LabelColumnMessage:
+			msg.LabelCols[col.Name()] = colMsg.(*LabelColumnMessage)
+		default:
+			return nil, fmt.Errorf("unknown marshaled message type - %T", colMsg)
+		}
 	}
 
-	data["columns"] = columns
-	return data, nil
+	return msg, nil
 }
 
 func validateSlice(start int, end int, size int) error {
