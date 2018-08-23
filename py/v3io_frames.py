@@ -20,6 +20,7 @@ import struct
 import sys
 
 import msgpack
+import numpy as np
 import pandas as pd
 
 if sys.version_info[:2] < (3, 0):
@@ -34,40 +35,12 @@ class Error(Exception):
     """v3io_frames Exception"""
 
 
+class BadQueryError(Exception):
+    """An error in query"""
+
+
 class MessageError(Error):
     """An error in message"""
-
-# Type string `json:"type"`
-# DataFormat string `json:"data_format"`
-# RowLayout bool `json:"row_layout"`
-# Query string `json:"query"`
-# Table string `json:"table"`
-# Columns []string `json:"columns"`
-# Filter string `json:"filter"`
-# GroupBy string `json:"group_by"` // TODO: []string? (as in SQL)
-# Limit int `json:"limit"`
-# MaxInMessage int `json:"max_in_message"`
-# Marker string `json:"marker"`
-# Extra interface{} `json:"extra"`
-
-
-class ReadRequest(object):
-    """A read request"""
-    def __init__(self, typ="", data_format="", row_layout="rows", query="",
-                 table="", columns=None, filter="", group_by="", limit="",
-                 max_in_message=0, marker="", extra=None):
-        self.type = type
-        self.data_format = data_format
-        self.row_layout = row_layout
-        self.query = query
-        self.table = table
-        self.columns = [] if columns is None else columns
-        self.filter = filter
-        self.group_by = group_by
-        self.limit = limit
-        self.max_in_message = max_in_message
-        self.marker = marker
-        self.extra = extra
 
 
 class Client(object):
@@ -85,9 +58,9 @@ class Client(object):
         self.url = url
         self.api_key = api_key
 
-    def read(self, typ="", data_format="", row_layout="rows", query="",
-             table="", columns=None, filter="", group_by="", limit="",
-             max_in_message=0, marker="", extra=None):
+    def read(self, typ='', data_format='', row_layout=False, query='',
+             table='', columns=None, filter='', group_by='', limit=0,
+             max_in_message=0, marker='', extra=None):
         """Run a query in nuclio
 
         Parameters
@@ -96,26 +69,64 @@ class Client(object):
             Request type
         data_format : str
             Data format
-        row_layout : str
-            Row layout
+        row_layout : bool
+            Weather to use row layout (vs the default column layout)
         query : str
             Query in SQL format
         table : str
-            Table to query
+            Table to query (can't be used with query)
         columns : []str
+            List of columns to pass (can't be used with query)
+        filter : str
+            Query filter (can't be used with query)
+        group_by : str
+            Query group by (can't be used with query)
+        limit: int
+            Maximal number of rows to return
+        max_in_message : int
+            Maximal number of rows per message
+        marker : str
+            Query marker (can't be used with query)
+        extra : object
+            Extra parameter for specific backends
 
         Returns:
             A pandas DataFrame iterator
         """
-        resp = self._call_v3io(query)
+        query_obj = {
+            'type': typ,
+            'data_format': data_format,
+            'row_layout': row_layout,
+            'query': query,
+            'table': table,
+            'columns': columns,
+            'filter': filter,
+            'group_by': group_by,
+            'limit': limit,
+            'max_in_message': max_in_message,
+            'marker': marker,
+            'extra': extra,
+        }
+        self._validate_query(query_obj)
+        resp = self._call_v3io(query_obj)
         return self._iter_dfs(resp)
 
+    def _validate_query(self, query):
+        """Valites query
+
+        Parameters
+        ----------
+        query : dict
+            Query to send
+
+        Raises
+        ------
+        BadQueryError
+            If query is malformed
+        """
+        return  # TODO
+
     def _call_v3io(self, query):
-        query_obj = {
-            'query': query,
-            'orient': self.orient,
-            'limit': 100,  # TODO
-        }
 
         headers = {
             'Authorization': self.api_key,
@@ -123,7 +134,7 @@ class Client(object):
 
         request = Request(
             self.url,
-            data=json.dumps(query_obj).encode('utf-8'),
+            data=json.dumps(query).encode('utf-8'),
             headers=headers,
         )
 
@@ -132,34 +143,42 @@ class Client(object):
     def _iter_dfs(self, resp):
         unpacker = msgpack.Unpacker(resp, ext_hook=ext_hook, raw=False)
 
-        labels = {}
-        names = None
-
         for msg in unpacker:
-            # We keep last names & lables, allowing server to send only once
-            labels = msg.get('labels', labels)
-            names = msg.get('names', names)
+            # message format:
+            #   columns: list of column names
+            #   slice_cols: dict of name -> column
+            #   label_cols: dict of name -> column
 
-            df = None
-            cols = msg.get('columns')
-            rows = msg.get('rows')
-            if rows and cols:  # TODO: Should we raise here
-                raise MessageError('both rows and columns returned')
+            df_data = {}
+            for name in msg['columns']:
+                col = msg['slice_cols'].get(name)
+                if col is not None:
+                    df_data[name] = self._handle_slice_col(col)
+                    continue
 
-            if cols:
-                df = pd.DataFrame(cols)
+                col = msg['label_cols'].get(name)
+                if col is not None:
+                    df_data[name] = self._handle_label_col(col)
+                    continue
 
-            if rows:
-                df = pd.DataFrame(rows, columns=names)
+                raise MessageError('no data for column {!r}'.format(name))
 
-            if df is None:
+            if not df_data:
                 continue
 
-            # TODO: What to do when label is already a column?
-            for key, value in labels.items():
-                df[key] = value
+            yield pd.DataFrame(df_data)
 
-            yield df
+    def _handle_slice_col(self, col):
+        for field in ['ints', 'floats', 'strings', 'times']:
+            data = col.get(field)
+            if data is not None:
+                return pd.Series(data, name=col['name'])
+
+        raise MessageError('column without data')
+
+    def _handle_label_col(self, col):
+        codes = np.zeros(col['size'])
+        return pd.Categorial.from_codes(codes, categories=[col['name']])
 
 
 def datetime_fromnsec(sec, nsec):

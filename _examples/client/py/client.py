@@ -15,5 +15,5 @@
 import v3io_frames as v3f
 
 client = v3f.Client('http://localhost:8080', 's3cr3t')
-for df in client.query('select first, last from employees'):
+for df in client.read(table='/tmp/weather.csv'):
     print(df)
