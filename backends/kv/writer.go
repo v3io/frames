@@ -1,6 +1,3 @@
-// +build ignore
-// Temporarly disabled
-
 /*
 Copyright 2018 Iguazio Systems Ltd.
 
@@ -33,8 +30,9 @@ import (
 	"github.com/v3io/v3io-go-http"
 )
 
+// Appender is key/value appender
 type Appender struct {
-	//request      *common.DataWriteRequest
+	request      *frames.WriteRequest
 	container    *v3io.Container
 	tablePath    string
 	responseChan chan *v3io.Response
@@ -43,7 +41,8 @@ type Appender struct {
 	sent         int
 }
 
-func (kv *Backend) WriteRequest(request *frames.DataWriteRequest) (frames.MessageAppender, error) {
+// Write support writing to backend
+func (kv *Backend) Write(request *frames.WriteRequest) (frames.FrameAppender, error) {
 
 	tablePath := request.Table
 	if !strings.HasSuffix(tablePath, "/") {
@@ -51,6 +50,7 @@ func (kv *Backend) WriteRequest(request *frames.DataWriteRequest) (frames.Messag
 	}
 
 	appender := Appender{
+		request:      request,
 		container:    kv.ctx.Container,
 		tablePath:    tablePath,
 		responseChan: make(chan *v3io.Response, 1000),
@@ -64,74 +64,54 @@ func (kv *Backend) WriteRequest(request *frames.DataWriteRequest) (frames.Messag
 			return &appender, err
 		}
 	}
+
 	return &appender, nil
 }
 
-func (a *Appender) Add(message *frames.Message) error {
-	/* TODO: We don't have nil values in columns
-	indexCol, ok := message.Columns[message.IndexCol]
-	// validate that we have row keys for all rows before writing
-	if !ok {
-		return fmt.Errorf("Missing index column %s", message.IndexCol)
-	}
-
-	for j, row := range indexCol {
-		if row == nil {
-			return fmt.Errorf("Missing row key %s in row %d", message.IndexCol, j)
-		}
-	}
-	*/
-
-	i := 0
-OuterLoop:
-	for {
-		// TODO: Move to utils?
-		newRow := map[string]interface{}{}
-		for name := range message.Columns {
-			colType, _ := message.ColumnType(name)
-			switch colType {
-			case frames.IntType:
-				icol, _ := message.Ints(name)
-				if len(icol) <= i {
-					break OuterLoop
-				}
-
-				newRow[name] = icol[i]
-			case frames.FloatType:
-				fcol, _ := message.Floats(name)
-				if len(fcol) <= i {
-					break OuterLoop
-				}
-				newRow[name] = fcol[i]
-			case frames.StringType:
-				scol, _ := message.Strings(name)
-				if len(scol) <= i {
-					break OuterLoop
-				}
-				newRow[name] = scol[i]
-			case frames.TimeType:
-				tcol, _ := message.Times(name)
-				if len(tcol) <= i {
-					break OuterLoop
-				}
-				newRow[name] = tcol[i]
-			}
-		}
-		key := newRow[message.IndexCol]
-		input := v3io.PutItemInput{Path: a.tablePath + fmt.Sprintf("%s", key), Attributes: newRow}
-		_, err := a.container.PutItem(&input, i, a.responseChan)
+// Add adds a frame
+func (a *Appender) Add(frame frames.Frame) error {
+	names := frame.Columns()
+	columns := make(map[string]frames.Column)
+	for _, name := range frame.Columns() {
+		col, err := frame.Column(name)
 		if err != nil {
-			a.sent += i
 			return err
 		}
-
-		i++
+		columns[name] = col
 	}
-	a.sent += i
+
+	for r := 0; r < frame.Len(); r++ {
+		row := make(map[string]interface{})
+		for name, col := range columns {
+			switch col.DType() {
+			case frames.IntType:
+				row[name] = col.IntAt(r)
+			case frames.FloatType:
+				row[name] = col.FloatAt(r)
+			case frames.StringType:
+				row[name] = col.StringAt(r)
+			case frames.TimeType: // TODO: Does v3io support time.Time?
+				row[name] = col.TimeAt(r)
+			default:
+				return fmt.Errorf("unknown column type - %s", col.DType())
+			}
+		}
+
+		key := names[0] // TODO: Index?
+		input := v3io.PutItemInput{Path: a.tablePath + key, Attributes: row}
+		_, err := a.container.PutItem(&input, r, a.responseChan)
+		if err != nil {
+			a.sent += r // TODO: Bug? (should be ++)
+			return err
+		}
+		a.sent += r // TODO: Bug? (should be ++)
+
+	}
 
 	return nil
 }
 
+// WaitForComplete waits for write to complete
 func (a *Appender) WaitForComplete(timeout time.Duration) error {
 	a.commChan <- a.sent
 	<-a.doneChan
@@ -172,9 +152,8 @@ func (a *Appender) respWaitLoop(timeout time.Duration) {
 					fmt.Println("\nResp loop timed out! ", requests, responses)
 					a.doneChan <- true
 					return
-				} else {
-					active = false
 				}
+				active = false
 			}
 		}
 	}()

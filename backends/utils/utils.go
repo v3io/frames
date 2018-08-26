@@ -22,8 +22,9 @@ package utils
 
 import (
 	"fmt"
-	"math"
 	"time"
+
+	"github.com/v3io/frames"
 )
 
 // AppendValue appends a value to data
@@ -83,25 +84,17 @@ func NewColumn(value interface{}, size int) (interface{}, error) {
 }
 
 // AppendNil appends an empty value to data
-func AppendNil(data interface{}) (interface{}, error) {
-	switch data.(type) {
-	case []int:
-		idata := data.([]int)
-		idata = append(idata, 0)
-		return idata, nil
-	case []float64:
-		fdata := data.([]float64)
-		fdata = append(fdata, math.NaN())
-		return fdata, nil
-	case []string:
-		sdata := data.([]string)
-		sdata = append(sdata, "")
-		return sdata, nil
-	case []time.Time:
-		tdata := data.([]time.Time)
-		tdata = append(tdata, time.Time{})
-		return tdata, nil
+func AppendNil(col frames.Column) error {
+	switch col.DType() {
+	case frames.IntType:
+		return col.Append(0)
+	case frames.FloatType:
+		return col.Append(0.0)
+	case frames.StringType:
+		return col.Append("")
+	case frames.TimeType:
+		return col.Append(time.Unix(0, 0))
 	}
 
-	return nil, fmt.Errorf("unsupported data type - %T", data)
+	return fmt.Errorf("unsupported data type - %s", col.DType)
 }

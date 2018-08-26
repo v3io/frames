@@ -114,7 +114,7 @@ type WriteRequest struct {
 	// Table name (path)
 	Table string
 	// Data message sent with the write request (in case of a stream multiple messages can follow)
-	ImmidiateData *Message
+	ImmidiateData Frame
 	// Will we get more message chunks (in a stream), if not we can complete
 	HaveMore bool
 }

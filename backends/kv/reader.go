@@ -1,6 +1,3 @@
-// +build ignore
-// Temporarly disabled
-
 /*
 Copyright 2018 Iguazio Systems Ltd.
 
@@ -33,17 +30,19 @@ import (
 	"github.com/v3io/frames/backends/utils"
 )
 
+// Backend is key/value backend
 type Backend struct {
 	ctx *frames.DataContext
 }
 
+// NewBackend return a new key/value backend
 func NewBackend(ctx *frames.DataContext) (frames.DataBackend, error) {
 	newBackend := Backend{ctx: ctx}
 	return &newBackend, nil
 }
 
-func (kv *Backend) ReadRequest(request *frames.DataReadRequest) (frames.MessageIterator, error) {
-
+// Read does a read request
+func (kv *Backend) Read(request *frames.ReadRequest) (frames.FrameIterator, error) {
 	kvRequest, ok := request.Extra.(frames.KVRead)
 	if !ok {
 		return nil, fmt.Errorf("not a KV request")
@@ -55,7 +54,7 @@ func (kv *Backend) ReadRequest(request *frames.DataReadRequest) (frames.MessageI
 	}
 
 	if request.MaxInMessage == 0 {
-		request.MaxInMessage = 256
+		request.MaxInMessage = 256 // TODO: More?
 	}
 
 	input := v3io.GetItemsInput{Path: tablePath, Filter: request.Filter, AttributeNames: request.Columns}
@@ -69,60 +68,55 @@ func (kv *Backend) ReadRequest(request *frames.DataReadRequest) (frames.MessageI
 	return &newKVIter, nil
 }
 
+// Iterator is key/value iterator
 type Iterator struct {
-	ctx     *frames.DataContext
-	request *frames.DataReadRequest
-	iter    *frames.AsyncItemsCursor
-	err     error
-	currMsg *frames.Message
+	ctx       *frames.DataContext
+	request   *frames.ReadRequest
+	iter      *frames.AsyncItemsCursor
+	err       error
+	currFrame frames.Frame
 }
 
+// Next advances the iterator to next frame
 func (ki *Iterator) Next() bool {
+	var columns []frames.Column
+	var byName map[string]frames.Column
 
-	message := frames.Message{}
-	message.Columns = map[string]interface{}{}
-	var i int
-
-	for ki.iter.Next() {
-		i++
+	rowNum := 0
+	for ; rowNum < ki.request.MaxInMessage && ki.iter.Next(); rowNum++ {
 		row := ki.iter.GetFields()
 		for name, field := range row {
-			col, ok := message.Columns[name]
+			col, ok := byName[name]
 			if !ok {
-				var err error
-				col, err = utils.NewColumn(field, i-1)
+				data, err := utils.NewColumn(field, rowNum-1)
 				if err != nil {
 					ki.err = err
 					return false
 				}
-				message.Columns[name] = col
+
+				col, err := frames.NewSliceColumn(name, data)
+				columns = append(columns, col)
+				byName[name] = col
 			}
 
-			col, err := utils.AppendValue(col, field)
-			if err != nil {
+			if err := col.Append(field); err != nil {
 				ki.err = err
 				return false
 			}
-			message.Columns[name] = col
 		}
 
 		// fill columns with nil if there was no value
-		for name, col := range message.Columns {
+		for name, col := range byName {
 			if _, ok := row[name]; ok {
 				continue
 			}
+
 			var err error
-			col, err = utils.AppendNil(col)
+			err = utils.AppendNil(col)
 			if err != nil {
 				ki.err = err
 				return false
 			}
-			message.Columns[name] = col
-		}
-
-		if i == ki.request.MaxInMessage {
-			ki.currMsg = &message
-			return true
 		}
 	}
 
@@ -131,38 +125,26 @@ func (ki *Iterator) Next() bool {
 		return false
 	}
 
-	if i == 0 {
+	if rowNum == 0 {
 		return false
 	}
 
-	ki.currMsg = &message
+	var err error
+	ki.currFrame, err = frames.NewMapFrame(columns)
+	if err != nil {
+		ki.err = err
+		return false
+	}
+
 	return true
 }
 
+// Err return the last error
 func (ki *Iterator) Err() error {
 	return ki.err
 }
 
-func (ki *Iterator) At() *frames.Message {
-	return ki.currMsg
-}
-
-func Rows2Col(cols *map[string][]interface{}, row *map[string]interface{}, index int) {
-	for name, field := range *row {
-		if col, ok := (*cols)[name]; ok {
-			col = append(col, field)
-			(*cols)[name] = col
-		} else {
-			col = make([]interface{}, index)
-			col = append(col, field)
-			(*cols)[name] = col
-		}
-	}
-
-	// fill columns with nil if there was no value
-	for name, col := range *cols {
-		if len(col) <= index {
-			(*cols)[name] = append(col, nil)
-		}
-	}
+// At return the current frames
+func (ki *Iterator) At() frames.Frame {
+	return ki.currFrame
 }
