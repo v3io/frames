@@ -29,7 +29,9 @@ import (
 	"time"
 
 	"github.com/pkg/errors"
+
 	"github.com/v3io/frames"
+	"github.com/v3io/frames/backends/utils"
 )
 
 // Backend is CSV backend
@@ -243,5 +245,59 @@ func (it *FrameIterator) parseValue(value string) interface{} {
 
 // Write handles writing
 func (b *Backend) Write(request *frames.WriteRequest) (frames.FrameAppender, error) {
-	return nil, fmt.Errorf("not implemented")
+	file, err := os.Create(request.Table)
+	if err != nil {
+		return nil, err
+	}
+
+	ca := &csvAppender{
+		writer: csv.NewWriter(file),
+	}
+
+	return ca, nil
+
+}
+
+type csvAppender struct {
+	writer        *csv.Writer
+	headerWritten bool
+}
+
+func (ca *csvAppender) Add(frame frames.Frame) error {
+	names := frame.Columns()
+	if !ca.headerWritten {
+		if err := ca.writer.Write(names); err != nil {
+			return errors.Wrap(err, "can't write header")
+		}
+		ca.headerWritten = true
+	}
+
+	for r := 0; r < frame.Len(); r++ {
+		record := make([]string, len(names))
+		for c, name := range names {
+			col, err := frame.Column(name)
+			if err != nil {
+				return errors.Wrap(err, "can't get column")
+			}
+
+			val, err := utils.ColAt(col, r)
+			if err != nil {
+				return errors.Wrapf(err, "%s:%d can't get value", name, r)
+			}
+
+			record[c] = fmt.Sprintf("%v", val)
+		}
+
+		if err := ca.writer.Write(record); err != nil {
+			return errors.Wrap(err, "can't write record")
+		}
+	}
+
+	return nil
+}
+
+// WaitForComplete wait for write completion
+func (ca *csvAppender) WaitForComplete(timeout time.Duration) error {
+	ca.writer.Flush()
+	return ca.writer.Error()
 }

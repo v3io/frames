@@ -25,11 +25,12 @@ import (
 	"bytes"
 	"encoding/json"
 	"fmt"
+	"io"
 	"net/http"
 
 	"github.com/v3io/frames"
-	//"github.com/v3io/frames/backends/kv" // TODO
 	"github.com/v3io/frames/backends/csv"
+	"github.com/v3io/frames/backends/kv"
 
 	"github.com/nuclio/logger"
 	"github.com/pkg/errors"
@@ -41,10 +42,13 @@ const (
 	ReadyState   = "ready"
 	RunningState = "running"
 	ErrorState   = "error"
+	maxBatchSize = 10000
 )
 
 var (
 	statusPath = []byte("/_/status")
+	writePath  = []byte("/write")
+	readPath   = []byte("/read")
 )
 
 // Server is HTTP server
@@ -60,24 +64,21 @@ type Server struct {
 }
 
 // New creates a new server
-func New(cfg *frames.V3ioConfig, addr string) (*Server, error) {
-	ctx, err := newContext(cfg)
-	if err != nil {
-		return nil, errors.Wrap(err, "Can't create context")
-	}
+func New(cfg *frames.V3ioConfig, addr string, logger logger.Logger) (*Server, error) {
 
-	backend, err := csv.NewBackend(ctx)
-	if err != nil {
-		return nil, errors.Wrap(err, "can't create backend")
+	if logger == nil {
+		var err error
+		logger, err = frames.NewLogger(cfg.Verbose)
+		if err != nil {
+			return nil, errors.Wrap(err, "can't create logger")
+		}
 	}
 
 	srv := &Server{
 		address: addr,
 		state:   ReadyState,
-		backend: backend,
 		config:  cfg,
-		context: ctx,
-		logger:  ctx.Logger,
+		logger:  logger,
 	}
 
 	return srv, nil
@@ -113,9 +114,21 @@ func (s *Server) Start() error {
 }
 
 func (s *Server) handler(ctx *fasthttp.RequestCtx) {
-	if bytes.Compare(ctx.Path(), statusPath) == 0 {
+	switch {
+	case bytes.Compare(ctx.Path(), statusPath) == 0:
 		fmt.Fprintf(ctx, "%s\n", s.State())
-		return
+	case bytes.Compare(ctx.Path(), writePath) == 0:
+		s.handleWrite(ctx)
+	case bytes.Compare(ctx.Path(), readPath) == 0:
+		s.handleRead(ctx)
+	default:
+		ctx.Error(fmt.Sprintf("unknown path - %q", string(ctx.Path())), http.StatusNotFound)
+	}
+}
+
+func (s *Server) handleRead(ctx *fasthttp.RequestCtx) {
+	if !ctx.IsPost() { // ctx.PostBody() blocks on GET
+		ctx.Error("unsupported method", http.StatusMethodNotAllowed)
 	}
 
 	request := &frames.ReadRequest{}
@@ -134,6 +147,13 @@ func (s *Server) handler(ctx *fasthttp.RequestCtx) {
 	}
 
 	// TODO: Validate request
+
+	// TODO: We'd like to have a map of name->config of backends in configuration
+	backend, err := s.createBackend(request.Type)
+	if err != nil {
+		ctx.Error(err.Error(), http.StatusBadRequest)
+		return
+	}
 
 	iter, err := s.backend.Read(request)
 	if err != nil {
@@ -158,6 +178,74 @@ func (s *Server) handler(ctx *fasthttp.RequestCtx) {
 		}
 	}
 	ctx.SetBodyStreamWriter(sw)
+}
+
+func (s *Server) handleWrite(ctx *fasthttp.RequestCtx) {
+	if !ctx.IsPost() { // ctx.PostBody() blocks on GET
+		ctx.Error("unsupported method", http.StatusMethodNotAllowed)
+	}
+
+	request := &frames.WriteRequest{}
+	if err := json.Unmarshal(ctx.PostBody(), request); err != nil {
+		s.logger.ErrorWith("Can't decode request", "error", err)
+		ctx.Error(fmt.Sprintf("Bad request - %s", err), http.StatusBadRequest)
+		return
+	}
+
+	backend, err := s.createBackend(request.Type)
+	if err != nil {
+		ctx.Error(err.Error(), http.StatusBadRequest)
+		return
+	}
+
+	appender, err := backend.Write(request)
+	if err != nil {
+		ctx.Error(err.Error(), http.StatusBadRequest)
+		return
+	}
+
+	reader, writer := io.Pipe()
+
+	go func() {
+		dec := frames.NewDecoder(reader)
+		batchSize := 0
+
+		for {
+			frame, err := dec.Decode()
+
+			if err != nil {
+				if err == io.EOF {
+					return
+				}
+
+				ctx.Error(err.Error(), http.StatusInternalServerError)
+				return
+			}
+
+			if err := appender.Add(frame); err != nil {
+				ctx.Error(err.Error(), http.StatusInternalServerError)
+				return
+			}
+		}
+	}()
+
+	ctx.Request.BodyWriteTo(writer)
+}
+
+func (s *Server) createBackend(typ string) (frames.DataBackend, error) {
+	ctx, err := newContext(s.config)
+	if err != nil {
+		return nil, errors.Wrap(err, "can't create context")
+	}
+
+	switch typ {
+	case "kv":
+		return kv.NewBackend(ctx)
+	case "csv":
+		return csv.NewBackend(ctx)
+	}
+
+	return nil, fmt.Errorf("unknown backend type - %q", typ)
 }
 
 func (s *Server) populateQuery(request *frames.ReadRequest) error {

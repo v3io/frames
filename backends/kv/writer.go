@@ -26,6 +26,7 @@ import (
 	"time"
 
 	"github.com/v3io/frames"
+	"github.com/v3io/frames/backends/utils"
 
 	"github.com/v3io/v3io-go-http"
 )
@@ -83,18 +84,12 @@ func (a *Appender) Add(frame frames.Frame) error {
 	for r := 0; r < frame.Len(); r++ {
 		row := make(map[string]interface{})
 		for name, col := range columns {
-			switch col.DType() {
-			case frames.IntType:
-				row[name] = col.IntAt(r)
-			case frames.FloatType:
-				row[name] = col.FloatAt(r)
-			case frames.StringType:
-				row[name] = col.StringAt(r)
-			case frames.TimeType: // TODO: Does v3io support time.Time?
-				row[name] = col.TimeAt(r)
-			default:
-				return fmt.Errorf("unknown column type - %s", col.DType())
+			val, err := utils.ColAt(col, r)
+			if err != nil {
+				return err
 			}
+
+			row[name] = val
 		}
 
 		key := names[0] // TODO: Index?

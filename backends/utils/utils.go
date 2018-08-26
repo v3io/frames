@@ -98,3 +98,19 @@ func AppendNil(col frames.Column) error {
 
 	return fmt.Errorf("unsupported data type - %s", col.DType)
 }
+
+// ColAt return value at index i in column as interface{}
+func ColAt(col frames.Column, i int) (interface{}, error) {
+	switch col.DType() {
+	case frames.IntType:
+		return col.IntAt(i), nil
+	case frames.FloatType:
+		return col.FloatAt(i), nil
+	case frames.StringType:
+		return col.StringAt(i), nil
+	case frames.TimeType: // TODO: Does v3io support time.Time?
+		return col.TimeAt(i), nil
+	default:
+		return nil, fmt.Errorf("unknown column type - %s", col.DType())
+	}
+}
