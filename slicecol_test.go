@@ -26,13 +26,13 @@ import (
 	"time"
 )
 
-func TestMatchInterface(t *testing.T) {
+func TestSliceColMatchInterface(t *testing.T) {
 	var col Column = &SliceColumn{} // Will fail if doesn't match interface
 
 	col.Len() // Make compiler happy
 }
 
-func TestAPI(t *testing.T) {
+func TestSliceColAPI(t *testing.T) {
 	name, values := "sc_col", []string{"bugs", "daffy", "taz", "tweety"}
 	col, err := NewSliceColumn(name, values)
 
@@ -75,7 +75,7 @@ func TestAPI(t *testing.T) {
 	}
 }
 
-func TestBadType(t *testing.T) {
+func TestSliceColBadType(t *testing.T) {
 	_, err := NewSliceColumn("col7", []int8{1})
 	if err == nil {
 		t.Fatalf("created a column from int8")
