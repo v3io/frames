@@ -26,10 +26,6 @@ import (
 	"github.com/pkg/errors"
 )
 
-const (
-	mapFrameTag = "mapFrame"
-)
-
 // MapFrame is a frame based on map
 type MapFrame struct {
 	byIndex map[int]Column
