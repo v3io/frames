@@ -2,10 +2,16 @@
 
 
 [[projects]]
+  name = "github.com/BurntSushi/toml"
+  packages = ["."]
+  revision = "b26d9c308763d68093482582cea63d69be07a0f0"
+  version = "v0.3.0"
+
+[[projects]]
   name = "github.com/golang/protobuf"
   packages = ["proto"]
-  revision = "b4deda0973fb4c70b50d226b1af49f3da59f5265"
-  version = "v1.1.0"
+  revision = "aa810b61a9c79d51363740d207bb46cf8e620ed5"
+  version = "v1.2.0"
 
 [[projects]]
   name = "github.com/klauspost/compress"
@@ -76,7 +82,7 @@
   branch = "master"
   name = "github.com/v3io/v3io-go-http"
   packages = ["."]
-  revision = "aad02474afce6802d0d121ff861975d40004d4ef"
+  revision = "36f737b2e799f92019e40267e85f73a1dff37d09"
 
 [[projects]]
   branch = "master"
@@ -100,8 +106,8 @@
     ".",
     "codes"
   ]
-  revision = "b5e691b1eb52a28c05e67ab9df303626c095c23b"
-  version = "v3.3.3"
+  revision = "935c5b540faab4d4922ae6f1fddcf77a726f259c"
+  version = "v3.4.0"
 
 [[projects]]
   branch = "master"
@@ -131,13 +137,13 @@
   branch = "master"
   name = "golang.org/x/net"
   packages = ["context"]
-  revision = "aaf60122140d3fcf75376d319f0554393160eb50"
+  revision = "8a410e7b638dca158bf9e766925842f6651ff828"
 
 [[projects]]
   branch = "master"
   name = "golang.org/x/sys"
   packages = ["unix"]
-  revision = "1c9583448a9c3aa0f9a6a5241bf73c0bd8aafded"
+  revision = "4910a1d54f876d7b22162a85f4d066d3ee649450"
 
 [[projects]]
   name = "google.golang.org/appengine"
@@ -158,6 +164,6 @@
 [solve-meta]
   analyzer-name = "dep"
   analyzer-version = 1
-  inputs-digest = "2d15dd5d26730d3068cb2f0aace01ac9fe48cd356ebb30d278edda0354174312"
+  inputs-digest = "c236b3fd6d9e4141740a24c6a7de5f13d7b3f20bc4a1329969af76cc4119500a"
   solver-name = "gps-cdcl"
   solver-version = 1
