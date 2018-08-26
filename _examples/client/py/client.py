@@ -12,8 +12,16 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+from os.path import abspath, dirname
+
 import v3io_frames as v3f
 
+here = abspath(dirname(__file__))
+csv_file = '{}/weather.csv'.format(here)
+
 client = v3f.Client('http://localhost:8080', 's3cr3t')
-for df in client.read(table='/tmp/weather.csv'):
+for df in client.read(table=csv_file, max_in_message=1000):
     print(df)
+
+# If you'd like to get single big DataFrame use
+# df = pd.concat(client.read(table=csv_file, max_in_message=1000))

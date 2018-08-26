@@ -84,6 +84,12 @@ func (sc *SliceColumn) Ints() ([]int, error) {
 	return typedCol, nil
 }
 
+// IntAt returns int value at index i (might panic)
+func (sc *SliceColumn) IntAt(i int) int {
+	typedCol, _ := sc.Ints()
+	return typedCol[i]
+}
+
 // Floats returns data as []float64
 func (sc *SliceColumn) Floats() ([]float64, error) {
 	typedCol, ok := sc.data.([]float64)
@@ -92,6 +98,12 @@ func (sc *SliceColumn) Floats() ([]float64, error) {
 	}
 
 	return typedCol, nil
+}
+
+// FloatAt returns float64 value at index i (might panic)
+func (sc *SliceColumn) FloatAt(i int) float64 {
+	typedCol, _ := sc.Floats()
+	return typedCol[i]
 }
 
 // Strings returns data as []string
@@ -104,6 +116,12 @@ func (sc *SliceColumn) Strings() ([]string, error) {
 	return typedCol, nil
 }
 
+// StringAt returns string value at index i (might panic)
+func (sc *SliceColumn) StringAt(i int) string {
+	typedCol, _ := sc.Strings()
+	return typedCol[i]
+}
+
 // Times returns data as []time.Time
 func (sc *SliceColumn) Times() ([]time.Time, error) {
 	typedCol, ok := sc.data.([]time.Time)
@@ -112,6 +130,12 @@ func (sc *SliceColumn) Times() ([]time.Time, error) {
 	}
 
 	return typedCol, nil
+}
+
+// TimeAt returns time.Time value at index i (might panic)
+func (sc *SliceColumn) TimeAt(i int) time.Time {
+	typedCol, _ := sc.Times()
+	return typedCol[i]
 }
 
 // Slice returns a Column with is slice of data

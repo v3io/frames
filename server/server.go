@@ -108,6 +108,7 @@ func (s *Server) Start() error {
 	}()
 
 	s.state = RunningState
+	s.logger.InfoWith("Server started")
 	return nil
 }
 

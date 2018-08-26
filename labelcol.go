@@ -91,6 +91,15 @@ func (lc *LabelColumn) Ints() ([]int, error) {
 	return data, nil
 }
 
+// IntAt returns int value at index i (might panic)
+func (lc *LabelColumn) IntAt(i int) int {
+	if i < 0 || i >= lc.Len() {
+		panic("index out of range")
+	}
+
+	return lc.value.(int)
+}
+
 // Floats returns data as []float64
 func (lc *LabelColumn) Floats() ([]float64, error) {
 	typedVal, ok := lc.value.(float64)
@@ -104,6 +113,15 @@ func (lc *LabelColumn) Floats() ([]float64, error) {
 	}
 
 	return data, nil
+}
+
+// FloatAt returns float64 value at index i (might panic)
+func (lc *LabelColumn) FloatAt(i int) float64 {
+	if i < 0 || i >= lc.Len() {
+		panic("index out of range")
+	}
+
+	return lc.value.(float64)
 }
 
 // Strings returns data as []string
@@ -121,6 +139,15 @@ func (lc *LabelColumn) Strings() ([]string, error) {
 	return data, nil
 }
 
+// StringAt returns string value at index i (might panic)
+func (lc *LabelColumn) StringAt(i int) string {
+	if i < 0 || i >= lc.Len() {
+		panic("index out of range")
+	}
+
+	return lc.value.(string)
+}
+
 // Times returns data as []time.Time
 func (lc *LabelColumn) Times() ([]time.Time, error) {
 	typedVal, ok := lc.value.(time.Time)
@@ -134,6 +161,15 @@ func (lc *LabelColumn) Times() ([]time.Time, error) {
 	}
 
 	return data, nil
+}
+
+// TimeAt returns time.Time value at index i (might panic)
+func (lc *LabelColumn) TimeAt(i int) time.Time {
+	if i < 0 || i >= lc.Len() {
+		panic("index out of range")
+	}
+
+	return lc.value.(time.Time)
 }
 
 // Slice returns a Column with is slice of data

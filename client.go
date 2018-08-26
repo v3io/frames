@@ -28,7 +28,6 @@ import (
 
 	"github.com/nuclio/logger"
 	"github.com/pkg/errors"
-	"github.com/vmihailenco/msgpack"
 )
 
 // Client is v3io streaming client
@@ -59,7 +58,7 @@ func NewClient(url string, apiKey string, logger logger.Logger) (*Client, error)
 }
 
 // Read runs a query on the client
-func (c *Client) Read(request *ReadRequest) (chan *Message, error) {
+func (c *Client) Read(request *ReadRequest) (FrameIterator, error) {
 	var buf bytes.Buffer
 	if err := json.NewEncoder(&buf).Encode(request); err != nil {
 		return nil, errors.Wrap(err, "can't encode query")
@@ -69,6 +68,7 @@ func (c *Client) Read(request *ReadRequest) (chan *Message, error) {
 	if err != nil {
 		return nil, errors.Wrap(err, "can't create HTTP request")
 	}
+
 	req.Header.Set("Autohrization", c.apiKey)
 
 	resp, err := http.DefaultClient.Do(req)
@@ -76,30 +76,51 @@ func (c *Client) Read(request *ReadRequest) (chan *Message, error) {
 		return nil, errors.Wrap(err, "can't call API")
 	}
 
-	c.err = nil
-	ch := make(chan *Message) // TODO: Buffered channel?
+	it := &streamFrameIterator{
+		reader:  resp.Body,
+		decoder: NewDecoder(resp.Body),
+		logger:  c.logger,
+	}
 
-	go func() {
-		defer resp.Body.Close()
-		dec := msgpack.NewDecoder(resp.Body)
-		for {
-			msg := &Message{}
-			if err := dec.Decode(msg); err != nil {
-				close(ch)
-				if err != io.EOF {
-					c.logger.ErrorWith("Decode error", "error", err)
-					c.err = err
-				}
-				return
-			}
-			ch <- msg
-		}
-	}()
-
-	return ch, nil
+	return it, nil
 }
 
-// Err returns the last query error
-func (c *Client) Err() error {
-	return c.err
+// streamFrameIterator implements FrameIterator over io.Reader
+type streamFrameIterator struct {
+	frame   Frame
+	err     error
+	reader  io.Reader
+	decoder *Decoder
+	logger  logger.Logger
+}
+
+func (it *streamFrameIterator) Next() bool {
+	var err error
+
+	it.frame, err = it.decoder.Decode()
+	if err == nil {
+		return true
+	}
+
+	if err == io.EOF {
+		closer, ok := it.reader.(io.Closer)
+		if ok {
+			if err := closer.Close(); err != nil {
+				it.logger.WarnWith("can't close reader", "error", err)
+			}
+		}
+
+		return false
+	}
+
+	it.err = err
+	return false
+}
+
+func (it *streamFrameIterator) At() Frame {
+	return it.frame
+}
+
+func (it *streamFrameIterator) Err() error {
+	return it.err
 }

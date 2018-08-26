@@ -21,6 +21,7 @@ such restriction.
 package main
 
 import (
+	"flag"
 	"fmt"
 	"log"
 
@@ -28,6 +29,15 @@ import (
 )
 
 func main() {
+	// Get CSV file (assuming server runs on same machine)
+	csvFile := ""
+	flag.StringVar(&csvFile, "csv", "", "absolute path to CSV file")
+	flag.Parse()
+
+	if csvFile == "" {
+		log.Fatal("no CSV file")
+	}
+
 	url := "http://localhost:8080"
 	client, err := frames.NewClient(url, "t0ps3cr3t", nil)
 	if err != nil {
@@ -35,17 +45,23 @@ func main() {
 	}
 
 	req := &frames.ReadRequest{
-		Table: "weather.csv",
-		Limit: 23,
+		Table:        csvFile,
+		MaxInMessage: 1000,
 	}
 
-	ch, err := client.Read(req)
+	it, err := client.Read(req)
 	if err != nil {
 		log.Fatalf("Can't query - %s", err)
 	}
 
-	for msg := range ch {
-		fmt.Println(msg)
+	for it.Next() {
+		frame := it.At()
+		fmt.Println(frame.Columns())
+		fmt.Printf("%d rows\n", frame.Len())
+		fmt.Println("-----------")
 	}
 
+	if err := it.Err(); err != nil {
+		log.Fatalf("Error in iterator - %s", err)
+	}
 }
