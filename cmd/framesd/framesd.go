@@ -54,7 +54,7 @@ func main() {
 		log.Fatalf("error: can't read config - %s", err)
 	}
 
-	srv, err := server.New(cfg, addr)
+	srv, err := server.New(cfg, addr, nil)
 	if err := toml.Unmarshal(data, cfg); err != nil {
 		log.Fatalf("error: can't create server - %s", err)
 	}

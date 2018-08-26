@@ -96,7 +96,7 @@ func AppendNil(col frames.Column) error {
 		return col.Append(time.Unix(0, 0))
 	}
 
-	return fmt.Errorf("unsupported data type - %s", col.DType)
+	return fmt.Errorf("unsupported data type - %s", col.DType())
 }
 
 // ColAt return value at index i in column as interface{}

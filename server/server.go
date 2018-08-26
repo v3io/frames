@@ -57,7 +57,7 @@ type Server struct {
 	server  *fasthttp.Server
 	state   string
 
-	backend frames.DataBackend
+	//backend frames.DataBackend
 	config  *frames.V3ioConfig
 	context *frames.DataContext
 	logger  logger.Logger
@@ -155,7 +155,7 @@ func (s *Server) handleRead(ctx *fasthttp.RequestCtx) {
 		return
 	}
 
-	iter, err := s.backend.Read(request)
+	iter, err := backend.Read(request)
 	if err != nil {
 		s.logger.ErrorWith("Can't query", "error", err)
 		ctx.Error(fmt.Sprintf("Can't query - %s", err), http.StatusInternalServerError)
@@ -208,7 +208,6 @@ func (s *Server) handleWrite(ctx *fasthttp.RequestCtx) {
 
 	go func() {
 		dec := frames.NewDecoder(reader)
-		batchSize := 0
 
 		for {
 			frame, err := dec.Decode()
