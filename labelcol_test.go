@@ -22,6 +22,8 @@ package frames
 
 import (
 	"testing"
+	"testing/quick"
+	"time"
 )
 
 func TestLabelColMatchInterface(t *testing.T) {
@@ -77,5 +79,59 @@ func TestLabelColBadType(t *testing.T) {
 	_, err := NewLabelColumn("col7", int8(1), 10)
 	if err == nil {
 		t.Fatalf("created a column from int8")
+	}
+}
+
+var quickLabelColDTypes = []DType{
+	IntType,
+	FloatType,
+	StringType,
+	TimeType,
+}
+
+func quickLabelCol(name string, dtypeIdx int, size int, ival int, fval float64, sval string, tval int64) bool {
+	if size < 0 {
+		size = -size
+	}
+
+	if dtypeIdx < 0 {
+		dtypeIdx = -dtypeIdx
+	}
+
+	var col Column
+	var err error
+	dtype := quickLabelColDTypes[dtypeIdx%len(quickLabelColDTypes)]
+
+	switch dtype {
+	case IntType:
+		col, err = NewLabelColumn(name, ival, size)
+	case FloatType:
+		col, err = NewLabelColumn(name, fval, size)
+	case StringType:
+		col, err = NewLabelColumn(name, sval, size)
+	case TimeType:
+		// tval is a int64 since testing/quick can't generate time.TIme
+		t := time.Unix(tval, tval%10000)
+		col, err = NewLabelColumn(name, t, size)
+	}
+
+	if err != nil {
+		return false
+	}
+
+	if col.DType() != dtype {
+		return false
+	}
+
+	if col.Len() != size {
+		return false
+	}
+
+	return true
+}
+
+func TestLabelColQuick(t *testing.T) {
+	if err := quick.Check(quickLabelCol, nil); err != nil {
+		t.Fatal(err)
 	}
 }
