@@ -4,6 +4,7 @@ import (
 	"bytes"
 	"encoding/base64"
 	"encoding/json"
+	"errors"
 	"fmt"
 	"path"
 	"reflect"
@@ -11,7 +12,6 @@ import (
 	"strings"
 
 	"github.com/nuclio/logger"
-	"github.com/pkg/errors"
 )
 
 // function names
@@ -120,7 +120,7 @@ func (sc *SyncContainer) ListBucket(input *ListBucketInput) (*Response, error) {
 func (sc *SyncContainer) GetObject(input *GetObjectInput) (*Response, error) {
 	response, err := sc.session.sendRequest("GET", sc.getPathURI(input.Path), nil, nil, false)
 	if err != nil {
-		return nil, errors.Wrap(err, "Failed to send request")
+		return nil, err
 	}
 
 	return response, nil
@@ -129,7 +129,7 @@ func (sc *SyncContainer) GetObject(input *GetObjectInput) (*Response, error) {
 func (sc *SyncContainer) DeleteObject(input *DeleteObjectInput) error {
 	_, err := sc.session.sendRequest("DELETE", sc.getPathURI(input.Path), nil, nil, true)
 	if err != nil {
-		return errors.Wrap(err, "Failed to send request")
+		return err
 	}
 
 	return nil
@@ -138,7 +138,7 @@ func (sc *SyncContainer) DeleteObject(input *DeleteObjectInput) error {
 func (sc *SyncContainer) PutObject(input *PutObjectInput) error {
 	_, err := sc.session.sendRequest("PUT", sc.getPathURI(input.Path), nil, input.Body, true)
 	if err != nil {
-		return errors.Wrap(err, "Failed to send request")
+		return err
 	}
 
 	return nil
@@ -149,7 +149,7 @@ func (sc *SyncContainer) GetItem(input *GetItemInput) (*Response, error) {
 	// no need to marshal, just sprintf
 	body := fmt.Sprintf(`{"AttributesToGet": "%s"}`, strings.Join(input.AttributeNames, ","))
 
-	response, err := sc.session.sendRequest("POST", sc.getPathURI(input.Path), getItemHeaders, []byte(body), false)
+	response, err := sc.session.sendRequest("PUT", sc.getPathURI(input.Path), getItemHeaders, []byte(body), false)
 	if err != nil {
 		return nil, err
 	}
@@ -164,13 +164,13 @@ func (sc *SyncContainer) GetItem(input *GetItemInput) (*Response, error) {
 	// unmarshal the body
 	err = json.Unmarshal(response.Body(), &item)
 	if err != nil {
-		return nil, errors.Wrap(err, "Failed to unmarshal get item")
+		return nil, err
 	}
 
 	// decode the response
 	attributes, err := sc.decodeTypedAttributes(item.Item)
 	if err != nil {
-		return nil, errors.Wrap(err, "Failed to decode attributes")
+		return nil, err
 	}
 
 	// attach the output to the response
@@ -209,10 +209,10 @@ func (sc *SyncContainer) GetItems(input *GetItemsInput) (*Response, error) {
 
 	marshalledBody, err := json.Marshal(body)
 	if err != nil {
-		return nil, errors.Wrap(err, "Failed to marshal body")
+		return nil, err
 	}
 
-	response, err := sc.session.sendRequest("POST",
+	response, err := sc.session.sendRequest("PUT",
 		sc.getPathURI(input.Path),
 		getItemsHeaders,
 		[]byte(marshalledBody),
@@ -233,7 +233,7 @@ func (sc *SyncContainer) GetItems(input *GetItemsInput) (*Response, error) {
 	// unmarshal the body into an ad hoc structure
 	err = json.Unmarshal(response.Body(), &getItemsResponse)
 	if err != nil {
-		return nil, errors.Wrap(err, "Failed to unmarshal get item")
+		return nil, err
 	}
 
 	getItemsOutput := GetItemsOutput{
@@ -246,7 +246,7 @@ func (sc *SyncContainer) GetItems(input *GetItemsInput) (*Response, error) {
 
 		item, err := sc.decodeTypedAttributes(typedItem)
 		if err != nil {
-			return nil, errors.Wrap(err, "Failed to decode attributes")
+			return nil, err
 		}
 
 		getItemsOutput.Items = append(getItemsOutput.Items, item)
@@ -265,7 +265,7 @@ func (sc *SyncContainer) GetItemsCursor(input *GetItemsInput) (*SyncItemsCursor,
 func (sc *SyncContainer) PutItem(input *PutItemInput) error {
 
 	// prepare the query path
-	_, err := sc.postItem(input.Path, putItemFunctionName, input.Attributes, putItemHeaders, nil)
+	_, err := sc.putItem(input.Path, putItemFunctionName, input.Attributes, putItemHeaders, nil)
 	return err
 }
 
@@ -282,7 +282,7 @@ func (sc *SyncContainer) PutItems(input *PutItemsInput) (*Response, error) {
 	for itemKey, itemAttributes := range input.Items {
 
 		// try to post the item
-		_, err := sc.postItem(input.Path+"/"+itemKey, putItemFunctionName, itemAttributes, putItemHeaders, nil)
+		_, err := sc.putItem(input.Path+"/"+itemKey, putItemFunctionName, itemAttributes, putItemHeaders, nil)
 
 		// if there was an error, shove it to the list of errors
 		if err != nil {
@@ -314,11 +314,11 @@ func (sc *SyncContainer) UpdateItem(input *UpdateItemInput) error {
 			"UpdateMode": "CreateOrReplaceAttributes",
 		}
 
-		_, err = sc.postItem(input.Path, putItemFunctionName, input.Attributes, putItemHeaders, body)
+		_, err = sc.putItem(input.Path, putItemFunctionName, input.Attributes, putItemHeaders, body)
 
 	} else if input.Expression != nil {
 
-		_, err = sc.putItem(input.Path, updateItemFunctionName, *input.Expression, updateItemHeaders)
+		_, err = sc.updateItemWithExpression(input.Path, updateItemFunctionName, *input.Expression, updateItemHeaders)
 	}
 
 	return err
@@ -331,7 +331,7 @@ func (sc *SyncContainer) CreateStream(input *CreateStreamInput) error {
 
 	_, err := sc.session.sendRequest("POST", sc.getPathURI(input.Path), createStreamHeaders, []byte(body), true)
 	if err != nil {
-		return errors.Wrap(err, "Failed to send request")
+		return err
 	}
 
 	return nil
@@ -345,7 +345,7 @@ func (sc *SyncContainer) DeleteStream(input *DeleteStreamInput) error {
 	})
 
 	if err != nil {
-		return errors.Wrap(err, "Failed to list shards in stream")
+		return err
 	}
 
 	defer response.Release()
@@ -397,7 +397,7 @@ func (sc *SyncContainer) PutRecords(input *PutRecordsInput) (*Response, error) {
 
 	response, err := sc.session.sendRequest("POST", sc.getPathURI(input.Path), putRecordsHeaders, buffer.Bytes(), false)
 	if err != nil {
-		return nil, errors.Wrap(err, "Failed to send request")
+		return nil, err
 	}
 
 	putRecordsOutput := PutRecordsOutput{}
@@ -405,7 +405,7 @@ func (sc *SyncContainer) PutRecords(input *PutRecordsInput) (*Response, error) {
 	// unmarshal the body into an ad hoc structure
 	err = json.Unmarshal(response.Body(), &putRecordsOutput)
 	if err != nil {
-		return nil, errors.Wrap(err, "Failed to unmarshal put record")
+		return nil, err
 	}
 
 	// set the output in the response
@@ -433,7 +433,7 @@ func (sc *SyncContainer) SeekShard(input *SeekShardInput) (*Response, error) {
 
 	response, err := sc.session.sendRequest("POST", sc.getPathURI(input.Path), seekShardsHeaders, buffer.Bytes(), false)
 	if err != nil {
-		return nil, errors.Wrap(err, "Failed to send request")
+		return nil, err
 	}
 
 	seekShardOutput := SeekShardOutput{}
@@ -441,7 +441,7 @@ func (sc *SyncContainer) SeekShard(input *SeekShardInput) (*Response, error) {
 	// unmarshal the body into an ad hoc structure
 	err = json.Unmarshal(response.Body(), &seekShardOutput)
 	if err != nil {
-		return nil, errors.Wrap(err, "Failed to unmarshal seek shard")
+		return nil, err
 	}
 
 	// set the output in the response
@@ -457,7 +457,7 @@ func (sc *SyncContainer) GetRecords(input *GetRecordsInput) (*Response, error) {
 
 	response, err := sc.session.sendRequest("POST", sc.getPathURI(input.Path), getRecordsHeaders, []byte(body), false)
 	if err != nil {
-		return nil, errors.Wrap(err, "Failed to send request")
+		return nil, err
 	}
 
 	getRecordsOutput := GetRecordsOutput{}
@@ -465,7 +465,7 @@ func (sc *SyncContainer) GetRecords(input *GetRecordsInput) (*Response, error) {
 	// unmarshal the body into an ad hoc structure
 	err = json.Unmarshal(response.Body(), &getRecordsOutput)
 	if err != nil {
-		return nil, errors.Wrap(err, "Failed to unmarshal get records")
+		return nil, err
 	}
 
 	// set the output in the response
@@ -474,7 +474,7 @@ func (sc *SyncContainer) GetRecords(input *GetRecordsInput) (*Response, error) {
 	return response, nil
 }
 
-func (sc *SyncContainer) postItem(path string,
+func (sc *SyncContainer) putItem(path string,
 	functionName string,
 	attributes map[string]interface{},
 	headers map[string]string,
@@ -496,13 +496,13 @@ func (sc *SyncContainer) postItem(path string,
 
 	jsonEncodedBodyContents, err := json.Marshal(body)
 	if err != nil {
-		return nil, errors.Wrap(err, "Failed to marshal body contents")
+		return nil, err
 	}
 
-	return sc.session.sendRequest("POST", sc.getPathURI(path), headers, jsonEncodedBodyContents, false)
+	return sc.session.sendRequest("PUT", sc.getPathURI(path), headers, jsonEncodedBodyContents, false)
 }
 
-func (sc *SyncContainer) putItem(path string,
+func (sc *SyncContainer) updateItemWithExpression(path string,
 	functionName string,
 	expression string,
 	headers map[string]string) (*Response, error) {
@@ -514,10 +514,10 @@ func (sc *SyncContainer) putItem(path string,
 
 	jsonEncodedBodyContents, err := json.Marshal(body)
 	if err != nil {
-		return nil, errors.Wrap(err, "Failed to marshal body contents")
+		return nil, err
 	}
 
-	return sc.session.sendRequest("PUT", sc.getPathURI(path), headers, jsonEncodedBodyContents, false)
+	return sc.session.sendRequest("POST", sc.getPathURI(path), headers, jsonEncodedBodyContents, false)
 }
 
 // {"age": 30, "name": "foo"} -> {"age": {"N": 30}, "name": {"S": "foo"}}
@@ -573,7 +573,7 @@ func (sc *SyncContainer) decodeTypedAttributes(typedAttributes map[string]map[st
 		} else if byteSliceValue, ok := typedAttributeValue["B"]; ok {
 			attributes[attributeName], err = base64.StdEncoding.DecodeString(byteSliceValue)
 			if err != nil {
-				return nil, errors.Wrapf(err, "Failed to decode %s", attributeName)
+				return nil, err
 			}
 		}
 	}

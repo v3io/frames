@@ -2,11 +2,10 @@ package v3io
 
 import (
 	"encoding/base64"
+	"encoding/xml"
 	"fmt"
 
-	"encoding/xml"
 	"github.com/nuclio/logger"
-	"github.com/pkg/errors"
 	"github.com/valyala/fasthttp"
 )
 
@@ -56,6 +55,8 @@ func (ss *SyncSession) sendRequest(
 	releaseResponse bool) (*Response, error) {
 
 	var success bool
+	var statusCode int
+
 	request := fasthttp.AcquireRequest()
 	response := allocateResponse()
 
@@ -73,16 +74,17 @@ func (ss *SyncSession) sendRequest(
 	// execute the request
 	err := ss.sendRequestViaContext(request, response.response)
 	if err != nil {
-		err = errors.Wrapf(err, "Failed to send request %s", uri)
 		goto cleanup
 	}
 
+	statusCode = response.response.StatusCode()
+
 	// did we get a 2xx response?
-	success = response.response.StatusCode() >= 200 && response.response.StatusCode() < 300
+	success = statusCode >= 200 && statusCode < 300
 
 	// make sure we got expected status
 	if !success {
-		err = fmt.Errorf("Failed %s with status %d", method, response.response.StatusCode())
+		err = NewErrorWithStatusCode(statusCode, "Failed %s with status %d", method, statusCode)
 		goto cleanup
 	}
 
@@ -123,7 +125,7 @@ func (ss *SyncSession) sendRequestAndXMLUnmarshal(
 	if err != nil {
 		response.Release()
 
-		return nil, errors.Wrap(err, "Failed to unmarshal")
+		return nil, err
 	}
 
 	// set output in response

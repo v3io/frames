@@ -4,7 +4,6 @@ import (
 	"sync/atomic"
 
 	"github.com/nuclio/logger"
-	"github.com/pkg/errors"
 )
 
 type Container struct {
@@ -16,7 +15,7 @@ type Container struct {
 func newContainer(parentLogger logger.Logger, session *Session, alias string) (*Container, error) {
 	newSyncContainer, err := newSyncContainer(parentLogger, session.Sync, alias)
 	if err != nil {
-		return nil, errors.Wrap(err, "Failed to create sync container")
+		return nil, err
 	}
 
 	return &Container{
@@ -136,7 +135,7 @@ func (c *Container) sendRequest(input interface{},
 	requestResponse.Request.requestResponse = requestResponse
 
 	if err := c.session.sendRequest(&requestResponse.Request); err != nil {
-		return nil, errors.Wrap(err, "Failed to send request")
+		return nil, err
 	}
 
 	return &requestResponse.Request, nil
