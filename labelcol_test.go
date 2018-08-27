@@ -79,7 +79,7 @@ func TestLabelColBadType(t *testing.T) {
 	var val struct{}
 	_, err := NewLabelColumn("col7", val, 10)
 	if err == nil {
-		t.Fatalf("created a column from int8")
+		t.Fatalf("created a column from unknown type")
 	}
 }
 
