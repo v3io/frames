@@ -23,8 +23,11 @@ package frames
 import (
 	"bytes"
 	"encoding/json"
+	"fmt"
 	"io"
 	"net/http"
+	"net/url"
+	"time"
 
 	"github.com/nuclio/logger"
 	"github.com/pkg/errors"
@@ -64,13 +67,12 @@ func (c *Client) Read(request *ReadRequest) (FrameIterator, error) {
 		return nil, errors.Wrap(err, "can't encode query")
 	}
 
-	req, err := http.NewRequest("POST", c.URL, &buf)
+	req, err := http.NewRequest("POST", c.URL+"/read", &buf)
 	if err != nil {
 		return nil, errors.Wrap(err, "can't create HTTP request")
 	}
 
-	req.Header.Set("Autohrization", c.apiKey)
-
+	c.addAuth(req)
 	resp, err := http.DefaultClient.Do(req)
 	if err != nil {
 		return nil, errors.Wrap(err, "can't call API")
@@ -83,6 +85,63 @@ func (c *Client) Read(request *ReadRequest) (FrameIterator, error) {
 	}
 
 	return it, nil
+}
+
+// Write writes data
+func (c *Client) Write(request *WriteRequest) (FrameAppender, error) {
+	if request.Table == "" || request.Type == "" {
+		return nil, fmt.Errorf("missing request parameters")
+	}
+
+	url, err := c.writeURL(request.Type, request.Table)
+	if err != nil {
+		return nil, err
+	}
+
+	reader, writer := io.Pipe()
+	req, err := http.NewRequest("POST", url, reader)
+	if err != nil {
+		return nil, errors.Wrap(err, "can't create HTTP request")
+	}
+
+	c.addAuth(req)
+	appender := &streamFrameAppender{
+		writer:  writer,
+		encoder: NewEncoder(writer),
+		ch:      make(chan *appenderHTTPResponse, 1),
+	}
+
+	go func() {
+		resp, err := http.DefaultClient.Do(req)
+		if err != nil {
+			c.logger.ErrorWith("error calling API", "error", err)
+		}
+
+		appender.ch <- &appenderHTTPResponse{resp, err}
+	}()
+
+	return appender, nil
+}
+
+func (c *Client) addAuth(req *http.Request) {
+	if c.apiKey == "" {
+		return
+	}
+
+	req.Header.Set("Authorization", c.apiKey)
+}
+
+func (c *Client) writeURL(typ string, table string) (string, error) {
+	u, err := url.Parse(c.URL)
+	if err != nil {
+		return "", errors.Wrapf(err, "can't parse client url (%q) - %s", c.URL, err)
+	}
+
+	query := u.Query()
+	query.Set("table", table)
+	query.Set("type", typ)
+	u.RawQuery = query.Encode()
+	return u.String(), nil
 }
 
 // streamFrameIterator implements FrameIterator over io.Reader
@@ -123,4 +182,43 @@ func (it *streamFrameIterator) At() Frame {
 
 func (it *streamFrameIterator) Err() error {
 	return it.err
+}
+
+type appenderHTTPResponse struct {
+	response *http.Response
+	err      error
+}
+
+// streamFrameAppender implements FrameAppender over io.Writer
+type streamFrameAppender struct {
+	writer  io.Writer
+	encoder *Encoder
+	ch      chan *appenderHTTPResponse
+}
+
+func (a *streamFrameAppender) Add(frame Frame) error {
+	if err := a.encoder.Encode(frame); err != nil {
+		return errors.Wrap(err, "can't encode frame")
+	}
+
+	return nil
+}
+
+func (a *streamFrameAppender) WaitForComplete(timeout time.Duration) error {
+	closer, ok := a.writer.(io.Closer)
+	if !ok {
+		return fmt.Errorf("writer is not a closer")
+	}
+
+	if err := closer.Close(); err != nil {
+		return errors.Wrap(err, "can't close writer")
+	}
+
+	select {
+	case hr := <-a.ch:
+		hr.response.Body.Close()
+		return hr.err
+	case <-time.After(timeout):
+		return fmt.Errorf("timeout after %s", timeout)
+	}
 }
