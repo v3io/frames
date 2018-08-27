@@ -15,18 +15,13 @@
 """Stream data from Nuclio into pandas DataFrame"""
 
 import datetime
-import json
 import struct
-import sys
 
 import msgpack
 import numpy as np
 import pandas as pd
+import requests
 
-if sys.version_info[:2] < (3, 0):
-    from urllib2 import urlopen, Request
-else:
-    from urllib.request import Request, urlopen
 
 __version__ = '0.1.0'
 
@@ -108,37 +103,61 @@ class Client(object):
             'extra': extra,
         }
         self._validate_query(query_obj)
-        resp = self._call_v3io(query_obj)
-        return self._iter_dfs(resp)
+        url = self.url + '/read'
+        resp = requests.post(
+            url, json=query_obj, headers=self._headers(json=True), stream=True)
+        if not resp.ok:
+            raise Error('cannot call API - {}'.format(resp.text))
 
-    def _validate_query(self, query):
-        """Valites query
+        return self._iter_dfs(resp.raw)
+
+    def write(self, typ, table, dfs, max_in_message=0):
+        """Write to table
 
         Parameters
         ----------
-        query : dict
-            Query to send
+        typ : str
+            Database type (csv, kv ...)
+        table : str
+            Table to write to
+        dfs : iterable of DataFrame
+            Frames to write
+        max_in_message : int
+            Maximal number of rows in a message
 
-        Raises
-        ------
-        BadQueryError
-            If query is malformed
+        Returns:
+            Write result
         """
-        return  # TODO
 
-    def _call_v3io(self, query):
-
-        headers = {
-            'Authorization': self.api_key,
+        params = {
+            'type': typ,
+            'table': table,
         }
 
-        request = Request(
-            self.url,
-            data=json.dumps(query).encode('utf-8'),
-            headers=headers,
-        )
+        url = self.url + '/write'
+        headers = self._headers()
+        headers['Content-Encoding'] = 'chunked'
+        chunks = self._iter_chunks(dfs, max_in_message)
+        resp = requests.post(
+            url, headers=self._headers(), params=params, data=chunks)
 
-        return urlopen(request)
+        if not resp.ok:
+            raise Error('cannot call API - {}'.format(resp.text))
+
+        return resp.json()
+
+    def _headers(self, json=False):
+        headers = {}
+        if json:
+            headers['Content-Type'] = 'application/json'
+
+        if self.api_key:
+            headers['Authorization'] = self.api_key
+
+        return headers
+
+    def _validate_query(self, query):
+        return  # TODO
 
     def _iter_dfs(self, resp):
         unpacker = msgpack.Unpacker(resp, ext_hook=ext_hook, raw=False)
@@ -180,6 +199,48 @@ class Client(object):
         codes = np.zeros(col['size'])
         return pd.Categorial.from_codes(codes, categories=[col['name']])
 
+    def _encode_df(self, df):
+        msg = {
+            'columns': [],
+            'slice_cols': {},
+            'label_cols': {},
+        }
+
+        for name in df.columns:
+            msg['columns'].append(name)
+            col = df[name]
+
+            data = {
+                'name': name,
+                'dtype': dtype(col.iloc[0]),
+            }
+
+            # Same repeating value, use label column
+            if col.nunique() == 1:
+                data['value'] = to_py(col.iloc[0])
+                data['size'] = len(col)
+                msg['label_cols'][name] = data
+                continue
+
+            key, values = to_pylist(col)
+            data[key] = values
+            msg['slice_cols'][name] = data
+
+        return msgpack.packb(msg, strict_types=True)
+
+    def _iter_chunks(self, dfs, max_in_message):
+        for df in dfs:
+            for cdf in self._chunk_df(df, max_in_message):
+                yield self._encode_df(df)
+
+    def _chunk_df(self, df, size):
+        size = size if size else len(df)
+
+        i = 0
+        while i < len(df):
+            yield df[i:i+size]
+            i += size
+
 
 def datetime_fromnsec(sec, nsec):
     """Create datetime object from seconds and nanoseconds"""
@@ -212,3 +273,42 @@ def ext_hook(code, value):
         return unpack_time(value)
 
     raise ValueError(f'unknown ext code - {code}')
+
+
+def dtype(val):
+    if isinstance(val, np.integer):
+        return '[]int'
+    elif isinstance(val, np.inexact):
+        return '[]float'
+    elif isinstance(val, str):
+        return '[]string'
+    elif isinstance(val, pd.Timestamp):
+        return '[]time.Time'
+
+    raise TypeError(f'unknown type - {val!r}')
+
+
+def to_py(val):
+    if isinstance(val, np.integer):
+        return int(val)
+    elif isinstance(val, np.inexact):
+        return float(val)
+    elif isinstance(val, str):
+        return val
+    elif isinstance(val, pd.Timestamp):
+        return val.value
+
+    raise TypeError('unsupported type - {}'.format(type(val)))
+
+
+def to_pylist(col):
+    if issubclass(col.dtype.type, (np.integer, int)):
+        return 'ints', col.tolist()
+    elif issubclass(col.dtype.type, (np.inexact, float)):
+        return 'floats', col.tolist()
+    elif isinstance(col.iloc[0], str):
+        return 'strings', col.tolist()
+    elif isinstance(col.iloc[0], pd.Timestamp):
+        return 'ns_times', col.values.tolist()  # Convert to nanoseconds
+
+    raise TypeError('unknown type - {}'.format(col.dtype))

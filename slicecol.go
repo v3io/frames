@@ -206,12 +206,18 @@ func (sc *SliceColumn) Append(value interface{}) error {
 }
 
 // SliceColumnMessage is SliceColum over-the-wirte message
+// We encode this way and not have single `Data interface{}` since msgpack
+// then will packs []int to int8, int16 ...
 type SliceColumnMessage struct {
 	Name       string      `msgpack:"name"`
+	DType      string      `msgpack:"dtype"`
 	IntData    []int       `msgpack:"ints,omitempty"`
 	FloatData  []float64   `msgpack:"floats,omitempty"`
 	StringData []string    `msgpack:"strings,omitempty"`
 	TimeData   []time.Time `msgpack:"times,omitempty"`
+	// We can't encode time in Python the way Go's msgpack works since
+	// Python's msgpack won't accept -1 code
+	NSTimeData []int `msgpack:"ns_times,omitempty"`
 }
 
 // Marshal marshals to native type
@@ -233,5 +239,6 @@ func (sc *SliceColumn) Marshal() (interface{}, error) {
 		return nil, fmt.Errorf("can't marshal column of type %s", sc.DType())
 	}
 
+	msg.DType = sc.DType().String()
 	return msg, nil
 }

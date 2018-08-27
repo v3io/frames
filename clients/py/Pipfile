@@ -6,6 +6,7 @@ name = "pypi"
 [packages]
 msgpack-python = ">=0.5.6"
 pandas = ">=0.23.3"
+requests = ">=2.19.1"
 
 [dev-packages]
 ipython = "*"

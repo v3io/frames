@@ -23,6 +23,7 @@ package frames
 import (
 	"fmt"
 	"io"
+	"time"
 
 	"github.com/pkg/errors"
 	"github.com/vmihailenco/msgpack"
@@ -111,6 +112,12 @@ func (d *Decoder) Decode() (Frame, error) {
 				col, err = NewSliceColumn(name, sliceColMsg.StringData)
 			case sliceColMsg.TimeData != nil:
 				col, err = NewSliceColumn(name, sliceColMsg.TimeData)
+			case sliceColMsg.NSTimeData != nil:
+				data := make([]time.Time, len(sliceColMsg.NSTimeData))
+				for i, val := range sliceColMsg.NSTimeData {
+					data[i] = d.timeFromNS(val)
+				}
+				col, err = NewSliceColumn(name, data)
 			default:
 				return nil, fmt.Errorf("no data in column %q", name)
 			}
@@ -129,7 +136,17 @@ func (d *Decoder) Decode() (Frame, error) {
 				return nil, fmt.Errorf("%d: column name mismatch %q != %q", i, name, labelColMsg.Name)
 			}
 
-			col, err := NewLabelColumn(name, labelColMsg.Value, labelColMsg.Size)
+			value := labelColMsg.Value
+			if labelColMsg.DType == TimeType.String() {
+				ival, ok := value.(int)
+				if !ok {
+					return nil, fmt.Errorf("%s:%d bad type for ns time - %T", name, i, value)
+				}
+
+				value = d.timeFromNS(ival)
+			}
+
+			col, err := NewLabelColumn(name, value, labelColMsg.Size)
 			if err != nil {
 				return nil, errors.Wrapf(err, "can't create column %q from %+v", name, labelColMsg)
 			}
@@ -142,4 +159,10 @@ func (d *Decoder) Decode() (Frame, error) {
 	}
 
 	return NewMapFrame(columns)
+}
+
+func (d *Decoder) timeFromNS(value int) time.Time {
+	sec := int64(value / 1e9)
+	nsec := int64(value % 1e9)
+	return time.Unix(sec, nsec)
 }

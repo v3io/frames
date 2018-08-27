@@ -76,7 +76,8 @@ func TestLabelColAPI(t *testing.T) {
 }
 
 func TestLabelColBadType(t *testing.T) {
-	_, err := NewLabelColumn("col7", int8(1), 10)
+	var val struct{}
+	_, err := NewLabelColumn("col7", val, 10)
 	if err == nil {
 		t.Fatalf("created a column from int8")
 	}

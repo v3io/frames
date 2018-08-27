@@ -36,9 +36,19 @@ type LabelColumn struct {
 func NewLabelColumn(name string, value interface{}, size int) (*LabelColumn, error) {
 	switch value.(type) {
 	case int, float64, string, time.Time:
+	case int8:
+		value = int(value.(int8))
+	case int16:
+		value = int(value.(int16))
+	case int32:
+		value = int(value.(int32))
+	case int64:
+		value = int(value.(int64))
+	case float32:
+		value = float64(value.(float32))
 		// OK
 	default:
-		return nil, fmt.Errorf("lc unspported type - %T", value)
+		return nil, fmt.Errorf("LabelColumn unspported type - %T", value)
 	}
 
 	lc := &LabelColumn{
@@ -195,6 +205,7 @@ type LabelColumnMessage struct {
 	Value interface{} `msgpack:"value"`
 	Size  int         `msgpack:"size"`
 	Name  string      `msgpack:"name"`
+	DType string      `msgpack:"dtype"`
 }
 
 // Marshal marshals to native type
@@ -203,5 +214,6 @@ func (lc *LabelColumn) Marshal() (interface{}, error) {
 		Value: lc.value,
 		Size:  lc.Len(),
 		Name:  lc.Name(),
+		DType: lc.DType().String(),
 	}, nil
 }

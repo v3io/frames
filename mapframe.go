@@ -141,7 +141,7 @@ func validateSlice(start int, end int, size int) error {
 	}
 
 	if end < start {
-		return fmt.Errorf("end <= start")
+		return fmt.Errorf("end < start")
 	}
 
 	if start >= size {

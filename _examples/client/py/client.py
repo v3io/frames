@@ -13,15 +13,33 @@
 # limitations under the License.
 
 from os.path import abspath, dirname
+from tempfile import NamedTemporaryFile
 
+import pandas as pd
 import v3io_frames as v3f
 
 here = abspath(dirname(__file__))
 csv_file = '{}/weather.csv'.format(here)
 
+tmp = NamedTemporaryFile(delete=False)
+print('Writing CSV to: {}'.format(tmp.name))
+
+size = 1000
+df = pd.read_csv(csv_file, parse_dates=['DATE'])
+dfs = [df[i*size:i*size+size] for i in range((len(df)//size)+1)]
+
 client = v3f.Client('http://localhost:8080', 's3cr3t')
-for df in client.read(table=csv_file, max_in_message=1000):
+out = client.write('csv', tmp.name, dfs)
+print('GOT: {}'.format(out))
+
+print('Reading')
+num_dfs = num_rows = 0
+for df in client.read(typ='csv', table=tmp.name, max_in_message=size):
     print(df)
+    num_dfs += 1
+    num_rows += len(df)
+
+print('\nnum_dfs = {}, num_rows = {}'.format(num_dfs, num_rows))
 
 # If you'd like to get single big DataFrame use
 # df = pd.concat(client.read(table=csv_file, max_in_message=1000))

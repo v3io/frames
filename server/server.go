@@ -65,7 +65,6 @@ type Server struct {
 
 // New creates a new server
 func New(cfg *frames.V3ioConfig, addr string, logger logger.Logger) (*Server, error) {
-
 	if logger == nil {
 		var err error
 		logger, err = frames.NewLogger(cfg.Verbose)
@@ -109,11 +108,12 @@ func (s *Server) Start() error {
 	}()
 
 	s.state = RunningState
-	s.logger.InfoWith("Server started")
+	s.logger.InfoWith("Server started", "address", s.address)
 	return nil
 }
 
 func (s *Server) handler(ctx *fasthttp.RequestCtx) {
+	fmt.Printf("REQUEST: %s\n", string(ctx.Path()))
 	switch {
 	case bytes.Compare(ctx.Path(), statusPath) == 0:
 		fmt.Fprintf(ctx, "%s\n", s.State())
@@ -185,12 +185,20 @@ func (s *Server) handleWrite(ctx *fasthttp.RequestCtx) {
 		ctx.Error("unsupported method", http.StatusMethodNotAllowed)
 	}
 
-	request := &frames.WriteRequest{}
-	if err := json.Unmarshal(ctx.PostBody(), request); err != nil {
-		s.logger.ErrorWith("Can't decode request", "error", err)
-		ctx.Error(fmt.Sprintf("Bad request - %s", err), http.StatusBadRequest)
+	args := ctx.QueryArgs()
+
+	request := &frames.WriteRequest{
+		Type:  string(args.Peek("type")),
+		Table: string(args.Peek("table")),
+	}
+
+	if request.Type == "" || request.Table == "" {
+		s.logger.ErrorWith("Bad write request", "request", args.String())
+		ctx.Error("Missing parameters", http.StatusBadRequest)
 		return
 	}
+
+	fmt.Printf("REQUEST: %+v\n", request)
 
 	backend, err := s.createBackend(request.Type)
 	if err != nil {
@@ -206,6 +214,7 @@ func (s *Server) handleWrite(ctx *fasthttp.RequestCtx) {
 
 	reader, writer := io.Pipe()
 
+	nFrames, nRows := 0, 0
 	go func() {
 		dec := frames.NewDecoder(reader)
 
@@ -217,18 +226,37 @@ func (s *Server) handleWrite(ctx *fasthttp.RequestCtx) {
 					return
 				}
 
+				s.logger.ErrorWith("Can't decode", "error", err)
 				ctx.Error(err.Error(), http.StatusInternalServerError)
 				return
 			}
 
 			if err := appender.Add(frame); err != nil {
+				s.logger.ErrorWith("Can't add frame", "error", err)
 				ctx.Error(err.Error(), http.StatusInternalServerError)
 				return
 			}
+
+			nFrames++
+			nRows += frame.Len()
 		}
 	}()
 
 	ctx.Request.BodyWriteTo(writer)
+
+	response := map[string]interface{}{
+		"num_frames": nFrames,
+		"num_rows":   nRows,
+	}
+
+	data, err := json.Marshal(response)
+	if err != nil {
+		s.logger.ErrorWith("Can't encode response", "error", err)
+		ctx.Error(err.Error(), http.StatusInternalServerError)
+		return
+	}
+
+	ctx.Write(data)
 }
 
 func (s *Server) createBackend(typ string) (frames.DataBackend, error) {
