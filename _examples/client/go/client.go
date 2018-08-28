@@ -45,6 +45,7 @@ func main() {
 	}
 
 	req := &frames.ReadRequest{
+		Type:         "csv",
 		Table:        csvFile,
 		MaxInMessage: 1000,
 	}

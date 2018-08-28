@@ -78,6 +78,14 @@ func (c *Client) Read(request *ReadRequest) (FrameIterator, error) {
 		return nil, errors.Wrap(err, "can't call API")
 	}
 
+	if resp.StatusCode != http.StatusOK {
+		defer resp.Body.Close()
+		var buf bytes.Buffer
+		io.Copy(&buf, resp.Body)
+
+		return nil, fmt.Errorf("API returned with bad code - %d\n%s", resp.StatusCode, buf.String())
+	}
+
 	it := &streamFrameIterator{
 		reader:  resp.Body,
 		decoder: NewDecoder(resp.Body),
