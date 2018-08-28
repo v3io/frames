@@ -16,6 +16,7 @@ from os.path import abspath, dirname
 from tempfile import NamedTemporaryFile
 
 import pandas as pd
+
 import v3io_frames as v3f
 
 here = abspath(dirname(__file__))
@@ -29,8 +30,10 @@ df = pd.read_csv(csv_file, parse_dates=['DATE'])
 dfs = [df[i*size:i*size+size] for i in range((len(df)//size)+1)]
 
 client = v3f.Client('http://localhost:8080', 's3cr3t')
+
+print('Writing')
 out = client.write('csv', tmp.name, dfs)
-print('GOT: {}'.format(out))
+print('Result: {}'.format(out))
 
 print('Reading')
 num_dfs = num_rows = 0
