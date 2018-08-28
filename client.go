@@ -47,7 +47,7 @@ func NewClient(url string, apiKey string, logger logger.Logger) (*Client, error)
 	if logger == nil {
 		logger, err = NewLogger("info")
 		if err != nil {
-			return nil, errors.Wrap(err, "Can't create logger")
+			return nil, errors.Wrap(err, "can't create logger")
 		}
 	}
 

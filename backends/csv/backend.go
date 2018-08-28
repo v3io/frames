@@ -122,7 +122,7 @@ func (it *FrameIterator) readNextRows() ([][]string, error) {
 		row, err := it.reader.Read()
 		if err != nil {
 			if err == io.EOF {
-				it.logger.InfoWith("EOF", "numRows", it.nRows)
+				it.logger.DebugWith("EOF", "numRows", it.nRows)
 				return rows, nil
 			}
 
@@ -285,7 +285,7 @@ type csvAppender struct {
 }
 
 func (ca *csvAppender) Add(frame frames.Frame) error {
-	ca.logger.InfoWith("Adding frame", "size", frame.Len())
+	ca.logger.InfoWith("adding frame", "size", frame.Len())
 	names := frame.Columns()
 	if !ca.headerWritten {
 		if err := ca.csvWriter.Write(names); err != nil {

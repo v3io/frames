@@ -47,7 +47,12 @@ func main() {
 		log.Fatalf("error: can't read config - %s", err)
 	}
 
-	srv, err := server.New(cfg, fmt.Sprintf(":%d", port))
+	logger, err := frames.NewLogger("info")
+	if err != nil {
+		log.Fatalf("error: can't create logger - %s", err)
+	}
+
+	srv, err := server.New(cfg, fmt.Sprintf(":%d", port), logger)
 	if err := toml.Unmarshal(data, cfg); err != nil {
 		log.Fatalf("error: can't create server - %s", err)
 	}
@@ -56,7 +61,7 @@ func main() {
 		log.Fatalf("error: can't start server - %s", err)
 	}
 
-	fmt.Println("Server running")
+	fmt.Println("server running")
 	for {
 		time.Sleep(60 * time.Second)
 	}

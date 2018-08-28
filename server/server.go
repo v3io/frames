@@ -93,7 +93,7 @@ func (s *Server) State() string {
 // Start starts the server
 func (s *Server) Start() error {
 	if state := s.State(); state != ReadyState {
-		s.logger.ErrorWith("Start from bad state", "state", state)
+		s.logger.ErrorWith("start from bad state", "state", state)
 		return fmt.Errorf("bad state - %s", state)
 	}
 
@@ -104,13 +104,13 @@ func (s *Server) Start() error {
 	go func() {
 		err := s.server.ListenAndServe(s.address)
 		if err != nil {
-			s.logger.ErrorWith("Error running HTTP server", "error", err)
+			s.logger.ErrorWith("error running HTTP server", "error", err)
 			s.state = ErrorState
 		}
 	}()
 
 	s.state = RunningState
-	s.logger.InfoWith("Server started", "address", s.address)
+	s.logger.InfoWith("server started", "address", s.address)
 	return nil
 }
 
@@ -134,14 +134,14 @@ func (s *Server) handleRead(ctx *fasthttp.RequestCtx) {
 
 	request := &frames.ReadRequest{}
 	if err := json.Unmarshal(ctx.PostBody(), request); err != nil {
-		s.logger.ErrorWith("Can't decode request", "error", err)
-		ctx.Error(fmt.Sprintf("Bad request - %s", err), http.StatusBadRequest)
+		s.logger.ErrorWith("can't decode request", "error", err)
+		ctx.Error(fmt.Sprintf("bad request - %s", err), http.StatusBadRequest)
 		return
 	}
 
 	if request.Query != "" {
 		if err := s.populateQuery(request); err != nil {
-			s.logger.ErrorWith("Can't populate query", "request", request, "error", err)
+			s.logger.ErrorWith("can't populate query", "request", request, "error", err)
 			ctx.Error(err.Error(), http.StatusBadRequest)
 			return
 		}
@@ -158,8 +158,8 @@ func (s *Server) handleRead(ctx *fasthttp.RequestCtx) {
 
 	iter, err := backend.Read(request)
 	if err != nil {
-		s.logger.ErrorWith("Can't query", "error", err)
-		ctx.Error(fmt.Sprintf("Can't query - %s", err), http.StatusInternalServerError)
+		s.logger.ErrorWith("can't query", "error", err)
+		ctx.Error(fmt.Sprintf("can't query - %s", err), http.StatusInternalServerError)
 		return
 	}
 
@@ -194,8 +194,8 @@ func (s *Server) handleWrite(ctx *fasthttp.RequestCtx) {
 	}
 
 	if request.Type == "" || request.Table == "" {
-		s.logger.ErrorWith("Bad write request", "request", args.String())
-		ctx.Error("Missing parameters", http.StatusBadRequest)
+		s.logger.ErrorWith("bad write request", "request", args.String())
+		ctx.Error("missing parameters", http.StatusBadRequest)
 		return
 	}
 
@@ -225,7 +225,7 @@ func (s *Server) handleWrite(ctx *fasthttp.RequestCtx) {
 					return
 				}
 
-				s.logger.ErrorWith("Can't decode", "error", err)
+				s.logger.ErrorWith("can't decode", "error", err)
 				ctx.Error(err.Error(), http.StatusInternalServerError)
 				return
 			}
@@ -256,7 +256,7 @@ func (s *Server) handleWrite(ctx *fasthttp.RequestCtx) {
 
 	data, err := json.Marshal(response)
 	if err != nil {
-		s.logger.ErrorWith("Can't encode response", "error", err)
+		s.logger.ErrorWith("can't encode response", "error", err)
 		ctx.Error(err.Error(), http.StatusInternalServerError)
 		return
 	}
@@ -283,26 +283,26 @@ func (s *Server) createBackend(typ string) (frames.DataBackend, error) {
 func (s *Server) populateQuery(request *frames.ReadRequest) error {
 	sqlQuery, err := frames.ParseSQL(request.Query)
 	if err != nil {
-		return errors.Wrap(err, "Bad SQL query")
+		return errors.Wrap(err, "bad SQL query")
 	}
 
 	if request.Table != "" {
-		return fmt.Errorf("Both query AND table provided")
+		return fmt.Errorf("both query AND table provided")
 	}
 	request.Table = sqlQuery.Table
 
 	if request.Columns != nil {
-		return fmt.Errorf("Both query AND columns provided")
+		return fmt.Errorf("both query AND columns provided")
 	}
 	request.Columns = sqlQuery.Columns
 
 	if request.Filter != "" {
-		return fmt.Errorf("Both query AND filter provided")
+		return fmt.Errorf("both query AND filter provided")
 	}
 	request.Filter = sqlQuery.Filter
 
 	if request.GroupBy != "" {
-		return fmt.Errorf("Both query AND group_by provided")
+		return fmt.Errorf("both query AND group_by provided")
 	}
 	request.GroupBy = sqlQuery.GroupBy
 
@@ -312,13 +312,13 @@ func (s *Server) populateQuery(request *frames.ReadRequest) error {
 func newContext(cfg *frames.V3ioConfig) (*frames.DataContext, error) {
 	logger, err := frames.NewLogger(cfg.Verbose)
 	if err != nil {
-		return nil, errors.Wrap(err, "Can't create logger")
+		return nil, errors.Wrap(err, "can't create logger")
 	}
 
 	container, err := v3ioutils.CreateContainer(
 		logger, cfg.V3ioURL, cfg.Container, cfg.Username, cfg.Password, cfg.Workers)
 	if err != nil {
-		return nil, errors.Wrap(err, "Failed to create data container")
+		return nil, errors.Wrap(err, "failed to create data container")
 	}
 
 	return &frames.DataContext{Container: container, Logger: logger}, nil

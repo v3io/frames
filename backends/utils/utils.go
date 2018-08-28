@@ -80,7 +80,7 @@ func NewColumn(value interface{}, size int) (interface{}, error) {
 		return make([]time.Time, size), nil
 	}
 
-	return nil, fmt.Errorf("Unknown type - %T", value)
+	return nil, fmt.Errorf("unknown type - %T", value)
 }
 
 // AppendNil appends an empty value to data

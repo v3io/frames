@@ -147,7 +147,7 @@ func (ic *AsyncItemsCursor) NextItem() (v3io.Item, error) {
 	// Read response from channel
 	resp := <-ic.responseChan
 	if resp.Error != nil {
-		return nil, errors.Wrap(resp.Error, "Failed to get next items")
+		return nil, errors.Wrap(resp.Error, "failed to get next items")
 	}
 
 	getItemsResp := resp.Output.(*v3io.GetItemsOutput)
@@ -168,7 +168,7 @@ func (ic *AsyncItemsCursor) NextItem() (v3io.Item, error) {
 		_, err := ic.container.GetItems(&input, shard, ic.responseChan)
 
 		if err != nil {
-			return nil, errors.Wrap(resp.Error, "Failed to request next items")
+			return nil, errors.Wrap(resp.Error, "failed to request next items")
 		}
 
 	} else {

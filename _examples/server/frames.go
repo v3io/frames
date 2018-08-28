@@ -114,12 +114,13 @@ func writeExample(backend common.DataBackend) error {
 	return appender.WaitForComplete(0)
 }
 
+// NewContext return a new DataContext
 func NewContext(cfg common.V3ioConfig) (*common.DataContext, error) {
 	logger, _ := utils.NewLogger(cfg.Verbose)
 	container, err := utils.CreateContainer(
 		logger, cfg.V3ioUrl, cfg.Container, cfg.Username, cfg.Password, cfg.Workers)
 	if err != nil {
-		return nil, errors.Wrap(err, "Failed to create data container")
+		return nil, errors.Wrap(err, "failed to create data container")
 	}
 
 	return &common.DataContext{Container: container, Logger: logger}, nil

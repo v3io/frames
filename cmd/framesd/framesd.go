@@ -63,7 +63,7 @@ func main() {
 		log.Fatalf("error: can't start server - %s", err)
 	}
 
-	fmt.Println("Server running")
+	fmt.Println("server running")
 	for {
 		time.Sleep(60 * time.Second)
 	}

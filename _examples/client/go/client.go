@@ -41,7 +41,7 @@ func main() {
 	url := "http://localhost:8080"
 	client, err := frames.NewClient(url, "t0ps3cr3t", nil)
 	if err != nil {
-		log.Fatalf("Can't connect to %q - %s", url, err)
+		log.Fatalf("can't connect to %q - %s", url, err)
 	}
 
 	req := &frames.ReadRequest{
@@ -51,7 +51,7 @@ func main() {
 
 	it, err := client.Read(req)
 	if err != nil {
-		log.Fatalf("Can't query - %s", err)
+		log.Fatalf("can't query - %s", err)
 	}
 
 	for it.Next() {
@@ -62,6 +62,6 @@ func main() {
 	}
 
 	if err := it.Err(); err != nil {
-		log.Fatalf("Error in iterator - %s", err)
+		log.Fatalf("error in iterator - %s", err)
 	}
 }

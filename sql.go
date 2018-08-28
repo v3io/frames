@@ -44,21 +44,21 @@ func ParseSQL(sql string) (*Query, error) {
 
 	slct, ok := stmt.(*sqlparser.Select)
 	if !ok {
-		return nil, fmt.Errorf("Not a SELECT statement")
+		return nil, fmt.Errorf("not a SELECT statement")
 	}
 
 	if nTables := len(slct.From); nTables != 1 {
-		return nil, fmt.Errorf("Can select from only one table (got %d)", nTables)
+		return nil, fmt.Errorf("nan select from only one table (got %d)", nTables)
 	}
 
 	aliased, ok := slct.From[0].(*sqlparser.AliasedTableExpr)
 	if !ok {
-		return nil, fmt.Errorf("Not a table select")
+		return nil, fmt.Errorf("not a table select")
 	}
 
 	table, ok := aliased.Expr.(sqlparser.TableName)
 	if !ok {
-		return nil, fmt.Errorf("Not a table in FROM field")
+		return nil, fmt.Errorf("not a table in FROM field")
 	}
 
 	query := &Query{
@@ -74,17 +74,17 @@ func ParseSQL(sql string) (*Query, error) {
 
 			colName, ok := col.Expr.(*sqlparser.ColName)
 			if !ok {
-				return nil, fmt.Errorf("Unknown columns type - %T", col.Expr)
+				return nil, fmt.Errorf("unknown columns type - %T", col.Expr)
 			}
 
 			query.Columns = append(query.Columns, colName.Name.String())
 		default:
-			return nil, fmt.Errorf("Unknown SELECT column type - %T", sexpr)
+			return nil, fmt.Errorf("unknown SELECT column type - %T", sexpr)
 		}
 	}
 
 	if len(query.Columns) == 0 {
-		return nil, fmt.Errorf("No columns")
+		return nil, fmt.Errorf("no columns")
 	}
 
 	if slct.Where != nil {

@@ -35,19 +35,19 @@ func CreateContainer(logger logger.Logger, addr, cont, username, password string
 	// create context
 	context, err := v3io.NewContext(logger, addr, workers)
 	if err != nil {
-		return nil, errors.Wrap(err, "Failed to create client")
+		return nil, errors.Wrap(err, "failed to create client")
 	}
 
 	// create session
 	session, err := context.NewSession(username, password, "v3test")
 	if err != nil {
-		return nil, errors.Wrap(err, "Failed to create session")
+		return nil, errors.Wrap(err, "failed to create session")
 	}
 
 	// create the container
 	container, err := session.NewContainer(cont)
 	if err != nil {
-		return nil, errors.Wrap(err, "Failed to create container")
+		return nil, errors.Wrap(err, "failed to create container")
 	}
 
 	return container, nil
