@@ -28,6 +28,11 @@ Response is JSON in the format
 	"num_rows": 1000
     }
 
+### Development
+
+Core is written in [Go](https://golang.org/).
+
+To run the tests run `go test -v ./...`
 
 ## LICENSE
 
