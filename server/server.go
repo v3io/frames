@@ -31,6 +31,7 @@ import (
 	"github.com/v3io/frames"
 	"github.com/v3io/frames/backends/csv"
 	"github.com/v3io/frames/backends/kv"
+	"github.com/v3io/frames/v3ioutils"
 
 	"github.com/nuclio/logger"
 	"github.com/pkg/errors"
@@ -310,7 +311,7 @@ func newContext(cfg *frames.V3ioConfig) (*frames.DataContext, error) {
 		return nil, errors.Wrap(err, "Can't create logger")
 	}
 
-	container, err := frames.CreateContainer(
+	container, err := v3ioutils.CreateContainer(
 		logger, cfg.V3ioURL, cfg.Container, cfg.Username, cfg.Password, cfg.Workers)
 	if err != nil {
 		return nil, errors.Wrap(err, "Failed to create data container")

@@ -28,6 +28,7 @@ import (
 
 	"github.com/v3io/frames"
 	"github.com/v3io/frames/backends/utils"
+	"github.com/v3io/frames/v3ioutils"
 )
 
 // Backend is key/value backend
@@ -59,7 +60,7 @@ func (kv *Backend) Read(request *frames.ReadRequest) (frames.FrameIterator, erro
 
 	input := v3io.GetItemsInput{Path: tablePath, Filter: request.Filter, AttributeNames: request.Columns}
 	fmt.Println(input, request)
-	iter, err := frames.NewAsyncItemsCursor(kv.ctx.Container, &input, kv.ctx.Workers, kvRequest.ShardingKeys)
+	iter, err := v3ioutils.NewAsyncItemsCursor(kv.ctx.Container, &input, kv.ctx.Workers, kvRequest.ShardingKeys)
 	if err != nil {
 		return nil, err
 	}
@@ -72,7 +73,7 @@ func (kv *Backend) Read(request *frames.ReadRequest) (frames.FrameIterator, erro
 type Iterator struct {
 	ctx       *frames.DataContext
 	request   *frames.ReadRequest
-	iter      *frames.AsyncItemsCursor
+	iter      *v3ioutils.AsyncItemsCursor
 	err       error
 	currFrame frames.Frame
 }

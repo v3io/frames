@@ -18,11 +18,12 @@ under the Apache 2.0 license is conditioned upon your compliance with
 such restriction.
 */
 
-package frames
+package v3ioutils
 
 import (
 	"github.com/nuclio/logger"
 	"github.com/pkg/errors"
+
 	"github.com/v3io/v3io-go-http"
 )
 
