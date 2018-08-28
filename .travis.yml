@@ -1,7 +1,9 @@
 language: go
 go_import_path: github.com/v3io/frames
-go: "1.10"
+go:
+  - "1.10"
+  - "1.11"
 
 script:
-    - go get github.com/golang/dep
-    - go test -v ./...
+  - go get github.com/golang/dep
+  - go test -v ./...
