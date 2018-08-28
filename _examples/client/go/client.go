@@ -24,6 +24,7 @@ import (
 	"flag"
 	"fmt"
 	"log"
+	"path/filepath"
 
 	"github.com/v3io/frames"
 )
@@ -38,8 +39,15 @@ func main() {
 		log.Fatal("no CSV file")
 	}
 
+	var err error
+	csvFile, err = filepath.Abs(csvFile)
+	if err != nil {
+		log.Fatalf("can't get absolute path - %s", err)
+	}
+
 	url := "http://localhost:8080"
-	client, err := frames.NewClient(url, "t0ps3cr3t", nil)
+	apiKey := "t0ps3cr3t"
+	client, err := frames.NewClient(url, apiKey, nil)
 	if err != nil {
 		log.Fatalf("can't connect to %q - %s", url, err)
 	}
