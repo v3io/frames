@@ -124,7 +124,16 @@ func totalRows(result []frames.Frame) int {
 }
 
 func loadTempCSV(t *testing.T, req *frames.ReadRequest) []frames.Frame {
-	backend, err := NewBackend(nil)
+	logger, err := frames.NewLogger("debug")
+	if err != nil {
+		t.Fatalf("can't create logger - %s", err)
+	}
+
+	ctx := &frames.DataContext{
+		Logger: logger,
+	}
+
+	backend, err := NewBackend(ctx)
 	if err != nil {
 		t.Fatal(err)
 	}

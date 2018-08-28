@@ -27,6 +27,7 @@ import (
 	"fmt"
 	"io"
 	"net/http"
+	"time"
 
 	"github.com/v3io/frames"
 	"github.com/v3io/frames/backends/csv"
@@ -166,7 +167,7 @@ func (s *Server) handleRead(ctx *fasthttp.RequestCtx) {
 		enc := frames.NewEncoder(w)
 		for iter.Next() {
 			if err := enc.Encode(iter.At()); err != nil {
-				s.logger.ErrorWith("Can't encode result", "error", err)
+				s.logger.ErrorWith("can't encode result", "error", err)
 				return
 			}
 
@@ -174,7 +175,7 @@ func (s *Server) handleRead(ctx *fasthttp.RequestCtx) {
 		}
 
 		if err := iter.Err(); err != nil {
-			s.logger.ErrorWith("Error during iteration", "error", err)
+			s.logger.ErrorWith("error during iteration", "error", err)
 		}
 	}
 	ctx.SetBodyStreamWriter(sw)
@@ -197,8 +198,6 @@ func (s *Server) handleWrite(ctx *fasthttp.RequestCtx) {
 		ctx.Error("Missing parameters", http.StatusBadRequest)
 		return
 	}
-
-	fmt.Printf("REQUEST: %+v\n", request)
 
 	backend, err := s.createBackend(request.Type)
 	if err != nil {
@@ -232,7 +231,7 @@ func (s *Server) handleWrite(ctx *fasthttp.RequestCtx) {
 			}
 
 			if err := appender.Add(frame); err != nil {
-				s.logger.ErrorWith("Can't add frame", "error", err)
+				s.logger.ErrorWith("can't add frame", "error", err)
 				ctx.Error(err.Error(), http.StatusInternalServerError)
 				return
 			}
@@ -243,6 +242,12 @@ func (s *Server) handleWrite(ctx *fasthttp.RequestCtx) {
 	}()
 
 	ctx.Request.BodyWriteTo(writer)
+
+	// TODO: Specify timeout in request?
+	if err := appender.WaitForComplete(time.Minute); err != nil {
+		s.logger.ErrorWith("can't wait for completion", "error", err)
+		ctx.Error(err.Error(), http.StatusInternalServerError)
+	}
 
 	response := map[string]interface{}{
 		"num_frames": nFrames,

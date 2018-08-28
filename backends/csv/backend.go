@@ -28,6 +28,7 @@ import (
 	"strconv"
 	"time"
 
+	"github.com/nuclio/logger"
 	"github.com/pkg/errors"
 
 	"github.com/v3io/frames"
@@ -35,15 +36,18 @@ import (
 )
 
 // Backend is CSV backend
-type Backend struct{}
+type Backend struct {
+	ctx *frames.DataContext
+}
 
 // NewBackend returns a new CSV backend
 func NewBackend(ctx *frames.DataContext) (*Backend, error) {
-	return &Backend{}, nil
+	return &Backend{ctx}, nil
 }
 
 // FrameIterator iterates over CSV
 type FrameIterator struct {
+	logger      logger.Logger
 	path        string
 	reader      *csv.Reader
 	frame       frames.Frame
@@ -68,6 +72,7 @@ func (b *Backend) Read(request *frames.ReadRequest) (frames.FrameIterator, error
 	}
 
 	it := &FrameIterator{
+		logger:      b.ctx.Logger,
 		path:        request.Table,
 		reader:      reader,
 		columnNames: columns,
@@ -82,6 +87,7 @@ func (b *Backend) Read(request *frames.ReadRequest) (frames.FrameIterator, error
 func (it *FrameIterator) Next() bool {
 	rows, err := it.readNextRows()
 	if err != nil {
+		it.logger.ErrorWith("can't read rows", "error", err)
 		it.err = err
 		return false
 	}
@@ -92,6 +98,7 @@ func (it *FrameIterator) Next() bool {
 
 	it.frame, err = it.buildFrame(rows)
 	if err != nil {
+		it.logger.ErrorWith("can't build frame", "error", err)
 		it.err = err
 		return false
 	}
@@ -115,6 +122,7 @@ func (it *FrameIterator) readNextRows() ([][]string, error) {
 		row, err := it.reader.Read()
 		if err != nil {
 			if err == io.EOF {
+				it.logger.InfoWith("EOF", "numRows", it.nRows)
 				return rows, nil
 			}
 
@@ -122,7 +130,9 @@ func (it *FrameIterator) readNextRows() ([][]string, error) {
 		}
 
 		if len(row) != len(it.columnNames) {
-			return nil, fmt.Errorf("%s:%d num columns don't match headers (%d != %d)", it.path, it.nRows, len(row), len(it.columnNames))
+			err := fmt.Errorf("%s:%d num columns don't match headers (%d != %d)", it.path, it.nRows, len(row), len(it.columnNames))
+			it.logger.ErrorWith("row size mismatch", "error", err, "row", it.nRows)
+			return nil, err
 		}
 
 		rows = append(rows, row)
@@ -160,7 +170,9 @@ func (it *FrameIterator) buildFrame(rows [][]string) (frames.Frame, error) {
 			for r, row := range rows[1:] {
 				val, ok := it.parseValue(row[c]).(int)
 				if !ok {
-					return nil, fmt.Errorf("type mismatch in row %d, col %d", it.nRows, c)
+					err := fmt.Errorf("type mismatch in row %d, col %d", it.nRows, c)
+					it.logger.ErrorWith("type mismatch", "error", err)
+					return nil, err
 				}
 
 				typedData[r+1] = val // +1 since we start in first row
@@ -172,7 +184,9 @@ func (it *FrameIterator) buildFrame(rows [][]string) (frames.Frame, error) {
 			for r, row := range rows[1:] {
 				val, ok := it.parseValue(row[c]).(float64)
 				if !ok {
-					return nil, fmt.Errorf("type mismatch in row %d, col %d", it.nRows, c)
+					err := fmt.Errorf("type mismatch in row %d, col %d", it.nRows, c)
+					it.logger.ErrorWith("type mismatch", "error", err)
+					return nil, err
 				}
 
 				typedData[r+1] = val // +1 since we start in first row
@@ -191,7 +205,9 @@ func (it *FrameIterator) buildFrame(rows [][]string) (frames.Frame, error) {
 			for r, row := range rows[1:] {
 				val, ok := it.parseValue(row[c]).(time.Time)
 				if !ok {
-					return nil, fmt.Errorf("type mismatch in row %d, col %d", it.nRows, c)
+					err := fmt.Errorf("type mismatch in row %d, col %d", it.nRows, c)
+					it.logger.ErrorWith("type mismatch", "error", err)
+					return nil, err
 				}
 
 				typedData[r+1] = val // +1 since we start in first row
@@ -201,6 +217,7 @@ func (it *FrameIterator) buildFrame(rows [][]string) (frames.Frame, error) {
 
 		col, err = frames.NewSliceColumn(colName, data)
 		if err != nil {
+			it.logger.ErrorWith("can't build column", "error", err, "column", colName)
 			return nil, errors.Wrapf(err, "can't build column %s", colName)
 		}
 
@@ -251,7 +268,9 @@ func (b *Backend) Write(request *frames.WriteRequest) (frames.FrameAppender, err
 	}
 
 	ca := &csvAppender{
-		writer: csv.NewWriter(file),
+		writer:    file,
+		csvWriter: csv.NewWriter(file),
+		logger:    b.ctx.Logger,
 	}
 
 	return ca, nil
@@ -259,14 +278,18 @@ func (b *Backend) Write(request *frames.WriteRequest) (frames.FrameAppender, err
 }
 
 type csvAppender struct {
-	writer        *csv.Writer
+	logger        logger.Logger
+	writer        io.Writer
+	csvWriter     *csv.Writer
 	headerWritten bool
 }
 
 func (ca *csvAppender) Add(frame frames.Frame) error {
+	ca.logger.InfoWith("Adding frame", "size", frame.Len())
 	names := frame.Columns()
 	if !ca.headerWritten {
-		if err := ca.writer.Write(names); err != nil {
+		if err := ca.csvWriter.Write(names); err != nil {
+			ca.logger.ErrorWith("can't write header", "error", err)
 			return errors.Wrap(err, "can't write header")
 		}
 		ca.headerWritten = true
@@ -277,18 +300,21 @@ func (ca *csvAppender) Add(frame frames.Frame) error {
 		for c, name := range names {
 			col, err := frame.Column(name)
 			if err != nil {
+				ca.logger.ErrorWith("can't get column", "error", err)
 				return errors.Wrap(err, "can't get column")
 			}
 
 			val, err := utils.ColAt(col, r)
 			if err != nil {
+				ca.logger.ErrorWith("can't get value", "error", err, "name", name, "row", r)
 				return errors.Wrapf(err, "%s:%d can't get value", name, r)
 			}
 
 			record[c] = fmt.Sprintf("%v", val)
 		}
 
-		if err := ca.writer.Write(record); err != nil {
+		if err := ca.csvWriter.Write(record); err != nil {
+			ca.logger.ErrorWith("can't write record", "error", err)
 			return errors.Wrap(err, "can't write record")
 		}
 	}
@@ -296,8 +322,22 @@ func (ca *csvAppender) Add(frame frames.Frame) error {
 	return nil
 }
 
+// File Sync
+type syncer interface {
+	Sync() error
+}
+
 // WaitForComplete wait for write completion
 func (ca *csvAppender) WaitForComplete(timeout time.Duration) error {
-	ca.writer.Flush()
-	return ca.writer.Error()
+	ca.csvWriter.Flush()
+	if err := ca.csvWriter.Error(); err != nil {
+		ca.logger.ErrorWith("csv Flush", "error", err)
+		return err
+	}
+
+	if s, ok := ca.writer.(syncer); ok {
+		return s.Sync()
+	}
+
+	return nil
 }
