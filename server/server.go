@@ -114,7 +114,6 @@ func (s *Server) Start() error {
 }
 
 func (s *Server) handler(ctx *fasthttp.RequestCtx) {
-	fmt.Printf("REQUEST: %s\n", string(ctx.Path()))
 	switch {
 	case bytes.Compare(ctx.Path(), statusPath) == 0:
 		fmt.Fprintf(ctx, "%s\n", s.State())
