@@ -22,6 +22,7 @@ package utils
 
 import (
 	"fmt"
+	"math"
 	"time"
 
 	"github.com/v3io/frames"
@@ -73,7 +74,12 @@ func NewColumn(value interface{}, size int) (interface{}, error) {
 	case int:
 		return make([]int, size), nil
 	case float64:
-		return make([]float64, size), nil
+		data := make([]float64, size)
+		for i := range data {
+			data[i] = math.NaN()
+		}
+
+		return data, nil
 	case string:
 		return make([]string, size), nil
 	case time.Time:
@@ -89,7 +95,7 @@ func AppendNil(col frames.Column) error {
 	case frames.IntType:
 		return col.Append(0)
 	case frames.FloatType:
-		return col.Append(0.0)
+		return col.Append(math.NaN())
 	case frames.StringType:
 		return col.Append("")
 	case frames.TimeType:

@@ -21,8 +21,11 @@ such restriction.
 package utils
 
 import (
+	"math"
 	"reflect"
 	"testing"
+
+	"github.com/v3io/frames"
 )
 
 func TestAppendValue(t *testing.T) {
@@ -67,23 +70,23 @@ func TestNewColumn(t *testing.T) {
 }
 
 func TestAppendNil(t *testing.T) {
-	t.Skip()
-	/*
-		data := []int{1, 2, 3}
-		out, err := AppendNil(data)
-		if err != nil {
-			t.Fatal(err)
-		}
+	size := 10
+	data, err := NewColumn(1.0, size)
+	if err != nil {
+		t.Fatalf("can't create data - %s", err)
+	}
 
-		expected := []int{1, 2, 3, 0}
-		if !reflect.DeepEqual(out, expected) {
-			t.Fatalf("bad append %v != %v", out, expected)
-		}
+	col, err := frames.NewSliceColumn("col1", data)
+	if err := AppendNil(col); err != nil {
+		t.Fatalf("can't append nil - %s", err)
+	}
 
-		_, err = AppendNil([]bool{true})
-		if err == nil {
-			t.Fatal("no error on unknown mismatch")
-		}
-	*/
+	if newSize := col.Len(); newSize != size+1 {
+		t.Fatalf("bad size change - %d != %d", newSize, size+1)
+	}
 
+	val := col.FloatAt(size)
+	if !math.IsNaN(val) {
+		t.Fatalf("AppendNil didn't add NaN to floats (got %v)", val)
+	}
 }
