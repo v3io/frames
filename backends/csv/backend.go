@@ -273,6 +273,12 @@ func (b *Backend) Write(request *frames.WriteRequest) (frames.FrameAppender, err
 		logger:    b.ctx.Logger,
 	}
 
+	if request.ImmidiateData != nil {
+		if err := ca.Add(request.ImmidiateData); err != nil {
+			return nil, errors.Wrap(err, "can't Add ImmidiateData")
+		}
+	}
+
 	return ca, nil
 
 }
