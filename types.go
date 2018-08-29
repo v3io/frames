@@ -101,11 +101,6 @@ type ReadRequest struct {
 	Aggragators string `json:"aggragators"` // TSDB aggregation functions
 }
 
-// TableSchema is table schema
-type TableSchema struct {
-	// TODO
-}
-
 // JoinStruct is join data
 type JoinStruct struct {
 	// TODO
@@ -142,4 +137,40 @@ type V3ioConfig struct {
 	// Number of parallel V3IO worker routines
 	Workers      int `json:"workers"`
 	DefaultLimit int `json:"limit,omitempty"`
+}
+
+// TableSchema is a table schema
+type TableSchema struct {
+	Type      string         `json:"type,omitempty"`
+	Namespace string         `json:"namespace,omitempty"`
+	Name      string         `json:"name,omitempty"`
+	Doc       string         `json:"doc,omitempty"`
+	Aliases   []string       `json:"aliases,omitempty"`
+	Fields    []*SchemaField `json:"fields"`
+	Key       *SchemaKey     `json:"key,omitempty"`
+}
+
+// SchemaField represents a schema field for Avro record.
+type SchemaField struct {
+	Name       string      `json:"name,omitempty"`
+	Doc        string      `json:"doc,omitempty"`
+	Default    interface{} `json:"default"`
+	Type       string      `json:"type,omitempty"`
+	Properties map[string]interface{}
+}
+
+// Property return a schema property
+func (s *SchemaField) Property(key string) (interface{}, bool) {
+	if s.Properties != nil {
+		if prop, ok := s.Properties[key]; ok {
+			return prop, true
+		}
+	}
+	return nil, false
+}
+
+// SchemaKey is a schema key
+type SchemaKey struct {
+	ShardingKey []string `json:"shardingKey,omitempty"`
+	SortingKey  []string `json:"sortingKey,omitempty"`
 }
