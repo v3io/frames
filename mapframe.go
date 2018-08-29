@@ -140,8 +140,8 @@ func (mf *MapFrame) Marshal() (interface{}, error) {
 		}
 	}
 
-	if col := mf.IndexColumn(); col != nil {
-		colMsg, err := mf.marshalColumn(col)
+	if iCol := mf.IndexColumn(); iCol != nil {
+		colMsg, err := mf.marshalColumn(iCol)
 		if err != nil {
 			return nil, err
 		}
