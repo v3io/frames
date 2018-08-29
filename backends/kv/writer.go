@@ -44,7 +44,6 @@ type Appender struct {
 
 // Write support writing to backend
 func (kv *Backend) Write(request *frames.WriteRequest) (frames.FrameAppender, error) {
-
 	tablePath := request.Table
 	if !strings.HasSuffix(tablePath, "/") {
 		tablePath += "/"
@@ -52,7 +51,7 @@ func (kv *Backend) Write(request *frames.WriteRequest) (frames.FrameAppender, er
 
 	appender := Appender{
 		request:      request,
-		container:    kv.ctx.Container,
+		container:    kv.container,
 		tablePath:    tablePath,
 		responseChan: make(chan *v3io.Response, 1000),
 		commChan:     make(chan int, 2),

@@ -24,25 +24,17 @@ import (
 	"flag"
 	"fmt"
 	"log"
-	"path/filepath"
 
 	"github.com/v3io/frames"
 )
 
 func main() {
-	// Get CSV file (assuming server runs on same machine)
-	csvFile := ""
-	flag.StringVar(&csvFile, "csv", "", "absolute path to CSV file")
+	tableName := ""
+	flag.StringVar(&tableName, "table", "", "table name (e.g. weather.csv)")
 	flag.Parse()
 
-	if csvFile == "" {
-		log.Fatal("no CSV file")
-	}
-
-	var err error
-	csvFile, err = filepath.Abs(csvFile)
-	if err != nil {
-		log.Fatalf("can't get absolute path - %s", err)
+	if tableName == "" {
+		log.Fatal("no table name")
 	}
 
 	url := "http://localhost:8080"
@@ -53,8 +45,8 @@ func main() {
 	}
 
 	req := &frames.ReadRequest{
-		Type:         "csv",
-		Table:        csvFile,
+		Backend:      "weather",
+		Table:        tableName,
 		MaxInMessage: 1000,
 	}
 

@@ -30,7 +30,7 @@ class Error(Exception):
     """v3io_frames Exception"""
 
 
-class BadQueryError(Exception):
+class BadRequest(Exception):
     """An error in query"""
 
 
@@ -53,19 +53,15 @@ class Client(object):
         self.url = url
         self.api_key = api_key
 
-    def read(self, typ='', data_format='', row_layout=False, query='',
-             table='', columns=None, filter='', group_by='', limit=0,
+    def read(self, backend='', query='', table='', columns=None, filter='',
+             group_by='', limit=0, data_format='', row_layout=False,
              max_in_message=0, marker='', extra=None):
         """Run a query in nuclio
 
         Parameters
         ----------
-        typ : str
-            Request type
-        data_format : str
-            Data format
-        row_layout : bool
-            Weather to use row layout (vs the default column layout)
+        backend : str
+            Backend name
         query : str
             Query in SQL format
         table : str
@@ -78,6 +74,10 @@ class Client(object):
             Query group by (can't be used with query)
         limit: int
             Maximal number of rows to return
+        data_format : str
+            Data format
+        row_layout : bool
+            Weather to use row layout (vs the default column layout)
         max_in_message : int
             Maximal number of rows per message
         marker : str
@@ -88,36 +88,37 @@ class Client(object):
         Returns:
             A pandas DataFrame iterator
         """
-        query_obj = {
-            'type': typ,
-            'data_format': data_format,
-            'row_layout': row_layout,
+        request = {
+            'backend': backend,
+            'table': table,
             'query': query,
             'table': table,
             'columns': columns,
             'filter': filter,
             'group_by': group_by,
             'limit': limit,
+            'data_format': data_format,
+            'row_layout': row_layout,
             'max_in_message': max_in_message,
             'marker': marker,
             'extra': extra,
         }
-        self._validate_query(query_obj)
+        self._validate_request(request)
         url = self.url + '/read'
         resp = requests.post(
-            url, json=query_obj, headers=self._headers(json=True), stream=True)
+            url, json=request, headers=self._headers(json=True), stream=True)
         if not resp.ok:
             raise Error('cannot call API - {}'.format(resp.text))
 
         return self._iter_dfs(resp.raw)
 
-    def write(self, typ, table, dfs, max_in_message=0):
+    def write(self, backend, table, dfs, max_in_message=0):
         """Write to table
 
         Parameters
         ----------
-        typ : str
-            Database type (csv, kv ...)
+        backend : str
+            Backend name
         table : str
             Table to write to
         dfs : iterable of DataFrame
@@ -130,7 +131,7 @@ class Client(object):
         """
 
         params = {
-            'type': typ,
+            'backend': backend,
             'table': table,
         }
 
@@ -156,8 +157,11 @@ class Client(object):
 
         return headers
 
-    def _validate_query(self, query):
-        return  # TODO
+    def _validate_request(self, request):
+        if not (request.get('table') or request.get('query')):
+            raise BadRequest('missing data')
+
+        # TODO: More validation
 
     def _iter_dfs(self, resp):
         unpacker = msgpack.Unpacker(resp, ext_hook=ext_hook, raw=False)

@@ -22,21 +22,11 @@ package frames
 
 import (
 	"time"
-
-	"github.com/nuclio/logger"
-	"github.com/v3io/v3io-go-http"
 )
-
-// DataContext is context for data
-type DataContext struct {
-	Container *v3io.Container
-	Logger    logger.Logger
-	Workers   int
-	Extra     interface{}
-}
 
 // DataBackend is an interface for read/write on backend
 type DataBackend interface {
+	// TODO: Expose name, type, config ... ?
 	Read(request *ReadRequest) (FrameIterator, error)
 	Write(request *WriteRequest) (FrameAppender, error) // TODO: use Appender for write streaming
 }
@@ -113,10 +103,8 @@ func (tr *ReadRequest) Step() (time.Duration, error) {
 
 // WriteRequest is request for writing data
 type WriteRequest struct {
-	// nosql | tsdb | sql | stream ..
-	Type string
-	// Table name (path)
-	Table string
+	Backend string // backend name
+	Table   string // Table name (path)
 	// Data message sent with the write request (in case of a stream multiple messages can follow)
 	ImmidiateData Frame
 	// Will we get more message chunks (in a stream), if not we can complete

@@ -13,7 +13,8 @@
 # limitations under the License.
 
 from os.path import abspath, dirname
-from tempfile import NamedTemporaryFile
+from datetime import datetime
+from getpass import getuser
 
 import pandas as pd
 
@@ -22,8 +23,9 @@ import v3io_frames as v3f
 here = abspath(dirname(__file__))
 csv_file = '{}/weather.csv'.format(here)
 
-tmp = NamedTemporaryFile(delete=False)
-print('Writing CSV to: {}'.format(tmp.name))
+table = '{:%Y-%m-%dT%H:%M:%S}-{}-weather.csv'.format(datetime.now(), getuser())
+
+print('Table: {}'.format(table))
 
 size = 1000
 df = pd.read_csv(csv_file, parse_dates=['DATE'])
@@ -32,12 +34,12 @@ dfs = [df[i*size:i*size+size] for i in range((len(df)//size)+1)]
 client = v3f.Client('http://localhost:8080', 's3cr3t')
 
 print('Writing')
-out = client.write('csv', tmp.name, dfs)
+out = client.write('weather', table, dfs)
 print('Result: {}'.format(out))
 
 print('Reading')
 num_dfs = num_rows = 0
-for df in client.read(typ='csv', table=tmp.name, max_in_message=size):
+for df in client.read(backend='weather', table=table, max_in_message=size):
     print(df)
     num_dfs += 1
     num_rows += len(df)

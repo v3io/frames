@@ -27,7 +27,7 @@ import (
 )
 
 func TestNew(t *testing.T) {
-	cfg := &frames.V3ioConfig{}
+	cfg := &frames.Config{}
 	address := ":8080"
 	srv, err := New(cfg, address, nil)
 	if err != nil {

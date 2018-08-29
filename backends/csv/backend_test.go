@@ -22,6 +22,7 @@ package csv
 
 import (
 	"io/ioutil"
+	"path"
 	"testing"
 
 	"github.com/v3io/frames"
@@ -129,21 +130,23 @@ func loadTempCSV(t *testing.T, req *frames.ReadRequest) []frames.Frame {
 		t.Fatalf("can't create logger - %s", err)
 	}
 
-	ctx := &frames.DataContext{
-		Logger: logger,
-	}
-
-	backend, err := NewBackend(ctx)
-	if err != nil {
-		t.Fatal(err)
-	}
-
 	csvPath, err := tmpCSV()
 	if err != nil {
 		t.Fatal(err)
 	}
 
-	req.Table = csvPath
+	cfg := &frames.BackendConfig{
+		Name:    "testCsv",
+		Type:    "csv",
+		RootDir: path.Dir(csvPath),
+	}
+
+	backend, err := NewBackend(logger, cfg)
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	req.Table = path.Base(csvPath)
 	it, err := backend.Read(req)
 	if err != nil {
 		t.Fatal(err)

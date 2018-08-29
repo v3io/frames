@@ -27,12 +27,12 @@ import (
 	"fmt"
 	"io"
 	"net/http"
+	"strings"
 	"time"
 
 	"github.com/v3io/frames"
 	"github.com/v3io/frames/backends/csv"
 	"github.com/v3io/frames/backends/kv"
-	"github.com/v3io/frames/v3ioutils"
 
 	"github.com/nuclio/logger"
 	"github.com/pkg/errors"
@@ -49,6 +49,7 @@ const (
 
 var (
 	statusPath = []byte("/_/status")
+	configPath = []byte("/_/config")
 	writePath  = []byte("/write")
 	readPath   = []byte("/read")
 )
@@ -59,16 +60,16 @@ type Server struct {
 	server  *fasthttp.Server
 	state   string
 
-	//backend frames.DataBackend
-	config  *frames.V3ioConfig
-	context *frames.DataContext
-	logger  logger.Logger
+	config   *frames.Config
+	backends map[string]frames.DataBackend
+	logger   logger.Logger
 }
 
 // New creates a new server
-func New(cfg *frames.V3ioConfig, addr string, logger logger.Logger) (*Server, error) {
+func New(cfg *frames.Config, addr string, logger logger.Logger) (*Server, error) {
+	var err error
+
 	if logger == nil {
-		var err error
 		logger, err = frames.NewLogger(cfg.Verbose)
 		if err != nil {
 			return nil, errors.Wrap(err, "can't create logger")
@@ -80,6 +81,11 @@ func New(cfg *frames.V3ioConfig, addr string, logger logger.Logger) (*Server, er
 		state:   ReadyState,
 		config:  cfg,
 		logger:  logger,
+	}
+
+	srv.backends, err = srv.createBackends(cfg.Backends)
+	if err != nil {
+		return nil, errors.Wrap(err, "can't create backends")
 	}
 
 	return srv, nil
@@ -115,9 +121,13 @@ func (s *Server) Start() error {
 }
 
 func (s *Server) handler(ctx *fasthttp.RequestCtx) {
+	// TODO: Check API key
+
 	switch {
 	case bytes.Compare(ctx.Path(), statusPath) == 0:
 		fmt.Fprintf(ctx, "%s\n", s.State())
+	case bytes.Compare(ctx.Path(), configPath) == 0:
+		s.handleConfig(ctx)
 	case bytes.Compare(ctx.Path(), writePath) == 0:
 		s.handleWrite(ctx)
 	case bytes.Compare(ctx.Path(), readPath) == 0:
@@ -150,9 +160,10 @@ func (s *Server) handleRead(ctx *fasthttp.RequestCtx) {
 	// TODO: Validate request
 
 	// TODO: We'd like to have a map of name->config of backends in configuration
-	backend, err := s.createBackend(request.Backend)
-	if err != nil {
-		ctx.Error(err.Error(), http.StatusBadRequest)
+	backend, ok := s.backends[request.Backend]
+	if !ok {
+		s.logger.ErrorWith("unknown backend", "name", request.Backend)
+		ctx.Error(fmt.Sprintf("unknown backend - %q", request.Backend), http.StatusBadRequest)
 		return
 	}
 
@@ -189,19 +200,20 @@ func (s *Server) handleWrite(ctx *fasthttp.RequestCtx) {
 	args := ctx.QueryArgs()
 
 	request := &frames.WriteRequest{
-		Type:  string(args.Peek("type")),
-		Table: string(args.Peek("table")),
+		Backend: string(args.Peek("backend")),
+		Table:   string(args.Peek("table")),
 	}
 
-	if request.Type == "" || request.Table == "" {
+	if request.Backend == "" || request.Table == "" {
 		s.logger.ErrorWith("bad write request", "request", args.String())
 		ctx.Error("missing parameters", http.StatusBadRequest)
 		return
 	}
 
-	backend, err := s.createBackend(request.Type)
-	if err != nil {
-		ctx.Error(err.Error(), http.StatusBadRequest)
+	backend, ok := s.backends[request.Backend]
+	if !ok {
+		s.logger.ErrorWith("unkown backend", "name", request.Backend)
+		ctx.Error(fmt.Sprintf("unknown backend - %s", request.Backend), http.StatusBadRequest)
 		return
 	}
 
@@ -264,20 +276,12 @@ func (s *Server) handleWrite(ctx *fasthttp.RequestCtx) {
 	ctx.Write(data)
 }
 
-func (s *Server) createBackend(typ string) (frames.DataBackend, error) {
-	ctx, err := newContext(s.config)
-	if err != nil {
-		return nil, errors.Wrap(err, "can't create context")
+func (s *Server) handleConfig(ctx *fasthttp.RequestCtx) {
+	enc := json.NewEncoder(ctx)
+	if err := enc.Encode(s.config); err != nil {
+		s.logger.ErrorWith("can't encode configuration", "error", err)
+		ctx.Error(fmt.Sprintf("can't encode config - %s", err), http.StatusInternalServerError)
 	}
-
-	switch typ {
-	case "kv":
-		return kv.NewBackend(ctx)
-	case "csv":
-		return csv.NewBackend(ctx)
-	}
-
-	return nil, fmt.Errorf("unknown backend type - %q", typ)
 }
 
 func (s *Server) populateQuery(request *frames.ReadRequest) error {
@@ -309,17 +313,26 @@ func (s *Server) populateQuery(request *frames.ReadRequest) error {
 	return nil
 }
 
-func newContext(cfg *frames.V3ioConfig) (*frames.DataContext, error) {
-	logger, err := frames.NewLogger(cfg.Verbose)
-	if err != nil {
-		return nil, errors.Wrap(err, "can't create logger")
+func (s *Server) createBackends(configs []frames.BackendConfig) (map[string]frames.DataBackend, error) {
+	backends := make(map[string]frames.DataBackend)
+
+	for _, cfg := range configs {
+		var factory func(logger.Logger, *frames.BackendConfig) (frames.DataBackend, error)
+
+		switch strings.ToLower(cfg.Type) {
+		case "csv":
+			factory = csv.NewBackend
+		case "kv":
+			factory = kv.NewBackend
+		}
+
+		backend, err := factory(s.logger, &cfg)
+		if err != nil {
+			return nil, errors.Wrapf(err, "%s:%s - can't create backend", cfg.Name, cfg.Type)
+		}
+
+		backends[cfg.Name] = backend
 	}
 
-	container, err := v3ioutils.CreateContainer(
-		logger, cfg.V3ioURL, cfg.Container, cfg.Username, cfg.Password, cfg.Workers)
-	if err != nil {
-		return nil, errors.Wrap(err, "failed to create data container")
-	}
-
-	return &frames.DataContext{Container: container, Logger: logger}, nil
+	return backends, nil
 }

@@ -97,11 +97,11 @@ func (c *Client) Read(request *ReadRequest) (FrameIterator, error) {
 
 // Write writes data
 func (c *Client) Write(request *WriteRequest) (FrameAppender, error) {
-	if request.Table == "" || request.Type == "" {
+	if request.Backend == "" || request.Table == "" {
 		return nil, fmt.Errorf("missing request parameters")
 	}
 
-	url, err := c.writeURL(request.Type, request.Table)
+	url, err := c.writeURL(request.Backend, request.Table)
 	if err != nil {
 		return nil, err
 	}
@@ -139,7 +139,7 @@ func (c *Client) addAuth(req *http.Request) {
 	req.Header.Set("Authorization", c.apiKey)
 }
 
-func (c *Client) writeURL(typ string, table string) (string, error) {
+func (c *Client) writeURL(backend string, table string) (string, error) {
 	u, err := url.Parse(c.URL)
 	if err != nil {
 		return "", errors.Wrapf(err, "can't parse client url (%q) - %s", c.URL, err)
@@ -147,7 +147,7 @@ func (c *Client) writeURL(typ string, table string) (string, error) {
 
 	query := u.Query()
 	query.Set("table", table)
-	query.Set("type", typ)
+	query.Set("backend", backend)
 	u.RawQuery = query.Encode()
 	return u.String(), nil
 }

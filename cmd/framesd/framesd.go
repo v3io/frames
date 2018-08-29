@@ -23,7 +23,6 @@ package main
 import (
 	"flag"
 	"fmt"
-	"io/ioutil"
 	"log"
 	"time"
 
@@ -44,21 +43,12 @@ func main() {
 		log.Fatal("no config file")
 	}
 
-	data, err := ioutil.ReadFile(configFile)
-	if err != nil {
-		log.Fatalf("error: can't open config - %s", err)
-	}
-
-	cfg := &frames.V3ioConfig{}
-	if err := toml.Unmarshal(data, cfg); err != nil {
+	cfg := &frames.Config{}
+	if _, err := toml.DecodeFile(configFile, cfg); err != nil {
 		log.Fatalf("error: can't read config - %s", err)
 	}
 
 	srv, err := server.New(cfg, addr, nil)
-	if err := toml.Unmarshal(data, cfg); err != nil {
-		log.Fatalf("error: can't create server - %s", err)
-	}
-
 	if err = srv.Start(); err != nil {
 		log.Fatalf("error: can't start server - %s", err)
 	}

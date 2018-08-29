@@ -37,17 +37,70 @@ import (
 
 // Backend is CSV backend
 type Backend struct {
-	root string
-	ctx  *frames.DataContext
+	rootDir string
+	logger  logger.Logger
 }
 
 // NewBackend returns a new CSV backend
-func NewBackend(ctx *frames.DataContext) (*Backend, error) {
+func NewBackend(logger logger.Logger, config *frames.BackendConfig) (frames.DataBackend, error) {
 	backend := &Backend{
-		ctx: ctx,
+		rootDir: config.RootDir,
+		logger:  logger,
 	}
 
 	return backend, nil
+}
+
+// Read handles reading
+func (b *Backend) Read(request *frames.ReadRequest) (frames.FrameIterator, error) {
+	file, err := os.Open(b.csvPath(request.Table))
+	if err != nil {
+		return nil, err
+	}
+
+	reader := csv.NewReader(file)
+	columns, err := reader.Read()
+	if err != nil {
+		return nil, errors.Wrap(err, "can't read header (columns)")
+	}
+
+	it := &FrameIterator{
+		logger:      b.logger,
+		path:        request.Table,
+		reader:      reader,
+		columnNames: columns,
+		limit:       request.Limit,
+		frameLimit:  request.MaxInMessage,
+	}
+
+	return it, nil
+}
+
+// Write handles writing
+func (b *Backend) Write(request *frames.WriteRequest) (frames.FrameAppender, error) {
+	file, err := os.Create(b.csvPath(request.Table))
+	if err != nil {
+		return nil, err
+	}
+
+	ca := &csvAppender{
+		writer:    file,
+		csvWriter: csv.NewWriter(file),
+		logger:    b.logger,
+	}
+
+	if request.ImmidiateData != nil {
+		if err := ca.Add(request.ImmidiateData); err != nil {
+			return nil, errors.Wrap(err, "can't Add ImmidiateData")
+		}
+	}
+
+	return ca, nil
+
+}
+
+func (b *Backend) csvPath(table string) string {
+	return fmt.Sprintf("%s/%s", b.rootDir, table)
 }
 
 // FrameIterator iterates over CSV
@@ -61,31 +114,6 @@ type FrameIterator struct {
 	nRows       int
 	limit       int
 	frameLimit  int
-}
-
-// Read handles reading
-func (b *Backend) Read(request *frames.ReadRequest) (frames.FrameIterator, error) {
-	file, err := os.Open(request.Table)
-	if err != nil {
-		return nil, err
-	}
-
-	reader := csv.NewReader(file)
-	columns, err := reader.Read()
-	if err != nil {
-		return nil, errors.Wrap(err, "can't read header (columns)")
-	}
-
-	it := &FrameIterator{
-		logger:      b.ctx.Logger,
-		path:        request.Table,
-		reader:      reader,
-		columnNames: columns,
-		limit:       request.Limit,
-		frameLimit:  request.MaxInMessage,
-	}
-
-	return it, nil
 }
 
 // Next reads the next frame, return true of succeeded
@@ -255,29 +283,6 @@ func (it *FrameIterator) parseValue(value string) interface{} {
 
 	// Leave as string
 	return value
-}
-
-// Write handles writing
-func (b *Backend) Write(request *frames.WriteRequest) (frames.FrameAppender, error) {
-	file, err := os.Create(request.Table)
-	if err != nil {
-		return nil, err
-	}
-
-	ca := &csvAppender{
-		writer:    file,
-		csvWriter: csv.NewWriter(file),
-		logger:    b.ctx.Logger,
-	}
-
-	if request.ImmidiateData != nil {
-		if err := ca.Add(request.ImmidiateData); err != nil {
-			return nil, errors.Wrap(err, "can't Add ImmidiateData")
-		}
-	}
-
-	return ca, nil
-
 }
 
 type csvAppender struct {

@@ -24,6 +24,8 @@ import (
 	"fmt"
 	"strings"
 
+	"github.com/nuclio/logger"
+	"github.com/pkg/errors"
 	"github.com/v3io/v3io-go-http"
 
 	"github.com/v3io/frames"
@@ -33,12 +35,25 @@ import (
 
 // Backend is key/value backend
 type Backend struct {
-	ctx *frames.DataContext
+	container  *v3io.Container
+	logger     logger.Logger
+	numWorkers int
 }
 
 // NewBackend return a new key/value backend
-func NewBackend(ctx *frames.DataContext) (frames.DataBackend, error) {
-	newBackend := Backend{ctx: ctx}
+func NewBackend(logger logger.Logger, config *frames.BackendConfig) (frames.DataBackend, error) {
+	container, err := v3ioutils.CreateContainer(
+		logger, config.V3ioURL, config.Container, config.Username, config.Password, config.Workers)
+	if err != nil {
+		return nil, errors.Wrap(err, "failed to create data container")
+	}
+
+	newBackend := Backend{
+		logger:     logger,
+		container:  container,
+		numWorkers: config.Workers,
+	}
+
 	return &newBackend, nil
 }
 
@@ -55,18 +70,17 @@ func (kv *Backend) Read(request *frames.ReadRequest) (frames.FrameIterator, erro
 
 	input := v3io.GetItemsInput{Path: tablePath, Filter: request.Filter, AttributeNames: request.Columns}
 	fmt.Println(input, request)
-	iter, err := v3ioutils.NewAsyncItemsCursor(kv.ctx.Container, &input, kv.ctx.Workers, request.ShardingKeys)
+	iter, err := v3ioutils.NewAsyncItemsCursor(kv.container, &input, kv.numWorkers, request.ShardingKeys)
 	if err != nil {
 		return nil, err
 	}
 
-	newKVIter := Iterator{ctx: kv.ctx, request: request, iter: iter}
+	newKVIter := Iterator{request: request, iter: iter}
 	return &newKVIter, nil
 }
 
 // Iterator is key/value iterator
 type Iterator struct {
-	ctx       *frames.DataContext
 	request   *frames.ReadRequest
 	iter      *v3ioutils.AsyncItemsCursor
 	err       error

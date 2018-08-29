@@ -24,3 +24,7 @@ all:
 
 test:
 	GO111MODULE=on go test -v $(modflag) ./...
+
+build:
+	GO111MODULE=on go build -v $(modflag) ./...
+
