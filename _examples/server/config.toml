@@ -1,0 +1,8 @@
+v3ioUrl = "http://v3.io"
+container = "a"
+path = "/data"
+username = "daffy"
+password = "duck"
+verbose = "info"
+# workers = 2
+# limit = 3

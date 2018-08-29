@@ -1,7 +1,7 @@
 package v3io
 
 import (
-	"github.com/pkg/errors"
+	"errors"
 )
 
 var ErrInvalidTypeConversion = errors.New("Invalid type conversion")
@@ -83,7 +83,7 @@ func (ic *SyncItemsCursor) NextItem() (Item, error) {
 	// invoke get items
 	newResponse, err := ic.container.GetItems(ic.input)
 	if err != nil {
-		return nil, errors.Wrap(err, "Failed to request next items")
+		return nil, err
 	}
 
 	// release the previous response

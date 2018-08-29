@@ -1,0 +1,10 @@
+language: python
+python:
+  - "2.7"
+  - "3.6"
+  - "3.7-dev"
+install:
+  - pip install pipenv
+  - pipenv sync
+script:
+  - pipenv run python -m pytest -v

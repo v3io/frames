@@ -1,9 +1,9 @@
 package v3io
 
 import (
-	"github.com/nuclio/logger"
-	"github.com/pkg/errors"
 	"sync/atomic"
+
+	"github.com/nuclio/logger"
 )
 
 // TODO: Request should have a global pool
@@ -23,7 +23,7 @@ func newSession(parentLogger logger.Logger,
 
 	newSyncSession, err := newSyncSession(parentLogger, context.Sync, username, password, label)
 	if err != nil {
-		return nil, errors.Wrap(err, "Failed to create sync session")
+		return nil, err
 	}
 
 	return &Session{
@@ -55,7 +55,7 @@ func (s *Session) ListAll(input *ListAllInput,
 	requestResponse.Request.requestResponse = requestResponse
 
 	if err := s.sendRequest(&requestResponse.Request); err != nil {
-		return nil, errors.Wrap(err, "Failed to send request")
+		return nil, err
 	}
 
 	return &requestResponse.Request, nil

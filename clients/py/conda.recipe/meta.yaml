@@ -1,0 +1,25 @@
+package:
+    name: v3io_frames
+    version: "0.1.0"
+
+build:
+    number: 1
+
+source:
+    path: ..
+
+requirements:
+    build:
+        - conda-forge::msgpack-python
+        - pandas
+        - setuptools
+    run:
+        - python
+
+test:
+    requires:
+        - pytest
+
+about:
+    home: https://github.com/v3io/frames
+    license: Apache
