@@ -31,7 +31,7 @@ func TestMapFrameNew(t *testing.T) {
 	col1, _ := NewLabelColumn("col1", val1, size)
 	cols := []Column{col0, col1}
 
-	frame, err := NewMapFrame(cols)
+	frame, err := NewMapFrame(cols, nil)
 	if err != nil {
 		t.Fatalf("can't create frame - %s", err)
 	}
@@ -68,16 +68,9 @@ func TestMapFrameNew(t *testing.T) {
 }
 
 func TestMapFrameSlice(t *testing.T) {
-	size := 10
-	nCols := 7
-	var cols []Column
-
-	for i := 0; i < nCols; i++ {
-		col, _ := NewLabelColumn(fmt.Sprintf("col%d", i), i, size)
-		cols = append(cols, col)
-	}
-
-	frame, err := NewMapFrame(cols)
+	nCols, size := 7, 10
+	cols := newIntCols(t, nCols, size)
+	frame, err := NewMapFrame(cols, nil)
 	if err != nil {
 		t.Fatalf("can't create frame - %s", err)
 	}
@@ -101,4 +94,49 @@ func TestMapFrameSlice(t *testing.T) {
 	if len(names2) != nCols {
 		t.Fatalf("# of columns mismatch - %d != %d", len(names2), nCols)
 	}
+}
+
+func TestMapFrameIndex(t *testing.T) {
+	nCols, size := 2, 12
+	cols := newIntCols(t, nCols, size)
+
+	iName := "index-col"
+	iVal := 3.2
+	iCol, err := NewLabelColumn(iName, iVal, size)
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	frame, err := NewMapFrame(cols, iCol)
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	col := frame.IndexColumn()
+	if col == nil {
+		t.Fatal("no index column")
+	}
+
+	if col.Name() != iName {
+		t.Fatalf("index col name mismatch (%q != %q)", col.Name(), iName)
+	}
+
+	if col.FloatAt(0) != iVal {
+		t.Fatalf("index col value mismatch (%f != %f)", col.FloatAt(0), iVal)
+	}
+}
+
+func newIntCols(t *testing.T, numCols int, size int) []Column {
+	var cols []Column
+
+	for i := 0; i < numCols; i++ {
+		col, err := NewLabelColumn(fmt.Sprintf("col%d", i), i, size)
+		if err != nil {
+			t.Fatalf("can't create column - %s", err)
+		}
+
+		cols = append(cols, col)
+	}
+
+	return cols
 }

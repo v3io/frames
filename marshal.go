@@ -99,31 +99,9 @@ func (d *Decoder) Decode() (Frame, error) {
 				return nil, fmt.Errorf("%d: column name mismatch %q != %q", i, name, sliceColMsg.Name)
 			}
 
-			var col Column
-			var err error
-
-			// TODO: Check only one is not null?
-			switch {
-			case sliceColMsg.IntData != nil:
-				col, err = NewSliceColumn(name, sliceColMsg.IntData)
-			case sliceColMsg.FloatData != nil:
-				col, err = NewSliceColumn(name, sliceColMsg.FloatData)
-			case sliceColMsg.StringData != nil:
-				col, err = NewSliceColumn(name, sliceColMsg.StringData)
-			case sliceColMsg.TimeData != nil:
-				col, err = NewSliceColumn(name, sliceColMsg.TimeData)
-			case sliceColMsg.NSTimeData != nil:
-				data := make([]time.Time, len(sliceColMsg.NSTimeData))
-				for i, val := range sliceColMsg.NSTimeData {
-					data[i] = d.timeFromNS(val)
-				}
-				col, err = NewSliceColumn(name, data)
-			default:
-				return nil, fmt.Errorf("no data in column %q", name)
-			}
-
+			col, err := d.decodeSliceCol(sliceColMsg)
 			if err != nil {
-				return nil, errors.Wrapf(err, "can't create column %q from %+v", name, sliceColMsg)
+				return nil, err
 			}
 
 			columns[i] = col
@@ -136,19 +114,9 @@ func (d *Decoder) Decode() (Frame, error) {
 				return nil, fmt.Errorf("%d: column name mismatch %q != %q", i, name, labelColMsg.Name)
 			}
 
-			value := labelColMsg.Value
-			if labelColMsg.DType == TimeType.String() {
-				ival, ok := value.(int)
-				if !ok {
-					return nil, fmt.Errorf("%s:%d bad type for ns time - %T", name, i, value)
-				}
-
-				value = d.timeFromNS(ival)
-			}
-
-			col, err := NewLabelColumn(name, value, labelColMsg.Size)
+			col, err := d.decodeLabelCol(labelColMsg)
 			if err != nil {
-				return nil, errors.Wrapf(err, "can't create column %q from %+v", name, labelColMsg)
+				return nil, err
 			}
 
 			columns[i] = col
@@ -158,7 +126,72 @@ func (d *Decoder) Decode() (Frame, error) {
 		return nil, fmt.Errorf("column %q not found", name)
 	}
 
-	return NewMapFrame(columns)
+	var indexCol Column
+	var err error
+	switch {
+	case msg.SliceIndexCol != nil:
+		indexCol, err = d.decodeSliceCol(msg.SliceIndexCol)
+		if err != nil {
+			return nil, err
+		}
+	case msg.LabelIndexCol != nil:
+		indexCol, err = d.decodeLabelCol(msg.LabelIndexCol)
+		if err != nil {
+			return nil, err
+		}
+	}
+
+	return NewMapFrame(columns, indexCol)
+}
+
+func (d *Decoder) decodeLabelCol(colMsg *LabelColumnMessage) (Column, error) {
+	value := colMsg.Value
+	if colMsg.DType == TimeType.String() {
+		ival, ok := value.(int)
+		if !ok {
+			return nil, fmt.Errorf("%s bad type for ns time - %T", colMsg.Name, value)
+		}
+
+		value = d.timeFromNS(ival)
+	}
+
+	col, err := NewLabelColumn(colMsg.Name, value, colMsg.Size)
+	if err != nil {
+		return nil, errors.Wrapf(err, "can't create column %q from %+v", colMsg.Name, colMsg)
+	}
+
+	return col, nil
+}
+
+func (d *Decoder) decodeSliceCol(colMsg *SliceColumnMessage) (Column, error) {
+	var col Column
+	var err error
+
+	// TODO: Check only one is not null?
+	switch {
+	case colMsg.IntData != nil:
+		col, err = NewSliceColumn(colMsg.Name, colMsg.IntData)
+	case colMsg.FloatData != nil:
+		col, err = NewSliceColumn(colMsg.Name, colMsg.FloatData)
+	case colMsg.StringData != nil:
+		col, err = NewSliceColumn(colMsg.Name, colMsg.StringData)
+	case colMsg.TimeData != nil:
+		col, err = NewSliceColumn(colMsg.Name, colMsg.TimeData)
+	case colMsg.NSTimeData != nil:
+		data := make([]time.Time, len(colMsg.NSTimeData))
+		for i, val := range colMsg.NSTimeData {
+			data[i] = d.timeFromNS(val)
+		}
+		col, err = NewSliceColumn(colMsg.Name, data)
+	default:
+		return nil, fmt.Errorf("no data in column %q", colMsg.Name)
+	}
+
+	if err != nil {
+		return nil, errors.Wrapf(err, "can't create column %q from %+v", colMsg.Name, colMsg)
+	}
+
+	return col, nil
 }
 
 func (d *Decoder) timeFromNS(value int) time.Time {
