@@ -228,21 +228,13 @@ func (it *FrameIterator) buildFrame(rows [][]string) (frames.Frame, error) {
 }
 
 func (it *FrameIterator) parseValue(value string) interface{} {
-	// Time
-	t, err := time.Parse(time.RFC3339, value)
-	if err == nil {
-		return t
-	}
-
-	t, err = time.Parse(time.RFC3339Nano, value)
-	if err == nil {
-		return t
-	}
-
-	// Date
-	t, err = time.Parse("2006-01-02", value)
-	if err == nil {
-		return t
+	// Time/date formats
+	timeFormats := []string{time.RFC3339, time.RFC3339Nano, "2006-01-02"}
+	for _, format := range timeFormats {
+		t, err := time.Parse(format, value)
+		if err == nil {
+			return t
+		}
 	}
 
 	// Int
