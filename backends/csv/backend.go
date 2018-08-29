@@ -37,12 +37,17 @@ import (
 
 // Backend is CSV backend
 type Backend struct {
-	ctx *frames.DataContext
+	root string
+	ctx  *frames.DataContext
 }
 
 // NewBackend returns a new CSV backend
 func NewBackend(ctx *frames.DataContext) (*Backend, error) {
-	return &Backend{ctx}, nil
+	backend := &Backend{
+		ctx: ctx,
+	}
+
+	return backend, nil
 }
 
 // FrameIterator iterates over CSV

@@ -150,7 +150,7 @@ func (s *Server) handleRead(ctx *fasthttp.RequestCtx) {
 	// TODO: Validate request
 
 	// TODO: We'd like to have a map of name->config of backends in configuration
-	backend, err := s.createBackend(request.Type)
+	backend, err := s.createBackend(request.Backend)
 	if err != nil {
 		ctx.Error(err.Error(), http.StatusBadRequest)
 		return

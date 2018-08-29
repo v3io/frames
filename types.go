@@ -56,9 +56,11 @@ type FrameAppender interface {
 
 // ReadRequest is request for reading data
 type ReadRequest struct {
-	// nosql | tsdb | sql | stream | csv ..
-	Type string `json:"type"`
-	// json | msgpack | csv
+	// name of the backend
+	Backend string `json:"backend"`
+	// schema (for describing unstructured/schemaless data)
+	Schema *TableSchema `json:"schema"`
+	// on the wire message format: json | msgpack | csv
 	DataFormat string `json:"data_format"`
 	// orgenized as rows (vs columns)
 	RowLayout bool `json:"row_layout"`
@@ -74,6 +76,8 @@ type ReadRequest struct {
 	Filter string `json:"filter"`
 	// group by expression
 	GroupBy string `json:"group_by"` // TODO: []string? (as in SQL)
+	// Enrichement with 2nd tables
+	Join []*JoinStruct // struct with backend, table name, src col, dst col
 
 	// max rows to return in total
 	Limit int `json:"limit"`
@@ -82,28 +86,33 @@ type ReadRequest struct {
 	// for future use, throttling
 	Marker string `json:"marker"`
 
-	Extra interface{} `json:"extra"`
-}
-
-// KVRead is read specific fields
-type KVRead struct {
+	// NoSQL specific fields
 	// request specific DB segments (slices)
 	Segments          []int    `json:"segments"`
 	TotalSegment      int      `json:"total_segment"`
 	ShardingKeys      []string `json:"sharding_keys"`
 	SortKeyRangeStart string   `json:"sort_key_range_start"`
 	SortKeyRangeEnd   string   `json:"sort_key_range_end"`
+
+	// TSDB and Stream specific fields
+	From        string `json:"from"`
+	To          string `json:"to"`
+	StepRaw     string `json:"step"`        // time.Duration format
+	Aggragators string `json:"aggragators"` // TSDB aggregation functions
 }
 
-// TSDBRead is TSDB specific fields
-type TSDBRead struct {
-	StartTime time.Time `json:"start_time"`
-	EndTime   time.Time `json:"end_time"`
-	StepRaw   string    `json:"step"` // time.Duration format
+// TableSchema is table schema
+type TableSchema struct {
+	// TODO
+}
+
+// JoinStruct is join data
+type JoinStruct struct {
+	// TODO
 }
 
 // Step return the step
-func (tr *TSDBRead) Step() (time.Duration, error) {
+func (tr *ReadRequest) Step() (time.Duration, error) {
 	return time.ParseDuration(tr.StepRaw)
 }
 

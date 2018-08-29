@@ -44,11 +44,6 @@ func NewBackend(ctx *frames.DataContext) (frames.DataBackend, error) {
 
 // Read does a read request
 func (kv *Backend) Read(request *frames.ReadRequest) (frames.FrameIterator, error) {
-	kvRequest, ok := request.Extra.(frames.KVRead)
-	if !ok {
-		return nil, fmt.Errorf("not a KV request")
-	}
-
 	tablePath := request.Table
 	if !strings.HasSuffix(tablePath, "/") {
 		tablePath += "/"
@@ -60,7 +55,7 @@ func (kv *Backend) Read(request *frames.ReadRequest) (frames.FrameIterator, erro
 
 	input := v3io.GetItemsInput{Path: tablePath, Filter: request.Filter, AttributeNames: request.Columns}
 	fmt.Println(input, request)
-	iter, err := v3ioutils.NewAsyncItemsCursor(kv.ctx.Container, &input, kv.ctx.Workers, kvRequest.ShardingKeys)
+	iter, err := v3ioutils.NewAsyncItemsCursor(kv.ctx.Container, &input, kv.ctx.Workers, request.ShardingKeys)
 	if err != nil {
 		return nil, err
 	}
