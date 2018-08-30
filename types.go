@@ -164,22 +164,6 @@ type WriteRequest struct {
 	HaveMore bool
 }
 
-// V3ioConfig is v3io configuration
-type V3ioConfig struct {
-	// V3IO Connection details: Url, Data container, relative path for this dataset, credentials
-	V3ioURL   string `json:"v3ioUrl"`
-	Container string `json:"container"`
-	Path      string `json:"path"`
-	Username  string `json:"username"`
-	Password  string `json:"password"`
-
-	// Set logging level: debug | info | warn | error (info by default)
-	Verbose string `json:"verbose,omitempty"`
-	// Number of parallel V3IO worker routines
-	Workers      int `json:"workers"`
-	DefaultLimit int `json:"limit,omitempty"`
-}
-
 // TableSchema is a table schema
 type TableSchema struct {
 	Type      string         `json:"type,omitempty"`
