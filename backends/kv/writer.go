@@ -22,6 +22,7 @@ package kv
 
 import (
 	"fmt"
+	"strconv"
 	"strings"
 	"time"
 
@@ -142,13 +143,14 @@ func (a *Appender) indexValFunc(frame frames.Frame, name string) (func(int) stri
 	)
 
 	switch indexCol.DType() {
+	// strconv.Format* is about twice as fast as fmt.Sprintf
 	case frames.IntType:
 		fn = func(i int) string {
-			return fmt.Sprintf("%d", indexCol.IntAt(i))
+			return strconv.FormatInt(int64(indexCol.IntAt(i)), 10)
 		}
 	case frames.FloatType:
 		fn = func(i int) string {
-			return fmt.Sprintf("%f", indexCol.FloatAt(i))
+			return strconv.FormatFloat(indexCol.FloatAt(i), 'f', -1, 64)
 		}
 	case frames.StringType:
 		fn = func(i int) string {
