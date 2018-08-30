@@ -36,7 +36,7 @@ func TestMapFrameNew(t *testing.T) {
 		t.Fatalf("can't create frame - %s", err)
 	}
 
-	names := frame.Columns()
+	names := frame.Names()
 	if len(names) != len(cols) {
 		t.Fatalf("# of columns mismatch - %d != %d", len(names), len(cols))
 	}
@@ -75,7 +75,7 @@ func TestMapFrameSlice(t *testing.T) {
 		t.Fatalf("can't create frame - %s", err)
 	}
 
-	names := frame.Columns()
+	names := frame.Names()
 	if len(names) != nCols {
 		t.Fatalf("# of columns mismatch - %d != %d", len(names), nCols)
 	}
@@ -90,7 +90,7 @@ func TestMapFrameSlice(t *testing.T) {
 		t.Fatalf("bad # of rows in slice - %d != %d", frame2.Len(), end-start)
 	}
 
-	names2 := frame2.Columns()
+	names2 := frame2.Names()
 	if len(names2) != nCols {
 		t.Fatalf("# of columns mismatch - %d != %d", len(names2), nCols)
 	}

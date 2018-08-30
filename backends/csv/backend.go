@@ -294,7 +294,7 @@ type csvAppender struct {
 
 func (ca *csvAppender) Add(frame frames.Frame) error {
 	ca.logger.InfoWith("adding frame", "size", frame.Len())
-	names := frame.Columns()
+	names := frame.Names()
 	if !ca.headerWritten {
 		if err := ca.csvWriter.Write(names); err != nil {
 			ca.logger.ErrorWith("can't write header", "error", err)

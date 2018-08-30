@@ -61,7 +61,7 @@ func TestRoundTrip(t *testing.T) {
 		t.Fatal(err)
 	}
 
-	cols1, cols2 := frame1.Columns(), frame2.Columns()
+	cols1, cols2 := frame1.Names(), frame2.Names()
 	if !reflect.DeepEqual(cols1, cols2) {
 		t.Fatalf("columns mismatch: %v != %v", cols1, cols2)
 	}

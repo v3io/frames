@@ -94,8 +94,8 @@ func NewMapFrameFromMap(data map[string]interface{}) (*MapFrame, error) {
 	return NewMapFrame(columns, nil)
 }
 
-// Columns returns the column names
-func (mf *MapFrame) Columns() []string {
+// Names returns the column names
+func (mf *MapFrame) Names() []string {
 	names := make([]string, len(mf.byIndex))
 
 	for i := 0; i < len(mf.byIndex); i++ {
@@ -162,7 +162,7 @@ type MapFrameMessage struct {
 // Marshal marshals to native type
 func (mf *MapFrame) Marshal() (interface{}, error) {
 	msg := &MapFrameMessage{
-		Columns:   mf.Columns(),
+		Columns:   mf.Names(),
 		LabelCols: make(map[string]*LabelColumnMessage),
 		SliceCols: make(map[string]*SliceColumnMessage),
 	}

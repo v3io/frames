@@ -232,9 +232,11 @@ func (s *Server) handleWrite(ctx *fasthttp.RequestCtx) {
 	}
 
 	reader, writer := io.Pipe()
+	writeDone := make(chan bool)
 
 	nFrames, nRows := 0, 0
 	go func() {
+		defer func() { writeDone <- true }() // TODO:
 		dec := frames.NewDecoder(reader)
 
 		for {
@@ -265,6 +267,7 @@ func (s *Server) handleWrite(ctx *fasthttp.RequestCtx) {
 
 	ctx.Request.BodyWriteTo(writer)
 
+	<-writeDone
 	// TODO: Specify timeout in request?
 	if err := appender.WaitForComplete(time.Minute); err != nil {
 		s.logger.ErrorWith("can't wait for completion", "error", err)

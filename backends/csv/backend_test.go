@@ -65,8 +65,8 @@ func TestCSV(t *testing.T) {
 	}
 
 	for _, frame := range result {
-		if len(frame.Columns()) != numCSVCols {
-			t.Fatalf("# columns mismatch %d != %d", len(frame.Columns()), numCSVRows)
+		if len(frame.Names()) != numCSVCols {
+			t.Fatalf("# columns mismatch %d != %d", len(frame.Names()), numCSVRows)
 		}
 
 		for name, dtype := range colTypes {

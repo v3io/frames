@@ -59,7 +59,7 @@ func (kv *Backend) Write(request *frames.WriteRequest) (frames.FrameAppender, er
 		commChan:     make(chan int, 2),
 		logger:       kv.logger,
 	}
-	appender.respWaitLoop(10 * time.Second)
+	go appender.respWaitLoop(10 * time.Second)
 
 	if request.ImmidiateData != nil {
 		err := appender.Add(request.ImmidiateData)
@@ -73,13 +73,13 @@ func (kv *Backend) Write(request *frames.WriteRequest) (frames.FrameAppender, er
 
 // Add adds a frame
 func (a *Appender) Add(frame frames.Frame) error {
-	names := frame.Columns()
+	names := frame.Names()
 	if len(names) == 0 {
 		return fmt.Errorf("empty frame")
 	}
 
 	columns := make(map[string]frames.Column)
-	for _, name := range frame.Columns() {
+	for _, name := range frame.Names() {
 		col, err := frame.Column(name)
 		if err != nil {
 			return err
@@ -100,6 +100,7 @@ func (a *Appender) Add(frame frames.Frame) error {
 	}
 
 	for r := 0; r < frame.Len(); r++ {
+		key := ""
 		row := make(map[string]interface{})
 		for name, col := range columns {
 			val, err := utils.ColAt(col, r)
@@ -107,15 +108,20 @@ func (a *Appender) Add(frame frames.Frame) error {
 				return err
 			}
 
+			if name == indexName {
+				key = fmt.Sprintf("%v", val)
+			}
+
 			row[name] = val
 		}
 
-		input := v3io.PutItemInput{Path: a.tablePath + indexName, Attributes: row}
+		input := v3io.PutItemInput{Path: a.tablePath + key, Attributes: row}
 		_, err := a.container.PutItem(&input, r, a.responseChan)
-		a.sent += r // TODO: Bug? (should be ++)
 		if err != nil {
 			return err
 		}
+
+		a.sent++
 	}
 
 	return nil
@@ -123,6 +129,7 @@ func (a *Appender) Add(frame frames.Frame) error {
 
 // WaitForComplete waits for write to complete
 func (a *Appender) WaitForComplete(timeout time.Duration) error {
+	a.logger.DebugWith("WaitForComplete", "sent", a.sent)
 	a.commChan <- a.sent
 	<-a.doneChan
 	return nil
@@ -133,38 +140,37 @@ func (a *Appender) respWaitLoop(timeout time.Duration) {
 	requests := -1
 	a.doneChan = make(chan bool)
 
-	go func() {
-		active := false
-		for {
-			select {
+	active := false
+	for {
+		select {
 
-			case resp := <-a.responseChan:
-				responses++
-				active = true
+		case resp := <-a.responseChan:
+			responses++
+			active = true
 
-				if resp.Error != nil {
-					a.logger.ErrorWith("failed write response", "error", resp.Error)
-				}
-
-				if requests == responses {
-					a.doneChan <- true
-					return
-				}
-
-			case requests = <-a.commChan:
-				if requests <= responses {
-					a.doneChan <- true
-					return
-				}
-
-			case <-time.After(timeout):
-				if !active {
-					a.logger.ErrorWith("Resp loop timed out! ", "requestrs", requests, "response", responses)
-					a.doneChan <- true
-					return
-				}
-				active = false
+			if resp.Error != nil {
+				a.logger.ErrorWith("failed write response", "error", resp.Error)
+				return
 			}
+
+			if requests == responses {
+				a.doneChan <- true
+				return
+			}
+
+		case requests = <-a.commChan:
+			if requests <= responses {
+				a.doneChan <- true
+				return
+			}
+
+		case <-time.After(timeout):
+			if !active {
+				a.logger.ErrorWith("Resp loop timed out! ", "requests", requests, "response", responses)
+				a.doneChan <- true
+				return
+			}
+			active = false
 		}
-	}()
+	}
 }

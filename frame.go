@@ -55,7 +55,7 @@ type Column interface {
 
 // Frame is a collection of columns
 type Frame interface {
-	Columns() []string                       // Column names
+	Names() []string                         // Column names
 	IndexColumn() Column                     // Index column
 	Len() int                                // Number of rows
 	Column(name string) (Column, error)      // Column by name

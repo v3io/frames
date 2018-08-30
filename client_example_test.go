@@ -75,7 +75,7 @@ func ExampleClient() {
 
 	for it.Next() {
 		frame := it.At()
-		fmt.Println(frame.Columns())
+		fmt.Println(frame.Names())
 		fmt.Printf("%d rows\n", frame.Len())
 		fmt.Println("-----------")
 	}
