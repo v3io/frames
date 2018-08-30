@@ -39,6 +39,8 @@ func (c *Config) Validate() error {
 		return fmt.Errorf("no backends")
 	}
 
+	names := make(map[string]bool)
+
 	for i, backend := range c.Backends {
 		if backend.Name == "" {
 			return fmt.Errorf("backend %d missing name", i)
@@ -47,6 +49,12 @@ func (c *Config) Validate() error {
 		if backend.Type == "" {
 			return fmt.Errorf("backend %q missing type", backend.Name)
 		}
+
+		if found := names[backend.Name]; found {
+			return fmt.Errorf("backend %d - duplicate name %q", i, backend.Name)
+		}
+
+		names[backend.Name] = true
 	}
 
 	return nil
