@@ -24,6 +24,31 @@ import (
 	"time"
 )
 
+// Config is server configuration
+type Config struct {
+	Verbose      string `json:"verbose,omitempty"`
+	DefaultLimit int    `json:"limit,omitempty"`
+
+	Backends []BackendConfig `json:"backends,omitempty"`
+}
+
+// BackendConfig is backend configuration
+type BackendConfig struct {
+	Type string `json:"type"` // v3io, csv, ...
+	Name string `json:"name"`
+
+	// V3IO backend
+	V3ioURL   string `json:"v3ioUrl,omitempty"`
+	Container string `json:"container,omitempty"`
+	Path      string `json:"path,omitempty"`
+	Username  string `json:"username,omitempty"`
+	Password  string `json:"password,omitempty"`
+	Workers   int    `json:"workers,omitempty"` // Number of parallel V3IO worker routines
+
+	// CSV backend
+	RootDir string `json:"numWorkers,omitempty"`
+}
+
 // DataBackend is an interface for read/write on backend
 type DataBackend interface {
 	// TODO: Expose name, type, config ... ?
