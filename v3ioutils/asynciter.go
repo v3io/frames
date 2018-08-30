@@ -24,6 +24,8 @@ import (
 	"github.com/nuclio/logger"
 	"github.com/pkg/errors"
 
+	"github.com/v3io/frames"
+
 	"github.com/v3io/v3io-go-http"
 )
 
@@ -54,8 +56,18 @@ type AsyncItemsCursor struct {
 
 // NewAsyncItemsCursor return new AsyncItemsCursor
 func NewAsyncItemsCursor(
+	logger logger.Logger,
 	container *v3io.Container, input *v3io.GetItemsInput,
 	workers int, shardingKeys []string) (*AsyncItemsCursor, error) {
+
+	if logger == nil {
+		var err error
+		logger, err = frames.NewLogger("info")
+		if err != nil {
+			return nil, err
+		}
+
+	}
 
 	// TODO: use workers from Context.numWorkers (if no ShardingKey)
 	if workers == 0 || input.ShardingKey != "" {
@@ -67,6 +79,7 @@ func NewAsyncItemsCursor(
 		input:        input,
 		responseChan: make(chan *v3io.Response, 1000),
 		workers:      workers,
+		logger:       logger,
 	}
 
 	if len(shardingKeys) > 0 {
@@ -152,7 +165,7 @@ func (ic *AsyncItemsCursor) NextItem() (v3io.Item, error) {
 
 	getItemsResp := resp.Output.(*v3io.GetItemsOutput)
 	shard := resp.Context.(int)
-	//fmt.Println("got resp:",shard, len(getItemsResp.Items), getItemsResp.Last)
+	ic.logger.DebugWith("response", "shard", shard, "items", len(getItemsResp.Items), "last", getItemsResp.Last)
 	resp.Release()
 
 	// set the cursor items and reset the item index
@@ -172,7 +185,7 @@ func (ic *AsyncItemsCursor) NextItem() (v3io.Item, error) {
 		}
 
 	} else {
-		//fmt.Println("last",shard,len(getItemsResp.Items))
+		ic.logger.DebugWith("last", "shard", shard, "items", len(getItemsResp.Items))
 		// Mark one more shard as completed
 		ic.lastShards++
 	}

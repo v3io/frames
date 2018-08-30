@@ -70,7 +70,7 @@ func (kv *Backend) Read(request *frames.ReadRequest) (frames.FrameIterator, erro
 
 	input := v3io.GetItemsInput{Path: tablePath, Filter: request.Filter, AttributeNames: request.Columns}
 	fmt.Println(input, request)
-	iter, err := v3ioutils.NewAsyncItemsCursor(kv.container, &input, kv.numWorkers, request.ShardingKeys)
+	iter, err := v3ioutils.NewAsyncItemsCursor(kv.logger, kv.container, &input, kv.numWorkers, request.ShardingKeys)
 	if err != nil {
 		return nil, err
 	}
