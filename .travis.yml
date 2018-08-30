@@ -13,6 +13,13 @@ matrix:
       - cd clients/py
       - pipenv sync --dev
       - pipenv run python -m pytest -v
+  - language: python
+    python: "3.7-dev"
+    script:
+      - pip install pipenv
+      - cd clients/py
+      - pipenv sync --dev
+      - pipenv run python -m pytest -v
 
 env:
   - GO111MODULE=on
