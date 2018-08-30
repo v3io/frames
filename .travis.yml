@@ -1,5 +1,3 @@
-language: go
-
 matrix:
   include:
   - go: "1.10.x"

@@ -27,7 +27,14 @@ import (
 )
 
 func TestNew(t *testing.T) {
-	cfg := &frames.Config{}
+	cfg := &frames.Config{
+		Backends: []frames.BackendConfig{
+			frames.BackendConfig{
+				Name: "weather",
+				Type: "csv",
+			},
+		},
+	}
 	address := ":8080"
 	srv, err := New(cfg, address, nil)
 	if err != nil {
