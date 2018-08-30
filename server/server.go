@@ -237,6 +237,7 @@ func (s *Server) handleWrite(ctx *fasthttp.RequestCtx) {
 
 		for {
 			frame, err := dec.Decode()
+			s.logger.DebugWith("frame to write", "size", frame.Len())
 
 			if err != nil {
 				if err == io.EOF {

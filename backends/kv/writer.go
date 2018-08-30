@@ -21,6 +21,7 @@ such restriction.
 package kv
 
 import (
+	"fmt"
 	"strings"
 	"time"
 
@@ -73,6 +74,10 @@ func (kv *Backend) Write(request *frames.WriteRequest) (frames.FrameAppender, er
 // Add adds a frame
 func (a *Appender) Add(frame frames.Frame) error {
 	names := frame.Columns()
+	if len(names) == 0 {
+		return fmt.Errorf("empty frame")
+	}
+
 	columns := make(map[string]frames.Column)
 	for _, name := range frame.Columns() {
 		col, err := frame.Column(name)
@@ -80,6 +85,18 @@ func (a *Appender) Add(frame frames.Frame) error {
 			return err
 		}
 		columns[name] = col
+	}
+
+	indexName := names[0]
+	if iCol := frame.IndexColumn(); iCol != nil {
+		if iCol.Name() == "" {
+			return fmt.Errorf("index column without a name")
+		}
+		indexName = iCol.Name()
+	}
+
+	if indexName == "" {
+		return fmt.Errorf("no index column name")
 	}
 
 	for r := 0; r < frame.Len(); r++ {
@@ -93,15 +110,12 @@ func (a *Appender) Add(frame frames.Frame) error {
 			row[name] = val
 		}
 
-		key := names[0] // TODO: Index?
-		input := v3io.PutItemInput{Path: a.tablePath + key, Attributes: row}
+		input := v3io.PutItemInput{Path: a.tablePath + indexName, Attributes: row}
 		_, err := a.container.PutItem(&input, r, a.responseChan)
+		a.sent += r // TODO: Bug? (should be ++)
 		if err != nil {
-			a.sent += r // TODO: Bug? (should be ++)
 			return err
 		}
-		a.sent += r // TODO: Bug? (should be ++)
-
 	}
 
 	return nil
