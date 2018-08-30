@@ -149,12 +149,12 @@ type SchemaField struct {
 
 // Property return a schema property
 func (s *SchemaField) Property(key string) (interface{}, bool) {
-	if s.Properties != nil {
-		if prop, ok := s.Properties[key]; ok {
-			return prop, true
-		}
+	if s.Properties == nil {
+		return nil, false
 	}
-	return nil, false
+
+	val, ok := s.Properties[key]
+	return val, ok
 }
 
 // SchemaKey is a schema key
