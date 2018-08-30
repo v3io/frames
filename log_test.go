@@ -21,17 +21,16 @@ such restriction.
 package frames
 
 import (
-	"github.com/nuclio/logger"
-	"github.com/nuclio/zap"
+	"testing"
 )
 
-// NewLogger returns a new logger
-func NewLogger(verbose string) (logger.Logger, error) {
-	logLevel := nucliozap.GetLevelByName(verbose)
-	log, err := nucliozap.NewNuclioZapCmd("v3io-prom", logLevel)
+func TestNewLogger(t *testing.T) {
+	logger, err := NewLogger("debug")
 	if err != nil {
-		return nil, err
+		t.Fatalf("can't create logger - %s", err)
 	}
 
-	return log, nil
+	if logger == nil {
+		t.Fatalf("nil logger")
+	}
 }
