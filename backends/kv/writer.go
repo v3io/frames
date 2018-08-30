@@ -59,7 +59,7 @@ func (kv *Backend) Write(request *frames.WriteRequest) (frames.FrameAppender, er
 		commChan:     make(chan int, 2),
 		logger:       kv.logger,
 	}
-	go appender.respWaitLoop(10 * time.Second)
+	go appender.respWaitLoop(time.Minute)
 
 	if request.ImmidiateData != nil {
 		err := appender.Add(request.ImmidiateData)
@@ -87,20 +87,12 @@ func (a *Appender) Add(frame frames.Frame) error {
 		columns[name] = col
 	}
 
-	indexName := names[0]
-	if iCol := frame.IndexColumn(); iCol != nil {
-		if iCol.Name() == "" {
-			return fmt.Errorf("index column without a name")
-		}
-		indexName = iCol.Name()
-	}
-
-	if indexName == "" {
-		return fmt.Errorf("no index column name")
+	indexVal, err := a.indexValFunc(frame, names[0])
+	if err != nil {
+		return err
 	}
 
 	for r := 0; r < frame.Len(); r++ {
-		key := ""
 		row := make(map[string]interface{})
 		for name, col := range columns {
 			val, err := utils.ColAt(col, r)
@@ -108,16 +100,15 @@ func (a *Appender) Add(frame frames.Frame) error {
 				return err
 			}
 
-			if name == indexName {
-				key = fmt.Sprintf("%v", val)
-			}
-
 			row[name] = val
 		}
 
+		key := indexVal(r)
 		input := v3io.PutItemInput{Path: a.tablePath + key, Attributes: row}
+		a.logger.DebugWith("write", "input", input)
 		_, err := a.container.PutItem(&input, r, a.responseChan)
 		if err != nil {
+			a.logger.ErrorWith("write error", "error", err)
 			return err
 		}
 
@@ -135,16 +126,57 @@ func (a *Appender) WaitForComplete(timeout time.Duration) error {
 	return nil
 }
 
+func (a *Appender) indexValFunc(frame frames.Frame, name string) (func(int) string, error) {
+	indexCol := frame.IndexColumn()
+	if indexCol == nil {
+		var err error
+		indexCol, err = frame.Column(name)
+		if err != nil {
+			return nil, err
+		}
+	}
+
+	var (
+		fn  func(int) string
+		err error
+	)
+
+	switch indexCol.DType() {
+	case frames.IntType:
+		fn = func(i int) string {
+			return fmt.Sprintf("%d", indexCol.IntAt(i))
+		}
+	case frames.FloatType:
+		fn = func(i int) string {
+			return fmt.Sprintf("%f", indexCol.FloatAt(i))
+		}
+	case frames.StringType:
+		fn = func(i int) string {
+			return indexCol.StringAt(i)
+		}
+	case frames.TimeType:
+		fn = func(i int) string {
+			return indexCol.TimeAt(i).String()
+		}
+	default:
+		err = fmt.Errorf("unknown column type - %v", indexCol.DType())
+	}
+
+	return fn, err
+}
+
 func (a *Appender) respWaitLoop(timeout time.Duration) {
 	responses := 0
 	requests := -1
 	a.doneChan = make(chan bool)
+	a.logger.Debug("write wait loop started")
 
 	active := false
 	for {
 		select {
 
 		case resp := <-a.responseChan:
+			a.logger.DebugWith("write response", "response", resp)
 			responses++
 			active = true
 
