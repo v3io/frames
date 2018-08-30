@@ -117,8 +117,10 @@ func (c *Client) Write(request *WriteRequest) (FrameAppender, error) {
 		writer:  writer,
 		encoder: NewEncoder(writer),
 		ch:      make(chan *appenderHTTPResponse, 1),
+		logger:  c.logger,
 	}
 
+	// Call API in a goroutine since it's going to block reading from pipe
 	go func() {
 		resp, err := http.DefaultClient.Do(req)
 		if err != nil {
@@ -140,7 +142,7 @@ func (c *Client) addAuth(req *http.Request) {
 }
 
 func (c *Client) writeURL(backend string, table string) (string, error) {
-	u, err := url.Parse(c.URL)
+	u, err := url.Parse(c.URL + "/write")
 	if err != nil {
 		return "", errors.Wrapf(err, "can't parse client url (%q) - %s", c.URL, err)
 	}
@@ -193,8 +195,8 @@ func (it *streamFrameIterator) Err() error {
 }
 
 type appenderHTTPResponse struct {
-	response *http.Response
-	err      error
+	resp *http.Response
+	err  error
 }
 
 // streamFrameAppender implements FrameAppender over io.Writer
@@ -202,6 +204,7 @@ type streamFrameAppender struct {
 	writer  io.Writer
 	encoder *Encoder
 	ch      chan *appenderHTTPResponse
+	logger  logger.Logger
 }
 
 func (a *streamFrameAppender) Add(frame Frame) error {
@@ -224,7 +227,14 @@ func (a *streamFrameAppender) WaitForComplete(timeout time.Duration) error {
 
 	select {
 	case hr := <-a.ch:
-		hr.response.Body.Close()
+		if hr.resp.StatusCode != http.StatusOK {
+			var buf bytes.Buffer
+			io.Copy(&buf, hr.resp.Body)
+			hr.resp.Body.Close()
+			return fmt.Errorf("server returned error - %d\n%s", hr.resp.StatusCode, buf.String())
+		}
+
+		hr.resp.Body.Close()
 		return hr.err
 	case <-time.After(timeout):
 		return fmt.Errorf("timeout after %s", timeout)

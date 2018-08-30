@@ -22,6 +22,7 @@ package frames
 
 import (
 	"fmt"
+	"time"
 
 	"github.com/pkg/errors"
 )
@@ -49,6 +50,48 @@ func NewMapFrame(columns []Column, indexColumn Column) (*MapFrame, error) {
 	}
 
 	return frame, nil
+}
+
+// NewMapFrameFromMap returns a new MapFrame from a map
+func NewMapFrameFromMap(data map[string]interface{}) (*MapFrame, error) {
+	var (
+		columns = make([]Column, len(data))
+		i       = 0
+		col     Column
+		err     error
+	)
+
+	for name, values := range data {
+		switch values.(type) {
+		case []int:
+			col, err = NewSliceColumn(name, values.([]int))
+			if err != nil {
+				return nil, errors.Wrap(err, "can't create int column")
+			}
+		case []float64:
+			col, err = NewSliceColumn(name, values.([]float64))
+			if err != nil {
+				return nil, errors.Wrap(err, "can't create float column")
+			}
+		case []string:
+			col, err = NewSliceColumn(name, values.([]string))
+			if err != nil {
+				return nil, errors.Wrap(err, "can't create string column")
+			}
+		case []time.Time:
+			col, err = NewSliceColumn(name, values.([]time.Time))
+			if err != nil {
+				return nil, errors.Wrap(err, "can't create time column")
+			}
+		default:
+			return nil, fmt.Errorf("unsupported data type - %T", values)
+		}
+
+		columns[i] = col
+		i++
+	}
+
+	return NewMapFrame(columns, nil)
 }
 
 // Columns returns the column names

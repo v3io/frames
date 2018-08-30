@@ -21,36 +21,52 @@ such restriction.
 package main
 
 import (
-	"flag"
 	"fmt"
 	"log"
+	"time"
 
 	"github.com/v3io/frames"
 )
 
 func main() {
-	tableName := ""
-	flag.StringVar(&tableName, "table", "", "table name (e.g. weather.csv)")
-	flag.Parse()
-
-	if tableName == "" {
-		log.Fatal("no table name")
-	}
+	tableName := fmt.Sprintf("%s-data.csv", time.Now().Format("2006-01-02T15:04:05"))
 
 	url := "http://localhost:8080"
 	apiKey := "t0ps3cr3t"
+	fmt.Println(">>> connecting")
 	client, err := frames.NewClient(url, apiKey, nil)
 	if err != nil {
 		log.Fatalf("can't connect to %q - %s", url, err)
 	}
 
-	req := &frames.ReadRequest{
-		Backend:      "weather",
-		Table:        tableName,
-		MaxInMessage: 1000,
+	frame, err := makeFrame()
+	if err != nil {
+		log.Fatalf("can't create frame - %s", err)
 	}
 
-	it, err := client.Read(req)
+	fmt.Println(">>> writing")
+	writeReq := &frames.WriteRequest{
+		Backend: "weather",
+		Table:   tableName,
+	}
+
+	appender, err := client.Write(writeReq)
+	if err := appender.Add(frame); err != nil {
+		log.Fatalf("can't write frame - %s", err)
+	}
+
+	if err := appender.WaitForComplete(10 * time.Second); err != nil {
+		log.Fatalf("can't wait - %s", err)
+	}
+
+	fmt.Println(">>> reading")
+	readReq := &frames.ReadRequest{
+		Backend:      "weather",
+		Table:        tableName,
+		MaxInMessage: 100,
+	}
+
+	it, err := client.Read(readReq)
 	if err != nil {
 		log.Fatalf("can't query - %s", err)
 	}
@@ -65,4 +81,28 @@ func main() {
 	if err := it.Err(); err != nil {
 		log.Fatalf("error in iterator - %s", err)
 	}
+}
+
+func makeFrame() (frames.Frame, error) {
+	size := 1027
+	now := time.Now()
+	idata := make([]int, size)
+	fdata := make([]float64, size)
+	sdata := make([]string, size)
+	tdata := make([]time.Time, size)
+
+	for i := 0; i < size; i++ {
+		idata[i] = i
+		fdata[i] = float64(i)
+		sdata[i] = fmt.Sprintf("val%d", i)
+		tdata[i] = now.Add(time.Duration(i) * time.Second)
+	}
+
+	columns := map[string]interface{}{
+		"ints":    idata,
+		"floats":  fdata,
+		"strings": sdata,
+		"times":   tdata,
+	}
+	return frames.NewMapFrameFromMap(columns)
 }
