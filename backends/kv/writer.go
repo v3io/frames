@@ -184,7 +184,6 @@ func (a *Appender) respWaitLoop(timeout time.Duration) {
 
 			if resp.Error != nil {
 				a.logger.ErrorWith("failed write response", "error", resp.Error)
-				return
 			}
 
 			if requests == responses {
