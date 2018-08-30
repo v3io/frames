@@ -20,11 +20,15 @@ ifeq ($(go_minver),11)
 endif
 
 all:
-	$(error please pick a target)
+	@echo Please pick a target
+	@egrep '^[^ :]+:' Makefile | \
+	   grep -v all | \
+	   sed -e 's/://' -e 's/^/    /' | \
+	   sort
+	@false
 
 test:
 	GO111MODULE=on go test -v $(modflag) ./...
 
 build:
 	GO111MODULE=on go build -v $(modflag) ./...
-
