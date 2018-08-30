@@ -232,16 +232,19 @@ func (s *Server) handleWrite(ctx *fasthttp.RequestCtx) {
 	}
 
 	reader, writer := io.Pipe()
-	writeDone := make(chan bool)
+	writeDone := make(chan bool, 1)
 
 	nFrames, nRows := 0, 0
 	go func() {
-		defer func() { writeDone <- true }() // TODO:
+		defer func() { // TODO: not in defer
+			s.logger.Debug("write done")
+			writeDone <- true
+		}()
+
 		dec := frames.NewDecoder(reader)
 
 		for {
 			frame, err := dec.Decode()
-			s.logger.DebugWith("frame to write", "size", frame.Len())
 
 			if err != nil {
 				if err == io.EOF {
@@ -253,6 +256,7 @@ func (s *Server) handleWrite(ctx *fasthttp.RequestCtx) {
 				return
 			}
 
+			s.logger.DebugWith("frame to write", "size", frame.Len())
 			if err := appender.Add(frame); err != nil {
 				s.logger.ErrorWith("can't add frame", "error", err)
 				ctx.Error(err.Error(), http.StatusInternalServerError)
@@ -266,6 +270,7 @@ func (s *Server) handleWrite(ctx *fasthttp.RequestCtx) {
 	}()
 
 	ctx.Request.BodyWriteTo(writer)
+	writer.Close()
 
 	<-writeDone
 	// TODO: Specify timeout in request?
