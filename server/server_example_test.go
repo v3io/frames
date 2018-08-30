@@ -18,52 +18,62 @@ under the Apache 2.0 license is conditioned upon your compliance with
 such restriction.
 */
 
-package main
+package server
 
 import (
-	"flag"
 	"fmt"
 	"io/ioutil"
-	"log"
 	"time"
 
 	"github.com/BurntSushi/toml"
+
 	"github.com/v3io/frames"
-	"github.com/v3io/frames/server"
 )
 
-func main() {
-	var port int
-	flag.IntVar(&port, "port", 8080, "port to listen on")
-	flag.Parse()
+var configData = `
+verbose = "info"
 
+[[backends]]
+name = "v3io"
+type = "kv"
+v3ioURL = "http://v3.io"
+container = "a"
+path = "/data"
+username = "daffy"
+password = "duck"
+
+[[backends]]
+name = "weather"
+type = "csv"
+rootDir = "/tmp"
+`
+
+func ExampleServer() {
 	data, err := ioutil.ReadFile("config.toml")
 	if err != nil {
-		log.Fatalf("error: can't open config - %s", err)
+		fmt.Printf("error: can't open config - %s", err)
+		return
 	}
 
-	cfg := &frames.V3ioConfig{}
+	cfg := &frames.Config{}
+	if _, err := toml.Decode(configData, cfg); err != nil {
+		fmt.Printf("error: can't read config - %s", err)
+		return
+	}
+
+	srv, err := New(cfg, ":8080", nil)
 	if err := toml.Unmarshal(data, cfg); err != nil {
-		log.Fatalf("error: can't read config - %s", err)
-	}
-
-	logger, err := frames.NewLogger("info")
-	if err != nil {
-		log.Fatalf("error: can't create logger - %s", err)
-	}
-
-	srv, err := server.New(cfg, fmt.Sprintf(":%d", port), logger)
-	if err := toml.Unmarshal(data, cfg); err != nil {
-		log.Fatalf("error: can't create server - %s", err)
+		fmt.Printf("error: can't create server - %s", err)
+		return
 	}
 
 	if err = srv.Start(); err != nil {
-		log.Fatalf("error: can't start server - %s", err)
+		fmt.Printf("error: can't start server - %s", err)
+		return
 	}
 
 	fmt.Println("server running")
 	for {
 		time.Sleep(60 * time.Second)
 	}
-
 }

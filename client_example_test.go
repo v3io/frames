@@ -18,49 +18,50 @@ under the Apache 2.0 license is conditioned upon your compliance with
 such restriction.
 */
 
-package main
+package frames
 
 import (
 	"fmt"
-	"log"
 	"time"
-
-	"github.com/v3io/frames"
 )
 
-func main() {
-	tableName := fmt.Sprintf("%s-data.csv", time.Now().Format("2006-01-02T15:04:05"))
+func ExampleClient() {
 
+	tableName := "example_table"
 	url := "http://localhost:8080"
 	apiKey := "t0ps3cr3t"
 	fmt.Println(">>> connecting")
-	client, err := frames.NewClient(url, apiKey, nil)
+	client, err := NewClient(url, apiKey, nil)
 	if err != nil {
-		log.Fatalf("can't connect to %q - %s", url, err)
+		fmt.Printf("can't connect to %q - %s", url, err)
+		return
 	}
 
 	frame, err := makeFrame()
 	if err != nil {
-		log.Fatalf("can't create frame - %s", err)
+		fmt.Printf("can't create frame - %s", err)
+		return
 	}
 
 	fmt.Println(">>> writing")
-	writeReq := &frames.WriteRequest{
+	writeReq := &WriteRequest{
 		Backend: "weather",
 		Table:   tableName,
 	}
 
 	appender, err := client.Write(writeReq)
 	if err := appender.Add(frame); err != nil {
-		log.Fatalf("can't write frame - %s", err)
+		fmt.Printf("can't write frame - %s", err)
+		return
 	}
 
 	if err := appender.WaitForComplete(10 * time.Second); err != nil {
-		log.Fatalf("can't wait - %s", err)
+		fmt.Printf("can't wait - %s", err)
+		return
 	}
 
 	fmt.Println(">>> reading")
-	readReq := &frames.ReadRequest{
+	readReq := &ReadRequest{
 		Backend:      "weather",
 		Table:        tableName,
 		MaxInMessage: 100,
@@ -68,7 +69,8 @@ func main() {
 
 	it, err := client.Read(readReq)
 	if err != nil {
-		log.Fatalf("can't query - %s", err)
+		fmt.Printf("can't query - %s", err)
+		return
 	}
 
 	for it.Next() {
@@ -79,11 +81,12 @@ func main() {
 	}
 
 	if err := it.Err(); err != nil {
-		log.Fatalf("error in iterator - %s", err)
+		fmt.Printf("error in iterator - %s", err)
+		return
 	}
 }
 
-func makeFrame() (frames.Frame, error) {
+func makeFrame() (Frame, error) {
 	size := 1027
 	now := time.Now()
 	idata := make([]int, size)
@@ -104,5 +107,5 @@ func makeFrame() (frames.Frame, error) {
 		"strings": sdata,
 		"times":   tdata,
 	}
-	return frames.NewMapFrameFromMap(columns)
+	return NewMapFrameFromMap(columns)
 }
