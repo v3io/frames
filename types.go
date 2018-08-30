@@ -21,6 +21,7 @@ such restriction.
 package frames
 
 import (
+	"fmt"
 	"time"
 )
 
@@ -30,6 +31,25 @@ type Config struct {
 	DefaultLimit int    `json:"limit,omitempty"`
 
 	Backends []BackendConfig `json:"backends,omitempty"`
+}
+
+// Validate validates the configuration
+func (c *Config) Validate() error {
+	if len(c.Backends) == 0 {
+		return fmt.Errorf("no backends")
+	}
+
+	for i, backend := range c.Backends {
+		if backend.Name == "" {
+			return fmt.Errorf("backend %d missing name", i)
+		}
+
+		if backend.Type == "" {
+			return fmt.Errorf("backend %q missing type", backend.Name)
+		}
+	}
+
+	return nil
 }
 
 // BackendConfig is backend configuration

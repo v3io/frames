@@ -69,6 +69,10 @@ type Server struct {
 func New(cfg *frames.Config, addr string, logger logger.Logger) (*Server, error) {
 	var err error
 
+	if err := cfg.Validate(); err != nil {
+		return nil, errors.Wrap(err, "bad configuration")
+	}
+
 	if logger == nil {
 		logger, err = frames.NewLogger(cfg.Verbose)
 		if err != nil {
