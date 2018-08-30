@@ -1,3 +1,5 @@
+language: go
+
 matrix:
   include:
   - go: "1.10.x"
@@ -6,7 +8,7 @@ matrix:
     script: go test -v -mod=vendor ./...
   - python: "3.7"
     script:
-      - pip install pipenv
+      - pip install --user pipenv
       - cd clients/py
       - pipenv sync --dev
       - pipenv run python -m pytest -v
