@@ -3,7 +3,7 @@ verbose = "info"
 [[backends]]
 name = "v3io"
 type = "kv"
-v3ioUrl = "http://v3.io"
+v3ioURL = "http://v3.io"
 container = "a"
 path = "/data"
 username = "daffy"
