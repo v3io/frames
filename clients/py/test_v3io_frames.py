@@ -12,76 +12,91 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-import pytest
 from io import BytesIO
-import json
 
-import v3io_frames
 import msgpack
+import pandas as pd
+import pytest
+
+import v3io_frames as v3f
 
 
-class patch_urlopen:
-    orig_urlopen = v3io_frames.urlopen
+class patch_requests:
+    orig_requests = v3f.requests
 
     def __init__(self, data=None):
         self.requests = []
         self.data = [] if data is None else data
 
     def __enter__(self):
-        v3io_frames.urlopen = self.urlopen
+        v3f.requests = self
         return self
 
     def __exit__(self, exc_type=None, exc_val=None, tb=None):
-        v3io_frames.urlopen = self.orig_urlopen
+        v3f.requests = self.orig_requests
 
-    def urlopen(self, request):
-        self.requests.append(request)
+    def post(self, *args, **kw):
+        self.requests.append((args, kw))
         io = BytesIO()
         for chunk in self.data:
             msgpack.dump(chunk, io)
 
         io.seek(0, 0)
-        return io
+
+        class Response:
+            raw = io
+            ok = True
+
+        return Response
 
 
-def test_orient():
-    # Valid orient
-    for orient in ('rows', 'columns'):
-        v3io_frames.Client('http://example.com', orient=orient)
-
-    # Invalid orient
-    with pytest.raises(ValueError):
-        v3io_frames.Client('http://example.com', orient='cols')
-
-
-def test_call():
+def test_read():
     api_key = 'test api key'
     url = 'https://nuclio.io'
-    orient = 'rows'
     query = 'SELECT 1'
     data = [
         {
-            'x': [1, 2, 3],
-            'y': [4, 5, 6],
+            'columns': ['x', 'y'],
+            'slice_cols': {
+                'x': {
+                    'name': 'x',
+                    'ints': [1, 2, 3]
+                },
+                'y': {
+                    'name': 'y',
+                    'floats': [4., 5., 6.],
+                },
+            },
         },
         {
-            'x': [10, 20, 30],
-            'y': [40, 50, 60],
+            'columns': ['x', 'y'],
+            'slice_cols': {
+                'x': {
+                    'name': 'x',
+                    'ints': [10, 20, 30],
+                },
+                'y': {
+                    'name': 'y',
+                    'floats': [40., 50., 60.],
+                },
+            }
         },
     ]
 
-    c = v3io_frames.Client(url, api_key, orient)
-    with patch_urlopen(data) as patch:
-        df = c.query(query)
+    c = v3f.Client(url, api_key)
+    with patch_requests(data) as patch:
+        dfs = c.read(query=query)
 
     assert len(patch.requests) == 1
 
-    req = patch.requests[0]
-    assert req.headers['Authorization'] == api_key
-    assert req.get_full_url() == url
-    assert req.get_method() == 'POST'
-    post_req = json.loads(req.data.decode('utf-8'))
-    assert post_req == {'orient': orient, 'query': query}
+    args, kw = patch.requests[0]
+    assert args == (url + '/read',)
 
+    df = pd.concat(dfs)
     assert len(df) == 6
     assert list(df.columns) == ['x', 'y']
+
+
+@pytest.mark.skip(reason='TODO')
+def test_write():
+    pass
