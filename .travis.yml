@@ -7,7 +7,7 @@ matrix:
   - go: "1.11.x"
     script: go test -v -mod=vendor ./...
   - language: python
-    python: "3.7"
+    python: "3.6"
     script:
       - pip install pipenv
       - cd clients/py
