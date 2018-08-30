@@ -129,7 +129,9 @@ func (s *Server) handler(ctx *fasthttp.RequestCtx) {
 
 	switch {
 	case bytes.Compare(ctx.Path(), statusPath) == 0:
-		fmt.Fprintf(ctx, "%s\n", s.State())
+		json.NewEncoder(ctx).Encode(map[string]interface{}{
+			"state": s.State(),
+		})
 	case bytes.Compare(ctx.Path(), configPath) == 0:
 		s.handleConfig(ctx)
 	case bytes.Compare(ctx.Path(), writePath) == 0:
@@ -286,6 +288,7 @@ func (s *Server) handleWrite(ctx *fasthttp.RequestCtx) {
 
 func (s *Server) handleConfig(ctx *fasthttp.RequestCtx) {
 	enc := json.NewEncoder(ctx)
+	// TODO: Omit password and other fields?
 	if err := enc.Encode(s.config); err != nil {
 		s.logger.ErrorWith("can't encode configuration", "error", err)
 		ctx.Error(fmt.Sprintf("can't encode config - %s", err), http.StatusInternalServerError)
