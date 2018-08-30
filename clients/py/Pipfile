@@ -9,8 +9,4 @@ pandas = ">=0.23.3"
 requests = ">=2.19.1"
 
 [dev-packages]
-ipython = "*"
 pytest = "*"
-
-[requires]
-python_version = "3.7"
