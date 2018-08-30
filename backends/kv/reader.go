@@ -21,7 +21,6 @@ such restriction.
 package kv
 
 import (
-	"fmt"
 	"strings"
 
 	"github.com/nuclio/logger"
@@ -69,7 +68,7 @@ func (kv *Backend) Read(request *frames.ReadRequest) (frames.FrameIterator, erro
 	}
 
 	input := v3io.GetItemsInput{Path: tablePath, Filter: request.Filter, AttributeNames: request.Columns}
-	fmt.Println(input, request)
+	kv.logger.DebugWith("read input", "input", input, "request", request)
 	iter, err := v3ioutils.NewAsyncItemsCursor(kv.logger, kv.container, &input, kv.numWorkers, request.ShardingKeys)
 	if err != nil {
 		return nil, err

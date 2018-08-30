@@ -21,13 +21,13 @@ such restriction.
 package kv
 
 import (
-	"fmt"
 	"strings"
 	"time"
 
 	"github.com/v3io/frames"
 	"github.com/v3io/frames/backends/utils"
 
+	"github.com/nuclio/logger"
 	"github.com/v3io/v3io-go-http"
 )
 
@@ -40,6 +40,7 @@ type Appender struct {
 	commChan     chan int
 	doneChan     chan bool
 	sent         int
+	logger       logger.Logger
 }
 
 // Write support writing to backend
@@ -55,6 +56,7 @@ func (kv *Backend) Write(request *frames.WriteRequest) (frames.FrameAppender, er
 		tablePath:    tablePath,
 		responseChan: make(chan *v3io.Response, 1000),
 		commChan:     make(chan int, 2),
+		logger:       kv.logger,
 	}
 	appender.respWaitLoop(10 * time.Second)
 
@@ -127,7 +129,7 @@ func (a *Appender) respWaitLoop(timeout time.Duration) {
 				active = true
 
 				if resp.Error != nil {
-					fmt.Println(resp.Error, "failed write response")
+					a.logger.ErrorWith("failed write response", "error", resp.Error)
 				}
 
 				if requests == responses {
@@ -143,7 +145,7 @@ func (a *Appender) respWaitLoop(timeout time.Duration) {
 
 			case <-time.After(timeout):
 				if !active {
-					fmt.Println("\nResp loop timed out! ", requests, responses)
+					a.logger.ErrorWith("Resp loop timed out! ", "requestrs", requests, "response", responses)
 					a.doneChan <- true
 					return
 				}

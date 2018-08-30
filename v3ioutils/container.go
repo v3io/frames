@@ -22,7 +22,6 @@ package v3ioutils
 
 import (
 	"encoding/binary"
-	"fmt"
 	"time"
 
 	"github.com/nuclio/logger"
@@ -65,7 +64,7 @@ func AsInt64Array(val []byte) []uint64 {
 }
 
 // DeleteTable deletes a table
-func DeleteTable(container *v3io.Container, path, filter string, workers int) error {
+func DeleteTable(logger logger.Logger, container *v3io.Container, path, filter string, workers int) error {
 
 	input := v3io.GetItemsInput{Path: path, AttributeNames: []string{"__name"}, Filter: filter}
 	iter, err := NewAsyncItemsCursor(nil, container, &input, workers, []string{})
@@ -76,7 +75,7 @@ func DeleteTable(container *v3io.Container, path, filter string, workers int) er
 
 	responseChan := make(chan *v3io.Response, 1000)
 	commChan := make(chan int, 2)
-	doneChan := respWaitLoop(commChan, responseChan, 10*time.Second)
+	doneChan := respWaitLoop(logger, commChan, responseChan, 10*time.Second)
 	reqMap := map[uint64]bool{}
 
 	i := 0
@@ -101,7 +100,7 @@ func DeleteTable(container *v3io.Container, path, filter string, workers int) er
 	return nil
 }
 
-func respWaitLoop(comm chan int, responseChan chan *v3io.Response, timeout time.Duration) chan bool {
+func respWaitLoop(logger logger.Logger, comm chan int, responseChan chan *v3io.Response, timeout time.Duration) chan bool {
 	responses := 0
 	requests := -1
 	done := make(chan bool)
@@ -116,7 +115,8 @@ func respWaitLoop(comm chan int, responseChan chan *v3io.Response, timeout time.
 				active = true
 
 				if resp.Error != nil {
-					fmt.Println(resp.Error, "failed Delete response")
+					logger.ErrorWith("failed Delete response", "error", resp.Error)
+					// TODO: signal done and return?
 				}
 
 				if requests == responses {
@@ -132,7 +132,7 @@ func respWaitLoop(comm chan int, responseChan chan *v3io.Response, timeout time.
 
 			case <-time.After(timeout):
 				if !active {
-					fmt.Println("\nResp loop timed out! ", requests, responses)
+					logger.ErrorWith("Resp loop timed out!", "requests", requests, "response", responses)
 					done <- true
 					return
 				}
