@@ -29,14 +29,14 @@ import (
 
 // frameImpl is a frame implementation
 type frameImpl struct {
-	columns  []Column
-	byName   map[string]int // name -> index in columns
-	indexCol Column
+	columns   []Column
+	byName    map[string]int // name -> index in columns
+	indexName string
 }
 
 // NewFrame returns a new MapFrame
-func NewFrame(columns []Column, indexColumn Column) (Frame, error) {
-	if err := checkEqualLen(columns, indexColumn); err != nil {
+func NewFrame(columns []Column, indexName string) (Frame, error) {
+	if err := checkEqualLen(columns); err != nil {
 		return nil, err
 	}
 
@@ -46,9 +46,9 @@ func NewFrame(columns []Column, indexColumn Column) (Frame, error) {
 	}
 
 	frame := &frameImpl{
-		columns:  columns,
-		byName:   byName,
-		indexCol: indexColumn,
+		columns:   columns,
+		byName:    byName,
+		indexName: indexName,
 	}
 
 	return frame, nil
@@ -93,7 +93,7 @@ func NewFrameFromMap(data map[string]interface{}) (Frame, error) {
 		i++
 	}
 
-	return NewFrame(columns, nil)
+	return NewFrame(columns, "")
 }
 
 // Names returns the column names
@@ -107,9 +107,9 @@ func (mf *frameImpl) Names() []string {
 	return names
 }
 
-// IndexColumn returns the index column, nil if there's none
-func (mf *frameImpl) IndexColumn() Column {
-	return mf.indexCol
+// IndexName returns the index name, "" if there's none
+func (mf *frameImpl) IndexName() string {
+	return mf.indexName
 }
 
 // Len is the number of rows
@@ -148,22 +148,22 @@ func (mf *frameImpl) Slice(start int, end int) (Frame, error) {
 		frameSlice[i] = slice
 	}
 
-	return NewFrame(frameSlice, mf.IndexColumn())
+	return NewFrame(frameSlice, mf.IndexName())
 }
 
 // MapFrameMessage is over-the-wire frame data
 type MapFrameMessage struct {
-	Columns       []string                       `msgpack:"columns"`
-	SliceIndexCol *SliceColumnMessage            `msgpack:"slice_index,omitempty"`
-	LabelIndexCol *LabelColumnMessage            `msgpack:"label_index,omitempty"`
-	SliceCols     map[string]*SliceColumnMessage `msgpack:"slice_cols,omitempty"`
-	LabelCols     map[string]*LabelColumnMessage `msgpack:"label_cols,omitempty"`
+	Columns   []string                       `msgpack:"columns"`
+	IndexName string                         `msgpack:"index_name,omitempty"`
+	SliceCols map[string]*SliceColumnMessage `msgpack:"slice_cols,omitempty"`
+	LabelCols map[string]*LabelColumnMessage `msgpack:"label_cols,omitempty"`
 }
 
 // Marshal marshals to native type
 func (mf *frameImpl) Marshal() (interface{}, error) {
 	msg := &MapFrameMessage{
 		Columns:   mf.Names(),
+		IndexName: mf.IndexName(),
 		LabelCols: make(map[string]*LabelColumnMessage),
 		SliceCols: make(map[string]*SliceColumnMessage),
 	}
@@ -179,22 +179,6 @@ func (mf *frameImpl) Marshal() (interface{}, error) {
 			msg.SliceCols[col.Name()] = colMsg.(*SliceColumnMessage)
 		case *LabelColumnMessage:
 			msg.LabelCols[col.Name()] = colMsg.(*LabelColumnMessage)
-		default:
-			return nil, fmt.Errorf("unknown marshaled message type - %T", colMsg)
-		}
-	}
-
-	if iCol := mf.IndexColumn(); iCol != nil {
-		colMsg, err := mf.marshalColumn(iCol)
-		if err != nil {
-			return nil, err
-		}
-
-		switch colMsg.(type) {
-		case *SliceColumnMessage:
-			msg.SliceIndexCol = colMsg.(*SliceColumnMessage)
-		case *LabelColumnMessage:
-			msg.LabelIndexCol = colMsg.(*LabelColumnMessage)
 		default:
 			return nil, fmt.Errorf("unknown marshaled message type - %T", colMsg)
 		}
@@ -237,7 +221,7 @@ func validateSlice(start int, end int, size int) error {
 	return nil
 }
 
-func checkEqualLen(columns []Column, indexCol Column) error {
+func checkEqualLen(columns []Column) error {
 	size := -1
 	for _, col := range columns {
 		if size == -1 { // first column
@@ -248,10 +232,6 @@ func checkEqualLen(columns []Column, indexCol Column) error {
 		if colSize := col.Len(); colSize != size {
 			return fmt.Errorf("%q column size mismatch (%d != %d)", col.Name(), colSize, size)
 		}
-	}
-
-	if indexCol != nil && size != -1 && indexCol.Len() != size {
-		return fmt.Errorf("index column size mismatch (%d != %d)", indexCol.Len(), size)
 	}
 
 	return nil

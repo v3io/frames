@@ -189,7 +189,17 @@ class Client(object):
             if not df_data:
                 continue
 
-            yield pd.DataFrame(df_data)
+            df = pd.DataFrame(df_data)
+
+            name = msg.get('index_name')
+            if name:
+                if name not in df.columns:
+                    err = 'index ({!r}) not in columns'.format(name)
+                    raise MessageError(err)
+
+                df.index = df.pop(name)
+
+            yield df
 
     def _handle_slice_col(self, col):
         for field in ['ints', 'floats', 'strings', 'times']:

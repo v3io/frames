@@ -126,22 +126,7 @@ func (d *Decoder) Decode() (Frame, error) {
 		return nil, fmt.Errorf("column %q not found", name)
 	}
 
-	var indexCol Column
-	var err error
-	switch {
-	case msg.SliceIndexCol != nil:
-		indexCol, err = d.decodeSliceCol(msg.SliceIndexCol)
-		if err != nil {
-			return nil, err
-		}
-	case msg.LabelIndexCol != nil:
-		indexCol, err = d.decodeLabelCol(msg.LabelIndexCol)
-		if err != nil {
-			return nil, err
-		}
-	}
-
-	return NewFrame(columns, indexCol)
+	return NewFrame(columns, msg.IndexName)
 }
 
 func (d *Decoder) decodeLabelCol(colMsg *LabelColumnMessage) (Column, error) {

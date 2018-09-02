@@ -128,20 +128,18 @@ func (a *Appender) WaitForComplete(timeout time.Duration) error {
 }
 
 func (a *Appender) indexValFunc(frame frames.Frame, name string) (func(int) string, error) {
-	indexCol := frame.IndexColumn()
-	if indexCol == nil {
-		var err error
-		indexCol, err = frame.Column(name)
-		if err != nil {
-			return nil, err
-		}
+
+	indexName := name
+	if iName := frame.IndexName(); iName != "" {
+		indexName = iName
 	}
 
-	var (
-		fn  func(int) string
-		err error
-	)
+	indexCol, err := frame.Column(indexName)
+	if err != nil {
+		return nil, err
+	}
 
+	var fn func(int) string
 	switch indexCol.DType() {
 	// strconv.Format* is about twice as fast as fmt.Sprintf
 	case frames.IntType:
@@ -161,10 +159,10 @@ func (a *Appender) indexValFunc(frame frames.Frame, name string) (func(int) stri
 			return indexCol.TimeAt(i).String()
 		}
 	default:
-		err = fmt.Errorf("unknown column type - %v", indexCol.DType())
+		return nil, fmt.Errorf("unknown column type - %v", indexCol.DType())
 	}
 
-	return fn, err
+	return fn, nil
 }
 
 func (a *Appender) respWaitLoop(timeout time.Duration) {
