@@ -159,5 +159,5 @@ func makeFrame() (frames.Frame, error) {
 		"strings": sdata,
 		"times":   tdata,
 	}
-	return frames.NewMapFrameFromMap(columns)
+	return frames.NewFrameFromMap(columns)
 }

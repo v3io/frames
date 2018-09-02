@@ -257,7 +257,7 @@ func (it *FrameIterator) buildFrame(rows [][]string) (frames.Frame, error) {
 		columns[c] = col
 	}
 
-	return frames.NewMapFrame(columns, nil)
+	return frames.NewFrame(columns, nil)
 }
 
 func (it *FrameIterator) parseValue(value string) interface{} {

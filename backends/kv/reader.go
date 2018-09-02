@@ -139,7 +139,7 @@ func (ki *Iterator) Next() bool {
 	}
 
 	var err error
-	ki.currFrame, err = frames.NewMapFrame(columns, nil)
+	ki.currFrame, err = frames.NewFrame(columns, nil)
 	if err != nil {
 		ki.err = err
 		return false

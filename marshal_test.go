@@ -104,7 +104,7 @@ func createFrame(t *testing.T) Frame {
 	}
 
 	columns = append(columns, col)
-	frame, err := NewMapFrame(columns, nil)
+	frame, err := NewFrame(columns, nil)
 	if err != nil {
 		t.Fatal(err)
 	}

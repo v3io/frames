@@ -141,7 +141,7 @@ func (d *Decoder) Decode() (Frame, error) {
 		}
 	}
 
-	return NewMapFrame(columns, indexCol)
+	return NewFrame(columns, indexCol)
 }
 
 func (d *Decoder) decodeLabelCol(colMsg *LabelColumnMessage) (Column, error) {

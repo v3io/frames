@@ -27,14 +27,14 @@ import (
 	"github.com/pkg/errors"
 )
 
-// MapFrame is a frame based on map
-type MapFrame struct {
+// frameImpl is a frame implementation
+type frameImpl struct {
 	byIndex  map[int]Column
 	indexCol Column
 }
 
-// NewMapFrame returns a new MapFrame
-func NewMapFrame(columns []Column, indexColumn Column) (*MapFrame, error) {
+// NewFrame returns a new MapFrame
+func NewFrame(columns []Column, indexColumn Column) (Frame, error) {
 	if err := checkEqualLen(columns, indexColumn); err != nil {
 		return nil, err
 	}
@@ -44,7 +44,7 @@ func NewMapFrame(columns []Column, indexColumn Column) (*MapFrame, error) {
 		byIndex[i] = col
 	}
 
-	frame := &MapFrame{
+	frame := &frameImpl{
 		byIndex:  byIndex,
 		indexCol: indexColumn,
 	}
@@ -52,8 +52,8 @@ func NewMapFrame(columns []Column, indexColumn Column) (*MapFrame, error) {
 	return frame, nil
 }
 
-// NewMapFrameFromMap returns a new MapFrame from a map
-func NewMapFrameFromMap(data map[string]interface{}) (*MapFrame, error) {
+// NewFrameFromMap returns a new MapFrame from a map
+func NewFrameFromMap(data map[string]interface{}) (Frame, error) {
 	var (
 		columns = make([]Column, len(data))
 		i       = 0
@@ -91,11 +91,11 @@ func NewMapFrameFromMap(data map[string]interface{}) (*MapFrame, error) {
 		i++
 	}
 
-	return NewMapFrame(columns, nil)
+	return NewFrame(columns, nil)
 }
 
 // Names returns the column names
-func (mf *MapFrame) Names() []string {
+func (mf *frameImpl) Names() []string {
 	names := make([]string, len(mf.byIndex))
 
 	for i := 0; i < len(mf.byIndex); i++ {
@@ -106,12 +106,12 @@ func (mf *MapFrame) Names() []string {
 }
 
 // IndexColumn returns the index column, nil if there's none
-func (mf *MapFrame) IndexColumn() Column {
+func (mf *frameImpl) IndexColumn() Column {
 	return mf.indexCol
 }
 
 // Len is the number of rows
-func (mf *MapFrame) Len() int {
+func (mf *frameImpl) Len() int {
 	for _, col := range mf.byIndex {
 		return col.Len()
 	}
@@ -120,7 +120,7 @@ func (mf *MapFrame) Len() int {
 }
 
 // Column gets a column by name
-func (mf *MapFrame) Column(name string) (Column, error) {
+func (mf *frameImpl) Column(name string) (Column, error) {
 	// TODO: We can speed it up by calculating once, but then we'll use more memory
 	for _, col := range mf.byIndex {
 		if col.Name() == name {
@@ -132,7 +132,7 @@ func (mf *MapFrame) Column(name string) (Column, error) {
 }
 
 // Slice return a new Frame with is slice of the original
-func (mf *MapFrame) Slice(start int, end int) (Frame, error) {
+func (mf *frameImpl) Slice(start int, end int) (Frame, error) {
 	if err := validateSlice(start, end, mf.Len()); err != nil {
 		return nil, err
 	}
@@ -147,7 +147,7 @@ func (mf *MapFrame) Slice(start int, end int) (Frame, error) {
 		frameSlice[i] = slice
 	}
 
-	return NewMapFrame(frameSlice, mf.IndexColumn())
+	return NewFrame(frameSlice, mf.IndexColumn())
 }
 
 // MapFrameMessage is over-the-wire frame data
@@ -160,7 +160,7 @@ type MapFrameMessage struct {
 }
 
 // Marshal marshals to native type
-func (mf *MapFrame) Marshal() (interface{}, error) {
+func (mf *frameImpl) Marshal() (interface{}, error) {
 	msg := &MapFrameMessage{
 		Columns:   mf.Names(),
 		LabelCols: make(map[string]*LabelColumnMessage),
@@ -202,7 +202,7 @@ func (mf *MapFrame) Marshal() (interface{}, error) {
 	return msg, nil
 }
 
-func (mf *MapFrame) marshalColumn(col Column) (interface{}, error) {
+func (mf *frameImpl) marshalColumn(col Column) (interface{}, error) {
 	marshaler, ok := col.(Marshaler)
 	if !ok {
 		return nil, fmt.Errorf("column %q is not Marshaler", col.Name())
