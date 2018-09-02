@@ -197,7 +197,7 @@ class Client(object):
                     err = 'index ({!r}) not in columns'.format(name)
                     raise MessageError(err)
 
-                df.index = df.pop(name)
+                df.index = df[name]
 
             yield df
 
