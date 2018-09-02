@@ -29,7 +29,8 @@ import (
 
 // frameImpl is a frame implementation
 type frameImpl struct {
-	byIndex  map[int]Column
+	columns  []Column
+	byName   map[string]int // name -> index in columns
 	indexCol Column
 }
 
@@ -39,13 +40,14 @@ func NewFrame(columns []Column, indexColumn Column) (Frame, error) {
 		return nil, err
 	}
 
-	byIndex := make(map[int]Column)
+	byName := make(map[string]int)
 	for i, col := range columns {
-		byIndex[i] = col
+		byName[col.Name()] = i
 	}
 
 	frame := &frameImpl{
-		byIndex:  byIndex,
+		columns:  columns,
+		byName:   byName,
 		indexCol: indexColumn,
 	}
 
@@ -96,10 +98,10 @@ func NewFrameFromMap(data map[string]interface{}) (Frame, error) {
 
 // Names returns the column names
 func (mf *frameImpl) Names() []string {
-	names := make([]string, len(mf.byIndex))
+	names := make([]string, len(mf.columns))
 
-	for i := 0; i < len(mf.byIndex); i++ {
-		names[i] = mf.byIndex[i].Name() // TODO: Check if exists?
+	for i := 0; i < len(mf.columns); i++ {
+		names[i] = mf.columns[i].Name() // TODO: Check if exists?
 	}
 
 	return names
@@ -112,8 +114,8 @@ func (mf *frameImpl) IndexColumn() Column {
 
 // Len is the number of rows
 func (mf *frameImpl) Len() int {
-	for _, col := range mf.byIndex {
-		return col.Len()
+	if len(mf.columns) > 0 {
+		return mf.columns[0].Len()
 	}
 
 	return 0
@@ -122,13 +124,12 @@ func (mf *frameImpl) Len() int {
 // Column gets a column by name
 func (mf *frameImpl) Column(name string) (Column, error) {
 	// TODO: We can speed it up by calculating once, but then we'll use more memory
-	for _, col := range mf.byIndex {
-		if col.Name() == name {
-			return col, nil
-		}
+	i, ok := mf.byName[name]
+	if !ok {
+		return nil, fmt.Errorf("column %q not found", name)
 	}
 
-	return nil, fmt.Errorf("column %q not found", name)
+	return mf.columns[i], nil
 }
 
 // Slice return a new Frame with is slice of the original
@@ -137,8 +138,8 @@ func (mf *frameImpl) Slice(start int, end int) (Frame, error) {
 		return nil, err
 	}
 
-	frameSlice := make([]Column, len(mf.byIndex))
-	for i, col := range mf.byIndex {
+	frameSlice := make([]Column, len(mf.columns))
+	for i, col := range mf.columns {
 		slice, err := col.Slice(start, end)
 		if err != nil {
 			return nil, errors.Wrapf(err, "can't get slice from %q", col.Name())
@@ -167,7 +168,7 @@ func (mf *frameImpl) Marshal() (interface{}, error) {
 		SliceCols: make(map[string]*SliceColumnMessage),
 	}
 
-	for _, col := range mf.byIndex {
+	for _, col := range mf.columns {
 		colMsg, err := mf.marshalColumn(col)
 		if err != nil {
 			return nil, err
