@@ -32,6 +32,10 @@ import (
 // CreateContainer creates a new container
 func CreateContainer(logger logger.Logger, addr, cont, username, password string, workers int) (*v3io.Container, error) {
 	// create context
+	if workers == 0 {
+		workers = 8
+	}
+
 	context, err := v3io.NewContext(logger, addr, workers)
 	if err != nil {
 		return nil, errors.Wrap(err, "failed to create client")
