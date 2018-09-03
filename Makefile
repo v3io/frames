@@ -32,3 +32,6 @@ test:
 
 build:
 	GO111MODULE=on go build -v $(modflag) ./...
+
+test-python:
+	cd clients/py && pipenv run python -m pytest -v
