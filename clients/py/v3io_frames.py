@@ -14,6 +14,7 @@
 
 """Stream data from Nuclio into pandas DataFrame"""
 
+from itertools import chain, count
 import datetime
 import struct
 
@@ -103,7 +104,7 @@ class Client(object):
             'marker': marker,
             'extra': extra,
         }
-        self._validate_request(request)
+        self._validate_read_request(request)
         url = self.url + '/read'
         resp = requests.post(
             url, json=request, headers=self._headers(json=True), stream=True)
@@ -157,7 +158,7 @@ class Client(object):
 
         return headers
 
-    def _validate_request(self, request):
+    def _validate_read_request(self, request):
         if not (request.get('table') or request.get('query')):
             raise BadRequest('missing data')
 
@@ -216,6 +217,7 @@ class Client(object):
     def _encode_df(self, df):
         msg = {
             'columns': [],
+            'index_name': '',
             'slice_cols': {},
             'label_cols': {},
         }
@@ -224,23 +226,56 @@ class Client(object):
             msg['columns'].append(name)
             col = df[name]
 
-            data = {
-                'name': name,
-                'dtype': dtype(col.iloc[0]),
-            }
-
-            # Same repeating value, use label column
-            if col.nunique() == 1:
-                data['value'] = to_py(col.iloc[0])
-                data['size'] = len(col)
+            data = self._encode_col(col, dtype_of(col.iloc[0]))
+            if 'size' in data:  # label column
                 msg['label_cols'][name] = data
-                continue
+            else:
+                msg['slice_cols'][name] = data
 
-            key, values = to_pylist(col)
-            data[key] = values
+        if self._should_encode_index(df):
+            name = self._index_name(df)
+            dtype = dtype_of(df.index[0])
+            data = self._encode_col(df.index, dtype, name, can_label=False)
             msg['slice_cols'][name] = data
+            msg['index_name'] = name
 
         return msgpack.packb(msg, strict_types=True)
+
+    def _encode_col(self, col, dtype, name='', can_label=True):
+        data = {
+            'name': name or col.name,
+            'dtype': dtype,
+        }
+
+        # Same repeating value, encode as label column
+        if can_label and col.nunique() == 1:
+            data['value'] = to_py(col.iloc[0])
+            data['size'] = len(col)
+            return data
+
+        key, values = to_pylist(col)
+        data[key] = values
+
+        return data
+
+    def _index_name(self, df):
+        """Find a name for index column that does not collide with column
+        names"""
+        candidates = chain(
+            [df.index.name, 'index'],
+            ('index_{}'.format(i) for i in count()),
+        )
+
+        names = set(df.columns)
+        for name in candidates:
+            if name not in names:
+                return name
+
+    def _should_encode_index(self, df):
+        if df.index.name:
+            return True
+
+        return not isinstance(df.index, pd.RangeIndex)
 
     def _iter_chunks(self, dfs, max_in_message):
         for df in dfs:
@@ -289,7 +324,7 @@ def ext_hook(code, value):
     raise ValueError(f'unknown ext code - {code}')
 
 
-def dtype(val):
+def dtype_of(val):
     if isinstance(val, np.integer):
         return '[]int'
     elif isinstance(val, np.inexact):
