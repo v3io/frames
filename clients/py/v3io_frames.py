@@ -168,39 +168,42 @@ class Client(object):
         unpacker = msgpack.Unpacker(resp, ext_hook=ext_hook, raw=False)
 
         for msg in unpacker:
-            # message format:
-            #   columns: list of column names
-            #   slice_cols: dict of name -> column
-            #   label_cols: dict of name -> column
+            yield self._msg2df(msg)
 
-            df_data = {}
-            for name in msg['columns']:
-                col = msg['slice_cols'].get(name)
-                if col is not None:
-                    df_data[name] = self._handle_slice_col(col)
-                    continue
+    def _msg2df(self, msg):
+        # message format:
+        #   columns: list of column names
+        #   slice_cols: dict of name -> column
+        #   label_cols: dict of name -> column
 
-                col = msg['label_cols'].get(name)
-                if col is not None:
-                    df_data[name] = self._handle_label_col(col)
-                    continue
-
-                raise MessageError('no data for column {!r}'.format(name))
-
-            if not df_data:
+        df_data = {}
+        for name in msg['columns']:
+            col = msg['slice_cols'].get(name)
+            if col is not None:
+                df_data[name] = self._handle_slice_col(col)
                 continue
 
-            df = pd.DataFrame(df_data)
+            col = msg['label_cols'].get(name)
+            if col is not None:
+                df_data[name] = self._handle_label_col(col)
+                continue
 
-            name = msg.get('index_name')
-            if name:
-                if name not in df.columns:
-                    err = 'index ({!r}) not in columns'.format(name)
-                    raise MessageError(err)
+            raise MessageError('no data for column {!r}'.format(name))
 
-                df.index = df[name]
+        if not df_data:
+            return None
 
-            yield df
+        df = pd.DataFrame(df_data)
+
+        name = msg.get('index_name')
+        if name:
+            if name not in df.columns:
+                err = 'index ({!r}) not in columns'.format(name)
+                raise MessageError(err)
+
+            df.index = df[name]
+
+        return df
 
     def _handle_slice_col(self, col):
         for field in ['ints', 'floats', 'strings', 'times']:
