@@ -94,7 +94,7 @@ func TestEnd2End(t *testing.T) {
 		t.Fatal(err)
 	}
 
-	if err := appender.WaitForComplete(time.Second); err != nil {
+	if err := appender.WaitForComplete(10 * time.Second); err != nil {
 		t.Fatal(err)
 	}
 
