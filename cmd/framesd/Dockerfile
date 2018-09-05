@@ -13,28 +13,12 @@
 # limitations under the License.
 
 
-# Exract min version ($$ is Makefile escape)
-go_minver = $(shell go version | awk '{print $$3}' | awk -F. '{print $$2}')
-ifeq ($(go_minver),11)
-    modflag = -mod=vendor
-endif
+FROM golang:1.11-stretch
 
-all:
-	@echo Please pick a target
-	@egrep '^[^ :]+:' Makefile | \
-	   grep -v all | \
-	   sed -e 's/://' -e 's/^/    /' | \
-	   sort
-	@false
+WORKDIR /go/src/github.com/v3io/frames
+COPY . .
+RUN go build ./cmd/framesd
+RUN cp framesd /usr/local/bin
 
-test:
-	GO111MODULE=on go test -v $(modflag) ./...
-
-build:
-	GO111MODULE=on go build -v $(modflag) ./...
-
-test-python:
-	cd clients/py && pipenv run python -m pytest -v
-
-build-docker:
-	docker build -f ./cmd/framesd/Dockerfile -t v3io/framesd .
+VOLUME /etc/framesd
+CMD framesd -addr :8080 -config /etc/framesd/framesd.toml

@@ -34,6 +34,16 @@ Core is written in [Go](https://golang.org/).
 
 To run the tests run `go test -v ./...`
 
+### Docker Image
+
+#### Build
+
+    make build-docker
+
+#### Running
+
+     docker run -v /path/to/config.toml:/etc/framesd/framesd.toml v3io/framesd
+
 ## LICENSE
 
 [Apache 2](LICENSE)
