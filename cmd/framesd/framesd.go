@@ -26,9 +26,10 @@ import (
 	"log"
 	"time"
 
-	"github.com/BurntSushi/toml"
+	"github.com/ghodss/yaml"
 	"github.com/v3io/frames"
 	"github.com/v3io/frames/server"
+	"io/ioutil"
 )
 
 func main() {
@@ -43,9 +44,14 @@ func main() {
 		log.Fatal("no config file")
 	}
 
-	cfg := &frames.Config{}
-	if _, err := toml.DecodeFile(configFile, cfg); err != nil {
+	data, err := ioutil.ReadFile(configFile)
+	if err != nil {
 		log.Fatalf("error: can't read config - %s", err)
+	}
+
+	cfg := &frames.Config{}
+	if err := yaml.Unmarshal(data, &cfg); err != nil {
+		log.Fatalf("error: can't unmarshal config - %s", err)
 	}
 
 	srv, err := server.New(cfg, addr, nil)
