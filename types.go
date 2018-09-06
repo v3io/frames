@@ -74,7 +74,7 @@ type BackendConfig struct {
 	Workers   int    `json:"workers,omitempty"` // Number of parallel V3IO worker routines
 
 	// CSV backend
-	RootDir string `json:"numWorkers,omitempty"`
+	RootDir string `json:"rootdir,omitempty"`
 }
 
 // DataBackend is an interface for read/write on backend
