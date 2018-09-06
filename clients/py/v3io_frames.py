@@ -43,14 +43,14 @@ class MessageError(Error):
 class Client(object):
     """Client is a nuclio stream client"""
 
-    def __init__(self, url, api_key=''):
+    def __init__(self, url='', api_key=''):
         """
         Parameters
         ----------
         url : string
-            Server URL
+            Server URL (if empty will use V3IO_URL environment variable)
         api_key : string
-            API key
+            API key (if empty will use V3IO_API_KEY environment variable)
         """
         self.url = url or environ.get('V3IO_URL')
         if not self.url:
