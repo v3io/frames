@@ -15,6 +15,7 @@
 """Stream data from Nuclio into pandas DataFrame"""
 
 from itertools import chain, count
+from os import environ
 import datetime
 import struct
 
@@ -51,8 +52,11 @@ class Client(object):
         api_key : string
             API key
         """
-        self.url = url
-        self.api_key = api_key
+        self.url = url or environ.get('V3IO_URL')
+        if not self.url:
+            raise ValueError('missing URL')
+
+        self.api_key = api_key or environ.get('V3IO_API_KEY')
 
     def read(self, backend='', query='', table='', columns=None, filter='',
              group_by='', limit=0, data_format='', row_layout=False,

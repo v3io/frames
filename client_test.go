@@ -27,6 +27,10 @@ import (
 
 func TestNewClient(t *testing.T) {
 	fn := func(url string, apiKey string) bool {
+		if url == "" {
+			return true
+		}
+
 		client, err := NewClient(url, apiKey, nil)
 		if err != nil {
 			t.Logf("can't create client - %s", err)

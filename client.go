@@ -27,6 +27,7 @@ import (
 	"io"
 	"net/http"
 	"net/url"
+	"os"
 	"time"
 
 	"github.com/nuclio/logger"
@@ -49,6 +50,18 @@ func NewClient(url string, apiKey string, logger logger.Logger) (*Client, error)
 		if err != nil {
 			return nil, errors.Wrap(err, "can't create logger")
 		}
+	}
+
+	if url == "" {
+		url = os.Getenv("V3IO_URL")
+	}
+
+	if url == "" {
+		return nil, fmt.Errorf("empty URL")
+	}
+
+	if apiKey == "" {
+		apiKey = os.Getenv("V3IO_API_KEY")
 	}
 
 	client := &Client{
