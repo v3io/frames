@@ -363,6 +363,7 @@ def to_pylist(col):
     elif issubclass(col.dtype.type, (np.inexact, float)):
         return 'floats', col.tolist()
     elif isinstance(col.iloc[0], str):
+        col = col.fillna('')
         return 'strings', col.tolist()
     elif isinstance(col.iloc[0], pd.Timestamp):
         return 'ns_times', col.values.tolist()  # Convert to nanoseconds
