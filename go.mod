@@ -12,7 +12,7 @@ require (
 	github.com/mgutz/ansi v0.0.0-20170206155736-9520e82c474b // indirect
 	github.com/nuclio/logger v0.0.0-20180410162335-ccc5ab971395
 	github.com/nuclio/zap v0.0.0-20180228181516-4a2bd2f9ef28
-	github.com/pavius/zap v0.0.0-20180228181622-8d52692529b8 // indirect
+	github.com/pavius/zap v0.0.0-20180228181622-8d52692529b8
 	github.com/pkg/errors v0.8.0
 	github.com/pmezard/go-difflib v1.0.0 // indirect
 	github.com/stretchr/testify v1.2.2 // indirect
@@ -21,8 +21,8 @@ require (
 	github.com/valyala/fasthttp v0.0.0-20171207120941-e5f51c11919d
 	github.com/vmihailenco/msgpack v4.0.0+incompatible
 	github.com/xwb1989/sqlparser v0.0.0-20180606152119-120387863bf2
-	go.uber.org/atomic v1.3.2 // indirect
-	go.uber.org/multierr v1.1.0 // indirect
+	go.uber.org/atomic v1.3.2
+	go.uber.org/multierr v1.1.0
 	golang.org/x/net v0.0.0-20180826012351-8a410e7b638d // indirect
 	golang.org/x/sys v0.0.0-20180824143301-4910a1d54f87 // indirect
 	google.golang.org/appengine v1.1.0 // indirect
