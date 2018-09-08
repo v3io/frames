@@ -21,4 +21,4 @@ RUN go build ./cmd/framesd
 RUN cp framesd /usr/local/bin
 
 VOLUME /etc/framesd
-CMD framesd -addr :8080 -config /etc/framesd/framesd.toml
+CMD framesd -addr :8080 -config /etc/framesd/framesd.yaml
