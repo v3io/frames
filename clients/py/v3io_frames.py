@@ -126,7 +126,7 @@ class Client(object):
             Backend name
         table : str
             Table to write to
-        dfs : iterable of DataFrame
+        dfs : iterable of DataFrame or a single data frame
             Frames to write
         max_in_message : int
             Maximal number of rows in a message
@@ -134,6 +134,9 @@ class Client(object):
         Returns:
             Write result
         """
+
+        if isinstance(dfs, pd.DataFrame):
+            dfs = [dfs]
 
         params = {
             'backend': backend,
