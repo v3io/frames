@@ -13,12 +13,14 @@
 # limitations under the License.
 
 from io import BytesIO
+from os.path import abspath, dirname
 
 import msgpack
 import pandas as pd
-import pytest
 
 import v3io_frames as v3f
+
+here = dirname(abspath(__file__))
 
 
 class patch_requests:
@@ -97,6 +99,26 @@ def test_read():
     assert list(df.columns) == ['x', 'y']
 
 
-@pytest.mark.skip(reason='TODO')
-def test_write():
-    pass
+def test_encode_df():
+    c = v3f.Client('http://localhost:8080')
+
+    df = pd.read_csv('{}/weather.csv'.format(here))
+    data = c._encode_df(df)
+    msg = msgpack.unpackb(data, raw=False)
+
+    assert set(msg['columns']) == set(df.columns), 'columns mismatch'
+    cols = set(msg['slice_cols']) | set(msg['label_cols'])
+    assert cols == set(df.columns), 'columns mismatch (in slice or label)'
+    assert not msg['index_name'], 'has index'
+
+    # Now with index
+    index_name = 'DATE'
+    df.index = df.pop(index_name)
+    data = c._encode_df(df)
+    msg = msgpack.unpackb(data, raw=False)
+
+    all_names = set(df.columns) | {index_name}
+    assert set(msg['columns']) == all_names, 'columns mismatch'
+    cols = set(msg['slice_cols']) | set(msg['label_cols'])
+    assert cols == all_names, 'columns mismatch (in slice or label)'
+    assert msg['index_name'] == index_name, 'bad index'

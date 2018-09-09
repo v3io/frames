@@ -40,6 +40,18 @@ class MessageError(Error):
     """An error in message"""
 
 
+int_dtype = '[]int'
+float_dtype = '[]float'
+string_dtype = '[]string'
+time_dtype = '[]time'
+msg_col_keys = {
+    int_dtype: 'ints',
+    float_dtype: 'floats',
+    string_dtype: 'strings',
+    time_dtype: 'ns_times',
+}
+
+
 class Client(object):
     """Client is a nuclio stream client"""
 
@@ -248,6 +260,7 @@ class Client(object):
             data = self._encode_col(df.index, dtype, name, can_label=False)
             msg['slice_cols'][name] = data
             msg['index_name'] = name
+            msg['columns'].append(name)
 
         return msgpack.packb(msg, strict_types=True)
 
@@ -263,7 +276,8 @@ class Client(object):
             data['size'] = len(col)
             return data
 
-        key, values = to_pylist(col)
+        key = msg_col_keys[dtype]
+        values = to_pylist(col, dtype)
         data[key] = values
 
         return data
@@ -335,40 +349,40 @@ def ext_hook(code, value):
 
 
 def dtype_of(val):
-    if isinstance(val, np.integer):
-        return '[]int'
-    elif isinstance(val, np.inexact):
-        return '[]float'
+    if isinstance(val, (np.integer, int)):
+        return int_dtype
+    elif isinstance(val, (np.inexact, float)):
+        return float_dtype
     elif isinstance(val, str):
-        return '[]string'
+        return string_dtype
     elif isinstance(val, pd.Timestamp):
-        return '[]time.Time'
+        return time_dtype
 
     raise TypeError(f'unknown type - {val!r}')
 
 
 def to_py(val):
-    if isinstance(val, np.integer):
+    if dtype_of(val) == int_dtype:
         return int(val)
-    elif isinstance(val, np.inexact):
+    elif dtype_of(val) == float_dtype:
         return float(val)
-    elif isinstance(val, str):
+    elif dtype_of(val) == string_dtype:
         return val
-    elif isinstance(val, pd.Timestamp):
+    elif dtype_of(val) == time_dtype:
         return val.value
 
     raise TypeError('unsupported type - {}'.format(type(val)))
 
 
-def to_pylist(col):
-    if issubclass(col.dtype.type, (np.integer, int)):
-        return 'ints', col.tolist()
-    elif issubclass(col.dtype.type, (np.inexact, float)):
-        return 'floats', col.tolist()
-    elif isinstance(col.iloc[0], str):
-        col = col.fillna('')
-        return 'strings', col.tolist()
-    elif isinstance(col.iloc[0], pd.Timestamp):
-        return 'ns_times', col.values.tolist()  # Convert to nanoseconds
+def to_pylist(col, dtype):
+    if dtype == int_dtype:
+        return col.tolist()
+    elif dtype == float_dtype:
+        return col.fillna(0).tolist()
+    elif dtype == string_dtype:
+        return col.fillna('').tolist()
+    elif dtype == time_dtype:
+        # .values will convert to nanoseconds
+        return col.fillna(pd.Timestamp.min).values.tolist()
 
     raise TypeError('unknown type - {}'.format(col.dtype))
