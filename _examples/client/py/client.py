@@ -29,6 +29,8 @@ print('Table: {}'.format(table))
 
 size = 1000
 df = pd.read_csv(csv_file, parse_dates=['DATE'])
+# Example how we work with iterable of dfs, you can pass the original df
+# "as-is" to write
 dfs = [df[i*size:i*size+size] for i in range((len(df)//size)+1)]
 
 client = v3f.Client('http://localhost:8080', 's3cr3t')
