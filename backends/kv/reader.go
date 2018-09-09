@@ -67,6 +67,11 @@ func (kv *Backend) Read(request *frames.ReadRequest) (frames.FrameIterator, erro
 		request.MaxInMessage = 256 // TODO: More?
 	}
 
+	columns := request.Columns
+	if len(columns) == 0 {
+		columns = []string{"*"}
+	}
+
 	input := v3io.GetItemsInput{Path: tablePath, Filter: request.Filter, AttributeNames: request.Columns}
 	kv.logger.DebugWith("read input", "input", input, "request", request)
 	iter, err := v3ioutils.NewAsyncItemsCursor(kv.logger, kv.container, &input, kv.numWorkers, request.ShardingKeys)
@@ -89,7 +94,7 @@ type Iterator struct {
 // Next advances the iterator to next frame
 func (ki *Iterator) Next() bool {
 	var columns []frames.Column
-	var byName map[string]frames.Column
+	byName := map[string]frames.Column{}
 
 	rowNum := 0
 	for ; rowNum < ki.request.MaxInMessage && ki.iter.Next(); rowNum++ {
@@ -97,13 +102,13 @@ func (ki *Iterator) Next() bool {
 		for name, field := range row {
 			col, ok := byName[name]
 			if !ok {
-				data, err := utils.NewColumn(field, rowNum-1)
+				data, err := utils.NewColumn(field, rowNum)
 				if err != nil {
 					ki.err = err
 					return false
 				}
 
-				col, err := frames.NewSliceColumn(name, data)
+				col, err = frames.NewSliceColumn(name, data)
 				columns = append(columns, col)
 				byName[name] = col
 			}
