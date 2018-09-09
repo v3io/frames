@@ -38,3 +38,6 @@ test-python:
 
 build-docker:
 	docker build -f ./cmd/framesd/Dockerfile -t v3io/framesd .
+
+wheel:
+	cd clients/py && python setup.py bdist_wheel
