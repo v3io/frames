@@ -106,6 +106,15 @@ func (sc *SliceColumn) FloatAt(i int) float64 {
 	return typedCol[i]
 }
 
+// intToFloat convert an int col to a float64 col
+func (sc *SliceColumn) intToFloat() {
+	newData := make([]float64, sc.size)
+	for i := 0; i < sc.size; i++ {
+		newData[i] = float64(sc.IntAt(i))
+	}
+	sc.data = newData
+}
+
 // Strings returns data as []string
 func (sc *SliceColumn) Strings() ([]string, error) {
 	typedCol, ok := sc.data.([]string)
@@ -169,15 +178,28 @@ func (sc *SliceColumn) Append(value interface{}) error {
 	case IntType:
 		typedVal, ok := value.(int)
 		if !ok {
-			return fmt.Errorf("wront type for %s - %T", sc.DType(), value)
+			// if the new value is a float, convert the col to floats
+			floatVal, ok := value.(float64)
+			if !ok {
+				return fmt.Errorf("wrong type for %s(%s) - %T", sc.name, sc.DType(), value)
+			}
+			sc.intToFloat()
+			typedCol, _ := sc.Floats()
+			sc.data = append(typedCol, floatVal)
+		} else {
+			typedCol, _ := sc.Ints()
+			sc.data = append(typedCol, typedVal)
 		}
 
-		typedCol, _ := sc.Ints()
-		sc.data = append(typedCol, typedVal)
 	case FloatType:
 		typedVal, ok := value.(float64)
 		if !ok {
-			return fmt.Errorf("wront type for %s - %T", sc.DType(), value)
+			// if its an Int, convert to float
+			intVal, ok := value.(int)
+			if !ok {
+				return fmt.Errorf("wrong type for %s(%s) - %T", sc.name, sc.DType(), value)
+			}
+			typedVal = float64(intVal)
 		}
 
 		typedCol, _ := sc.Floats()
@@ -185,20 +207,20 @@ func (sc *SliceColumn) Append(value interface{}) error {
 	case StringType:
 		typedVal, ok := value.(string)
 		if !ok {
-			return fmt.Errorf("wront type for %s - %T", sc.DType(), value)
+			return fmt.Errorf("wrong type for %s(%s) - %T", sc.name, sc.DType(), value)
 		}
 		typedCol, _ := sc.Strings()
 		sc.data = append(typedCol, typedVal)
 	case TimeType:
 		typedVal, ok := value.(time.Time)
 		if !ok {
-			return fmt.Errorf("wront type for %s - %T", sc.DType(), value)
+			return fmt.Errorf("wrong type for %s(%s) - %T", sc.name, sc.DType(), value)
 		}
 
 		typedCol, _ := sc.Times()
 		sc.data = append(typedCol, typedVal)
 	default:
-		return fmt.Errorf("unknown column type - %s", sc.DType())
+		return fmt.Errorf("unknown column type - %s for %s", sc.DType(), sc.name)
 	}
 
 	sc.size++
