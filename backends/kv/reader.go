@@ -68,11 +68,11 @@ func (kv *Backend) Read(request *frames.ReadRequest) (frames.FrameIterator, erro
 	}
 
 	columns := request.Columns
-	if len(columns) == 0 {
+	if len(columns) < 1 || columns[0] == "" {
 		columns = []string{"*"}
 	}
 
-	input := v3io.GetItemsInput{Path: tablePath, Filter: request.Filter, AttributeNames: request.Columns}
+	input := v3io.GetItemsInput{Path: tablePath, Filter: request.Filter, AttributeNames: columns}
 	kv.logger.DebugWith("read input", "input", input, "request", request)
 	iter, err := v3ioutils.NewAsyncItemsCursor(kv.logger, kv.container, &input, kv.numWorkers, request.ShardingKeys)
 	if err != nil {
@@ -95,6 +95,7 @@ type Iterator struct {
 func (ki *Iterator) Next() bool {
 	var columns []frames.Column
 	byName := map[string]frames.Column{}
+	indexName := ""
 
 	rowNum := 0
 	for ; rowNum < ki.request.MaxInMessage && ki.iter.Next(); rowNum++ {
@@ -111,6 +112,10 @@ func (ki *Iterator) Next() bool {
 				col, err = frames.NewSliceColumn(name, data)
 				columns = append(columns, col)
 				byName[name] = col
+
+				if name == "__name" {
+					indexName = name
+				}
 			}
 
 			if err := col.Append(field); err != nil {
@@ -144,7 +149,7 @@ func (ki *Iterator) Next() bool {
 	}
 
 	var err error
-	ki.currFrame, err = frames.NewFrame(columns, "")
+	ki.currFrame, err = frames.NewFrame(columns, indexName)
 	if err != nil {
 		ki.err = err
 		return false
