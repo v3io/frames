@@ -118,7 +118,7 @@ func (s *OldV3ioSchema) UpdateSchema(container *v3io.Container, tablePath string
 			return errors.Wrap(err, "failed to marshal schema")
 		}
 		err = container.Sync.PutObject(&v3io.PutObjectInput{
-			Path: tablePath + ".schema", Body: body})
+			Path: tablePath + ".%23schema", Body: body})
 		if err != nil {
 			return errors.Wrap(err, "failed to update schema")
 		}
