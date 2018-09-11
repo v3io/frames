@@ -30,6 +30,7 @@ import (
 	"github.com/v3io/frames/backends/utils"
 
 	"github.com/nuclio/logger"
+	"github.com/v3io/frames/v3ioutils"
 	"github.com/v3io/v3io-go-http"
 )
 
@@ -43,6 +44,7 @@ type Appender struct {
 	doneChan     chan bool
 	sent         int
 	logger       logger.Logger
+	schema       v3ioutils.V3ioSchema
 }
 
 // Write support writing to backend
@@ -59,6 +61,7 @@ func (kv *Backend) Write(request *frames.WriteRequest) (frames.FrameAppender, er
 		responseChan: make(chan *v3io.Response, 1000),
 		commChan:     make(chan int, 2),
 		logger:       kv.logger,
+		schema:       v3ioutils.NewSchema(),
 	}
 	go appender.respWaitLoop(time.Minute)
 
@@ -80,12 +83,20 @@ func (a *Appender) Add(frame frames.Frame) error {
 	}
 
 	columns := make(map[string]frames.Column)
+	newSchema := v3ioutils.NewSchema()
 	for _, name := range frame.Names() {
 		col, err := frame.Column(name)
 		if err != nil {
 			return err
 		}
+		name = validColName(name)
+		newSchema.AddField(name, col, true)
 		columns[name] = col
+	}
+
+	err := a.schema.UpdateSchema(a.container, a.tablePath, newSchema)
+	if err != nil {
+		return err
 	}
 
 	indexVal, err := a.indexValFunc(frame, names[0])
@@ -117,6 +128,17 @@ func (a *Appender) Add(frame frames.Frame) error {
 	}
 
 	return nil
+}
+
+// convert Col name to a v3io valid attr name
+// TODO: may want to also update the name in the Column object
+func validColName(name string) string {
+	for i := 0; i < len(name); i++ {
+		if name[i] == ' ' || name[i] == ':' {
+			name = name[:i] + "_" + name[i+1:]
+		}
+	}
+	return name
 }
 
 // WaitForComplete waits for write to complete
