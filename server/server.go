@@ -165,7 +165,7 @@ func (s *Server) handleRead(ctx *fasthttp.RequestCtx) {
 
 	// TODO: Validate request
 
-	s.logger.DebugWith("read request", "request", request)
+	s.logger.InfoWith("read request", "request", request)
 	backend, ok := s.backends[request.Backend]
 	if !ok {
 		s.logger.ErrorWith("unknown backend", "name", request.Backend)
@@ -217,7 +217,7 @@ func (s *Server) handleWrite(ctx *fasthttp.RequestCtx) {
 		return
 	}
 
-	s.logger.DebugWith("write request", "request", request)
+	s.logger.InfoWith("write request", "request", request)
 	backend, ok := s.backends[request.Backend]
 	if !ok {
 		s.logger.ErrorWith("unkown backend", "name", request.Backend)
