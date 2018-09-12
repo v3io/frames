@@ -28,8 +28,14 @@ under the Apache 2.0 license is conditioned upon your compliance with
 such restriction.
 */
 
-func NewSchema() V3ioSchema {
-	return &OldV3ioSchema{Fields: []OldSchemaField{}}
+func NewSchema(key string) V3ioSchema {
+	return &OldV3ioSchema{Fields: []OldSchemaField{}, Key: key}
+}
+
+func SchemaFromJson(data []byte) (V3ioSchema, error) {
+	var schema OldV3ioSchema
+	err := json.Unmarshal(data, &schema)
+	return &schema, err
 }
 
 type V3ioSchema interface {
@@ -38,7 +44,9 @@ type V3ioSchema interface {
 }
 
 type OldV3ioSchema struct {
-	Fields []OldSchemaField `json:"Fields"`
+	Fields           []OldSchemaField `json:"fields"`
+	Key              string           `json:"fields"`
+	HashingBucketNum int              `json:"hashingBucketNum"`
 }
 
 type OldSchemaField struct {
@@ -101,6 +109,11 @@ func (s *OldV3ioSchema) merge(new *OldV3ioSchema) (bool, error) {
 			s.Fields = append(s.Fields, field)
 			changed = true
 		}
+	}
+
+	if s.Key != new.Key {
+		s.Key = new.Key
+		changed = true
 	}
 
 	return changed, nil

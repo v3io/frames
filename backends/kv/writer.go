@@ -61,7 +61,7 @@ func (kv *Backend) Write(request *frames.WriteRequest) (frames.FrameAppender, er
 		responseChan: make(chan *v3io.Response, 1000),
 		commChan:     make(chan int, 2),
 		logger:       kv.logger,
-		schema:       v3ioutils.NewSchema(),
+		schema:       v3ioutils.NewSchema(""),
 	}
 	go appender.respWaitLoop(time.Minute)
 
@@ -83,7 +83,7 @@ func (a *Appender) Add(frame frames.Frame) error {
 	}
 
 	columns := make(map[string]frames.Column)
-	newSchema := v3ioutils.NewSchema()
+	newSchema := v3ioutils.NewSchema(frame.IndexName())
 	for _, name := range frame.Names() {
 		col, err := frame.Column(name)
 		if err != nil {
