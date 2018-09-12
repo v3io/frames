@@ -111,7 +111,7 @@ func (s *OldV3ioSchema) merge(new *OldV3ioSchema) (bool, error) {
 		}
 	}
 
-	if s.Key != new.Key {
+	if s.Key != new.Key && new.Key != "" {
 		s.Key = new.Key
 		changed = true
 	}
