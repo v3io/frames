@@ -48,11 +48,12 @@ type AsyncItemsCursor struct {
 	totalSegments int
 	lastShards    int
 	Cnt           int
+	limit         int
 }
 
 func NewAsyncItemsCursor(
 	container *v3io.Container, input *v3io.GetItemsInput,
-	workers int, shardingKeys []string, logger logger.Logger) (*AsyncItemsCursor, error) {
+	workers int, shardingKeys []string, logger logger.Logger, limit int) (*AsyncItemsCursor, error) {
 
 	// TODO: use workers from Context.numWorkers (if no ShardingKey)
 	if workers == 0 || input.ShardingKey != "" {
@@ -65,6 +66,7 @@ func NewAsyncItemsCursor(
 		responseChan: make(chan *v3io.Response, 1000),
 		workers:      workers,
 		logger:       logger.GetChild("AsyncItemsCursor"),
+		limit:        limit,
 	}
 
 	if len(shardingKeys) > 0 {
@@ -134,6 +136,11 @@ func (ic *AsyncItemsCursor) NextItem() (v3io.Item, error) {
 
 	// are there any more items left in the previous response we received?
 	if ic.itemIndex < len(ic.items) {
+		// if we read more rows than limit, return EOF
+		if ic.limit > 0 && ic.Cnt > ic.limit {
+			return nil, nil
+		}
+
 		ic.currentItem = ic.items[ic.itemIndex]
 		ic.currentError = nil
 
