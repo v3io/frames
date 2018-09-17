@@ -82,6 +82,8 @@ type DataBackend interface {
 	// TODO: Expose name, type, config ... ?
 	Read(request *ReadRequest) (FrameIterator, error)
 	Write(request *WriteRequest) (FrameAppender, error) // TODO: use Appender for write streaming
+	Create(request *CreateRequest) error
+	Delete(request *DeleteRequest) error
 }
 
 // FrameIterator iterates over frames
@@ -160,8 +162,35 @@ type WriteRequest struct {
 	Table   string // Table name (path)
 	// Data message sent with the write request (in case of a stream multiple messages can follow)
 	ImmidiateData Frame
+	// Expression template, for update expressions generated from combining columns data with expression
+	Expression string
 	// Will we get more message chunks (in a stream), if not we can complete
 	HaveMore bool
+}
+
+type CreateRequest struct {
+	// name of the backend
+	Backend string `json:"backend"`
+	// Table name (path)
+	Table string `json:"table"`
+	// list of attributes used for creating the table
+	Attributes map[string]interface{} `json:"attributes,omitempty"`
+	// schema (for describing unstructured/schemaless data)
+	Schema *TableSchema `json:"schema,omitempty"`
+}
+
+type DeleteRequest struct {
+	// name of the backend
+	Backend string `json:"backend"`
+	// Table name (path)
+	Table string `json:"table"`
+	// Filter string for selective delete
+	Filter string `json:"filter,omitempty"`
+	// Force delete
+	Force bool `json:"force,omitempty"`
+	// TSDB and Stream specific fields
+	From string `json:"from,omitempty"`
+	To   string `json:"to,omitempty"`
 }
 
 // TableSchema is a table schema
