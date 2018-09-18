@@ -164,6 +164,8 @@ type WriteRequest struct {
 	ImmidiateData Frame
 	// Expression template, for update expressions generated from combining columns data with expression
 	Expression string
+	// Labels dictionary, for TSDB will be used as LabelSet, for KV/DB will add those to all the written rows
+	Labels map[string]interface{}
 	// Will we get more message chunks (in a stream), if not we can complete
 	HaveMore bool
 }

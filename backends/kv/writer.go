@@ -90,8 +90,17 @@ func (a *Appender) Add(frame frames.Frame) error {
 			return err
 		}
 		name = validColName(name)
-		newSchema.AddField(name, col, true)
+		err = newSchema.AddColumn(name, col, true)
+		if err != nil {
+			return err
+		}
 		columns[name] = col
+	}
+	for name, val := range a.request.Labels {
+		err := newSchema.AddField(name, val, true)
+		if err != nil {
+			return err
+		}
 	}
 
 	err := a.schema.UpdateSchema(a.container, a.tablePath, newSchema)
@@ -106,12 +115,19 @@ func (a *Appender) Add(frame frames.Frame) error {
 
 	for r := 0; r < frame.Len(); r++ {
 		row := make(map[string]interface{})
+
+		// set row values from columns
 		for name, col := range columns {
 			val, err := utils.ColAt(col, r)
 			if err != nil {
 				return err
 			}
 
+			row[name] = val
+		}
+
+		// set row values from Labels (same labels for all rows)
+		for name, val := range a.request.Labels {
 			row[name] = val
 		}
 

@@ -6,6 +6,7 @@ import (
 	"github.com/pkg/errors"
 	"github.com/v3io/frames"
 	"github.com/v3io/v3io-go-http"
+	"time"
 )
 
 /*
@@ -39,7 +40,8 @@ func SchemaFromJson(data []byte) (V3ioSchema, error) {
 }
 
 type V3ioSchema interface {
-	AddField(name string, col frames.Column, nullable bool) error
+	AddColumn(name string, col frames.Column, nullable bool) error
+	AddField(name string, val interface{}, nullable bool) error
 	UpdateSchema(container *v3io.Container, tablePath string, newSchema V3ioSchema) error
 }
 
@@ -55,7 +57,7 @@ type OldSchemaField struct {
 	Nullable bool   `json:"nullable,omitempty"`
 }
 
-func (s *OldV3ioSchema) AddField(name string, col frames.Column, nullable bool) error {
+func (s *OldV3ioSchema) AddColumn(name string, col frames.Column, nullable bool) error {
 
 	var ftype string
 	switch col.DType() {
@@ -66,6 +68,25 @@ func (s *OldV3ioSchema) AddField(name string, col frames.Column, nullable bool) 
 	case frames.StringType:
 		ftype = "string"
 	case frames.TimeType:
+		ftype = "time"
+	}
+
+	field := OldSchemaField{Name: name, Type: ftype, Nullable: nullable}
+	s.Fields = append(s.Fields, field)
+	return nil
+}
+
+func (s *OldV3ioSchema) AddField(name string, val interface{}, nullable bool) error {
+
+	var ftype string
+	switch val.(type) {
+	case int, int32, int64:
+		ftype = "long"
+	case float32, float64:
+		ftype = "double"
+	case string:
+		ftype = "string"
+	case time.Time:
 		ftype = "time"
 	}
 
