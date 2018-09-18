@@ -51,6 +51,14 @@ func NewBackend(logger logger.Logger, config *frames.BackendConfig) (frames.Data
 	return backend, nil
 }
 
+func (b *Backend) Create(request *frames.CreateRequest) error {
+	return nil
+}
+
+func (b *Backend) Delete(request *frames.DeleteRequest) error {
+	return nil
+}
+
 // Read handles reading
 func (b *Backend) Read(request *frames.ReadRequest) (frames.FrameIterator, error) {
 	file, err := os.Open(b.csvPath(request.Table))

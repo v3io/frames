@@ -56,6 +56,14 @@ func NewBackend(logger logger.Logger, config *frames.BackendConfig) (frames.Data
 	return &newBackend, nil
 }
 
+func (kv *Backend) Create(request *frames.CreateRequest) error {
+	return nil
+}
+
+func (kv *Backend) Delete(request *frames.DeleteRequest) error {
+	return nil
+}
+
 // Read does a read request
 func (kv *Backend) Read(request *frames.ReadRequest) (frames.FrameIterator, error) {
 	tablePath := request.Table
@@ -74,7 +82,8 @@ func (kv *Backend) Read(request *frames.ReadRequest) (frames.FrameIterator, erro
 
 	input := v3io.GetItemsInput{Path: tablePath, Filter: request.Filter, AttributeNames: columns}
 	kv.logger.DebugWith("read input", "input", input, "request", request)
-	iter, err := v3ioutils.NewAsyncItemsCursor(kv.logger, kv.container, &input, kv.numWorkers, request.ShardingKeys)
+	iter, err := v3ioutils.NewAsyncItemsCursor(
+		kv.container, &input, kv.numWorkers, request.ShardingKeys, kv.logger, 0)
 	if err != nil {
 		return nil, err
 	}
