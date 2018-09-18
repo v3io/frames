@@ -51,11 +51,58 @@ func NewBackend(logger logger.Logger, config *frames.BackendConfig) (frames.Data
 	return backend, nil
 }
 
+// Create will create a table
 func (b *Backend) Create(request *frames.CreateRequest) error {
+	csvPath := b.csvPath(request.Table)
+	// TODO: Overwrite?
+	if fileExists(csvPath) {
+		return fmt.Errorf("table %q already exists", request.Table)
+	}
+
+	file, err := os.Create(csvPath)
+	if err != nil {
+		return errors.Wrapf(err, "can't create table file")
+	}
+
+	defer file.Close()
+	if request.Schema == nil || len(request.Schema.Fields) == 0 {
+		return nil
+	}
+
+	numFields := len(request.Schema.Fields)
+	names := make([]string, numFields)
+	for i, field := range request.Schema.Fields {
+		if field.Name == "" {
+			return fmt.Errorf("field %d with no name", i)
+		}
+
+		names[i] = field.Name
+	}
+
+	csvWriter := csv.NewWriter(file)
+	if err := csvWriter.Write(names); err != nil {
+		return errors.Wrapf(err, "can't create header")
+	}
+
+	csvWriter.Flush()
+	if err := file.Sync(); err != nil {
+		return errors.Wrap(err, "can't flush csv file")
+	}
+
 	return nil
 }
 
+// Delete will delete a table
 func (b *Backend) Delete(request *frames.DeleteRequest) error {
+	csvPath := b.csvPath(request.Table)
+	if !request.Force && !fileExists(csvPath) {
+		return fmt.Errorf("table %q doesn't exist", request.Table)
+	}
+
+	if err := os.Remove(csvPath); err != nil {
+		return errors.Wrapf(err, "can't delete %q", request.Table)
+	}
+
 	return nil
 }
 
@@ -86,6 +133,7 @@ func (b *Backend) Read(request *frames.ReadRequest) (frames.FrameIterator, error
 
 // Write handles writing
 func (b *Backend) Write(request *frames.WriteRequest) (frames.FrameAppender, error) {
+	// TODO: Append?
 	file, err := os.Create(b.csvPath(request.Table))
 	if err != nil {
 		return nil, err
@@ -356,4 +404,9 @@ func (ca *csvAppender) WaitForComplete(timeout time.Duration) error {
 	}
 
 	return nil
+}
+
+func fileExists(path string) bool {
+	_, err := os.Stat(path)
+	return err == nil
 }

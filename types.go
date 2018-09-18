@@ -168,6 +168,7 @@ type WriteRequest struct {
 	HaveMore bool
 }
 
+// CreateRequest is a table creation request
 type CreateRequest struct {
 	// name of the backend
 	Backend string `json:"backend"`
@@ -179,6 +180,7 @@ type CreateRequest struct {
 	Schema *TableSchema `json:"schema,omitempty"`
 }
 
+// DeleteRequest is a deletion request
 type DeleteRequest struct {
 	// name of the backend
 	Backend string `json:"backend"`

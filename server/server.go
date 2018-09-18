@@ -52,6 +52,9 @@ var (
 	configPath = []byte("/_/config")
 	writePath  = []byte("/write")
 	readPath   = []byte("/read")
+	createPath = []byte("/create")
+	deletePath = []byte("/delete")
+	okBytes    = []byte("OK")
 )
 
 // Server is HTTP server
@@ -138,6 +141,10 @@ func (s *Server) handler(ctx *fasthttp.RequestCtx) {
 		s.handleWrite(ctx)
 	case bytes.Compare(ctx.Path(), readPath) == 0:
 		s.handleRead(ctx)
+	case bytes.Compare(ctx.Path(), createPath) == 0:
+		s.handleCreate(ctx)
+	case bytes.Compare(ctx.Path(), deletePath) == 0:
+		s.handleDelete(ctx)
 	default:
 		ctx.Error(fmt.Sprintf("unknown path - %q", string(ctx.Path())), http.StatusNotFound)
 	}
@@ -292,6 +299,70 @@ func (s *Server) handleWrite(ctx *fasthttp.RequestCtx) {
 	}
 
 	ctx.Write(data)
+}
+
+func (s *Server) handleCreate(ctx *fasthttp.RequestCtx) {
+	request := &frames.CreateRequest{}
+	if err := json.Unmarshal(ctx.PostBody(), request); err != nil {
+		s.logger.ErrorWith("can't decode request", "error", err)
+		ctx.Error(fmt.Sprintf("bad request - %s", err), http.StatusBadRequest)
+		return
+	}
+
+	if request.Backend == "" || request.Table == "" {
+		s.logger.ErrorWith("missing parameters", "request", request)
+		ctx.Error("missing parameter", http.StatusBadRequest)
+		return
+	}
+
+	s.logger.DebugWith("create", "request", request)
+
+	backend, ok := s.backends[request.Backend]
+	if !ok {
+		s.logger.ErrorWith("unkown backend", "name", request.Backend)
+		ctx.Error(fmt.Sprintf("unknown backend - %s", request.Backend), http.StatusBadRequest)
+		return
+	}
+
+	if err := backend.Create(request); err != nil {
+		s.logger.ErrorWith("error creating table", "error", err, "request", request)
+		ctx.Error(err.Error(), http.StatusBadRequest)
+	}
+
+	ctx.SetStatusCode(http.StatusCreated)
+	ctx.Write(okBytes)
+}
+
+func (s *Server) handleDelete(ctx *fasthttp.RequestCtx) {
+	request := &frames.DeleteRequest{}
+	if err := json.Unmarshal(ctx.PostBody(), request); err != nil {
+		s.logger.ErrorWith("can't decode request", "error", err)
+		ctx.Error(fmt.Sprintf("bad request - %s", err), http.StatusBadRequest)
+		return
+	}
+
+	if request.Backend == "" || request.Table == "" {
+		s.logger.ErrorWith("missing parameters", "request", request)
+		ctx.Error("missing parameter", http.StatusBadRequest)
+		return
+	}
+
+	s.logger.DebugWith("delete", "request", request)
+
+	backend, ok := s.backends[request.Backend]
+	if !ok {
+		s.logger.ErrorWith("unkown backend", "name", request.Backend)
+		ctx.Error(fmt.Sprintf("unknown backend - %s", request.Backend), http.StatusBadRequest)
+		return
+	}
+
+	if err := backend.Delete(request); err != nil {
+		s.logger.ErrorWith("error deleting table", "error", err, "request", request)
+		ctx.Error(err.Error(), http.StatusBadRequest)
+	}
+
+	ctx.SetStatusCode(http.StatusOK)
+	ctx.Write(okBytes)
 }
 
 func (s *Server) handleConfig(ctx *fasthttp.RequestCtx) {

@@ -14,6 +14,7 @@
 
 """Stream data from Nuclio into pandas DataFrame"""
 
+from collections import namedtuple
 from itertools import chain, count
 from os import environ
 import datetime
@@ -40,6 +41,14 @@ class MessageError(Error):
     """An error in message"""
 
 
+class CreateError(Error):
+    """An error in table creation"""
+
+
+class DeleteError(Error):
+    """An error in table deletion"""
+
+
 int_dtype = '[]int'
 float_dtype = '[]float'
 string_dtype = '[]string'
@@ -50,6 +59,9 @@ msg_col_keys = {
     string_dtype: 'strings',
     time_dtype: 'ns_times',
 }
+
+Schema = namedtuple('Schema', 'type namespace name doc aliases fields key')
+SchemaField = namedtuple('SchemaField', 'name doc default type properties')
 
 
 class Client(object):
@@ -159,13 +171,98 @@ class Client(object):
         headers = self._headers()
         headers['Content-Encoding'] = 'chunked'
         chunks = self._iter_chunks(dfs, max_in_message)
-        resp = requests.post(
-            url, headers=self._headers(), params=params, data=chunks)
+        resp = requests.post(url, headers=headers, params=params, data=chunks)
 
         if not resp.ok:
             raise Error('cannot call API - {}'.format(resp.text))
 
         return resp.json()
+
+    def create(self, backend, table, attrs=None, schema=None):
+        """Create a table
+
+        Parameters
+        ----------
+        backend : str
+            Backend name
+        table : str
+            Table to create
+        attrs : dict
+            Table attributes
+        schema: Schema or None
+            Table schema
+
+        Raises
+        ------
+        CreateError
+            On request error or backend error
+        """
+        if not backend:
+            raise CreateError('empty backend')
+
+        if not table:
+            raise CreateError('empty table')
+
+        schema = None if schema is None else encode_schema(schema)
+
+        request = {
+            'backend': backend,
+            'table': table,
+            'attributed': attrs,
+            'schema': schema,
+        }
+
+        url = self.url + '/create'
+        headers = self._headers()
+        resp = requests.post(url, headers=headers, json=request)
+        if not resp.ok:
+            raise CreateError(resp.reason)
+
+    def delete(self, backend, table, filter='', force=False, since='', to=''):
+        """Delete a table
+
+        Parameters
+        ----------
+        backend : str
+            Backend name
+        table : str
+            Table to create
+        filter : str
+            Filter for selective delete
+        force : bool
+            Force deletion
+        since : string
+            Delete since (TSDB/Stream)
+        to : string
+            Delete up to (TSDB/Stream)
+
+        Raises
+        ------
+        DeleteError
+            On request error or backend error
+        """
+
+        if not backend:
+            raise DeleteError('empty backend')
+
+        if not table:
+            raise DeleteError('empty table')
+
+        request = {
+            'backend': backend,
+            'table': table,
+            'filter': filter,
+            'force': force,
+            'from': since,
+            'to': to,
+        }
+
+        url = self.url + '/delete'
+        headers = self._headers()
+        # TODO: Make it DELETE ?
+        resp = requests.post(url, headers=headers, json=request)
+        if not resp.ok:
+            raise CreateError(resp.reason)
 
     def _headers(self, json=False):
         headers = {}
@@ -386,3 +483,10 @@ def to_pylist(col, dtype):
         return col.fillna(pd.Timestamp.min).values.tolist()
 
     raise TypeError('unknown type - {}'.format(col.dtype))
+
+
+def encode_schema(schema):
+    obj = schema._asdict()
+    if obj['fields']:
+        obj['fields'] = [field._asdict() for field in obj['fields']]
+    return obj
