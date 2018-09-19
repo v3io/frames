@@ -1,5 +1,7 @@
 # github.com/BurntSushi/toml v0.3.0
 github.com/BurntSushi/toml
+# github.com/cespare/xxhash v1.1.0
+github.com/cespare/xxhash
 # github.com/ghodss/yaml v1.0.0
 github.com/ghodss/yaml
 # github.com/golang/protobuf v1.2.0
@@ -31,6 +33,15 @@ github.com/pavius/zap/internal/exit
 github.com/pkg/errors
 # github.com/v3io/v3io-go-http v0.0.0-20180823194319-36f737b2e799
 github.com/v3io/v3io-go-http
+# github.com/v3io/v3io-tsdb v0.0.11
+github.com/v3io/v3io-tsdb/pkg/config
+github.com/v3io/v3io-tsdb/pkg/querier
+github.com/v3io/v3io-tsdb/pkg/tsdb
+github.com/v3io/v3io-tsdb/pkg/utils
+github.com/v3io/v3io-tsdb/pkg/aggregate
+github.com/v3io/v3io-tsdb/pkg/chunkenc
+github.com/v3io/v3io-tsdb/pkg/partmgr
+github.com/v3io/v3io-tsdb/pkg/appender
 # github.com/valyala/bytebufferpool v0.0.0-20160817181652-e746df99fe4a
 github.com/valyala/bytebufferpool
 # github.com/valyala/fasthttp v0.0.0-20171207120941-e5f51c11919d
