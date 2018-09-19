@@ -264,7 +264,6 @@ func (s *Server) handleWrite(ctx *fasthttp.RequestCtx) {
 			}
 
 			s.logger.DebugWith("frame to write", "size", frame.Len())
-			s.logger.DebugWith("labels", "labels", frame.Labels())
 			if err := appender.Add(frame); err != nil {
 				s.logger.ErrorWith("can't add frame", "error", err)
 				ctx.Error(err.Error(), http.StatusInternalServerError)
