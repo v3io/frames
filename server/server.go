@@ -36,6 +36,7 @@ import (
 
 	"github.com/nuclio/logger"
 	"github.com/pkg/errors"
+	"github.com/v3io/frames/backends/tsdb"
 	"github.com/valyala/fasthttp"
 )
 
@@ -414,6 +415,8 @@ func (s *Server) createBackends(configs []frames.BackendConfig) (map[string]fram
 			factory = csv.NewBackend
 		case "kv":
 			factory = kv.NewBackend
+		case "tsdb":
+			factory = tsdb.NewBackend
 		}
 
 		backend, err := factory(s.logger, &cfg)
