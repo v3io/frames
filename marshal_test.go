@@ -40,7 +40,7 @@ func TestMarshal(t *testing.T) {
 		t.Fatal(err)
 	}
 
-	msg, ok := out.(*MapFrameMessage)
+	msg, ok := out.(*FrameMessage)
 	if !ok {
 		t.Fatalf("wrong message type - %T", msg)
 	}
@@ -66,6 +66,9 @@ func TestRoundTrip(t *testing.T) {
 		t.Fatalf("columns mismatch: %v != %v", cols1, cols2)
 	}
 
+	if mapsEqual(frame1.Labels(), frame2.Labels()) {
+		t.Fatalf("labels mismatch: %v != %v", frame1.Labels(), frame2.Labels())
+	}
 }
 
 func createFrame(t *testing.T) Frame {
@@ -104,10 +107,34 @@ func createFrame(t *testing.T) Frame {
 	}
 
 	columns = append(columns, col)
-	frame, err := NewFrame(columns, "", nil)
+	labels := map[string]interface{}{
+		"x": 1,
+		"y": "hello",
+	}
+
+	frame, err := NewFrame(columns, "", labels)
 	if err != nil {
 		t.Fatal(err)
 	}
 
 	return frame
+}
+
+func mapsEqual(m1, m2 map[string]interface{}) bool {
+	if len(m1) != len(m2) {
+		return false
+	}
+
+	for key, value1 := range m1 {
+		value2, ok := m2[key]
+		if !ok {
+			return false
+		}
+
+		if value1 != value2 {
+			return false
+		}
+	}
+
+	return true
 }

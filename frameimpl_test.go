@@ -25,7 +25,7 @@ import (
 	"testing"
 )
 
-func TestMapFrameNew(t *testing.T) {
+func TestFrameNew(t *testing.T) {
 	val0, val1, size := 7, "n", 10
 	col0, _ := NewLabelColumn("col0", val0, size)
 	col1, _ := NewLabelColumn("col1", val1, size)
@@ -67,7 +67,7 @@ func TestMapFrameNew(t *testing.T) {
 	}
 }
 
-func TestMapFrameSlice(t *testing.T) {
+func TestFrameSlice(t *testing.T) {
 	nCols, size := 7, 10
 	cols := newIntCols(t, nCols, size)
 	frame, err := NewFrame(cols, "", nil)
@@ -96,7 +96,7 @@ func TestMapFrameSlice(t *testing.T) {
 	}
 }
 
-func TestMapFrameIndex(t *testing.T) {
+func TestFrameIndex(t *testing.T) {
 	nCols, size := 2, 12
 	cols := newIntCols(t, nCols, size)
 

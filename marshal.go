@@ -86,7 +86,7 @@ func NewDecoder(reader io.Reader) *Decoder {
 
 // Decode encodes a frame
 func (d *Decoder) Decode() (Frame, error) {
-	msg := &MapFrameMessage{}
+	msg := &FrameMessage{}
 	if err := d.decoder.Decode(msg); err != nil {
 		return nil, err
 	}
