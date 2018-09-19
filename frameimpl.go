@@ -29,13 +29,14 @@ import (
 
 // frameImpl is a frame implementation
 type frameImpl struct {
+	labels    map[string]interface{}
 	columns   []Column
 	byName    map[string]int // name -> index in columns
 	indexName string
 }
 
 // NewFrame returns a new MapFrame
-func NewFrame(columns []Column, indexName string) (Frame, error) {
+func NewFrame(columns []Column, indexName string, labels map[string]interface{}) (Frame, error) {
 	if err := checkEqualLen(columns); err != nil {
 		return nil, err
 	}
@@ -46,6 +47,7 @@ func NewFrame(columns []Column, indexName string) (Frame, error) {
 	}
 
 	frame := &frameImpl{
+		labels:    labels,
 		columns:   columns,
 		byName:    byName,
 		indexName: indexName,
@@ -93,7 +95,7 @@ func NewFrameFromMap(data map[string]interface{}) (Frame, error) {
 		i++
 	}
 
-	return NewFrame(columns, "")
+	return NewFrame(columns, "", nil)
 }
 
 // Names returns the column names
@@ -110,6 +112,11 @@ func (mf *frameImpl) Names() []string {
 // IndexName returns the index name, "" if there's none
 func (mf *frameImpl) IndexName() string {
 	return mf.indexName
+}
+
+// Labels returns the Label set, nil if there's none
+func (mf *frameImpl) Labels() map[string]interface{} {
+	return mf.labels
 }
 
 // Len is the number of rows
@@ -148,13 +155,14 @@ func (mf *frameImpl) Slice(start int, end int) (Frame, error) {
 		frameSlice[i] = slice
 	}
 
-	return NewFrame(frameSlice, mf.IndexName())
+	return NewFrame(frameSlice, mf.IndexName(), mf.labels)
 }
 
 // MapFrameMessage is over-the-wire frame data
 type MapFrameMessage struct {
 	Columns   []string                       `msgpack:"columns"`
 	IndexName string                         `msgpack:"index_name,omitempty"`
+	Labels    map[string]interface{}         `msgpack:"labels,omitempty"`
 	SliceCols map[string]*SliceColumnMessage `msgpack:"slice_cols,omitempty"`
 	LabelCols map[string]*LabelColumnMessage `msgpack:"label_cols,omitempty"`
 }

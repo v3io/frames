@@ -126,7 +126,7 @@ func (d *Decoder) Decode() (Frame, error) {
 		return nil, fmt.Errorf("column %q not found", name)
 	}
 
-	return NewFrame(columns, msg.IndexName)
+	return NewFrame(columns, msg.IndexName, msg.Labels)
 }
 
 func (d *Decoder) decodeLabelCol(colMsg *LabelColumnMessage) (Column, error) {

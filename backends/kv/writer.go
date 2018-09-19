@@ -96,7 +96,7 @@ func (a *Appender) Add(frame frames.Frame) error {
 		}
 		columns[name] = col
 	}
-	for name, val := range a.request.Labels {
+	for name, val := range frame.Labels() {
 		err := newSchema.AddField(name, val, true)
 		if err != nil {
 			return err

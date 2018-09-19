@@ -55,6 +55,7 @@ type Column interface {
 
 // Frame is a collection of columns
 type Frame interface {
+	Labels() map[string]interface{}          // Label set
 	Names() []string                         // Column names
 	IndexName() string                       // Index column
 	Len() int                                // Number of rows

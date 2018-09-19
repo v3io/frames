@@ -31,7 +31,7 @@ func TestMapFrameNew(t *testing.T) {
 	col1, _ := NewLabelColumn("col1", val1, size)
 	cols := []Column{col0, col1}
 
-	frame, err := NewFrame(cols, "")
+	frame, err := NewFrame(cols, "", nil)
 	if err != nil {
 		t.Fatalf("can't create frame - %s", err)
 	}
@@ -70,7 +70,7 @@ func TestMapFrameNew(t *testing.T) {
 func TestMapFrameSlice(t *testing.T) {
 	nCols, size := 7, 10
 	cols := newIntCols(t, nCols, size)
-	frame, err := NewFrame(cols, "")
+	frame, err := NewFrame(cols, "", nil)
 	if err != nil {
 		t.Fatalf("can't create frame - %s", err)
 	}
@@ -102,7 +102,7 @@ func TestMapFrameIndex(t *testing.T) {
 
 	iName := "col0"
 
-	frame, err := NewFrame(cols, iName)
+	frame, err := NewFrame(cols, iName, nil)
 	if err != nil {
 		t.Fatal(err)
 	}
