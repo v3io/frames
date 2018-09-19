@@ -34,6 +34,14 @@ Core is written in [Go](https://golang.org/).
 
 To run the tests run `go test -v ./...`
 
+#### Adding Dependencies
+
+If you add dependencies please run
+
+    go mod tidy
+    go mod vendor
+    git add vendor go.mod go.sum
+
 ### Docker Image
 
 #### Build
