@@ -141,7 +141,7 @@ class Client(object):
 
         return self._iter_dfs(resp.raw)
 
-    def write(self, backend, table, dfs, max_in_message=0):
+    def write(self, backend, table, dfs, labels=None, max_in_message=0):
         """Write to table
 
         Parameters
@@ -152,6 +152,8 @@ class Client(object):
             Table to write to
         dfs : iterable of DataFrame or a single data frame
             Frames to write
+        labels : dict
+            Labels for current write
         max_in_message : int
             Maximal number of rows in a message
 
@@ -170,7 +172,7 @@ class Client(object):
         url = self.url + '/write'
         headers = self._headers()
         headers['Content-Encoding'] = 'chunked'
-        chunks = self._iter_chunks(dfs, max_in_message)
+        chunks = self._iter_chunks(dfs, labels, max_in_message)
         resp = requests.post(url, headers=headers, params=params, data=chunks)
 
         if not resp.ok:
@@ -333,12 +335,13 @@ class Client(object):
         codes = np.zeros(col['size'])
         return pd.Categorial.from_codes(codes, categories=[col['name']])
 
-    def _encode_df(self, df):
+    def _encode_df(self, df, labels):
         msg = {
             'columns': [],
             'index_name': '',
             'slice_cols': {},
             'label_cols': {},
+            'labels': labels,
         }
 
         for name in df.columns:
@@ -398,10 +401,10 @@ class Client(object):
 
         return not isinstance(df.index, pd.RangeIndex)
 
-    def _iter_chunks(self, dfs, max_in_message):
+    def _iter_chunks(self, dfs, labels, max_in_message):
         for df in dfs:
             for cdf in self._chunk_df(df, max_in_message):
-                yield self._encode_df(df)
+                yield self._encode_df(df, labels)
 
     def _chunk_df(self, df, size):
         size = size if size else len(df)

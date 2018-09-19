@@ -158,8 +158,8 @@ func (mf *frameImpl) Slice(start int, end int) (Frame, error) {
 	return NewFrame(frameSlice, mf.IndexName(), mf.labels)
 }
 
-// MapFrameMessage is over-the-wire frame data
-type MapFrameMessage struct {
+// FrameMessage is over-the-wire frame data
+type FrameMessage struct {
 	Columns   []string                       `msgpack:"columns"`
 	IndexName string                         `msgpack:"index_name,omitempty"`
 	Labels    map[string]interface{}         `msgpack:"labels,omitempty"`
@@ -169,11 +169,12 @@ type MapFrameMessage struct {
 
 // Marshal marshals to native type
 func (mf *frameImpl) Marshal() (interface{}, error) {
-	msg := &MapFrameMessage{
+	msg := &FrameMessage{
 		Columns:   mf.Names(),
 		IndexName: mf.IndexName(),
 		LabelCols: make(map[string]*LabelColumnMessage),
 		SliceCols: make(map[string]*SliceColumnMessage),
+		Labels:    mf.Labels(),
 	}
 
 	for _, col := range mf.columns {
