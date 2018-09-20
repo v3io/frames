@@ -1,3 +1,23 @@
+/*
+Copyright 2018 Iguazio Systems Ltd.
+
+Licensed under the Apache License, Version 2.0 (the "License") with
+an addition restriction as set forth herein. You may not use this
+file except in compliance with the License. You may obtain a copy of
+the License at http://www.apache.org/licenses/LICENSE-2.0.
+
+Unless required by applicable law or agreed to in writing, software
+distributed under the License is distributed on an "AS IS" BASIS,
+WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or
+implied. See the License for the specific language governing
+permissions and limitations under the License.
+
+In addition, you may not use the software for any purposes that are
+illegal under applicable law, and the grant of the foregoing license
+under the Apache 2.0 license is conditioned upon your compliance with
+such restriction.
+*/
+
 package tsdb
 
 import (
@@ -8,17 +28,41 @@ import (
 )
 
 type Backend struct {
-	adapter *tsdb.V3ioAdapter
-	logger  logger.Logger
+	adapters map[string]*tsdb.V3ioAdapter
+	config   *frames.BackendConfig
+	logger   logger.Logger
 }
 
 // NewBackend return a new key/value backend
 func NewBackend(logger logger.Logger, cfg *frames.BackendConfig) (frames.DataBackend, error) {
 
+	newBackend := Backend{
+		adapters: map[string]*tsdb.V3ioAdapter{},
+		logger:   logger,
+		config:   cfg,
+	}
+
+	if cfg.Path != "" {
+		adapter, err := newAdapter(cfg, cfg.Path)
+		if err != nil {
+			return nil, err
+		}
+		newBackend.adapters[cfg.Path] = adapter
+	}
+
+	return &newBackend, nil
+}
+
+func newAdapter(cfg *frames.BackendConfig, path string) (*tsdb.V3ioAdapter, error) {
+
+	if path == "" {
+		path = cfg.Path
+	}
+
 	tsdbConfig := config.V3ioConfig{
 		V3ioUrl:   cfg.V3ioURL,
 		Container: cfg.Container,
-		Path:      cfg.Path,
+		Path:      path,
 		Username:  cfg.Username,
 		Password:  cfg.Password,
 		Workers:   cfg.Workers,
@@ -29,12 +73,21 @@ func NewBackend(logger logger.Logger, cfg *frames.BackendConfig) (frames.DataBac
 		return nil, err
 	}
 
-	newBackend := Backend{
-		adapter: adapter,
-		logger:  logger,
+	return adapter, nil
+}
+
+func (b *Backend) GetAdapter(path string) (*tsdb.V3ioAdapter, error) {
+	// TODO: Expire unused adapters
+	adapter, ok := b.adapters[path]
+	if !ok {
+		adapter, err := newAdapter(b.config, path)
+		if err != nil {
+			return nil, err
+		}
+		b.adapters[path] = adapter
 	}
 
-	return &newBackend, nil
+	return adapter, nil
 }
 
 func (b *Backend) Create(request *frames.CreateRequest) error {
