@@ -127,3 +127,23 @@ def test_encode_df():
     cols = set(msg['slice_cols']) | set(msg['label_cols'])
     assert cols == all_names, 'columns mismatch (in slice or label)'
     assert msg['index_name'] == index_name, 'bad index'
+
+
+def test_decode():
+    df = pd.DataFrame({
+        'x': [1, 2, 3],
+        'y': ['a', 'b', 'c'],
+    })
+
+    labels = {
+        'l1': 1,
+        'l2': 'two',
+    }
+
+    c = v3f.Client('http://localhost:8080')
+    data = c._encode_df(df, labels)
+    dfs = list(c._iter_dfs(BytesIO(data)))
+
+    assert len(dfs) == 1, 'wrong number of dfs'
+    assert dfs[0].to_dict() == df.to_dict(), 'bad encoding'
+    assert getattr(dfs[0], 'labels') == labels, 'bad labels'

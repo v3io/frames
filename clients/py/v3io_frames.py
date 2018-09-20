@@ -14,17 +14,17 @@
 
 """Stream data from Nuclio into pandas DataFrame"""
 
+import datetime
+import struct
+import warnings
 from collections import namedtuple
 from itertools import chain, count
 from os import environ
-import datetime
-import struct
 
 import msgpack
 import numpy as np
 import pandas as pd
 import requests
-
 
 __version__ = '0.1.0'
 
@@ -115,7 +115,8 @@ class Client(object):
             Extra parameter for specific backends
 
         Returns:
-            A pandas DataFrame iterator
+            A pandas DataFrame iterator. Each DataFrame will have "labels"
+            attribute.
         """
         request = {
             'backend': backend,
@@ -291,8 +292,10 @@ class Client(object):
     def _msg2df(self, msg):
         # message format:
         #   columns: list of column names
-        #   slice_cols: dict of name -> column
+        #   index_name: str
         #   label_cols: dict of name -> column
+        #   labels: dict
+        #   slice_cols: dict of name -> column
 
         df_data = {}
         for name in msg['columns']:
@@ -312,6 +315,9 @@ class Client(object):
             return None
 
         df = pd.DataFrame(df_data)
+        with warnings.catch_warnings():
+            warnings.simplefilter("ignore")
+            df.labels = msg.get('labels', {})
 
         name = msg.get('index_name')
         if name:
