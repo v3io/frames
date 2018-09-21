@@ -84,7 +84,7 @@ class Client(object):
 
     def read(self, backend='', query='', table='', columns=None, filter='',
              group_by='', limit=0, data_format='', row_layout=False,
-             max_in_message=0, marker='', extra=None):
+             max_in_message=0, marker='', **kw):
         """Run a query in nuclio
 
         Parameters
@@ -111,7 +111,7 @@ class Client(object):
             Maximal number of rows per message
         marker : str
             Query marker (can't be used with query)
-        extra : object
+        **kw
             Extra parameter for specific backends
 
         Returns:
@@ -131,8 +131,9 @@ class Client(object):
             'row_layout': row_layout,
             'max_in_message': max_in_message,
             'marker': marker,
-            'extra': extra,
         }
+
+        request.update(kw)
         self._validate_read_request(request)
         url = self.url + '/read'
         resp = requests.post(
