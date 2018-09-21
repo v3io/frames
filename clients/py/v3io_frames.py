@@ -425,7 +425,7 @@ def unpack_time(value):
     # See https://github.com/vmihailenco/msgpack/blob/master/time.go
     if len(value) == 4:
         sec, = struct.unpack('>L', value)
-        return datetime.fromtimestamp(sec)
+        return datetime.datetime.fromtimestamp(sec)
 
     if len(value) == 8:
         sec, = struct.unpack('>Q', value)
