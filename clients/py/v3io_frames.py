@@ -14,10 +14,10 @@
 
 """Stream data from Nuclio into pandas DataFrame"""
 
-import datetime
 import struct
 import warnings
 from collections import namedtuple
+from datetime import datetime
 from itertools import chain, count
 from os import environ
 
@@ -431,7 +431,7 @@ def unpack_time(value):
     # See https://github.com/vmihailenco/msgpack/blob/master/time.go
     if len(value) == 4:
         sec, = struct.unpack('>L', value)
-        return datetime.datetime.fromtimestamp(sec)
+        return datetime.fromtimestamp(sec)
 
     if len(value) == 8:
         sec, = struct.unpack('>Q', value)
