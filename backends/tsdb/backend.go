@@ -59,16 +59,24 @@ func newAdapter(cfg *frames.BackendConfig, path string) (*tsdb.V3ioAdapter, erro
 		path = cfg.Path
 	}
 
-	tsdbConfig := config.V3ioConfig{
+	tsdbConfig := &config.V3ioConfig{
 		V3ioUrl:   cfg.V3ioURL,
 		Container: cfg.Container,
 		Path:      path,
 		Username:  cfg.Username,
 		Password:  cfg.Password,
 		Workers:   cfg.Workers,
+		Verbose:   "debug",
 	}
 
-	adapter, err := tsdb.NewV3ioAdapter(&tsdbConfig, nil, nil)
+	var err error
+	tsdbConfig, err = config.GetOrLoadFromFile("v3io2.yaml")
+	if err != nil {
+		// if we couldn't load the file and its not the default
+		return nil, err
+	}
+
+	adapter, err := tsdb.NewV3ioAdapter(tsdbConfig, nil, nil)
 	if err != nil {
 		return nil, err
 	}

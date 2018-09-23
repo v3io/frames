@@ -140,8 +140,8 @@ type ReadRequest struct {
 	SortKeyRangeEnd   string   `json:"sort_key_range_end"`
 
 	// TSDB and Stream specific fields
-	From        string `json:"from"`
-	To          string `json:"to"`
+	Start       string `json:"start"`
+	End         string `json:"end"`
 	StepRaw     string `json:"step"`        // time.Duration format
 	Aggragators string `json:"aggragators"` // TSDB aggregation functions
 }

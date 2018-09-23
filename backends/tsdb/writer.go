@@ -83,12 +83,6 @@ func (a *tsdbAppender) Add(frame frames.Frame) error {
 		return fmt.Errorf("empty frame")
 	}
 
-	lset := make(utils.Labels, 0, len(frame.Labels()))
-	for name, val := range frame.Labels() {
-		lset = append(lset, utils.Label{Name: name, Value: fmt.Sprintf("%s", val)})
-	}
-	sort.Sort(lset)
-
 	values := map[string][]float64{}
 	tarray := make([]int64, frame.Len())
 	var lastTime int64
@@ -104,7 +98,7 @@ func (a *tsdbAppender) Add(frame frames.Frame) error {
 	}
 
 	for i := 0; i < frame.Len(); i++ {
-		t := times[i].Unix()*1000 + times[i].UnixNano()/1000
+		t := times[i].UnixNano() / 1000 / 1000
 		if t < lastTime {
 			return errors.Wrap(err, "time column is out of order (need to be sorted by time)")
 		}
@@ -135,13 +129,13 @@ func (a *tsdbAppender) Add(frame frames.Frame) error {
 		}
 	}
 
-	metrics := make([]metricCtx, 0, len(values))
+	metrics := make([]*metricCtx, 0, len(values))
 	for name, metric := range values {
 		lset, err := newLset(frame.Labels(), name, len(values) == 1)
 		if err != nil {
 			return err
 		}
-		metrics = append(metrics, metricCtx{lset: lset, data: metric})
+		metrics = append(metrics, &metricCtx{lset: lset, data: metric})
 	}
 
 	for i := 0; i < frame.Len(); i++ {
@@ -152,8 +146,10 @@ func (a *tsdbAppender) Add(frame frames.Frame) error {
 				if err != nil {
 					return errors.Wrap(err, "failed to Add")
 				}
+				fmt.Println("Add:", metric.ref, metric.lset, i)
 			} else {
-				err := a.appender.AddFast(nil, metric.ref, tarray[i], metric.data[i])
+				fmt.Println("Fast:", metric.ref, metric.lset, i)
+				err := a.appender.AddFast(metric.lset, metric.ref, tarray[i], metric.data[i])
 				if err != nil {
 					return errors.Wrap(err, "failed to AddFast")
 				}

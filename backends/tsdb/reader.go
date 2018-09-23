@@ -45,16 +45,16 @@ func (b *Backend) Read(request *frames.ReadRequest) (frames.FrameIterator, error
 
 	// TODO: start & end times
 	to := time.Now().Unix() * 1000
-	if request.To != "" {
-		to, err = tsdbutils.Str2unixTime(request.To)
+	if request.End != "" {
+		to, err = tsdbutils.Str2unixTime(request.End)
 		if err != nil {
 			return nil, err
 		}
 	}
 
 	from := to - 1000*3600 // default of last hour
-	if request.From != "" {
-		from, err = tsdbutils.Str2unixTime(request.From)
+	if request.Start != "" {
+		from, err = tsdbutils.Str2unixTime(request.Start)
 		if err != nil {
 			return nil, err
 		}
