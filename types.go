@@ -30,7 +30,7 @@ type Config struct {
 	Verbose      string `json:"verbose,omitempty"`
 	DefaultLimit int    `json:"limit,omitempty"`
 
-	Backends []BackendConfig `json:"backends,omitempty"`
+	Backends []*BackendConfig `json:"backends,omitempty"`
 }
 
 // Validate validates the configuration

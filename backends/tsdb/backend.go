@@ -42,14 +42,14 @@ func NewBackend(logger logger.Logger, cfg *frames.BackendConfig) (frames.DataBac
 		config:   cfg,
 	}
 
-	if cfg.Path != "" {
-		adapter, err := newAdapter(cfg, cfg.Path)
-		if err != nil {
-			return nil, err
+	/*	if cfg.Path != "" {
+			adapter, err := newAdapter(cfg, cfg.Path)
+			if err != nil {
+				return nil, err
+			}
+			newBackend.adapters[cfg.Path] = adapter
 		}
-		newBackend.adapters[cfg.Path] = adapter
-	}
-
+	*/
 	return &newBackend, nil
 }
 
@@ -66,11 +66,12 @@ func newAdapter(cfg *frames.BackendConfig, path string) (*tsdb.V3ioAdapter, erro
 		Username:  cfg.Username,
 		Password:  cfg.Password,
 		Workers:   cfg.Workers,
-		Verbose:   "debug",
+		Verbose:   "info",
 	}
 
 	var err error
-	tsdbConfig, err = config.GetOrLoadFromFile("v3io2.yaml")
+	//tsdbConfig, err = config.GetOrLoadFromFile("v3io2.yaml")
+	_, err = config.GetOrLoadFromStruct(tsdbConfig)
 	if err != nil {
 		// if we couldn't load the file and its not the default
 		return nil, err
@@ -85,16 +86,16 @@ func newAdapter(cfg *frames.BackendConfig, path string) (*tsdb.V3ioAdapter, erro
 }
 
 func (b *Backend) GetAdapter(path string) (*tsdb.V3ioAdapter, error) {
-	// TODO: Expire unused adapters
-	adapter, ok := b.adapters[path]
-	if !ok {
-		adapter, err := newAdapter(b.config, path)
-		if err != nil {
-			return nil, err
-		}
-		b.adapters[path] = adapter
-	}
+	// TODO: maintain adapter cache, for now create new per read/write request
+	//adapter, ok := b.adapters[path]
+	//if !ok {
+	//	b.adapters[path] = adapter
+	//}
 
+	adapter, err := newAdapter(b.config, path)
+	if err != nil {
+		return nil, err
+	}
 	return adapter, nil
 }
 

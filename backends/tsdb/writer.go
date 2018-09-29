@@ -99,6 +99,7 @@ func (a *tsdbAppender) Add(frame frames.Frame) error {
 
 	for i := 0; i < frame.Len(); i++ {
 		t := times[i].UnixNano() / 1000 / 1000
+		fmt.Printf("t: %s ,", times[i].String())
 		if t < lastTime {
 			return errors.Wrap(err, "time column is out of order (need to be sorted by time)")
 		}
@@ -146,9 +147,7 @@ func (a *tsdbAppender) Add(frame frames.Frame) error {
 				if err != nil {
 					return errors.Wrap(err, "failed to Add")
 				}
-				fmt.Println("Add:", metric.ref, metric.lset, i)
 			} else {
-				fmt.Println("Fast:", metric.ref, metric.lset, i)
 				err := a.appender.AddFast(metric.lset, metric.ref, tarray[i], metric.data[i])
 				if err != nil {
 					return errors.Wrap(err, "failed to AddFast")

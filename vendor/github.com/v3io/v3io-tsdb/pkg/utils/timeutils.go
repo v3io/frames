@@ -65,14 +65,18 @@ func Str2duration(duration string) (int64, error) {
 // convert time string to time (unix milisecond)
 func Str2unixTime(tstr string) (int64, error) {
 
-	if tstr == "now" || tstr == "now-" {
+	if tstr == "now" {
 		return time.Now().Unix() * 1000, nil
-	} else if strings.HasPrefix(tstr, "now-") {
+	} else if strings.HasPrefix(tstr, "now-") || strings.HasPrefix(tstr, "now+") {
 		t, err := Str2duration(tstr[4:])
 		if err != nil {
 			return 0, errors.Wrap(err, "could not parse pattern following 'now-'")
 		}
-		return time.Now().Unix()*1000 - int64(t), nil
+		if tstr[3:4] == "-" {
+			return time.Now().Unix()*1000 - int64(t), nil
+		} else {
+			return time.Now().Unix()*1000 + int64(t), nil
+		}
 	}
 
 	tint, err := strconv.Atoi(tstr)

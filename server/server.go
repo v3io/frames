@@ -205,6 +205,7 @@ func (s *Server) handleRead(ctx *fasthttp.RequestCtx) {
 	}
 
 	ctx.SetBodyStreamWriter(sw)
+	s.logger.InfoWith("post read request", "request", request)
 }
 
 func (s *Server) handleWrite(ctx *fasthttp.RequestCtx) {
@@ -300,6 +301,7 @@ func (s *Server) handleWrite(ctx *fasthttp.RequestCtx) {
 	}
 
 	ctx.Write(data)
+	s.logger.InfoWith("post write request", "request", request)
 }
 
 func (s *Server) handleCreate(ctx *fasthttp.RequestCtx) {
@@ -404,7 +406,7 @@ func (s *Server) populateQuery(request *frames.ReadRequest) error {
 	return nil
 }
 
-func (s *Server) createBackends(configs []frames.BackendConfig) (map[string]frames.DataBackend, error) {
+func (s *Server) createBackends(configs []*frames.BackendConfig) (map[string]frames.DataBackend, error) {
 	backends := make(map[string]frames.DataBackend)
 
 	for _, cfg := range configs {
@@ -419,7 +421,7 @@ func (s *Server) createBackends(configs []frames.BackendConfig) (map[string]fram
 			factory = tsdb.NewBackend
 		}
 
-		backend, err := factory(s.logger, &cfg)
+		backend, err := factory(s.logger, cfg)
 		if err != nil {
 			return nil, errors.Wrapf(err, "%s:%s - can't create backend", cfg.Name, cfg.Type)
 		}
