@@ -28,8 +28,8 @@ import (
 
 func TestNew(t *testing.T) {
 	cfg := &frames.Config{
-		Backends: []frames.BackendConfig{
-			frames.BackendConfig{
+		Backends: []*frames.BackendConfig{
+			&frames.BackendConfig{
 				Name: "weather",
 				Type: "csv",
 			},

@@ -42,8 +42,8 @@ func TestEnd2End(t *testing.T) {
 	backendName := "e2e-backend"
 	cfg := &frames.Config{
 		Verbose: "debug",
-		Backends: []frames.BackendConfig{
-			frames.BackendConfig{
+		Backends: []*frames.BackendConfig{
+			&frames.BackendConfig{
 				Name:    backendName,
 				Type:    "csv",
 				RootDir: tmpDir,
