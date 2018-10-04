@@ -12,11 +12,14 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+from datetime import datetime
 from io import BytesIO
 from os.path import abspath, dirname
+import re
 
 import msgpack
 import pandas as pd
+import pytz
 
 import v3io_frames as v3f
 
@@ -147,3 +150,20 @@ def test_decode():
     assert len(dfs) == 1, 'wrong number of dfs'
     assert dfs[0].to_dict() == df.to_dict(), 'bad encoding'
     assert getattr(dfs[0], 'labels') == labels, 'bad labels'
+
+
+def test_format_go_time():
+    tz = pytz.timezone('Asia/Jerusalem')
+    now = datetime.now()
+    dt = now.astimezone(tz)
+    ts = v3f.format_go_time(dt)
+
+    # 2018-10-04T16:54:05.434079562+03:00
+    match = \
+        re.match('\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}\.\d+\+\d{2}:\d{2}$', ts)
+    assert match, 'bad timestamp format'
+
+    # ...+03:00 -> (3, 0)
+    hours, minutes = map(int, ts[ts.find('+')+1:].split(':'))
+    offset = hours * 60 * 60 + minutes * 60
+    assert offset == tz.utcoffset(now).total_seconds(), 'bad offset'

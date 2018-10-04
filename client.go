@@ -146,6 +146,43 @@ func (c *Client) Write(request *WriteRequest) (FrameAppender, error) {
 	return appender, nil
 }
 
+// Delete deletes data
+func (c *Client) Delete(request *DeleteRequest) error {
+	return c.jsonCall("/delete", request)
+}
+
+// Create creates a table
+func (c *Client) Create(request *CreateRequest) error {
+	return c.jsonCall("/create", request)
+}
+
+func (c *Client) jsonCall(path string, request interface{}) error {
+	var buf bytes.Buffer
+
+	if err := json.NewEncoder(&buf).Encode(request); err != nil {
+		return errors.Wrap(err, "can't encode request")
+	}
+
+	req, err := http.NewRequest("POST", c.URL+path, &buf)
+	if err != nil {
+		return errors.Wrap(err, "can't create HTTP request")
+	}
+
+	req.Header.Set("Content-Type", "application/json")
+	c.addAuth(req)
+
+	resp, err := http.DefaultClient.Do(req)
+	if err != nil {
+		return errors.Wrap(err, "can't call server")
+	}
+
+	if resp.StatusCode != http.StatusOK {
+		return fmt.Errorf("error calling server - %q", resp.Status)
+	}
+
+	return nil
+}
+
 func (c *Client) addAuth(req *http.Request) {
 	if c.apiKey == "" {
 		return
