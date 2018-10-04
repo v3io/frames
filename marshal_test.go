@@ -56,7 +56,7 @@ func TestRoundTrip(t *testing.T) {
 	}
 
 	dec := NewDecoder(&buf)
-	frame2, err := dec.Decode()
+	frame2, err := dec.DecodeFrame()
 	if err != nil {
 		t.Fatal(err)
 	}
