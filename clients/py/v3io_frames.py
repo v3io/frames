@@ -134,11 +134,7 @@ class Client(object):
         }
 
         request.update(kw)
-        for key in ('start', 'end'):
-            value = kw.get(key)
-            if isinstance(value, datetime):
-                # Go's RFC3339Nano 2018-10-04T15:08:53.229364634+03:00
-                kw[key] = format_go_time(value)
+        convert_go_times(kw, ('start', 'end'))
 
         self._validate_read_request(request)
         url = self.url + '/read'
@@ -267,10 +263,7 @@ class Client(object):
             'end': end,
         }
 
-        for key in ('start', 'end'):
-            value = request.get(key)
-            if isinstance(value, datetime):
-                request[key] = format_go_time(value)
+        convert_go_times(request, ('start', 'end'))
 
         url = self.url + '/delete'
         headers = self._headers()
@@ -523,3 +516,12 @@ def format_go_time(dt):
     nsec = dt.microsecond * 1000
     tz = dt.strftime('%z') or '+0000'
     return '{}.{}{}:{}'.format(prefix, nsec, tz[:3], tz[3:5])
+
+
+def convert_go_times(d, keys):
+    """Convert datetime to Go's time format. This will change d *in place*"""
+    for key in keys:
+        value = d.get(key)
+        if isinstance(value, datetime):
+            # Go's RFC3339Nano 2018-10-04T15:08:53.229364634+03:00
+            d[key] = format_go_time(value)
