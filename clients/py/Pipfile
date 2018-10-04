@@ -10,3 +10,4 @@ requests = ">=2.19.1"
 
 [dev-packages]
 pytest = "*"
+twine = "*"
