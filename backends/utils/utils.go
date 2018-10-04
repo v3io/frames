@@ -116,7 +116,7 @@ func ColAt(col frames.Column, i int) (interface{}, error) {
 		return col.StringAt(i), nil
 	case frames.TimeType: // TODO: Does v3io support time.Time?
 		asTime := col.TimeAt(i)
-		return asTime.Format(time.RFC3339), nil // store as time string since v3io doesnt have native time format
+		return asTime.Format(time.RFC3339Nano), nil // store as time string since v3io doesnt have native time format
 		//return col.TimeAt(i), nil
 	default:
 		return nil, fmt.Errorf("unknown column type - %s", col.DType())

@@ -134,6 +134,12 @@ class Client(object):
         }
 
         request.update(kw)
+        for key in ('start', 'end'):
+            value = kw.get(key)
+            if isinstance(value, datetime):
+                # Go's RFC3339Nano 2018-10-04T15:08:53.229364634+03:00
+                kw[key] = format_go_time(value)
+
         self._validate_read_request(request)
         url = self.url + '/read'
         resp = requests.post(
@@ -222,7 +228,7 @@ class Client(object):
         if not resp.ok:
             raise CreateError(resp.reason)
 
-    def delete(self, backend, table, filter='', force=False, since='', to=''):
+    def delete(self, backend, table, filter='', force=False, start='', end=''):
         """Delete a table
 
         Parameters
@@ -235,10 +241,10 @@ class Client(object):
             Filter for selective delete
         force : bool
             Force deletion
-        since : string
-            Delete since (TSDB/Stream)
-        to : string
-            Delete up to (TSDB/Stream)
+        start : string
+            Delete since start (TSDB/Stream)
+        end : string
+            Delete up to end (TSDB/Stream)
 
         Raises
         ------
@@ -257,9 +263,14 @@ class Client(object):
             'table': table,
             'filter': filter,
             'force': force,
-            'from': since,
-            'to': to,
+            'start': start,
+            'end': end,
         }
+
+        for key in ('start', 'end'):
+            value = request.get(key)
+            if isinstance(value, datetime):
+                request[key] = format_go_time(value)
 
         url = self.url + '/delete'
         headers = self._headers()
@@ -500,3 +511,15 @@ def encode_schema(schema):
     if obj['fields']:
         obj['fields'] = [field._asdict() for field in obj['fields']]
     return obj
+
+
+def format_go_time(dt):
+    """Format datetime in Go's time.RFC3339Nano format which looks like
+    2018-10-04T15:08:53.229364634+03:00
+
+    If dt tzinfo is None, UTC will be used
+    """
+    prefix = dt.strftime('%Y-%m-%dT%H:%M:%S')
+    nsec = dt.microsecond * 1000
+    tz = dt.strftime('%z') or '+0000'
+    return '{}.{}{}:{}'.format(prefix, nsec, tz[:3], tz[3:5])

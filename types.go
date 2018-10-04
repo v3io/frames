@@ -193,8 +193,8 @@ type DeleteRequest struct {
 	// Force delete
 	Force bool `json:"force,omitempty"`
 	// TSDB and Stream specific fields
-	From string `json:"from,omitempty"`
-	To   string `json:"to,omitempty"`
+	Start string `json:"start,omitempty"`
+	End   string `json:"end,omitempty"`
 }
 
 // TableSchema is a table schema
