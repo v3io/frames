@@ -158,16 +158,16 @@ func (tr *ReadRequest) Step() (time.Duration, error) {
 
 // WriteRequest is request for writing data
 type WriteRequest struct {
-	Backend string // backend name
-	Table   string // Table name (path)
+	Backend string `msgpack:"backend"` // backend name
+	Table   string `msgpack:"table"`   // Table name (path)
 	// Data message sent with the write request (in case of a stream multiple messages can follow)
-	ImmidiateData Frame
+	ImmidiateData Frame `msgpack:"intermidate,omitempty"`
 	// Expression template, for update expressions generated from combining columns data with expression
-	Expression string
+	Expression string `msgpack:"expression,omitempty"`
 	// Labels dictionary, for TSDB will be used as LabelSet, for KV/DB will add those to all the written rows
-	Labels map[string]interface{}
+	Labels map[string]interface{} `msgpack:"labels,omitempty"`
 	// Will we get more message chunks (in a stream), if not we can complete
-	HaveMore bool
+	HaveMore bool `msgpack:"more"`
 }
 
 // CreateRequest is a table creation request

@@ -61,30 +61,16 @@ def test_read():
     query = 'SELECT 1'
     data = [
         {
-            'columns': ['x', 'y'],
-            'slice_cols': {
-                'x': {
-                    'name': 'x',
-                    'ints': [1, 2, 3]
-                },
-                'y': {
-                    'name': 'y',
-                    'floats': [4., 5., 6.],
-                },
-            },
+            'columns': [
+                {'slice': {'name': 'x', 'ints': [1, 2, 3]}},
+                {'slice': {'name': 'y', 'floats': [4., 5., 6.]}},
+            ],
         },
         {
-            'columns': ['x', 'y'],
-            'slice_cols': {
-                'x': {
-                    'name': 'x',
-                    'ints': [10, 20, 30],
-                },
-                'y': {
-                    'name': 'y',
-                    'floats': [40., 50., 60.],
-                },
-            }
+            'columns': [
+                {'slice': {'name': 'x', 'ints': [10, 20, 30]}},
+                {'slice': {'name': 'y', 'floats': [40., 50., 60.]}},
+            ],
         },
     ]
 
@@ -113,10 +99,9 @@ def test_encode_df():
     data = c._encode_df(df, labels)
     msg = msgpack.unpackb(data, raw=False)
 
-    assert set(msg['columns']) == set(df.columns), 'columns mismatch'
-    cols = set(msg['slice_cols']) | set(msg['label_cols'])
-    assert cols == set(df.columns), 'columns mismatch (in slice or label)'
-    assert not msg['index_name'], 'has index'
+    names = [col_name(col) for col in msg['columns']]
+    assert set(names) == set(df.columns), 'columns mismatch'
+    assert not msg.get('indices'), 'has index'
     assert msg['labels'] == labels, 'lables mismatch'
 
     # Now with index
@@ -125,11 +110,16 @@ def test_encode_df():
     data = c._encode_df(df, None)
     msg = msgpack.unpackb(data, raw=False)
 
-    all_names = set(df.columns) | {index_name}
-    assert set(msg['columns']) == all_names, 'columns mismatch'
-    cols = set(msg['slice_cols']) | set(msg['label_cols'])
-    assert cols == all_names, 'columns mismatch (in slice or label)'
-    assert msg['index_name'] == index_name, 'bad index'
+    names = [col_name(col) for col in msg['columns']]
+    assert set(names) == set(df.columns), 'columns mismatch'
+    idx = msg.get('indices')
+    assert idx, 'no index'
+    assert col_name(idx[0]) == index_name, 'bad index name'
+
+
+def col_name(msg):
+    val = msg.get('slice') or msg.get('label')
+    return val['name']
 
 
 def test_decode():

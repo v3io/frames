@@ -168,16 +168,18 @@ class Client(object):
         if isinstance(dfs, pd.DataFrame):
             dfs = [dfs]
 
-        params = {
+        request = msgpack.packb({
             'backend': backend,
             'table': table,
-        }
+            'labels': labels,
+            'more': True,
+        })
 
         url = self.url + '/write'
         headers = self._headers()
         headers['Content-Encoding'] = 'chunked'
-        chunks = self._iter_chunks(dfs, labels, max_in_message)
-        resp = requests.post(url, headers=headers, params=params, data=chunks)
+        data = chain([request], self._iter_chunks(dfs, max_in_message))
+        resp = requests.post(url, headers=headers, data=data)
 
         if not resp.ok:
             raise Error('cannot call API - {}'.format(resp.text))
@@ -300,37 +302,34 @@ class Client(object):
         #   indices: list of column message
         #   labels: dict
 
-        df_data = {}
-        for name in msg['columns']:
-            col = msg['slice_cols'].get(name)
-            if col is not None:
-                df_data[name] = self._handle_slice_col(col)
-                continue
+        icols = enumerate(msg['columns'])
+        columns = [self._handle_col_msg(i, col) for i, col in icols]
+        df = pd.concat(columns, axis=1)
 
-            col = msg['label_cols'].get(name)
-            if col is not None:
-                df_data[name] = self._handle_label_col(col)
-                continue
+        idxs = enumerate(msg.get('indices', []))
+        indices = [self._handle_col_msg(i, col) for i, col in idxs]
 
-            raise MessageError('no data for column {!r}'.format(name))
+        if len(indices) == 1:
+            df.index = indices[0]
+        elif len(indices) > 1:
+            df.index = pd.MultiIndex.from_arrays(indices)
 
-        if not df_data:
-            return None
-
-        df = pd.DataFrame(df_data)
         with warnings.catch_warnings():
             warnings.simplefilter("ignore")
             df.labels = msg.get('labels', {})
 
-        name = msg.get('index_name')
-        if name:
-            if name not in df.columns:
-                err = 'index ({!r}) not in columns'.format(name)
-                raise MessageError(err)
-
-            df.index = df.pop(name)
-
         return df
+
+    def _handle_col_msg(self, i, col):
+        val = col.get('slice')
+        if val:
+            return self._handle_slice_col(val)
+
+        val = col.get('label')
+        if val:
+            return self._handle_label_col(val)
+
+        raise MessageError('{}: empty column message'.format(i))
 
     def _handle_slice_col(self, col):
         for field in ['ints', 'floats', 'strings', 'times']:
@@ -344,36 +343,25 @@ class Client(object):
         codes = np.zeros(col['size'])
         return pd.Categorial.from_codes(codes, categories=[col['name']])
 
-    def _encode_df(self, df, labels):
+    def _encode_df(self, df, labels=None):
         msg = {
-            'columns': [],
-            'index_name': '',
-            'slice_cols': {},
-            'label_cols': {},
-            'labels': labels,
+            'columns': [self._encode_col(df[name]) for name in df.columns],
         }
 
-        for name in df.columns:
-            msg['columns'].append(name)
-            col = df[name]
-
-            data = self._encode_col(col, dtype_of(col.iloc[0]))
-            if 'size' in data:  # label column
-                msg['label_cols'][name] = data
-            else:
-                msg['slice_cols'][name] = data
+        if labels:
+            msg['labels'] = labels
 
         if self._should_encode_index(df):
-            name = self._index_name(df)
-            dtype = dtype_of(df.index[0])
-            data = self._encode_col(df.index, dtype, name, can_label=False)
-            msg['slice_cols'][name] = data
-            msg['index_name'] = name
-            msg['columns'].append(name)
+            if hasattr(df.index, 'levels'):
+                icols = (level.to_series() for level in df.index.levels)
+                msg['indices'] = [self._encode_col(col) for col in icols]
+            else:
+                msg['indices'] = [self._encode_col(df.index.to_series())]
 
         return msgpack.packb(msg, strict_types=True)
 
-    def _encode_col(self, col, dtype, name='', can_label=True):
+    def _encode_col(self, col, name='', can_label=True):
+        dtype = dtype_of(col.iloc[0])
         data = {
             'name': name or col.name,
             'dtype': dtype,
@@ -383,13 +371,13 @@ class Client(object):
         if can_label and col.nunique() == 1:
             data['value'] = to_py(col.iloc[0])
             data['size'] = len(col)
-            return data
+            return {'label': data}
 
         key = msg_col_keys[dtype]
         values = to_pylist(col, dtype)
         data[key] = values
 
-        return data
+        return {'slice': data}
 
     def _index_name(self, df):
         """Find a name for index column that does not collide with column
@@ -410,10 +398,10 @@ class Client(object):
 
         return not isinstance(df.index, pd.RangeIndex)
 
-    def _iter_chunks(self, dfs, labels, max_in_message):
+    def _iter_chunks(self, dfs, max_in_message):
         for df in dfs:
             for cdf in self._chunk_df(df, max_in_message):
-                yield self._encode_df(df, labels)
+                yield self._encode_df(cdf)
 
     def _chunk_df(self, df, size):
         size = size if size else len(df)
