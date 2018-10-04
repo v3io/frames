@@ -83,7 +83,12 @@ func (a *Appender) Add(frame frames.Frame) error {
 	}
 
 	columns := make(map[string]frames.Column)
-	newSchema := v3ioutils.NewSchema(frame.IndexName())
+	indexName := ""
+	if indices := frame.Indices(); indices != nil {
+		indexName = indices[0].Name()
+	}
+
+	newSchema := v3ioutils.NewSchema(indexName)
 	for _, name := range frame.Names() {
 		col, err := frame.Column(name)
 		if err != nil {
@@ -168,8 +173,10 @@ func (a *Appender) WaitForComplete(timeout time.Duration) error {
 func (a *Appender) indexValFunc(frame frames.Frame, name string) (func(int) string, error) {
 
 	indexName := name
-	if iName := frame.IndexName(); iName != "" {
-		indexName = iName
+	if indices := frame.Indices(); indices != nil {
+		if name := indices[0].Name(); name != "" {
+			indexName = name
+		}
 	}
 
 	indexCol, err := frame.Column(indexName)

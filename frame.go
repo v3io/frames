@@ -57,7 +57,7 @@ type Column interface {
 type Frame interface {
 	Labels() map[string]interface{}          // Label set
 	Names() []string                         // Column names
-	IndexName() string                       // Index column
+	Indices() []Column                       // Index columns
 	Len() int                                // Number of rows
 	Column(name string) (Column, error)      // Column by name
 	Slice(start int, end int) (Frame, error) // Slice of Frame

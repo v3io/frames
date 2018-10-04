@@ -66,6 +66,11 @@ func TestRoundTrip(t *testing.T) {
 		t.Fatalf("columns mismatch: %v != %v", cols1, cols2)
 	}
 
+	indices1, indices2 := frame1.Indices(), frame2.Indices()
+	if !reflect.DeepEqual(indices1, indices2) {
+		t.Fatalf("columns mismatch: %v != %v", indices1, indices2)
+	}
+
 	if mapsEqual(frame1.Labels(), frame2.Labels()) {
 		t.Fatalf("labels mismatch: %v != %v", frame1.Labels(), frame2.Labels())
 	}
@@ -112,7 +117,7 @@ func createFrame(t *testing.T) Frame {
 		"y": "hello",
 	}
 
-	frame, err := NewFrame(columns, "", labels)
+	frame, err := NewFrame(columns, nil, labels)
 	if err != nil {
 		t.Fatal(err)
 	}

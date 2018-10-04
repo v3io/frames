@@ -89,7 +89,6 @@ func (b *Backend) Read(request *frames.ReadRequest) (frames.FrameIterator, error
 }
 
 func (i *tsdbIterator) Next() bool {
-
 	if i.set.Next() {
 		series := i.set.At()
 		labels := map[string]interface{}{}
@@ -128,8 +127,9 @@ func (i *tsdbIterator) Next() bool {
 			return false
 		}
 
-		columns := []frames.Column{timeCol, valCol}
-		i.currFrame, err = frames.NewFrame(columns, "Date", labels)
+		columns := []frames.Column{valCol}
+		indices := []frames.Column{timeCol}
+		i.currFrame, err = frames.NewFrame(columns, indices, labels)
 		if err != nil {
 			i.err = err
 			return false

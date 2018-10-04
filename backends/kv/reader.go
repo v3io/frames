@@ -21,6 +21,7 @@ such restriction.
 package kv
 
 import (
+	"fmt"
 	"strings"
 
 	"github.com/nuclio/logger"
@@ -30,6 +31,10 @@ import (
 	"github.com/v3io/frames"
 	"github.com/v3io/frames/backends/utils"
 	"github.com/v3io/frames/v3ioutils"
+)
+
+const (
+	indexColKey = "__name"
 )
 
 // Backend is key/value backend
@@ -56,12 +61,14 @@ func NewBackend(logger logger.Logger, config *frames.BackendConfig) (frames.Data
 	return &newBackend, nil
 }
 
+// Create creates a table
 func (kv *Backend) Create(request *frames.CreateRequest) error {
-	return nil
+	return fmt.Errorf("not implemented")
 }
 
+// Delete deletes a table (or part of it)
 func (kv *Backend) Delete(request *frames.DeleteRequest) error {
-	return nil
+	return fmt.Errorf("not implemented")
 }
 
 // Read does a read request
@@ -104,7 +111,6 @@ type Iterator struct {
 func (ki *Iterator) Next() bool {
 	var columns []frames.Column
 	byName := map[string]frames.Column{}
-	indexName := ""
 
 	rowNum := 0
 	for ; rowNum < ki.request.MaxInMessage && ki.iter.Next(); rowNum++ {
@@ -121,10 +127,6 @@ func (ki *Iterator) Next() bool {
 				col, err = frames.NewSliceColumn(name, data)
 				columns = append(columns, col)
 				byName[name] = col
-
-				if name == "__name" {
-					indexName = name
-				}
 			}
 
 			if err := col.Append(field); err != nil {
@@ -157,8 +159,15 @@ func (ki *Iterator) Next() bool {
 		return false
 	}
 
+	var indices []frames.Column
+	indexCol, ok := byName[indexColKey]
+	if ok {
+		delete(byName, indexColKey)
+		indices = []frames.Column{indexCol}
+	}
+
 	var err error
-	ki.currFrame, err = frames.NewFrame(columns, indexName, nil)
+	ki.currFrame, err = frames.NewFrame(columns, indices, nil)
 	if err != nil {
 		ki.err = err
 		return false

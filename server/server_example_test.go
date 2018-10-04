@@ -22,7 +22,6 @@ package server
 
 import (
 	"fmt"
-	"io/ioutil"
 	"time"
 
 	"github.com/BurntSushi/toml"
@@ -49,12 +48,6 @@ rootDir = "/tmp"
 `
 
 func ExampleServer() {
-	data, err := ioutil.ReadFile("config.toml")
-	if err != nil {
-		fmt.Printf("error: can't open config - %s", err)
-		return
-	}
-
 	cfg := &frames.Config{}
 	if _, err := toml.Decode(configData, cfg); err != nil {
 		fmt.Printf("error: can't read config - %s", err)
@@ -62,7 +55,7 @@ func ExampleServer() {
 	}
 
 	srv, err := New(cfg, ":8080", nil)
-	if err := toml.Unmarshal(data, cfg); err != nil {
+	if err != nil {
 		fmt.Printf("error: can't create server - %s", err)
 		return
 	}

@@ -36,7 +36,7 @@ func main() {
 	var configFile string
 	var addr string
 
-	flag.StringVar(&configFile, "config", "", "path to configuration file (TOML)")
+	flag.StringVar(&configFile, "config", "", "path to configuration file (YAML)")
 	flag.StringVar(&addr, "addr", ":8080", "address to listen on")
 	flag.Parse()
 

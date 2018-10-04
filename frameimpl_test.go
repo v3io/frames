@@ -31,7 +31,7 @@ func TestFrameNew(t *testing.T) {
 	col1, _ := NewLabelColumn("col1", val1, size)
 	cols := []Column{col0, col1}
 
-	frame, err := NewFrame(cols, "", nil)
+	frame, err := NewFrame(cols, nil, nil)
 	if err != nil {
 		t.Fatalf("can't create frame - %s", err)
 	}
@@ -70,7 +70,7 @@ func TestFrameNew(t *testing.T) {
 func TestFrameSlice(t *testing.T) {
 	nCols, size := 7, 10
 	cols := newIntCols(t, nCols, size)
-	frame, err := NewFrame(cols, "", nil)
+	frame, err := NewFrame(cols, nil, nil)
 	if err != nil {
 		t.Fatalf("can't create frame - %s", err)
 	}
@@ -100,20 +100,15 @@ func TestFrameIndex(t *testing.T) {
 	nCols, size := 2, 12
 	cols := newIntCols(t, nCols, size)
 
-	iName := "col0"
+	indices := newIntCols(t, 3, size)
 
-	frame, err := NewFrame(cols, iName, nil)
+	frame, err := NewFrame(cols, indices, nil)
 	if err != nil {
 		t.Fatal(err)
 	}
 
-	name := frame.IndexName()
-	if name == "" {
-		t.Fatal("no index column")
-	}
-
-	if name != iName {
-		t.Fatalf("index col name mismatch (%q != %q)", name, iName)
+	if len(frame.Indices()) != len(indices) {
+		t.Fatalf("index len mismatch (%d != %d)", len(frame.Indices()), len(indices))
 	}
 
 }

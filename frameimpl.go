@@ -29,15 +29,16 @@ import (
 
 // frameImpl is a frame implementation
 type frameImpl struct {
-	labels    map[string]interface{}
-	columns   []Column
-	byName    map[string]int // name -> index in columns
-	indexName string
+	labels  map[string]interface{}
+	columns []Column
+	indices []Column
+
+	byName map[string]int // name -> index in columns
 }
 
 // NewFrame returns a new MapFrame
-func NewFrame(columns []Column, indexName string, labels map[string]interface{}) (Frame, error) {
-	if err := checkEqualLen(columns); err != nil {
+func NewFrame(columns []Column, indices []Column, labels map[string]interface{}) (Frame, error) {
+	if err := checkEqualLen(columns, indices); err != nil {
 		return nil, err
 	}
 
@@ -47,10 +48,10 @@ func NewFrame(columns []Column, indexName string, labels map[string]interface{})
 	}
 
 	frame := &frameImpl{
-		labels:    labels,
-		columns:   columns,
-		byName:    byName,
-		indexName: indexName,
+		labels:  labels,
+		columns: columns,
+		byName:  byName,
+		indices: indices,
 	}
 
 	return frame, nil
@@ -95,7 +96,7 @@ func NewFrameFromMap(data map[string]interface{}) (Frame, error) {
 		i++
 	}
 
-	return NewFrame(columns, "", nil)
+	return NewFrame(columns, nil, nil)
 }
 
 // Names returns the column names
@@ -109,9 +110,9 @@ func (mf *frameImpl) Names() []string {
 	return names
 }
 
-// IndexName returns the index name, "" if there's none
-func (mf *frameImpl) IndexName() string {
-	return mf.indexName
+// Indices returns the index columns
+func (mf *frameImpl) Indices() []Column {
+	return mf.indices
 }
 
 // Labels returns the Label set, nil if there's none
@@ -145,39 +146,59 @@ func (mf *frameImpl) Slice(start int, end int) (Frame, error) {
 		return nil, err
 	}
 
-	frameSlice := make([]Column, len(mf.columns))
-	for i, col := range mf.columns {
-		slice, err := col.Slice(start, end)
-		if err != nil {
-			return nil, errors.Wrapf(err, "can't get slice from %q", col.Name())
-		}
-
-		frameSlice[i] = slice
+	colSlices, err := sliceCols(mf.columns, start, end)
+	if err != nil {
+		return nil, err
 	}
 
-	return NewFrame(frameSlice, mf.IndexName(), mf.labels)
+	indexSlices, err := sliceCols(mf.indices, start, end)
+	if err != nil {
+		return nil, err
+	}
+
+	return NewFrame(colSlices, indexSlices, mf.labels)
+}
+
+// ColumnMessage is a for encoding a column
+type ColumnMessage struct {
+	Slice *SliceColumnMessage `msgpack:"slice,omitempty"`
+	Label *LabelColumnMessage `msgpack:"label,omitempty"`
 }
 
 // FrameMessage is over-the-wire frame data
 type FrameMessage struct {
-	Columns   []string                       `msgpack:"columns"`
-	IndexName string                         `msgpack:"index_name,omitempty"`
-	Labels    map[string]interface{}         `msgpack:"labels,omitempty"`
-	SliceCols map[string]*SliceColumnMessage `msgpack:"slice_cols,omitempty"`
-	LabelCols map[string]*LabelColumnMessage `msgpack:"label_cols,omitempty"`
+	Columns []ColumnMessage        `msgpack:"columns"`
+	Indices []ColumnMessage        `msgpack:"indices,omitempty"`
+	Labels  map[string]interface{} `msgpack:"labels,omitempty"`
 }
 
 // Marshal marshals to native type
 func (mf *frameImpl) Marshal() (interface{}, error) {
 	msg := &FrameMessage{
-		Columns:   mf.Names(),
-		IndexName: mf.IndexName(),
-		LabelCols: make(map[string]*LabelColumnMessage),
-		SliceCols: make(map[string]*SliceColumnMessage),
-		Labels:    mf.Labels(),
+		Labels: mf.Labels(),
+	}
+	var err error
+
+	msg.Columns, err = mf.marshalColumns(mf.columns)
+	if err != nil {
+		return nil, err
 	}
 
-	for _, col := range mf.columns {
+	msg.Indices, err = mf.marshalColumns(mf.Indices())
+	if err != nil {
+		return nil, err
+	}
+
+	return msg, nil
+}
+
+func (mf *frameImpl) marshalColumns(columns []Column) ([]ColumnMessage, error) {
+	if columns == nil {
+		return nil, nil
+	}
+
+	messages := make([]ColumnMessage, len(columns))
+	for i, col := range columns {
 		colMsg, err := mf.marshalColumn(col)
 		if err != nil {
 			return nil, err
@@ -185,15 +206,15 @@ func (mf *frameImpl) Marshal() (interface{}, error) {
 
 		switch colMsg.(type) {
 		case *SliceColumnMessage:
-			msg.SliceCols[col.Name()] = colMsg.(*SliceColumnMessage)
+			messages[i].Slice = colMsg.(*SliceColumnMessage)
 		case *LabelColumnMessage:
-			msg.LabelCols[col.Name()] = colMsg.(*LabelColumnMessage)
+			messages[i].Label = colMsg.(*LabelColumnMessage)
 		default:
 			return nil, fmt.Errorf("unknown marshaled message type - %T", colMsg)
 		}
 	}
 
-	return msg, nil
+	return messages, nil
 }
 
 func (mf *frameImpl) marshalColumn(col Column) (interface{}, error) {
@@ -230,7 +251,7 @@ func validateSlice(start int, end int, size int) error {
 	return nil
 }
 
-func checkEqualLen(columns []Column) error {
+func checkEqualLen(columns []Column, indices []Column) error {
 	size := -1
 	for _, col := range columns {
 		if size == -1 { // first column
@@ -243,5 +264,25 @@ func checkEqualLen(columns []Column) error {
 		}
 	}
 
+	for i, col := range indices {
+		if colSize := col.Len(); colSize != size {
+			return fmt.Errorf("index column %d size mismatch (%d != %d)", i, colSize, size)
+		}
+	}
+
 	return nil
+}
+
+func sliceCols(columns []Column, start int, end int) ([]Column, error) {
+	slices := make([]Column, len(columns))
+	for i, col := range columns {
+		slice, err := col.Slice(start, end)
+		if err != nil {
+			return nil, errors.Wrapf(err, "can't get slice from %q", col.Name())
+		}
+
+		slices[i] = slice
+	}
+
+	return slices, nil
 }
