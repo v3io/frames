@@ -84,8 +84,15 @@ func NewDecoder(reader io.Reader) *Decoder {
 	}
 }
 
-// Decode encodes a frame
-func (d *Decoder) Decode() (Frame, error) {
+// DecodeWriteRequest decodes a write request
+func (d *Decoder) DecodeWriteRequest() (*WriteRequest, error) {
+	req := &WriteRequest{}
+	err := d.decoder.Decode(req)
+	return req, err
+}
+
+// DecodeFrame encodes a frame
+func (d *Decoder) DecodeFrame() (Frame, error) {
 	msg := &FrameMessage{}
 	if err := d.decoder.Decode(msg); err != nil {
 		return nil, err
