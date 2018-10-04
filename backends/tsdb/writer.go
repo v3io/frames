@@ -86,10 +86,12 @@ func (a *tsdbAppender) Add(frame frames.Frame) error {
 	values := map[string][]float64{}
 	tarray := make([]int64, frame.Len())
 	var lastTime int64
+	var indexCol frames.Column
 
-	indexCol, err := frame.Column(frame.IndexName())
-	if err != nil {
-		return err
+	if indices := frame.Indices(); indices != nil {
+		indexCol = indices[0]
+	} else {
+		return fmt.Errorf("no indices")
 	}
 
 	times, err := indexCol.Times()
@@ -107,26 +109,24 @@ func (a *tsdbAppender) Add(frame frames.Frame) error {
 	}
 
 	for _, name := range names {
-		if name != frame.IndexName() {
-			col, err := frame.Column(name)
-			if err != nil {
-				return err
-			}
+		col, err := frame.Column(name)
+		if err != nil {
+			return err
+		}
 
-			switch col.DType() {
-			case frames.FloatType:
-				asFloat, _ := col.Floats()
-				values[name] = asFloat
-			case frames.IntType:
-				asInt, _ := col.Ints()
-				data := make([]float64, frame.Len())
-				for i := 0; i < frame.Len(); i++ {
-					data[i] = float64(asInt[i])
-				}
-				values[name] = data
-			default:
-				return fmt.Errorf("cannot write type %v as time series value", col.DType())
+		switch col.DType() {
+		case frames.FloatType:
+			asFloat, _ := col.Floats()
+			values[name] = asFloat
+		case frames.IntType:
+			asInt, _ := col.Ints()
+			data := make([]float64, frame.Len())
+			for i := 0; i < frame.Len(); i++ {
+				data[i] = float64(asInt[i])
 			}
+			values[name] = data
+		default:
+			return fmt.Errorf("cannot write type %v as time series value", col.DType())
 		}
 	}
 

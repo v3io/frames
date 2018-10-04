@@ -296,11 +296,9 @@ class Client(object):
 
     def _msg2df(self, msg):
         # message format:
-        #   columns: list of column names
-        #   index_name: str
-        #   label_cols: dict of name -> column
+        #   columns: list of column message
+        #   indices: list of column message
         #   labels: dict
-        #   slice_cols: dict of name -> column
 
         df_data = {}
         for name in msg['columns']:

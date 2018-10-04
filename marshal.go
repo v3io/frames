@@ -98,42 +98,54 @@ func (d *Decoder) DecodeFrame() (Frame, error) {
 		return nil, err
 	}
 
-	columns := make([]Column, len(msg.Columns))
-	for i, name := range msg.Columns {
-		sliceColMsg, ok := msg.SliceCols[name]
-		if ok {
-			if sliceColMsg.Name != name {
-				return nil, fmt.Errorf("%d: column name mismatch %q != %q", i, name, sliceColMsg.Name)
-			}
-
-			col, err := d.decodeSliceCol(sliceColMsg)
-			if err != nil {
-				return nil, err
-			}
-
-			columns[i] = col
-			continue
-		}
-
-		labelColMsg, ok := msg.LabelCols[name]
-		if ok {
-			if labelColMsg.Name != name {
-				return nil, fmt.Errorf("%d: column name mismatch %q != %q", i, name, labelColMsg.Name)
-			}
-
-			col, err := d.decodeLabelCol(labelColMsg)
-			if err != nil {
-				return nil, err
-			}
-
-			columns[i] = col
-			continue
-		}
-
-		return nil, fmt.Errorf("column %q not found", name)
+	columns, err := d.decodeColumns(msg.Columns)
+	if err != nil {
+		return nil, err
 	}
 
-	return NewFrame(columns, msg.IndexName, msg.Labels)
+	if len(columns) == 0 {
+		return nil, fmt.Errorf("empty Frame (%+v)", msg)
+	}
+
+	indices, err := d.decodeColumns(msg.Indices)
+	if err != nil {
+		return nil, err
+	}
+
+	return NewFrame(columns, indices, msg.Labels)
+}
+
+func (d *Decoder) decodeColumns(messages []ColumnMessage) ([]Column, error) {
+	if messages == nil {
+		return nil, nil
+	}
+
+	var (
+		columns = make([]Column, len(messages))
+		col     Column
+		err     error
+	)
+
+	for i, colMsg := range messages {
+		switch {
+		case colMsg.Slice != nil:
+			col, err = d.decodeSliceCol(colMsg.Slice)
+			if err != nil {
+				return nil, err
+			}
+		case colMsg.Label != nil:
+			col, err = d.decodeLabelCol(colMsg.Label)
+			if err != nil {
+				return nil, err
+			}
+		default:
+			return nil, fmt.Errorf("empty column message")
+		}
+
+		columns[i] = col
+	}
+
+	return columns, nil
 }
 
 func (d *Decoder) decodeLabelCol(colMsg *LabelColumnMessage) (Column, error) {
