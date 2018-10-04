@@ -213,15 +213,23 @@ func (s *Server) handleWrite(ctx *fasthttp.RequestCtx) {
 		ctx.Error("unsupported method", http.StatusMethodNotAllowed)
 	}
 
-	args := ctx.QueryArgs()
+	reader, writer := io.Pipe()
+	go func() {
+		ctx.Request.BodyWriteTo(writer)
+		writer.Close()
+	}()
 
-	request := &frames.WriteRequest{
-		Backend: string(args.Peek("backend")),
-		Table:   string(args.Peek("table")),
+	dec := frames.NewDecoder(reader)
+
+	// First message is the write reqeust
+	request, err := dec.DecodeWriteRequest()
+	if err != nil {
+		s.logger.ErrorWith("bad write request", "error", err)
+		ctx.Error(err.Error(), http.StatusBadRequest)
 	}
 
 	if request.Backend == "" || request.Table == "" {
-		s.logger.ErrorWith("bad write request", "request", args.String())
+		s.logger.ErrorWith("bad write request", "request", request)
 		ctx.Error("missing parameters", http.StatusBadRequest)
 		return
 	}
@@ -240,48 +248,38 @@ func (s *Server) handleWrite(ctx *fasthttp.RequestCtx) {
 		return
 	}
 
-	reader, writer := io.Pipe()
-	writeDone := make(chan bool, 1)
-
 	nFrames, nRows := 0, 0
-	go func() {
-		defer func() { // TODO: not in defer
-			s.logger.Debug("write done")
-			writeDone <- true
-		}()
+	if request.ImmidiateData != nil {
+		nFrames, nRows = 1, request.ImmidiateData.Len()
+	}
 
-		dec := frames.NewDecoder(reader)
+	for {
+		frame, err := dec.DecodeFrame()
 
-		for {
-			frame, err := dec.Decode()
-
-			if err != nil {
-				if err == io.EOF {
-					return
-				}
-
-				s.logger.ErrorWith("can't decode", "error", err)
-				ctx.Error(err.Error(), http.StatusInternalServerError)
-				return
+		if err != nil {
+			if err == io.EOF {
+				break
 			}
 
-			s.logger.DebugWith("frame to write", "size", frame.Len())
-			if err := appender.Add(frame); err != nil {
-				s.logger.ErrorWith("can't add frame", "error", err)
-				ctx.Error(err.Error(), http.StatusInternalServerError)
-				return
-			}
-
-			nFrames++
-			nRows += frame.Len()
-			s.logger.DebugWith("write", "numFrames", nFrames, "numRows", nRows)
+			s.logger.ErrorWith("can't decode", "error", err)
+			ctx.Error(err.Error(), http.StatusInternalServerError)
+			return
 		}
-	}()
 
-	ctx.Request.BodyWriteTo(writer)
-	writer.Close()
+		s.logger.DebugWith("frame to write", "size", frame.Len())
+		if err := appender.Add(frame); err != nil {
+			s.logger.ErrorWith("can't add frame", "error", err)
+			ctx.Error(err.Error(), http.StatusInternalServerError)
+			return
+		}
 
-	<-writeDone
+		nFrames++
+		nRows += frame.Len()
+		s.logger.DebugWith("write", "numFrames", nFrames, "numRows", nRows)
+	}
+
+	s.logger.Debug("write done")
+
 	// TODO: Specify timeout in request?
 	if err := appender.WaitForComplete(time.Minute); err != nil {
 		s.logger.ErrorWith("can't wait for completion", "error", err)

@@ -26,12 +26,12 @@ import (
 	"fmt"
 	"io"
 	"net/http"
-	"net/url"
 	"os"
 	"time"
 
 	"github.com/nuclio/logger"
 	"github.com/pkg/errors"
+	"github.com/vmihailenco/msgpack"
 )
 
 // Client is v3io streaming client
@@ -114,13 +114,13 @@ func (c *Client) Write(request *WriteRequest) (FrameAppender, error) {
 		return nil, fmt.Errorf("missing request parameters")
 	}
 
-	url, err := c.writeURL(request.Backend, request.Table)
-	if err != nil {
-		return nil, err
+	var buf bytes.Buffer
+	if err := msgpack.NewEncoder(&buf).Encode(request); err != nil {
+		return nil, errors.Wrap(err, "Can't encode request")
 	}
 
 	reader, writer := io.Pipe()
-	req, err := http.NewRequest("POST", url, reader)
+	req, err := http.NewRequest("POST", c.URL+"/write", io.MultiReader(&buf, reader))
 	if err != nil {
 		return nil, errors.Wrap(err, "can't create HTTP request")
 	}
@@ -154,19 +154,6 @@ func (c *Client) addAuth(req *http.Request) {
 	req.Header.Set("Authorization", c.apiKey)
 }
 
-func (c *Client) writeURL(backend string, table string) (string, error) {
-	u, err := url.Parse(c.URL + "/write")
-	if err != nil {
-		return "", errors.Wrapf(err, "can't parse client url (%q) - %s", c.URL, err)
-	}
-
-	query := u.Query()
-	query.Set("table", table)
-	query.Set("backend", backend)
-	u.RawQuery = query.Encode()
-	return u.String(), nil
-}
-
 // streamFrameIterator implements FrameIterator over io.Reader
 type streamFrameIterator struct {
 	frame   Frame
@@ -179,7 +166,7 @@ type streamFrameIterator struct {
 func (it *streamFrameIterator) Next() bool {
 	var err error
 
-	it.frame, err = it.decoder.Decode()
+	it.frame, err = it.decoder.DecodeFrame()
 	if err == nil {
 		return true
 	}
