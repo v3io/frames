@@ -16,9 +16,10 @@ require (
 	github.com/pavius/zap v0.0.0-20180228181622-8d52692529b8 // indirect
 	github.com/pkg/errors v0.8.0
 	github.com/pmezard/go-difflib v1.0.0 // indirect
+	github.com/rcrowley/go-metrics v0.0.0-20180503174638-e2704e165165 // indirect
 	github.com/stretchr/testify v1.2.2 // indirect
 	github.com/v3io/v3io-go-http v0.0.0-20180823194319-36f737b2e799
-	github.com/v3io/v3io-tsdb v0.0.11
+	github.com/v3io/v3io-tsdb v0.0.12 //v0.0.12
 	github.com/valyala/bytebufferpool v0.0.0-20160817181652-e746df99fe4a // indirect
 	github.com/valyala/fasthttp v0.0.0-20171207120941-e5f51c11919d
 	github.com/vmihailenco/msgpack v4.0.0+incompatible

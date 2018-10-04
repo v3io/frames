@@ -60,13 +60,13 @@ func newAdapter(cfg *frames.BackendConfig, path string) (*tsdb.V3ioAdapter, erro
 	}
 
 	tsdbConfig := &config.V3ioConfig{
-		V3ioUrl:   cfg.V3ioURL,
-		Container: cfg.Container,
-		Path:      path,
-		Username:  cfg.Username,
-		Password:  cfg.Password,
-		Workers:   cfg.Workers,
-		Verbose:   "info",
+		WebApiEndpoint: cfg.V3ioURL,
+		Container:      cfg.Container,
+		TablePath:      path,
+		Username:       cfg.Username,
+		Password:       cfg.Password,
+		Workers:        cfg.Workers,
+		LogLevel:       "info",
 	}
 
 	var err error

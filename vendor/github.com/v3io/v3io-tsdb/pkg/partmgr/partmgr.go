@@ -86,6 +86,8 @@ func NewDBPartition(pmgr *PartitionManager, startTime int64, path string) (*DBPa
 type PartitionManager struct {
 	mtx                      sync.RWMutex
 	schemaConfig             *config.Schema
+	schemaMtimeSecs          int
+	schemaMtimeNanosecs      int
 	headPartition            *DBPartition
 	partitions               []*DBPartition
 	cyclic                   bool
@@ -95,11 +97,7 @@ type PartitionManager struct {
 }
 
 func (p *PartitionManager) Path() string {
-	return p.v3ioConfig.Path
-}
-
-func (p *PartitionManager) IsCyclic() bool {
-	return p.cyclic
+	return p.v3ioConfig.TablePath
 }
 
 func (p *PartitionManager) GetPartitionsPaths() []string {
@@ -229,27 +227,45 @@ func (p *PartitionManager) ReadAndUpdateSchema() (err error) {
 
 	timer, err := metricReporter.GetTimer("ReadAndUpdateSchemaTimer")
 
+	fullPath := path.Join(p.Path(), config.SchemaConfigFileName)
 	if err != nil {
 		err = errors.Wrap(err, "failed to create timer: ReadAndUpdateSchemaTimer")
 		return
 	}
+	schemaInfoResp, err := p.container.Sync.GetItem(&v3io.GetItemInput{Path: fullPath, AttributeNames: []string{"__mtime_secs", "__mtime_nsecs"}})
+	if err != nil {
+		err = errors.Wrap(err, "Failed to read schema at path: "+fullPath)
+	}
+	mtimeSecs, err := schemaInfoResp.Output.(*v3io.GetItemOutput).Item.GetFieldInt("__mtime_secs")
+	if err != nil {
+		err = errors.Wrap(err, "Failed to get mtime seconds for: "+fullPath)
+	}
+	mtimeNsecs, err := schemaInfoResp.Output.(*v3io.GetItemOutput).Item.GetFieldInt("__mtime_nsecs")
+	if err != nil {
+		err = errors.Wrap(err, "Failed to get mtime nanoseconds for: "+fullPath)
+	}
 
-	timer.Time(func() {
-		fullPath := path.Join(p.Path(), config.SchemaConfigFileName)
-		resp, err := p.container.Sync.GetObject(&v3io.GetObjectInput{Path: fullPath})
-		if err != nil {
-			err = errors.Wrap(err, "Failed to read schema at path: "+fullPath)
-		}
+	// Get schema only if the schema has changed
+	if mtimeSecs > p.schemaMtimeSecs || (mtimeSecs == p.schemaMtimeSecs && mtimeNsecs > p.schemaMtimeNanosecs) {
+		p.schemaMtimeSecs = mtimeSecs
+		p.schemaMtimeNanosecs = mtimeNsecs
 
-		schema := &config.Schema{}
-		err = json.Unmarshal(resp.Body(), schema)
-		if err != nil {
-			err = errors.Wrap(err, "Failed to unmarshal schema at path: "+fullPath)
-		}
-		p.schemaConfig = schema
-		p.updatePartitionsFromSchema(schema)
-	})
+		timer.Time(func() {
+			resp, err := p.container.Sync.GetObject(&v3io.GetObjectInput{Path: fullPath})
+			if err != nil {
+				err = errors.Wrap(err, "Failed to read schema at path: "+fullPath)
+			}
 
+			schema := &config.Schema{}
+			err = json.Unmarshal(resp.Body(), schema)
+			if err != nil {
+				err = errors.Wrap(err, "Failed to unmarshal schema at path: "+fullPath)
+			}
+			p.schemaConfig = schema
+			p.updatePartitionsFromSchema(schema)
+
+		})
+	}
 	return
 }
 
@@ -287,7 +303,7 @@ type DBPartition struct {
 	startTime         int64              // Start from time/date
 	partitionInterval int64              // Number of millis stored in the partition
 	chunkInterval     int64              // number of millis stored in each chunk
-	prefix            string             // Path prefix
+	prefix            string             // path prefix
 	retentionDays     int                // Keep samples for N hours
 	defaultRollups    aggregate.AggrType // Default Aggregation functions to apply on sample update
 	rollupTime        int64              // Time range per aggregation bucket
@@ -413,13 +429,15 @@ func (p *DBPartition) ChunkID2Attr(col string, id int) string {
 }
 
 // Return the attributes that need to be retrieved for a given time range
-func (p *DBPartition) Range2Attrs(col string, mint, maxt int64) ([]string, []int) {
+func (p *DBPartition) Range2Attrs(col string, mint, maxt int64) ([]string, int64) {
 	list := p.Range2Cids(mint, maxt)
 	var strList []string
 	for _, id := range list {
 		strList = append(strList, p.ChunkID2Attr(col, id))
 	}
-	return strList, list
+
+	firstAttrTime := p.startTime + ((mint-p.startTime)/p.chunkInterval)*p.chunkInterval
+	return strList, firstAttrTime
 }
 
 // All the chunk IDs which match the time range
