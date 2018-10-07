@@ -21,12 +21,17 @@ such restriction.
 package tsdb
 
 import (
+	"fmt"
 	"github.com/nuclio/logger"
+
 	"github.com/v3io/frames"
+	"github.com/v3io/frames/backends"
+
 	"github.com/v3io/v3io-tsdb/pkg/config"
 	"github.com/v3io/v3io-tsdb/pkg/tsdb"
 )
 
+// Backend is a tsdb backend
 type Backend struct {
 	adapters map[string]*tsdb.V3ioAdapter
 	config   *frames.BackendConfig
@@ -85,6 +90,7 @@ func newAdapter(cfg *frames.BackendConfig, path string) (*tsdb.V3ioAdapter, erro
 	return adapter, nil
 }
 
+// GetAdapter returns an adapter
 func (b *Backend) GetAdapter(path string) (*tsdb.V3ioAdapter, error) {
 	// TODO: maintain adapter cache, for now create new per read/write request
 	//adapter, ok := b.adapters[path]
@@ -99,10 +105,18 @@ func (b *Backend) GetAdapter(path string) (*tsdb.V3ioAdapter, error) {
 	return adapter, nil
 }
 
+// Create creates a table
 func (b *Backend) Create(request *frames.CreateRequest) error {
-	return nil
+	return fmt.Errorf("Create not implemented")
 }
 
+// Delete deletes a table or part of it
 func (b *Backend) Delete(request *frames.DeleteRequest) error {
-	return nil
+	return fmt.Errorf("Delete not implemented")
+}
+
+func init() {
+	if err := backends.Register("tsdb", NewBackend); err != nil {
+		panic(err)
+	}
 }

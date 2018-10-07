@@ -32,6 +32,7 @@ import (
 	"github.com/pkg/errors"
 
 	"github.com/v3io/frames"
+	"github.com/v3io/frames/backends"
 	"github.com/v3io/frames/backends/utils"
 )
 
@@ -409,4 +410,10 @@ func (ca *csvAppender) WaitForComplete(timeout time.Duration) error {
 func fileExists(path string) bool {
 	_, err := os.Stat(path)
 	return err == nil
+}
+
+func init() {
+	if err := backends.Register("csv", NewBackend); err != nil {
+		panic(err)
+	}
 }

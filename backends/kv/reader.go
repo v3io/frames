@@ -29,6 +29,7 @@ import (
 	"github.com/v3io/v3io-go-http"
 
 	"github.com/v3io/frames"
+	"github.com/v3io/frames/backends"
 	"github.com/v3io/frames/backends/utils"
 	"github.com/v3io/frames/v3ioutils"
 )
@@ -184,4 +185,10 @@ func (ki *Iterator) Err() error {
 // At return the current frames
 func (ki *Iterator) At() frames.Frame {
 	return ki.currFrame
+}
+
+func init() {
+	if err := backends.Register("kv", NewBackend); err != nil {
+		panic(err)
+	}
 }

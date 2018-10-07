@@ -54,6 +54,8 @@ func main() {
 		log.Fatalf("error: can't unmarshal config - %s", err)
 	}
 
+	frames.DefaultVerbose = cfg.Verbose
+
 	srv, err := server.New(cfg, addr, nil)
 	if err = srv.Start(); err != nil {
 		log.Fatalf("error: can't start server - %s", err)

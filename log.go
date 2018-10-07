@@ -25,8 +25,17 @@ import (
 	"github.com/nuclio/zap"
 )
 
+var (
+	// DefaultVerbose is the default log verbosity
+	DefaultVerbose string
+)
+
 // NewLogger returns a new logger
 func NewLogger(verbose string) (logger.Logger, error) {
+	if verbose == "" {
+		verbose = DefaultVerbose
+	}
+
 	logLevel := nucliozap.GetLevelByName(verbose)
 	log, err := nucliozap.NewNuclioZapCmd("v3io-prom", logLevel)
 	if err != nil {
