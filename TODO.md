@@ -1,4 +1,0 @@
-- Client read connection details from environment
-- python setup.py install
-    - pypi
-- dockerized framesd
