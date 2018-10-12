@@ -160,7 +160,7 @@ func (api *API) Write(request *frames.WriteRequest, dec *frames.Decoder) (int, i
 	api.logger.Debug("write done")
 
 	// TODO: Specify timeout in request?
-	if err := appender.WaitForComplete(time.Minute); err != nil {
+	if err := appender.WaitForComplete(3 * time.Minute); err != nil {
 		msg := "can't wait for completion"
 		api.logger.ErrorWith(msg, "error", err)
 		return nFrames, nRows, errors.Wrap(err, msg)

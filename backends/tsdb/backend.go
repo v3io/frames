@@ -82,6 +82,7 @@ func newAdapter(cfg *frames.BackendConfig, path string) (*tsdb.V3ioAdapter, erro
 		return nil, err
 	}
 
+	fmt.Println("conf:", tsdbConfig)
 	adapter, err := tsdb.NewV3ioAdapter(tsdbConfig, nil, nil)
 	if err != nil {
 		return nil, err
