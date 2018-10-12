@@ -23,43 +23,39 @@ package backends
 import (
 	"fmt"
 	"strings"
-	"sync"
+	"testing"
 
 	"github.com/nuclio/logger"
 	"github.com/v3io/frames"
 )
 
-var (
-	factories     map[string]Factory
-	lock          sync.RWMutex
-	normalizeType = strings.ToLower
-)
+// Special error return from testFactory so we can see it's this function
+var errorBackendsTest = fmt.Errorf("backends test")
 
-// Factory is a backend factory
-type Factory func(logger.Logger, *frames.BackendConfig) (frames.DataBackend, error)
-
-// Register registers a backend factory for a type
-func Register(typ string, factory Factory) error {
-	lock.Lock()
-	defer lock.Unlock()
-
-	if factories == nil {
-		factories = make(map[string]Factory)
-	}
-
-	typ = normalizeType(typ)
-	if _, ok := factories[typ]; ok {
-		return fmt.Errorf("backend %q already registered", typ)
-	}
-
-	factories[typ] = factory
-	return nil
+func testFactory(logger.Logger, *frames.BackendConfig) (frames.DataBackend, error) {
+	return nil, errorBackendsTest
 }
 
-// GetFactory returns factory for a backend
-func GetFactory(typ string) Factory {
-	lock.RLock()
-	defer lock.RUnlock()
+func TestBackends(t *testing.T) {
+	typ := "testBackend"
+	err := Register(typ, testFactory)
+	if err != nil {
+		t.Fatalf("can't register - %s", err)
+	}
 
-	return factories[normalizeType(typ)]
+	err = Register(typ, testFactory)
+	if err == nil {
+		t.Fatalf("managed to register twice")
+	}
+
+	capsType := strings.ToUpper(typ)
+	factory := GetFactory(capsType)
+	if factory == nil {
+		t.Fatalf("can't get %q - %s", capsType, err)
+	}
+
+	_, err = factory(nil, nil)
+	if err != errorBackendsTest {
+		t.Fatalf("wrong factory")
+	}
 }

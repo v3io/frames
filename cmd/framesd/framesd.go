@@ -40,8 +40,10 @@ func main() {
 	flag.StringVar(&addr, "addr", ":8080", "address to listen on")
 	flag.Parse()
 
+	log.SetFlags(0) // Show only messages
+
 	if configFile == "" {
-		log.Fatal("no config file")
+		log.Fatal("error: no config file given")
 	}
 
 	data, err := ioutil.ReadFile(configFile)
@@ -52,6 +54,10 @@ func main() {
 	cfg := &frames.Config{}
 	if err := yaml.Unmarshal(data, &cfg); err != nil {
 		log.Fatalf("error: can't unmarshal config - %s", err)
+	}
+
+	if err := cfg.Validate(); err != nil {
+		log.Fatalf("error: bad configuration file - %s", err)
 	}
 
 	frames.DefaultVerbose = cfg.Verbose

@@ -315,7 +315,7 @@ class Client(object):
             df.index = pd.MultiIndex.from_arrays(indices)
 
         with warnings.catch_warnings():
-            warnings.simplefilter("ignore")
+            warnings.simplefilter('ignore')
             df.labels = msg.get('labels', {})
 
         return df
