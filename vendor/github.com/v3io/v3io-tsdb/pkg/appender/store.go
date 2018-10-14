@@ -54,7 +54,7 @@ type chunkStore struct {
 	lastTid  int64
 	chunks   [2]*attrAppender
 
-	aggrList      *aggregate.AggregatorList
+	aggrList      *aggregate.AggregatesList
 	pending       pendingList
 	maxTime       int64
 	initMaxTime   int64 // Max time read from DB metric before first append
@@ -130,7 +130,7 @@ func (cs *chunkStore) getChunksState(mc *MetricsCache, metric *MetricState) (boo
 		return false, err
 	}
 	cs.chunks[0].initialize(part, t)
-	cs.aggrList = aggregate.NewAggregatorList(part.AggrType())
+	cs.aggrList = aggregate.NewAggregatesList(part.AggrType())
 
 	// TODO: if policy to merge w old chunks needs to get prev chunk, vs restart appender
 
@@ -295,7 +295,7 @@ func (cs *chunkStore) writeChunks(mc *MetricsCache, metric *MetricState) (hasPen
 			sampleTime := cs.pending[pendingSampleIndex].t
 
 			if sampleTime <= cs.initMaxTime && !mc.cfg.OverrideOld {
-				mc.logger.DebugWith("Time is less than the initialization end (max) time", "T", sampleTime, "InitMaxTime", cs.initMaxTime)
+				mc.logger.WarnWith("Omitting the sample - time is earlier than the last sample time for this metric", "metric", metric.Lset, "T", sampleTime, "InitMaxTime", cs.initMaxTime)
 				pendingSampleIndex++
 				continue
 			}
