@@ -26,14 +26,14 @@ import (
 )
 
 var (
-	// DefaultVerbose is the default log verbosity
-	DefaultVerbose string
+	// DefaultLogLevel is the default log verbosity
+	DefaultLogLevel string
 )
 
 // NewLogger returns a new logger
 func NewLogger(verbose string) (logger.Logger, error) {
 	if verbose == "" {
-		verbose = DefaultVerbose
+		verbose = DefaultLogLevel
 	}
 
 	logLevel := nucliozap.GetLevelByName(verbose)

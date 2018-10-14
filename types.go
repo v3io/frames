@@ -25,10 +25,15 @@ import (
 	"time"
 )
 
+// LogConfig is the logging configuration
+type LogConfig struct {
+	Level string `json:"level,omitempty"`
+}
+
 // Config is server configuration
 type Config struct {
-	Verbose      string `json:"verbose,omitempty"`
-	DefaultLimit int    `json:"limit,omitempty"`
+	Log          LogConfig `json:"log"`
+	DefaultLimit int       `json:"limit,omitempty"`
 
 	Backends []*BackendConfig `json:"backends,omitempty"`
 }

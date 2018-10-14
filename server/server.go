@@ -74,7 +74,7 @@ func New(config *frames.Config, addr string, logger logger.Logger) (*Server, err
 	}
 
 	if logger == nil {
-		logger, err = frames.NewLogger(config.Verbose)
+		logger, err = frames.NewLogger(config.Log.Level)
 		if err != nil {
 			return nil, errors.Wrap(err, "can't create logger")
 		}
