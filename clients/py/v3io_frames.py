@@ -341,7 +341,7 @@ class Client(object):
 
     def _handle_label_col(self, col):
         codes = np.zeros(col['size'])
-        return pd.Categorial.from_codes(codes, categories=[col['name']])
+        return pd.Categorical.from_codes(codes, categories=[col['value']])
 
     def _encode_df(self, df, labels=None):
         msg = {
