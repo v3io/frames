@@ -25,10 +25,15 @@ import (
 	"time"
 )
 
+// LogConfig is the logging configuration
+type LogConfig struct {
+	Level string `json:"level,omitempty"`
+}
+
 // Config is server configuration
 type Config struct {
-	Verbose      string `json:"verbose,omitempty"`
-	DefaultLimit int    `json:"limit,omitempty"`
+	Log          LogConfig `json:"log"`
+	DefaultLimit int       `json:"limit,omitempty"`
 
 	Backends []*BackendConfig `json:"backends,omitempty"`
 }
@@ -164,8 +169,6 @@ type WriteRequest struct {
 	ImmidiateData Frame `msgpack:"intermidate,omitempty"`
 	// Expression template, for update expressions generated from combining columns data with expression
 	Expression string `msgpack:"expression,omitempty"`
-	// Labels dictionary, for TSDB will be used as LabelSet, for KV/DB will add those to all the written rows
-	Labels map[string]interface{} `msgpack:"labels,omitempty"`
 	// Will we get more message chunks (in a stream), if not we can complete
 	HaveMore bool `msgpack:"more"`
 }

@@ -74,7 +74,7 @@ func New(config *frames.Config, addr string, logger logger.Logger) (*Server, err
 	}
 
 	if logger == nil {
-		logger, err = frames.NewLogger(config.Verbose)
+		logger, err = frames.NewLogger(config.Log.Level)
 		if err != nil {
 			return nil, errors.Wrap(err, "can't create logger")
 		}
@@ -169,10 +169,28 @@ func (s *Server) handleRead(ctx *fasthttp.RequestCtx) {
 	// TODO: Validate request
 	s.logger.InfoWith("read request", "request", request)
 
+	ch := make(chan frames.Frame)
+	go func() {
+		err := s.api.Read(request, ch)
+		close(ch)
+		if err != nil {
+			// Can't set status since we already sent data
+			s.logger.ErrorWith("error reading", "error", err)
+		}
+	}()
+
 	ctx.SetBodyStreamWriter(func(w *bufio.Writer) {
-		if err := s.api.Read(request, w); err != nil {
-			s.logger.ErrorWith("read error", "error", err)
-			// We can't set status since we already wrote to the stream
+		enc := frames.NewEncoder(w)
+		for frame := range ch {
+			if err := enc.Encode(frame); err != nil {
+				// Can't set status since we already sent data
+				s.logger.ErrorWith("can't encode result", "error", err)
+			}
+
+			if err := w.Flush(); err != nil {
+				// Can't set status since we already sent data
+				s.logger.ErrorWith("can't flush", "error", err)
+			}
 		}
 	})
 }
@@ -199,9 +217,40 @@ func (s *Server) handleWrite(ctx *fasthttp.RequestCtx) {
 		return
 	}
 
-	nFrames, nRows, err := s.api.Write(request, dec)
-	if err != nil {
-		ctx.Error("write error", http.StatusInternalServerError)
+	var (
+		writeError error
+		nFrames    int
+		nRows      int
+	)
+
+	ch := make(chan frames.Frame)
+	done := make(chan bool)
+	go func() {
+		nFrames, nRows, writeError = s.api.Write(request, ch)
+		close(done)
+	}()
+
+	for {
+		frame, err := dec.DecodeFrame()
+		if err == io.EOF {
+			break
+		}
+
+		if err != nil {
+			s.logger.ErrorWith("decode error", "error", err)
+			ctx.Error("decode error", http.StatusInternalServerError)
+			return
+		}
+
+		ch <- frame
+	}
+
+	close(ch)
+	<-done
+
+	if writeError != nil {
+		s.logger.ErrorWith("decode error", "error", err)
+		ctx.Error("decode error", http.StatusInternalServerError)
 		return
 	}
 

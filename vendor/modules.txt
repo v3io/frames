@@ -35,7 +35,7 @@ github.com/pkg/errors
 github.com/rcrowley/go-metrics
 # github.com/v3io/v3io-go-http v0.0.0-20180823194319-36f737b2e799
 github.com/v3io/v3io-go-http
-# github.com/v3io/v3io-tsdb v0.0.12
+# github.com/v3io/v3io-tsdb v0.0.4-0.20181013185822-95fc46793c20
 github.com/v3io/v3io-tsdb/pkg/config
 github.com/v3io/v3io-tsdb/pkg/querier
 github.com/v3io/v3io-tsdb/pkg/tsdb
@@ -45,6 +45,7 @@ github.com/v3io/v3io-tsdb/pkg/aggregate
 github.com/v3io/v3io-tsdb/pkg/chunkenc
 github.com/v3io/v3io-tsdb/pkg/partmgr
 github.com/v3io/v3io-tsdb/pkg/appender
+github.com/v3io/v3io-tsdb/pkg/tsdb/schema
 # github.com/valyala/bytebufferpool v1.0.0
 github.com/valyala/bytebufferpool
 # github.com/valyala/fasthttp v1.0.0

@@ -24,7 +24,6 @@ package api
 
 import (
 	"fmt"
-	"io"
 	"time"
 
 	"github.com/v3io/frames"
@@ -39,12 +38,6 @@ import (
 	"github.com/pkg/errors"
 )
 
-// WriterFlusher is interface that implements io.Reader and Flush
-type WriterFlusher interface {
-	io.Writer
-	Flush() error
-}
-
 // API layer, implements common CRUD operations
 // TODO: Call it DAL? (data access layer)
 type API struct {
@@ -56,7 +49,7 @@ type API struct {
 func New(logger logger.Logger, config *frames.Config) (*API, error) {
 	if logger == nil {
 		var err error
-		logger, err = frames.NewLogger(config.Verbose)
+		logger, err = frames.NewLogger(config.Log.Level)
 		if err != nil {
 			return nil, errors.Wrap(err, "can't create logger")
 		}
@@ -66,7 +59,7 @@ func New(logger logger.Logger, config *frames.Config) (*API, error) {
 		logger: logger,
 	}
 
-	if err := api.createBackends(config.Backends); err != nil {
+	if err := api.createBackends(config); err != nil {
 		msg := "can't create backends"
 		api.logger.ErrorWith(msg, "error", err, "config", config)
 		return nil, errors.Wrap(err, "can't create backends")
@@ -76,7 +69,7 @@ func New(logger logger.Logger, config *frames.Config) (*API, error) {
 }
 
 // Read reads from database, emitting results to wf
-func (api *API) Read(request *frames.ReadRequest, wf WriterFlusher) error {
+func (api *API) Read(request *frames.ReadRequest, out chan frames.Frame) error {
 	if request.Query != "" {
 		if err := api.populateQuery(request); err != nil {
 			msg := "can't populate query"
@@ -100,20 +93,8 @@ func (api *API) Read(request *frames.ReadRequest, wf WriterFlusher) error {
 		return errors.Wrap(err, "can't query")
 	}
 
-	enc := frames.NewEncoder(wf)
-
 	for iter.Next() {
-		if err := enc.Encode(iter.At()); err != nil {
-			msg := "can't encode result"
-			api.logger.ErrorWith(msg, "error", err)
-			return errors.Wrap(err, msg)
-		}
-
-		if err := wf.Flush(); err != nil {
-			msg := "can't flush"
-			api.logger.ErrorWith(msg, "error", err)
-			return errors.Wrap(err, msg)
-		}
+		out <- iter.At()
 	}
 
 	if err := iter.Err(); err != nil {
@@ -126,7 +107,7 @@ func (api *API) Read(request *frames.ReadRequest, wf WriterFlusher) error {
 }
 
 // Write write data to backend, returns num_frames, num_rows, error
-func (api *API) Write(request *frames.WriteRequest, dec *frames.Decoder) (int, int, error) {
+func (api *API) Write(request *frames.WriteRequest, in chan frames.Frame) (int, int, error) {
 	if request.Backend == "" || request.Table == "" {
 		msg := "missing parameters"
 		api.logger.ErrorWith(msg, "request", request)
@@ -152,19 +133,7 @@ func (api *API) Write(request *frames.WriteRequest, dec *frames.Decoder) (int, i
 		nFrames, nRows = 1, request.ImmidiateData.Len()
 	}
 
-	for {
-		frame, err := dec.DecodeFrame()
-
-		if err != nil {
-			if err == io.EOF {
-				break
-			}
-
-			msg := "can't decode"
-			api.logger.ErrorWith(msg, "error", err)
-			return nFrames, nRows, errors.Wrap(err, msg)
-		}
-
+	for frame := range in {
 		api.logger.DebugWith("frame to write", "size", frame.Len())
 		if err := appender.Add(frame); err != nil {
 			msg := "can't add frame"
@@ -264,16 +233,16 @@ func (api *API) populateQuery(request *frames.ReadRequest) error {
 	return nil
 }
 
-func (api *API) createBackends(configs []*frames.BackendConfig) error {
+func (api *API) createBackends(config *frames.Config) error {
 	api.backends = make(map[string]frames.DataBackend)
 
-	for _, cfg := range configs {
+	for _, cfg := range config.Backends {
 		factory := backends.GetFactory(cfg.Type)
 		if factory == nil {
 			return fmt.Errorf("unknown backend - %q", cfg.Type)
 		}
 
-		backend, err := factory(api.logger, cfg)
+		backend, err := factory(api.logger, cfg, config)
 		if err != nil {
 			return errors.Wrapf(err, "%s:%s - can't create backend", cfg.Name, cfg.Type)
 		}

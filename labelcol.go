@@ -103,9 +103,7 @@ func (lc *LabelColumn) Ints() ([]int, error) {
 
 // IntAt returns int value at index i (might panic)
 func (lc *LabelColumn) IntAt(i int) int {
-	if i < 0 || i >= lc.Len() {
-		panic("index out of range")
-	}
+	lc.panicIfOutOfBounds(i)
 
 	return lc.value.(int)
 }
@@ -127,33 +125,33 @@ func (lc *LabelColumn) Floats() ([]float64, error) {
 
 // FloatAt returns float64 value at index i (might panic)
 func (lc *LabelColumn) FloatAt(i int) float64 {
-	if i < 0 || i >= lc.Len() {
-		panic("index out of range")
-	}
+	lc.panicIfOutOfBounds(i)
 
 	return lc.value.(float64)
 }
 
 // Strings returns data as []string
-func (lc *LabelColumn) Strings() ([]string, error) {
-	typedVal, ok := lc.value.(string)
-	if !ok {
-		return nil, fmt.Errorf("wrong type (type is %s)", lc.DType())
+func (lc *LabelColumn) Strings() []string {
+	var value string
+
+	switch lc.value.(type) {
+	case string:
+		value = lc.value.(string)
+	default:
+		value = fmt.Sprintf("%v", lc.value)
 	}
 
 	data := make([]string, lc.Len())
 	for i := range data {
-		data[i] = typedVal
+		data[i] = value
 	}
 
-	return data, nil
+	return data
 }
 
 // StringAt returns string value at index i (might panic)
 func (lc *LabelColumn) StringAt(i int) string {
-	if i < 0 || i >= lc.Len() {
-		panic("index out of range")
-	}
+	lc.panicIfOutOfBounds(i)
 
 	return lc.value.(string)
 }
@@ -175,9 +173,7 @@ func (lc *LabelColumn) Times() ([]time.Time, error) {
 
 // TimeAt returns time.Time value at index i (might panic)
 func (lc *LabelColumn) TimeAt(i int) time.Time {
-	if i < 0 || i >= lc.Len() {
-		panic("index out of range")
-	}
+	lc.panicIfOutOfBounds(i)
 
 	return lc.value.(time.Time)
 }
@@ -198,6 +194,15 @@ func (lc *LabelColumn) Append(value interface{}) error {
 	}
 	lc.size++
 	return nil
+}
+
+func (lc *LabelColumn) panicIfOutOfBounds(i int) {
+	if i >= 0 && i < lc.Len() {
+		return
+	}
+
+	msg := fmt.Sprintf("index %d out of range [0:%d]", i, lc.Len()-1)
+	panic(msg)
 }
 
 // LabelColumnMessage is over-the-wire LabelColumn message
