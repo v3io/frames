@@ -95,10 +95,6 @@ func (i *tsdbIterator) Next() bool {
 		values := []float64{}
 		times := []time.Time{}
 
-		for _, v := range series.Labels() {
-			labels[v.Name] = v.Value
-		}
-
 		iter := series.Iterator()
 		for iter.Next() {
 			t, v := iter.At()
@@ -118,9 +114,23 @@ func (i *tsdbIterator) Next() bool {
 		}
 
 		colname := "values"
-		if i.withColumns {
-			colname = i.request.Columns[0]
+		indices := []frames.Column{timeCol}
+		for _, v := range series.Labels() {
+			labels[v.Name] = v.Value
+			if v.Name != "__name__" {
+				if i.request.MultiIndex {
+					icol, err := frames.NewLabelColumn(v.Name, v.Value, len(values))
+					if err != nil {
+						i.err = err
+						return false
+					}
+					indices = append(indices, icol)
+				}
+			} else {
+				colname = v.Value
+			}
 		}
+
 		valCol, err := frames.NewSliceColumn(colname, values)
 		if err != nil {
 			i.err = err
@@ -128,7 +138,6 @@ func (i *tsdbIterator) Next() bool {
 		}
 
 		columns := []frames.Column{valCol}
-		indices := []frames.Column{timeCol}
 		i.currFrame, err = frames.NewFrame(columns, indices, labels)
 		if err != nil {
 			i.err = err
