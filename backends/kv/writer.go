@@ -131,11 +131,6 @@ func (a *Appender) Add(frame frames.Frame) error {
 			row[name] = val
 		}
 
-		// set row values from Labels (same labels for all rows)
-		for name, val := range a.request.Labels {
-			row[name] = val
-		}
-
 		key := indexVal(r)
 		input := v3io.PutItemInput{Path: a.tablePath + key, Attributes: row}
 		a.logger.DebugWith("write", "input", input)
