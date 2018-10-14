@@ -353,8 +353,10 @@ class Client(object):
 
         if self._should_encode_index(df):
             if hasattr(df.index, 'levels'):
-                icols = (level.to_series() for level in df.index.levels)
-                msg['indices'] = [self._encode_col(col) for col in icols]
+                by_name = df.index.get_level_values
+                names = df.index.names
+                serieses = (by_name(name).to_series() for name in names)
+                msg['indices'] = [self._encode_col(s) for s in serieses]
             else:
                 msg['indices'] = [self._encode_col(df.index.to_series())]
 
