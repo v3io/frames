@@ -53,11 +53,13 @@ int_dtype = '[]int'
 float_dtype = '[]float'
 string_dtype = '[]string'
 time_dtype = '[]time'
+bool_dtype = '[]bool'
 msg_col_keys = {
     int_dtype: 'ints',
     float_dtype: 'floats',
     string_dtype: 'strings',
     time_dtype: 'ns_times',
+    bool_dtype: 'bools',
 }
 
 Schema = namedtuple('Schema', 'type namespace name doc aliases fields key')
@@ -202,7 +204,7 @@ class Client(object):
 
         Raises
         ------
-        CreateError
+        CreateError:
             On request error or backend error
         """
         if not backend:
@@ -456,6 +458,8 @@ def dtype_of(val):
         return string_dtype
     elif isinstance(val, pd.Timestamp):
         return time_dtype
+    elif isinstance(val, bool):
+        return bool_dtype
 
     raise TypeError(f'unknown type - {val!r}')
 
@@ -483,6 +487,8 @@ def to_pylist(col, dtype):
     elif dtype == time_dtype:
         # .values will convert to nanoseconds
         return col.fillna(pd.Timestamp.min).values.tolist()
+    elif dtype == bool_dtype:
+        return col.fillna(False).tolist()
 
     raise TypeError('unknown type - {}'.format(col.dtype))
 
