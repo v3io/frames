@@ -166,18 +166,17 @@ func (a *tsdbAppender) Add(frame frames.Frame) error {
 
 		// in case of multi-index (extra indexes converted to labels)
 		indexLen := len(frame.Indices()) - 1
-		indexCols := make([][]string, indexLen)
-		indexNames := make([]string, indexLen)
+		indexCols := make([][]string, 0, indexLen)
+		indexNames := make([]string, 0, indexLen)
 		for i, idx := range frame.Indices() {
 			if i != timeColIndex {
-				asString := idx.Strings()
-				indexCols[i] = asString
-				indexNames[i] = idx.Name()
+				indexCols = append(indexCols, idx.Strings())
+				indexNames = append(indexNames, idx.Name())
 			}
 		}
 
 		lastIndexes := make([]string, indexLen)
-		metrics := make([]*metricCtx, 0, len(names))
+		metrics := make([]*metricCtx, len(names))
 
 		for i := 0; i < frame.Len(); i++ {
 
