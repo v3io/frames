@@ -170,7 +170,7 @@ func (a *tsdbAppender) Add(frame frames.Frame) error {
 		indexNames := make([]string, indexLen)
 		for i, idx := range frame.Indices() {
 			if i != timeColIndex {
-				asString, _ := idx.Strings()
+				asString := idx.Strings()
 				indexCols[i] = asString
 				indexNames[i] = idx.Name()
 			}

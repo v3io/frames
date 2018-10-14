@@ -116,19 +116,43 @@ func (sc *SliceColumn) intToFloat() {
 }
 
 // Strings returns data as []string
-func (sc *SliceColumn) Strings() ([]string, error) {
+func (sc *SliceColumn) Strings() []string {
 	typedCol, ok := sc.data.([]string)
-	if !ok {
-		return nil, fmt.Errorf("wrong type (type is %s)", sc.DType())
+	if ok {
+		return typedCol
 	}
 
-	return typedCol, nil
+	typedCol = make([]string, sc.Len())
+	var getString func(i int) string
+
+	dtype := sc.DType()
+	switch dtype {
+	case IntType:
+		getString = func(i int) string {
+			return fmt.Sprintf("%v", sc.IntAt(i))
+		}
+	case FloatType:
+		getString = func(i int) string {
+			return fmt.Sprintf("%v", sc.FloatAt(i))
+		}
+	case TimeType:
+		getString = func(i int) string {
+			return sc.TimeAt(i).Format(time.RFC3339Nano)
+		}
+	default:
+		panic(fmt.Sprintf("unknown dtype - %v", dtype))
+	}
+
+	for i := 0; i < sc.Len(); i++ {
+		typedCol[i] = getString(i)
+	}
+
+	return typedCol
 }
 
 // StringAt returns string value at index i (might panic)
 func (sc *SliceColumn) StringAt(i int) string {
-	typedCol, _ := sc.Strings()
-	return typedCol[i]
+	return sc.Strings()[i]
 }
 
 // Times returns data as []time.Time
@@ -162,7 +186,7 @@ func (sc *SliceColumn) Slice(start int, end int) (Column, error) {
 		typedCol, _ := sc.Floats()
 		slice = typedCol[start:end]
 	case StringType:
-		typedCol, _ := sc.Strings()
+		typedCol := sc.Strings()
 		slice = typedCol[start:end]
 	case TimeType:
 		typedCol, _ := sc.Times()
@@ -209,7 +233,7 @@ func (sc *SliceColumn) Append(value interface{}) error {
 		if !ok {
 			return fmt.Errorf("wrong type for %s(%s) - %T", sc.name, sc.DType(), value)
 		}
-		typedCol, _ := sc.Strings()
+		typedCol := sc.Strings()
 		sc.data = append(typedCol, typedVal)
 	case TimeType:
 		typedVal, ok := value.(time.Time)
