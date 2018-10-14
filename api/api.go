@@ -56,7 +56,7 @@ type API struct {
 func New(logger logger.Logger, config *frames.Config) (*API, error) {
 	if logger == nil {
 		var err error
-		logger, err = frames.NewLogger(config.Verbose)
+		logger, err = frames.NewLogger(config.Log.Level)
 		if err != nil {
 			return nil, errors.Wrap(err, "can't create logger")
 		}

@@ -40,7 +40,9 @@ func TestEnd2End(t *testing.T) {
 
 	backendName := "e2e-backend"
 	cfg := &frames.Config{
-		Verbose: "debug",
+		Log: frames.LogConfig{
+			Level: "debug",
+		},
 		Backends: []*frames.BackendConfig{
 			&frames.BackendConfig{
 				Name:    backendName,

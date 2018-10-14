@@ -30,7 +30,8 @@ import (
 )
 
 var configData = `
-verbose = "info"
+[log]
+level = "info"
 
 [[backends]]
 name = "v3io"

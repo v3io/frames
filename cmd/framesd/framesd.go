@@ -60,7 +60,7 @@ func main() {
 		log.Fatalf("error: bad configuration file - %s", err)
 	}
 
-	frames.DefaultVerbose = cfg.Verbose
+	frames.DefaultLogLevel = cfg.Log.Level
 
 	srv, err := server.New(cfg, addr, nil)
 	if err = srv.Start(); err != nil {

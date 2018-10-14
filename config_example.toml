@@ -1,4 +1,5 @@
-verbose = "info"
+[log]
+level = "info"
 
 [[backends]]
 name = "weather"
