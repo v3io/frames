@@ -66,7 +66,7 @@ func New(logger logger.Logger, config *frames.Config) (*API, error) {
 		logger: logger,
 	}
 
-	if err := api.createBackends(config.Backends); err != nil {
+	if err := api.createBackends(config); err != nil {
 		msg := "can't create backends"
 		api.logger.ErrorWith(msg, "error", err, "config", config)
 		return nil, errors.Wrap(err, "can't create backends")
@@ -264,16 +264,16 @@ func (api *API) populateQuery(request *frames.ReadRequest) error {
 	return nil
 }
 
-func (api *API) createBackends(configs []*frames.BackendConfig) error {
+func (api *API) createBackends(config *frames.Config) error {
 	api.backends = make(map[string]frames.DataBackend)
 
-	for _, cfg := range configs {
+	for _, cfg := range config.Backends {
 		factory := backends.GetFactory(cfg.Type)
 		if factory == nil {
 			return fmt.Errorf("unknown backend - %q", cfg.Type)
 		}
 
-		backend, err := factory(api.logger, cfg)
+		backend, err := factory(api.logger, cfg, config)
 		if err != nil {
 			return errors.Wrapf(err, "%s:%s - can't create backend", cfg.Name, cfg.Type)
 		}
