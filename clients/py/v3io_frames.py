@@ -178,7 +178,7 @@ class Client(object):
         url = self.url + '/write'
         headers = self._headers()
         headers['Content-Encoding'] = 'chunked'
-        data = chain([request], self._iter_chunks(dfs, max_in_message))
+        data = chain([request], self._iter_chunks(dfs, labels, max_in_message))
         resp = requests.post(url, headers=headers, data=data)
 
         if not resp.ok:
@@ -400,10 +400,10 @@ class Client(object):
 
         return not isinstance(df.index, pd.RangeIndex)
 
-    def _iter_chunks(self, dfs, max_in_message):
+    def _iter_chunks(self, dfs, labels, max_in_message):
         for df in dfs:
             for cdf in self._chunk_df(df, max_in_message):
-                yield self._encode_df(cdf)
+                yield self._encode_df(cdf, labels)
 
     def _chunk_df(self, df, size):
         size = size if size else len(df)

@@ -12,18 +12,21 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+import re
 from datetime import datetime
+from functools import partial
 from io import BytesIO
 from os.path import abspath, dirname
-import re
 
 import msgpack
+import numpy as np
 import pandas as pd
 import pytz
 
 import v3io_frames as v3f
 
 here = dirname(abspath(__file__))
+unpack = partial(msgpack.unpackb, raw=False)
 
 
 class patch_requests:
@@ -32,6 +35,8 @@ class patch_requests:
     def __init__(self, data=None):
         self.requests = []
         self.data = [] if data is None else data
+        self.write_request = None
+        self.write_frames = []
 
     def __enter__(self):
         v3f.requests = self
@@ -42,6 +47,12 @@ class patch_requests:
 
     def post(self, *args, **kw):
         self.requests.append((args, kw))
+        if args[0].endswith('/read'):
+            return self._read(*args, **kw)
+        elif args[0].endswith('/write'):
+            return self._write(*args, **kw)
+
+    def _read(self, *args, **kw):
         io = BytesIO()
         for chunk in self.data:
             msgpack.dump(chunk, io)
@@ -51,6 +62,26 @@ class patch_requests:
         class Response:
             raw = io
             ok = True
+
+        return Response
+
+    def _write(self, *args, **kw):
+        it = iter(kw.get('data', []))
+        data = next(it)
+        self.write_request = unpack(data)
+        for chunk in it:
+            self.write_frames.append(unpack(data))
+
+        class Response:
+            ok = True
+
+            @staticmethod
+            def json():
+                # TODO: Real values
+                return {
+                    'num_frames': -1,
+                    'num_rows': -1,
+                }
 
         return Response
 
@@ -97,7 +128,7 @@ def test_encode_df():
 
     df = pd.read_csv('{}/weather.csv'.format(here))
     data = c._encode_df(df, labels)
-    msg = msgpack.unpackb(data, raw=False)
+    msg = unpack(data)
 
     names = [col_name(col) for col in msg['columns']]
     assert set(names) == set(df.columns), 'columns mismatch'
@@ -108,7 +139,7 @@ def test_encode_df():
     index_name = 'DATE'
     df.index = df.pop(index_name)
     data = c._encode_df(df, None)
-    msg = msgpack.unpackb(data, raw=False)
+    msg = unpack(data)
 
     names = [col_name(col) for col in msg['columns']]
     assert set(names) == set(df.columns), 'columns mismatch'
@@ -157,6 +188,28 @@ def test_format_go_time():
     hours, minutes = map(int, ts[ts.find('+')+1:].split(':'))
     offset = hours * 60 * 60 + minutes * 60
     assert offset == tz.utcoffset(now).total_seconds(), 'bad offset'
+
+
+def test_encode_labels():
+    size = 100
+    df = pd.DataFrame({
+        'x': np.random.rand(size),
+        'y': np.random.rand(size),
+    })
+
+    labels = {
+        'host': 'example.com',
+        'worker': 12,
+    }
+
+    client = v3f.Client('http://example.com')
+    with patch_requests() as patch:
+        client.write(
+            'csv', 'weather', [df], max_in_message=size//7, labels=labels)
+        frames = patch.write_frames
+
+    for frame in frames:
+        assert frame['labels'] == labels, 'no lables'
 
 
 def test_multi_index():
