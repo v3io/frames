@@ -52,11 +52,7 @@ func TestSliceColAPI(t *testing.T) {
 		t.Fatalf("type mismatch (%s != %s)", col.DType(), StringType)
 	}
 
-	svals, err := col.Strings()
-	if err != nil {
-		t.Fatalf("error converting to []string - %s", err)
-	}
-
+	svals := col.Strings()
 	if len(svals) != len(values) {
 		t.Fatalf("length mismatch (%d != %d)", len(svals), len(values))
 	}
