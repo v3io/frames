@@ -10,4 +10,5 @@ requests = ">=2.19.1"
 
 [dev-packages]
 pytest = "*"
+flake8 = "*"
 twine = "*"

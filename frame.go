@@ -45,7 +45,7 @@ type Column interface {
 	IntAt(i int) int                          // Int value at index i (might panic)
 	Floats() ([]float64, error)               // Data as []float64
 	FloatAt(i int) float64                    // Float value at index i (might panic)
-	Strings() ([]string, error)               // Data as []string
+	Strings() []string                        // Data as []string
 	StringAt(i int) string                    // String value at index i (might panic)
 	Times() ([]time.Time, error)              // Data as []time.Time
 	TimeAt(i int) time.Time                   // time.Time value at index i (might panic)
