@@ -105,9 +105,9 @@ def test_read():
         },
     ]
 
-    c = v3f.Client(url, api_key)
+    client = v3f.Client(url, api_key)
     with patch_requests(data) as patch:
-        dfs = c.read(query=query)
+        dfs = client.read(query=query)
 
     assert len(patch.requests) == 1
 
@@ -210,3 +210,26 @@ def test_encode_labels():
 
     for frame in frames:
         assert frame['labels'] == labels, 'no lables'
+
+
+def test_multi_index():
+    tuples = [
+        ('bar', 'one'),
+        ('bar', 'two'),
+        ('baz', 'one'),
+        ('baz', 'two'),
+        ('foo', 'one'),
+        ('foo', 'two'),
+        ('qux', 'one'),
+        ('qux', 'two')]
+    index = pd.MultiIndex.from_tuples(tuples, names=['first', 'second'])
+    df = pd.DataFrame(index=index)
+    df['x'] = range(len(df))
+
+    client = v3f.Client('http://example.com')
+    data = client._encode_df(df)
+    msg = msgpack.unpackb(data, raw=False)
+
+    for col in msg['indices']:
+        values = col['slice']['strings']
+        assert len(values) == len(df), 'bad index length'
