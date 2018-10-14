@@ -46,7 +46,7 @@ type Backend struct {
 }
 
 // NewBackend return a new key/value backend
-func NewBackend(logger logger.Logger, config *frames.BackendConfig) (frames.DataBackend, error) {
+func NewBackend(logger logger.Logger, config *frames.BackendConfig, framesConfig *frames.Config) (frames.DataBackend, error) {
 	container, err := v3ioutils.CreateContainer(
 		logger, config.V3ioURL, config.Container, config.Username, config.Password, config.Workers)
 	if err != nil {

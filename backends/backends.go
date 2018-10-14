@@ -36,7 +36,7 @@ var (
 )
 
 // Factory is a backend factory
-type Factory func(logger.Logger, *frames.BackendConfig) (frames.DataBackend, error)
+type Factory func(logger.Logger, *frames.BackendConfig, *frames.Config) (frames.DataBackend, error)
 
 // Register registers a backend factory for a type
 func Register(typ string, factory Factory) error {

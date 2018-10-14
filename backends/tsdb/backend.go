@@ -39,8 +39,7 @@ type Backend struct {
 }
 
 // NewBackend return a new key/value backend
-func NewBackend(logger logger.Logger, cfg *frames.BackendConfig) (frames.DataBackend, error) {
-
+func NewBackend(logger logger.Logger, cfg *frames.BackendConfig, framesConfig *frames.Config) (frames.DataBackend, error) {
 	newBackend := Backend{
 		adapters: map[string]*tsdb.V3ioAdapter{},
 		logger:   logger,
