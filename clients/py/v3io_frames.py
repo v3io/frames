@@ -301,7 +301,6 @@ class Client(object):
         #   columns: list of column message
         #   indices: list of column message
         #   labels: dict
-
         icols = enumerate(msg['columns'])
         columns = [self._handle_col_msg(i, col) for i, col in icols]
         df = pd.concat(columns, axis=1)
@@ -341,7 +340,8 @@ class Client(object):
 
     def _handle_label_col(self, col):
         codes = np.zeros(col['size'])
-        return pd.Categorical.from_codes(codes, categories=[col['value']])
+        cat = pd.Categorical.from_codes(codes, categories=[col['value']])
+        return pd.Series(cat, name=col['name'])
 
     def _encode_df(self, df, labels=None):
         msg = {
