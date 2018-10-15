@@ -139,7 +139,7 @@ func (a *tsdbAppender) Add(frame frames.Frame) error {
 		// in case we have a single index with or without labels
 		metrics := make([]*metricCtx, 0, len(names))
 		for _, name := range names {
-			lset, err := newLset(a.request.Labels, name, len(names) == 1, nil, nil)
+			lset, err := newLset(frame.Labels(), name, len(names) == 1, nil, nil)
 			if err != nil {
 				return err
 			}
@@ -190,7 +190,7 @@ func (a *tsdbAppender) Add(frame frames.Frame) error {
 
 			if !sameIndex {
 				for idx, name := range names {
-					lset, err := newLset(a.request.Labels, name, len(names) == 1, indexNames, lastIndexes)
+					lset, err := newLset(frame.Labels(), name, len(names) == 1, indexNames, lastIndexes)
 					if err != nil {
 						return err
 					}
