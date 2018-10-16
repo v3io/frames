@@ -87,13 +87,14 @@ def server():
 
 
 def random_df(size):
+    times = pd.date_range('2018-01-01', '2018-10-10', periods=size)
     data = {
         'icol': np.random.randint(-17, 99, size),
         'fcol': np.random.rand(size),
         'scol': ['val-{}'.format(i) for i in range(size)],
         'bcol': np.random.choice([True, False], size=size),
         # FIXME
-        # 'tcol': pd.date_range('2018-01-01', '2018-10-10', periods=size),
+        'tcol': times,
     }
 
     return pd.DataFrame(data)
@@ -103,7 +104,7 @@ def random_df(size):
 def test_integration(server):
     assert wait_for_server(server_port, server_timeout), 'server did not start'
 
-    size = 19  # 32
+    size = 1932
     table = 'random.csv'
     df = random_df(size)
     lables = {
@@ -118,10 +119,12 @@ def test_integration(server):
 
     dfs = [df for df in c.read(backend, table=table)]
     df2 = pd.concat(dfs)
-    # df2['bcol'] = df2['bcol'].astype(bool)  # Go backend sends strings
 
     assert set(df2.columns) == set(df.columns), 'columns mismatch'
     for name in df.columns:
+        if name == 'tcol':
+            # FIXME: Time zones
+            continue
         col = df[name]
         col2 = df2[name]
         assert col2.equals(col), 'column {} mismatch'.format(name)
