@@ -146,12 +146,14 @@ func makeFrame() (frames.Frame, error) {
 	fdata := make([]float64, size)
 	sdata := make([]string, size)
 	tdata := make([]time.Time, size)
+	bdata := make([]bool, size)
 
 	for i := 0; i < size; i++ {
 		idata[i] = i
 		fdata[i] = float64(i)
 		sdata[i] = fmt.Sprintf("val%d", i)
 		tdata[i] = now.Add(time.Duration(i) * time.Second)
+		bdata[i] = i%2 == 0
 	}
 
 	columns := map[string]interface{}{
@@ -159,6 +161,7 @@ func makeFrame() (frames.Frame, error) {
 		"floats":  fdata,
 		"strings": sdata,
 		"times":   tdata,
+		"bools":   bdata,
 	}
 	return frames.NewFrameFromMap(columns)
 }
