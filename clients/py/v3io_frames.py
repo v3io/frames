@@ -49,15 +49,22 @@ class DeleteError(Error):
     """An error in table deletion"""
 
 
-int_dtype = '[]int'
-float_dtype = '[]float'
+int_dtype = '[]int64'
+float_dtype = '[]float64'
 string_dtype = '[]string'
-time_dtype = '[]time'
+time_dtype = '[]time.Time'
 msg_col_keys = {
     int_dtype: 'ints',
     float_dtype: 'floats',
     string_dtype: 'strings',
     time_dtype: 'ns_times',
+}
+
+name2dtype = {
+    int_dtype: np.int64,
+    float_dtype: np.float64,
+    string_dtype: str,
+    time_dtype: 'datetime64[ns]',
 }
 
 Schema = namedtuple('Schema', 'type namespace name doc aliases fields key')
@@ -336,12 +343,24 @@ class Client(object):
             if data is not None:
                 return pd.Series(data, name=col['name'])
 
-        raise MessageError('column without data')
+        return self._new_empty_col(col['name'], col['dtype'])
 
     def _handle_label_col(self, col):
-        codes = np.zeros(col['size'])
+        size = col['size']
+        if size == 0:
+            return self._new_empty_col(col['name'], col['dtype'])
+
+        codes = np.zeros(size)
         cat = pd.Categorical.from_codes(codes, categories=[col['value']])
         return pd.Series(cat, name=col['name'])
+
+    def _new_empty_col(self, name, msg_dtype):
+        # Empty column
+        dtype = name2dtype.get(msg_dtype)
+        if not dtype:
+            raise MessageError(
+                '{}: unknown data type: {}'.format(name, msg_dtype))
+        return pd.Series(name=name, dtype=dtype)
 
     def _encode_df(self, df, labels=None):
         msg = {
