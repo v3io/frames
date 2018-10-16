@@ -247,3 +247,18 @@ def test_labelcol_name():
     assert col.name == msg['name'], 'bad name'
     assert len(col) == msg['size'], 'bad size'
     assert set(col) == {msg['value']}, 'bad values'
+
+
+def test_empty_col():
+    msg = {
+        'slice': {
+            'dtype': '[]float64',
+            'name': 'fcol',
+        }
+    }
+    c = v3f.Client('http://example.com')
+
+    col = c._handle_col_msg(0, msg)
+    assert col.name == msg['slice']['name'], 'bad name'
+    assert len(col) == 0, 'col not empty'
+    assert col.dtype == np.float64, 'bad dtype'
