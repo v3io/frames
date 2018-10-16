@@ -51,7 +51,7 @@ class DeleteError(Error):
 
 
 class DType:
-    pass
+    write_slice_key = None
 
 
 class IntDType(DType):
@@ -100,6 +100,7 @@ class TimeDType(DType):
     pd_dtype = 'timedelta64[ns]'
     py_types = pd.Timestamp
     to_py = attrgetter('value')
+    write_slice_key = 'ns_times'
 
     @staticmethod
     def to_pylist(col):
@@ -110,7 +111,7 @@ class BoolDType(DType):
     dtype = '[]bool'
     slice_key = 'bools'
     pd_dtype = bool
-    py_types = bool
+    py_types = (bool, np.bool_)
     to_py = bool  # TODO: Is this what we want?
 
     @staticmethod
@@ -390,8 +391,8 @@ class Client(object):
         raise MessageError('{}: empty column message'.format(i))
 
     def _handle_slice_col(self, col):
-        for field in ['ints', 'floats', 'strings', 'times']:
-            data = col.get(field)
+        for dtype in dtypes.values():
+            data = col.get(dtype.slice_key)
             if data is not None:
                 return pd.Series(data, name=col['name'])
 
@@ -446,7 +447,8 @@ class Client(object):
             data['size'] = len(col)
             return {'label': data}
 
-        data[dtype.slice_key] = dtype.to_pylist(col)
+        key = dtype.write_slice_key or dtype.slice_key
+        data[key] = dtype.to_pylist(col)
         return {'slice': data}
 
     def _index_name(self, df):
@@ -516,6 +518,10 @@ def ext_hook(code, value):
 
 
 def dtype_of(val):
+    # bool is subclass of int
+    if type(val) in BoolDType.py_types:
+        return BoolDType
+
     for dtype in dtypes.values():
         if isinstance(val, dtype.py_types):
             return dtype

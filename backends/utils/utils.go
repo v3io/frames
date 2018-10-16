@@ -118,6 +118,8 @@ func ColAt(col frames.Column, i int) (interface{}, error) {
 		asTime := col.TimeAt(i)
 		return asTime.Format(time.RFC3339Nano), nil // store as time string since v3io doesnt have native time format
 		//return col.TimeAt(i), nil
+	case frames.BoolType:
+		return col.BoolAt(i), nil
 	default:
 		return nil, fmt.Errorf("unknown column type - %s", col.DType())
 	}
