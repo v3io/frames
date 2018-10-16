@@ -50,16 +50,23 @@ class DeleteError(Error):
 
 
 int_dtype = '[]int'
-float_dtype = '[]float'
+float_dtype = '[]float64'
 string_dtype = '[]string'
-time_dtype = '[]time'
 bool_dtype = '[]bool'
+time_dtype = '[]time.Time'
 msg_col_keys = {
     int_dtype: 'ints',
     float_dtype: 'floats',
     string_dtype: 'strings',
     time_dtype: 'ns_times',
     bool_dtype: 'bools',
+}
+
+name2dtype = {
+    int_dtype: np.int64,
+    float_dtype: np.float64,
+    string_dtype: str,
+    time_dtype: 'datetime64[ns]',
 }
 
 Schema = namedtuple('Schema', 'type namespace name doc aliases fields key')
@@ -303,7 +310,6 @@ class Client(object):
         #   columns: list of column message
         #   indices: list of column message
         #   labels: dict
-
         icols = enumerate(msg['columns'])
         columns = [self._handle_col_msg(i, col) for i, col in icols]
         df = pd.concat(columns, axis=1)
@@ -339,11 +345,24 @@ class Client(object):
             if data is not None:
                 return pd.Series(data, name=col['name'])
 
-        raise MessageError('column without data')
+        return self._new_empty_col(col['name'], col['dtype'])
 
     def _handle_label_col(self, col):
-        codes = np.zeros(col['size'])
-        return pd.Categorial.from_codes(codes, categories=[col['name']])
+        size = col['size']
+        if size == 0:
+            return self._new_empty_col(col['name'], col['dtype'])
+
+        codes = np.zeros(size)
+        cat = pd.Categorical.from_codes(codes, categories=[col['value']])
+        return pd.Series(cat, name=col['name'])
+
+    def _new_empty_col(self, name, msg_dtype):
+        # Empty column
+        dtype = name2dtype.get(msg_dtype)
+        if not dtype:
+            raise MessageError(
+                '{}: unknown data type: {}'.format(name, msg_dtype))
+        return pd.Series(name=name, dtype=dtype)
 
     def _encode_df(self, df, labels=None):
         msg = {

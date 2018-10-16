@@ -233,3 +233,32 @@ def test_multi_index():
     for col in msg['indices']:
         values = col['slice']['strings']
         assert len(values) == len(df), 'bad index length'
+
+
+def test_labelcol_name():
+    msg = {
+        'name': 'col9',
+        'value': 'v',
+        'size': 17,
+    }
+
+    c = v3f.Client('http://example.com')
+    col = c._handle_label_col(msg)
+    assert col.name == msg['name'], 'bad name'
+    assert len(col) == msg['size'], 'bad size'
+    assert set(col) == {msg['value']}, 'bad values'
+
+
+def test_empty_col():
+    msg = {
+        'slice': {
+            'dtype': '[]float64',
+            'name': 'fcol',
+        }
+    }
+    c = v3f.Client('http://example.com')
+
+    col = c._handle_col_msg(0, msg)
+    assert col.name == msg['slice']['name'], 'bad name'
+    assert len(col) == 0, 'col not empty'
+    assert col.dtype == np.float64, 'bad dtype'

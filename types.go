@@ -114,6 +114,8 @@ type ReadRequest struct {
 	DataFormat string `json:"data_format"`
 	// orgenized as rows (vs columns)
 	RowLayout bool `json:"row_layout"`
+	// support multi-index response
+	MultiIndex bool `json:"multi_index"`
 
 	// SQL query
 	Query string `json:"query"`
