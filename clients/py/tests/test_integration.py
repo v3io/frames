@@ -12,7 +12,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-from subprocess import call, Popen, PIPE
+from subprocess import call, Popen, check_output
 from os import path, makedirs
 from time import sleep, time
 from socket import socket, error as SocketError
@@ -21,13 +21,22 @@ from shutil import rmtree
 import pytest
 import pandas as pd
 import numpy as np
+import re
 
 import v3io_frames as v3f
 
 
-def _has_working_go():
+def has_working_go():
+    """Check we have go version >= 1.11"""
     try:
-        return call(['go', 'version'], stderr=PIPE, stdout=PIPE) == 0
+        out = check_output(['go', 'version']).decode('utf-8')
+        match = re.search('(\d+)\.(\d+)', out)
+        if not match:
+            print('warning: cannot find version in {!r}'.format(out))
+            return False
+
+        major, minor = int(match.group(1)), int(match.group(2))
+        return (major, minor) >= (1, 11)
     except FileNotFoundError:
         return False
 
@@ -36,7 +45,7 @@ here = path.dirname(path.abspath(__file__))
 backend = 'weather'
 server_port = 8765
 server_timeout = 30  # seconds
-has_go = _has_working_go()
+has_go = has_working_go()
 root_dir = '/tmp/test-integration-root'
 
 
@@ -82,16 +91,14 @@ def server():
     ]
     assert call(cmd) == 0, 'cannot build server'
 
-    server_log = open('{}.log'.format(server_exe), 'wb')
     cmd = [
         server_exe,
         '-addr', ':{}'.format(server_port),
         '-config', cfg_file,
     ]
-    pipe = Popen(cmd, stdout=server_log, stderr=server_log)
+    pipe = Popen(cmd)
     yield pipe
     pipe.kill()
-    server_log.close()
 
 
 def random_df(size):

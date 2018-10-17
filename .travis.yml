@@ -16,9 +16,9 @@ matrix:
   - language: python
     python: "3.7-dev"
     env:
-        - PATH=${PATH}:/opt/go
+        - PATH=/opt/go:${PATH}
     before_install:
-        - curl -LO https://dl.google.com/go/
+        - curl -LO https://dl.google.com/go/go1.11.1.linux-amd64.tar.gz
         - tar xzf go1.11.1.linux-amd64.tar.gz -C /opt/go
     script:
       - pip install pipenv
