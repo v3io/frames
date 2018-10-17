@@ -24,11 +24,19 @@ import numpy as np
 
 import v3io_frames as v3f
 
+
+def _has_working_go():
+    try:
+        return call(['go', 'version'], stderr=PIPE, stdout=PIPE) == 0
+    except FileNotFoundError:
+        return False
+
+
 here = path.dirname(path.abspath(__file__))
 backend = 'weather'
 server_port = 8765
 server_timeout = 30  # seconds
-has_go = call(['go', 'version'], stderr=PIPE, stdout=PIPE) == 0
+has_go = _has_working_go()
 root_dir = '/tmp/test-integration-root'
 
 
