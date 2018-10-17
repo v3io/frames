@@ -441,12 +441,6 @@ class Client(object):
             'dtype': dtype.dtype,
         }
 
-        # Same repeating value, encode as label column
-        if can_label and col.nunique() == 1:
-            data['value'] = to_py(col.iloc[0])
-            data['size'] = len(col)
-            return {'label': data}
-
         key = dtype.write_slice_key or dtype.slice_key
         data[key] = dtype.to_pylist(col)
         return {'slice': data}
