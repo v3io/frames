@@ -388,12 +388,6 @@ class Client(object):
             'dtype': dtype,
         }
 
-        # Same repeating value, encode as label column
-        if can_label and col.nunique() == 1:
-            data['value'] = to_py(col.iloc[0])
-            data['size'] = len(col)
-            return {'label': data}
-
         key = msg_col_keys[dtype]
         values = to_pylist(col, dtype)
         data[key] = values
