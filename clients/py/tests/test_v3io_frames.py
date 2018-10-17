@@ -262,3 +262,17 @@ def test_empty_col():
     assert col.name == msg['slice']['name'], 'bad name'
     assert len(col) == 0, 'col not empty'
     assert col.dtype == np.float64, 'bad dtype'
+
+
+def test_bool_col():
+    msg = {
+        'slice': {
+            'dtype': '[]bool',
+            'name': 'bcol',
+            'values': [True, False, True, False],
+        },
+    }
+
+    c = v3f.Client('http://example.com')
+    col = c._handle_col_msg(0, msg)
+    assert col.dtype == bool, 'bad dtype'

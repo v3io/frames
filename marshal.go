@@ -181,6 +181,8 @@ func (d *Decoder) decodeSliceCol(colMsg *SliceColumnMessage) (Column, error) {
 		col, err = NewSliceColumn(colMsg.Name, colMsg.StringData)
 	case colMsg.TimeData != nil:
 		col, err = NewSliceColumn(colMsg.Name, colMsg.TimeData)
+	case colMsg.BoolData != nil:
+		col, err = NewSliceColumn(colMsg.Name, colMsg.BoolData)
 	case colMsg.NSTimeData != nil:
 		data := make([]time.Time, len(colMsg.NSTimeData))
 		for i, val := range colMsg.NSTimeData {

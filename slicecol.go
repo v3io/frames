@@ -46,6 +46,8 @@ func NewSliceColumn(name string, data interface{}) (*SliceColumn, error) {
 		size = len(data.([]string))
 	case TimeType:
 		size = len(data.([]time.Time))
+	case BoolType:
+		size = len(data.([]bool))
 	default:
 		return nil, fmt.Errorf("unspported data type - %T", data)
 	}
@@ -171,6 +173,22 @@ func (sc *SliceColumn) TimeAt(i int) time.Time {
 	return typedCol[i]
 }
 
+// Bools returns data as []bool
+func (sc *SliceColumn) Bools() ([]bool, error) {
+	typedCol, ok := sc.data.([]bool)
+	if !ok {
+		return nil, fmt.Errorf("wrong type (type is %s)", sc.DType())
+	}
+
+	return typedCol, nil
+}
+
+// BoolAt returns bool value at index i (might panic)
+func (sc *SliceColumn) BoolAt(i int) bool {
+	typedCol, _ := sc.Bools()
+	return typedCol[i]
+}
+
 // Slice returns a Column with is slice of data
 func (sc *SliceColumn) Slice(start int, end int) (Column, error) {
 	if err := validateSlice(start, end, sc.Len()); err != nil {
@@ -261,6 +279,7 @@ type SliceColumnMessage struct {
 	FloatData  []float64   `msgpack:"floats,omitempty"`
 	StringData []string    `msgpack:"strings,omitempty"`
 	TimeData   []time.Time `msgpack:"times,omitempty"`
+	BoolData   []bool      `msgpack:"bools,omitempty"`
 	// We can't encode time in Python the way Go's msgpack works since
 	// Python's msgpack won't accept -1 code
 	NSTimeData []int `msgpack:"ns_times,omitempty"`
@@ -281,6 +300,8 @@ func (sc *SliceColumn) Marshal() (interface{}, error) {
 		msg.StringData = sc.data.([]string)
 	case TimeType:
 		msg.TimeData = sc.data.([]time.Time)
+	case BoolType:
+		msg.BoolData = sc.data.([]bool)
 	default:
 		return nil, fmt.Errorf("can't marshal column of type %s", sc.DType())
 	}

@@ -1,2 +1,4 @@
+.envrc
+.ignore
 .pytest_cache
 _t

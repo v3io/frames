@@ -34,6 +34,7 @@ var (
 	FloatType  DType = reflect.TypeOf([]float64{})
 	StringType DType = reflect.TypeOf([]string{})
 	TimeType   DType = reflect.TypeOf([]time.Time{})
+	BoolType   DType = reflect.TypeOf([]bool{})
 )
 
 // Column is a data column
@@ -49,6 +50,8 @@ type Column interface {
 	StringAt(i int) string                    // String value at index i (might panic)
 	Times() ([]time.Time, error)              // Data as []time.Time
 	TimeAt(i int) time.Time                   // time.Time value at index i (might panic)
+	Bools() ([]bool, error)                   // Data as []bool
+	BoolAt(i int) bool                        // bool value at index i (might panic)
 	Slice(start int, end int) (Column, error) // Slice of data
 	Append(value interface{}) error           // Append a value
 }
