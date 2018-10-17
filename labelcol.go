@@ -35,7 +35,8 @@ type LabelColumn struct {
 // NewLabelColumn returns new label column
 func NewLabelColumn(name string, value interface{}, size int) (*LabelColumn, error) {
 	switch value.(type) {
-	case int, float64, string, time.Time:
+	case int, float64, string, time.Time, bool:
+		// OK
 	case int8:
 		value = int(value.(int8))
 	case int16:
@@ -46,7 +47,6 @@ func NewLabelColumn(name string, value interface{}, size int) (*LabelColumn, err
 		value = int(value.(int64))
 	case float32:
 		value = float64(value.(float32))
-		// OK
 	default:
 		return nil, fmt.Errorf("LabelColumn unspported type - %T", value)
 	}
@@ -81,6 +81,8 @@ func (lc *LabelColumn) DType() DType {
 		return FloatType
 	case time.Time:
 		return TimeType
+	case bool:
+		return BoolType
 	}
 
 	return nil
@@ -176,6 +178,28 @@ func (lc *LabelColumn) TimeAt(i int) time.Time {
 	lc.panicIfOutOfBounds(i)
 
 	return lc.value.(time.Time)
+}
+
+// Bools returns data as []bool
+func (lc *LabelColumn) Bools() ([]bool, error) {
+	typedVal, ok := lc.value.(bool)
+	if !ok {
+		return nil, fmt.Errorf("wrong type (type is %s)", lc.DType())
+	}
+
+	data := make([]bool, lc.Len())
+	for i := range data {
+		data[i] = typedVal
+	}
+
+	return data, nil
+}
+
+// BoolAt returns bool value at index i (might panic)
+func (lc *LabelColumn) BoolAt(i int) bool {
+	lc.panicIfOutOfBounds(i)
+
+	return lc.value.(bool)
 }
 
 // Slice returns a Column with is slice of data

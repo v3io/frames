@@ -20,6 +20,7 @@ from collections import namedtuple
 from datetime import datetime
 from itertools import chain, count
 from os import environ
+from operator import attrgetter
 
 import msgpack
 import numpy as np
@@ -49,24 +50,76 @@ class DeleteError(Error):
     """An error in table deletion"""
 
 
-int_dtype = '[]int64'
-float_dtype = '[]float64'
-string_dtype = '[]string'
-time_dtype = '[]time.Time'
-msg_col_keys = {
-    int_dtype: 'ints',
-    float_dtype: 'floats',
-    string_dtype: 'strings',
-    time_dtype: 'ns_times',
-}
+class DType:
+    write_slice_key = None
 
-name2dtype = {
-    int_dtype: np.int64,
-    float_dtype: np.float64,
-    string_dtype: str,
-    time_dtype: 'datetime64[ns]',
-}
 
+class IntDType(DType):
+    dtype = '[]int'
+    slice_key = 'ints'
+    pd_dtype = np.int64
+    py_types = (np.integer, int)
+    to_py = int
+
+    @staticmethod
+    def to_pylist(col):
+        return col.tolist()
+
+
+class FloatDType(DType):
+    dtype = '[]float64'
+    slice_key = 'floats'
+    pd_dtype = np.float64
+    py_types = (np.inexact, float)
+    to_py = float
+
+    @staticmethod
+    def to_pylist(col):
+        return col.fillna(0.0).tolist()
+
+
+def identity(val):
+    return val
+
+
+class StringDType(DType):
+    dtype = '[]string'
+    slice_key = 'strings'
+    pd_dtype = str
+    py_types = str
+    to_py = identity
+
+    @staticmethod
+    def to_pylist(col):
+        return col.fillna('').tolist()
+
+
+class TimeDType(DType):
+    dtype = '[]time.Time'
+    slice_key = 'times'
+    pd_dtype = 'timedelta64[ns]'
+    py_types = pd.Timestamp
+    to_py = attrgetter('value')
+    write_slice_key = 'ns_times'
+
+    @staticmethod
+    def to_pylist(col):
+        return col.fillna(pd.Timestamp.min).values.tolist()
+
+
+class BoolDType(DType):
+    dtype = '[]bool'
+    slice_key = 'bools'
+    pd_dtype = bool
+    py_types = (bool, np.bool_)
+    to_py = bool  # TODO: Is this what we want?
+
+    @staticmethod
+    def to_pylist(col):
+        return col.fillna(False).tolist()
+
+
+dtypes = {dtype.dtype: dtype for dtype in DType.__subclasses__()}
 Schema = namedtuple('Schema', 'type namespace name doc aliases fields key')
 SchemaField = namedtuple('SchemaField', 'name doc default type properties')
 
@@ -209,7 +262,7 @@ class Client(object):
 
         Raises
         ------
-        CreateError
+        CreateError:
             On request error or backend error
         """
         if not backend:
@@ -338,8 +391,8 @@ class Client(object):
         raise MessageError('{}: empty column message'.format(i))
 
     def _handle_slice_col(self, col):
-        for field in ['ints', 'floats', 'strings', 'times']:
-            data = col.get(field)
+        for dtype in dtypes.values():
+            data = col.get(dtype.slice_key)
             if data is not None:
                 return pd.Series(data, name=col['name'])
 
@@ -356,11 +409,11 @@ class Client(object):
 
     def _new_empty_col(self, name, msg_dtype):
         # Empty column
-        dtype = name2dtype.get(msg_dtype)
+        dtype = dtypes.get(msg_dtype)
         if not dtype:
             raise MessageError(
                 '{}: unknown data type: {}'.format(name, msg_dtype))
-        return pd.Series(name=name, dtype=dtype)
+        return pd.Series(name=name, dtype=dtype.pd_dtype)
 
     def _encode_df(self, df, labels=None):
         msg = {
@@ -385,7 +438,7 @@ class Client(object):
         dtype = dtype_of(col.iloc[0])
         data = {
             'name': name or col.name,
-            'dtype': dtype,
+            'dtype': dtype.dtype,
         }
 
         # Same repeating value, encode as label column
@@ -394,10 +447,8 @@ class Client(object):
             data['size'] = len(col)
             return {'label': data}
 
-        key = msg_col_keys[dtype]
-        values = to_pylist(col, dtype)
-        data[key] = values
-
+        key = dtype.write_slice_key or dtype.slice_key
+        data[key] = dtype.to_pylist(col)
         return {'slice': data}
 
     def _index_name(self, df):
@@ -467,43 +518,19 @@ def ext_hook(code, value):
 
 
 def dtype_of(val):
-    if isinstance(val, (np.integer, int)):
-        return int_dtype
-    elif isinstance(val, (np.inexact, float)):
-        return float_dtype
-    elif isinstance(val, str):
-        return string_dtype
-    elif isinstance(val, pd.Timestamp):
-        return time_dtype
+    # bool is subclass of int
+    if type(val) in BoolDType.py_types:
+        return BoolDType
+
+    for dtype in dtypes.values():
+        if isinstance(val, dtype.py_types):
+            return dtype
 
     raise TypeError(f'unknown type - {val!r}')
 
 
 def to_py(val):
-    if dtype_of(val) == int_dtype:
-        return int(val)
-    elif dtype_of(val) == float_dtype:
-        return float(val)
-    elif dtype_of(val) == string_dtype:
-        return val
-    elif dtype_of(val) == time_dtype:
-        return val.value
-
-    raise TypeError('unsupported type - {}'.format(type(val)))
-
-
-def to_pylist(col, dtype):
-    if dtype == int_dtype:
-        return col.tolist()
-    elif dtype == float_dtype:
-        return col.fillna(0).tolist()
-    elif dtype == string_dtype:
-        return col.fillna('').tolist()
-    elif dtype == time_dtype:
-        # .values will convert to nanoseconds
-        return col.fillna(pd.Timestamp.min).values.tolist()
-
-    raise TypeError('unknown type - {}'.format(col.dtype))
+    return dtype_of(val).to_py(val)
 
 
 def encode_schema(schema):

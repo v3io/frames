@@ -303,6 +303,22 @@ func (it *FrameIterator) buildFrame(rows [][]string) (frames.Frame, error) {
 				typedData[r+1] = val // +1 since we start in first row
 			}
 			data = typedData
+		case bool:
+			typedData := make([]bool, len(rows))
+			typedData[0] = val0.(bool)
+			for r, row := range rows[1:] {
+				val, ok := it.parseValue(row[c]).(bool)
+				if !ok {
+					err := fmt.Errorf("type mismatch in row %d, col %d", it.nRows, c)
+					it.logger.ErrorWith("type mismatch", "error", err)
+					return nil, err
+				}
+
+				typedData[r+1] = val // +1 since we start in first row
+			}
+			data = typedData
+		default:
+			return nil, fmt.Errorf("%s - unknown type %T", colName, val0)
 		}
 
 		col, err = frames.NewSliceColumn(colName, data)
@@ -318,7 +334,7 @@ func (it *FrameIterator) buildFrame(rows [][]string) (frames.Frame, error) {
 }
 
 func (it *FrameIterator) parseValue(value string) interface{} {
-	// Time/date formats
+	// time/date formats
 	timeFormats := []string{time.RFC3339, time.RFC3339Nano, "2006-01-02"}
 	for _, format := range timeFormats {
 		t, err := time.Parse(format, value)
@@ -327,12 +343,21 @@ func (it *FrameIterator) parseValue(value string) interface{} {
 		}
 	}
 
-	// Int
+	// bool
+	switch value {
+	case "true":
+		return true
+	case "false":
+		return false
+	}
+
+	// int
 	i, err := strconv.Atoi(value)
 	if err == nil {
 		return i
 	}
 
+	// float
 	f, err := strconv.ParseFloat(value, 64)
 	if err == nil {
 		return f

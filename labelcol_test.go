@@ -88,9 +88,10 @@ var quickLabelColDTypes = []DType{
 	FloatType,
 	StringType,
 	TimeType,
+	BoolType,
 }
 
-func quickLabelCol(name string, dtypeIdx int, size int, ival int, fval float64, sval string, tval int64) bool {
+func quickLabelCol(name string, dtypeIdx int, size int, ival int, fval float64, sval string, tval int64, bval bool) bool {
 	if size < 0 {
 		size = -size
 	}
@@ -114,6 +115,8 @@ func quickLabelCol(name string, dtypeIdx int, size int, ival int, fval float64, 
 		// tval is a int64 since testing/quick can't generate time.TIme
 		t := time.Unix(tval, tval%10000)
 		col, err = NewLabelColumn(name, t, size)
+	case BoolType:
+		col, err = NewLabelColumn(name, bval, size)
 	}
 
 	if err != nil {

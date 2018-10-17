@@ -83,9 +83,10 @@ var quickSliceColDTypes = []DType{
 	FloatType,
 	StringType,
 	TimeType,
+	BoolType,
 }
 
-func quickSliceCol(name string, dtypeIdx int, size int, ivals []int, fvals []float64, svals []string, tvals []int64) bool {
+func quickSliceCol(name string, dtypeIdx int, size int, ivals []int, fvals []float64, svals []string, tvals []int64, bvals []bool) bool {
 
 	if dtypeIdx < 0 {
 		dtypeIdx = -dtypeIdx
@@ -147,6 +148,15 @@ func quickSliceCol(name string, dtypeIdx int, size int, ivals []int, fvals []flo
 			data[i] = time.Unix(tval, tval%10000)
 		}
 
+		col, err = NewSliceColumn(name, data)
+	case BoolType:
+		if len(bvals) == 0 {
+			return true
+		}
+		data := make([]bool, size)
+		for i := 0; i < size; i++ {
+			data[i] = (i % 2) == 0
+		}
 		col, err = NewSliceColumn(name, data)
 	}
 
