@@ -15,6 +15,11 @@ matrix:
       - pipenv run python -m pytest -v
   - language: python
     python: "3.7-dev"
+    env:
+        - PATH=${PATH}:/opt/go
+    before_install:
+        - curl -LO https://dl.google.com/go/
+        - tar xzf go1.11.1.linux-amd64.tar.gz -C /opt/go
     script:
       - pip install pipenv
       - cd clients/py
