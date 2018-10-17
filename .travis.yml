@@ -19,7 +19,7 @@ matrix:
         - PATH=/opt/go:${PATH}
     before_install:
         - curl -LO https://dl.google.com/go/go1.11.1.linux-amd64.tar.gz
-        - tar xzf go1.11.1.linux-amd64.tar.gz -C /opt/go
+        - tar xzf go1.11.1.linux-amd64.tar.gz -C /opt
     script:
       - pip install pipenv
       - cd clients/py
