@@ -33,17 +33,19 @@ import (
 
 // Backend is a tsdb backend
 type Backend struct {
-	adapters map[string]*tsdb.V3ioAdapter
-	config   *frames.BackendConfig
-	logger   logger.Logger
+	adapters      map[string]*tsdb.V3ioAdapter
+	backendConfig *frames.BackendConfig
+	framesConfig  *frames.Config
+	logger        logger.Logger
 }
 
 // NewBackend return a new key/value backend
 func NewBackend(logger logger.Logger, cfg *frames.BackendConfig, framesConfig *frames.Config) (frames.DataBackend, error) {
 	newBackend := Backend{
-		adapters: map[string]*tsdb.V3ioAdapter{},
-		logger:   logger,
-		config:   cfg,
+		adapters:      map[string]*tsdb.V3ioAdapter{},
+		logger:        logger,
+		backendConfig: cfg,
+		framesConfig:  framesConfig,
 	}
 
 	/*	if cfg.Path != "" {
@@ -57,7 +59,7 @@ func NewBackend(logger logger.Logger, cfg *frames.BackendConfig, framesConfig *f
 	return &newBackend, nil
 }
 
-func newAdapter(cfg *frames.BackendConfig, path string) (*tsdb.V3ioAdapter, error) {
+func newAdapter(cfg *frames.BackendConfig, path, logLevel string) (*tsdb.V3ioAdapter, error) {
 
 	if path == "" {
 		path = cfg.Path
@@ -70,7 +72,7 @@ func newAdapter(cfg *frames.BackendConfig, path string) (*tsdb.V3ioAdapter, erro
 		Username:       cfg.Username,
 		Password:       cfg.Password,
 		Workers:        cfg.Workers,
-		LogLevel:       "info",
+		LogLevel:       logLevel,
 	}
 
 	var err error
@@ -98,7 +100,7 @@ func (b *Backend) GetAdapter(path string) (*tsdb.V3ioAdapter, error) {
 	//	b.adapters[path] = adapter
 	//}
 
-	adapter, err := newAdapter(b.config, path)
+	adapter, err := newAdapter(b.backendConfig, path, b.framesConfig.Log.Level)
 	if err != nil {
 		return nil, err
 	}
