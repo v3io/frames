@@ -37,7 +37,7 @@ func NewLogger(verbose string) (logger.Logger, error) {
 	}
 
 	logLevel := nucliozap.GetLevelByName(verbose)
-	log, err := nucliozap.NewNuclioZapCmd("v3io-prom", logLevel)
+	log, err := nucliozap.NewNuclioZapCmd("v3io-frames", logLevel)
 	if err != nil {
 		return nil, err
 	}
