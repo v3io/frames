@@ -106,20 +106,29 @@ func AppendNil(col frames.Column) error {
 }
 
 // ColAt return value at index i in column as interface{}
+// This is a slightly differnt use case than col.ValueAt, also we don't want to
+// use defer/recover due to performance overhead
 func ColAt(col frames.Column, i int) (interface{}, error) {
+	if i < 0 || i >= col.Len() {
+		return nil, fmt.Errorf("index %d out of range [0:%d]", i, col.Len()-1)
+	}
+
 	switch col.DType() {
 	case frames.IntType:
-		return col.IntAt(i), nil
+		return col.IntAt(i)
 	case frames.FloatType:
-		return col.FloatAt(i), nil
+		return col.FloatAt(i)
 	case frames.StringType:
-		return col.StringAt(i), nil
+		return col.StringAt(i)
 	case frames.TimeType: // TODO: Does v3io support time.Time?
-		asTime := col.TimeAt(i)
+		asTime, err := col.TimeAt(i)
+		if err != nil {
+			return nil, err
+		}
 		return asTime.Format(time.RFC3339Nano), nil // store as time string since v3io doesnt have native time format
 		//return col.TimeAt(i), nil
 	case frames.BoolType:
-		return col.BoolAt(i), nil
+		return col.BoolAt(i)
 	default:
 		return nil, fmt.Errorf("unknown column type - %s", col.DType())
 	}

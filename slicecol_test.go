@@ -64,7 +64,7 @@ func TestSliceColAPI(t *testing.T) {
 	}
 
 	for i := 0; i < col.Len(); i++ {
-		v := col.StringAt(i)
+		v, _ := col.StringAt(i)
 		if v != values[i] {
 			t.Fatalf("%d: bad value - %v\n", i, v)
 		}

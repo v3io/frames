@@ -184,19 +184,23 @@ func (a *Appender) indexValFunc(frame frames.Frame, name string) (func(int) stri
 	// strconv.Format* is about twice as fast as fmt.Sprintf
 	case frames.IntType:
 		fn = func(i int) string {
-			return strconv.FormatInt(int64(indexCol.IntAt(i)), 10)
+			ival, _ := indexCol.IntAt(i)
+			return strconv.FormatInt(int64(ival), 10)
 		}
 	case frames.FloatType:
 		fn = func(i int) string {
-			return strconv.FormatFloat(indexCol.FloatAt(i), 'f', -1, 64)
+			fval, _ := indexCol.FloatAt(i)
+			return strconv.FormatFloat(fval, 'f', -1, 64)
 		}
 	case frames.StringType:
 		fn = func(i int) string {
-			return indexCol.StringAt(i)
+			sval, _ := indexCol.StringAt(i)
+			return sval
 		}
 	case frames.TimeType:
 		fn = func(i int) string {
-			return indexCol.TimeAt(i).String()
+			tval, _ := indexCol.TimeAt(i)
+			return tval.Format(time.RFC3339Nano)
 		}
 	default:
 		return nil, fmt.Errorf("unknown column type - %v", indexCol.DType())

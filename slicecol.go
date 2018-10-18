@@ -86,10 +86,9 @@ func (sc *SliceColumn) Ints() ([]int, error) {
 	return typedCol, nil
 }
 
-// IntAt returns int value at index i (might panic)
-func (sc *SliceColumn) IntAt(i int) int {
-	typedCol, _ := sc.Ints()
-	return typedCol[i]
+// IntAt returns int value at index i
+func (sc *SliceColumn) IntAt(i int) (int, error) {
+	return intAt(sc, i)
 }
 
 // Floats returns data as []float64
@@ -102,17 +101,18 @@ func (sc *SliceColumn) Floats() ([]float64, error) {
 	return typedCol, nil
 }
 
-// FloatAt returns float64 value at index i (might panic)
-func (sc *SliceColumn) FloatAt(i int) float64 {
-	typedCol, _ := sc.Floats()
-	return typedCol[i]
+// FloatAt returns float64 value at index i
+func (sc *SliceColumn) FloatAt(i int) (float64, error) {
+	return floatAt(sc, i)
 }
 
-// intToFloat convert an int col to a float64 col
-func (sc *SliceColumn) intToFloat() {
+// convertToFloats convert an int col to a float64 col. It'll change the
+// underlying data array
+func (sc *SliceColumn) convertToFloats() {
 	newData := make([]float64, sc.size)
 	for i := 0; i < sc.size; i++ {
-		newData[i] = float64(sc.IntAt(i))
+		ival, _ := sc.IntAt(i)
+		newData[i] = float64(ival)
 	}
 	sc.data = newData
 }
@@ -131,15 +131,18 @@ func (sc *SliceColumn) Strings() []string {
 	switch dtype {
 	case IntType:
 		getString = func(i int) string {
-			return fmt.Sprintf("%v", sc.IntAt(i))
+			ival, _ := sc.IntAt(i)
+			return fmt.Sprintf("%v", ival)
 		}
 	case FloatType:
 		getString = func(i int) string {
-			return fmt.Sprintf("%v", sc.FloatAt(i))
+			fval, _ := sc.FloatAt(i)
+			return fmt.Sprintf("%v", fval)
 		}
 	case TimeType:
 		getString = func(i int) string {
-			return sc.TimeAt(i).Format(time.RFC3339Nano)
+			tval, _ := sc.TimeAt(i)
+			return tval.Format(time.RFC3339Nano)
 		}
 	default:
 		panic(fmt.Sprintf("unknown dtype - %v", dtype))
@@ -152,9 +155,9 @@ func (sc *SliceColumn) Strings() []string {
 	return typedCol
 }
 
-// StringAt returns string value at index i (might panic)
-func (sc *SliceColumn) StringAt(i int) string {
-	return sc.Strings()[i]
+// StringAt returns string value at index i
+func (sc *SliceColumn) StringAt(i int) (string, error) {
+	return stringAt(sc, i)
 }
 
 // Times returns data as []time.Time
@@ -167,10 +170,9 @@ func (sc *SliceColumn) Times() ([]time.Time, error) {
 	return typedCol, nil
 }
 
-// TimeAt returns time.Time value at index i (might panic)
-func (sc *SliceColumn) TimeAt(i int) time.Time {
-	typedCol, _ := sc.Times()
-	return typedCol[i]
+// TimeAt returns time.Time value at index i
+func (sc *SliceColumn) TimeAt(i int) (time.Time, error) {
+	return timeAt(sc, i)
 }
 
 // Bools returns data as []bool
@@ -183,10 +185,9 @@ func (sc *SliceColumn) Bools() ([]bool, error) {
 	return typedCol, nil
 }
 
-// BoolAt returns bool value at index i (might panic)
-func (sc *SliceColumn) BoolAt(i int) bool {
-	typedCol, _ := sc.Bools()
-	return typedCol[i]
+// BoolAt returns bool value at index i
+func (sc *SliceColumn) BoolAt(i int) (bool, error) {
+	return boolAt(sc, i)
 }
 
 // Slice returns a Column with is slice of data
@@ -225,7 +226,7 @@ func (sc *SliceColumn) Append(value interface{}) error {
 			if !ok {
 				return fmt.Errorf("wrong type for %s(%s) - %T", sc.name, sc.DType(), value)
 			}
-			sc.intToFloat()
+			sc.convertToFloats()
 			typedCol, _ := sc.Floats()
 			sc.data = append(typedCol, floatVal)
 		} else {
@@ -267,6 +268,14 @@ func (sc *SliceColumn) Append(value interface{}) error {
 
 	sc.size++
 	return nil
+}
+
+func (sc *SliceColumn) inBounds(i int) error {
+	if i >= 0 && i < sc.Len() {
+		return nil
+	}
+
+	return fmt.Errorf("index %d out of bounds [0:%d]", i, sc.Len())
 }
 
 // SliceColumnMessage is SliceColum over-the-wirte message

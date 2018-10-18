@@ -68,7 +68,7 @@ func TestLabelColAPI(t *testing.T) {
 	}
 
 	for i := 0; i < col.Len(); i++ {
-		v := col.FloatAt(i)
+		v, _ := col.FloatAt(i)
 		if v != value {
 			t.Fatalf("%d: bad value - %v\n", i, v)
 		}

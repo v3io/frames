@@ -22,7 +22,6 @@ package frames
 
 import (
 	"fmt"
-	"time"
 
 	"github.com/pkg/errors"
 )
@@ -62,34 +61,12 @@ func NewFrameFromMap(data map[string]interface{}) (Frame, error) {
 	var (
 		columns = make([]Column, len(data))
 		i       = 0
-		col     Column
-		err     error
 	)
 
 	for name, values := range data {
-		switch values.(type) {
-		case []int:
-			col, err = NewSliceColumn(name, values.([]int))
-			if err != nil {
-				return nil, errors.Wrap(err, "can't create int column")
-			}
-		case []float64:
-			col, err = NewSliceColumn(name, values.([]float64))
-			if err != nil {
-				return nil, errors.Wrap(err, "can't create float column")
-			}
-		case []string:
-			col, err = NewSliceColumn(name, values.([]string))
-			if err != nil {
-				return nil, errors.Wrap(err, "can't create string column")
-			}
-		case []time.Time:
-			col, err = NewSliceColumn(name, values.([]time.Time))
-			if err != nil {
-				return nil, errors.Wrap(err, "can't create time column")
-			}
-		default:
-			return nil, fmt.Errorf("unsupported data type - %T", values)
+		col, err := NewSliceColumn(name, values)
+		if err != nil {
+			return nil, errors.Wrapf(err, "can't create %T column", values)
 		}
 
 		columns[i] = col
@@ -157,6 +134,11 @@ func (mf *frameImpl) Slice(start int, end int) (Frame, error) {
 	}
 
 	return NewFrame(colSlices, indexSlices, mf.labels)
+}
+
+// FrameRowIterator returns iterator over rows
+func (mf *frameImpl) IterRows() FrameRowIterator {
+	return newRowIterator(mf)
 }
 
 // ColumnMessage is a for encoding a column

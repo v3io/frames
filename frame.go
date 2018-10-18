@@ -43,15 +43,15 @@ type Column interface {
 	Name() string                             // Column name
 	DType() DType                             // Data type (e.g. IntType, FloatType ...)
 	Ints() ([]int, error)                     // Data as []int
-	IntAt(i int) int                          // Int value at index i (might panic)
+	IntAt(i int) (int, error)                 // Int value at index i
 	Floats() ([]float64, error)               // Data as []float64
-	FloatAt(i int) float64                    // Float value at index i (might panic)
+	FloatAt(i int) (float64, error)           // Float value at index i
 	Strings() []string                        // Data as []string
-	StringAt(i int) string                    // String value at index i (might panic)
+	StringAt(i int) (string, error)           // String value at index i
 	Times() ([]time.Time, error)              // Data as []time.Time
-	TimeAt(i int) time.Time                   // time.Time value at index i (might panic)
+	TimeAt(i int) (time.Time, error)          // time.Time value at index i
 	Bools() ([]bool, error)                   // Data as []bool
-	BoolAt(i int) bool                        // bool value at index i (might panic)
+	BoolAt(i int) (bool, error)               // bool value at index i
 	Slice(start int, end int) (Column, error) // Slice of data
 	Append(value interface{}) error           // Append a value
 }
@@ -64,4 +64,15 @@ type Frame interface {
 	Len() int                                // Number of rows
 	Column(name string) (Column, error)      // Column by name
 	Slice(start int, end int) (Frame, error) // Slice of Frame
+	IterRows() FrameRowIterator              // Iterate over rows
+}
+
+// FrameRowIterator is an iterator over frame rows
+type FrameRowIterator interface {
+	Next() bool                      // Advance to next row
+	Row() map[string]interface{}     // Row as map of name->value
+	RowNum() int                     // Current row number
+	Index() interface{}              // Index value
+	Indices() map[string]interface{} // MultiIndex as name->value
+	Err() error                      // Iteration error
 }

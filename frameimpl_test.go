@@ -53,12 +53,12 @@ func TestFrameNew(t *testing.T) {
 
 		switch i {
 		case 0:
-			val := col.IntAt(0)
+			val, _ := col.IntAt(0)
 			if val != val0 {
 				t.Fatalf("%d: value mismatch - %d != %d", i, val, val0)
 			}
 		case 1:
-			val := col.StringAt(0)
+			val, _ := col.StringAt(0)
 			if val != val1 {
 				t.Fatalf("%d: value mismatch - %q != %q", i, val, val1)
 			}
