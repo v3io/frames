@@ -103,11 +103,9 @@ func (lc *LabelColumn) Ints() ([]int, error) {
 	return data, nil
 }
 
-// IntAt returns int value at index i (might panic)
-func (lc *LabelColumn) IntAt(i int) int {
-	lc.panicIfOutOfBounds(i)
-
-	return lc.value.(int)
+// IntAt returns int value at index i
+func (lc *LabelColumn) IntAt(i int) (int, error) {
+	return intAt(lc, i)
 }
 
 // Floats returns data as []float64
@@ -125,11 +123,9 @@ func (lc *LabelColumn) Floats() ([]float64, error) {
 	return data, nil
 }
 
-// FloatAt returns float64 value at index i (might panic)
-func (lc *LabelColumn) FloatAt(i int) float64 {
-	lc.panicIfOutOfBounds(i)
-
-	return lc.value.(float64)
+// FloatAt returns float64 value at index i
+func (lc *LabelColumn) FloatAt(i int) (float64, error) {
+	return floatAt(lc, i)
 }
 
 // Strings returns data as []string
@@ -151,11 +147,9 @@ func (lc *LabelColumn) Strings() []string {
 	return data
 }
 
-// StringAt returns string value at index i (might panic)
-func (lc *LabelColumn) StringAt(i int) string {
-	lc.panicIfOutOfBounds(i)
-
-	return lc.value.(string)
+// StringAt returns string value at index i
+func (lc *LabelColumn) StringAt(i int) (string, error) {
+	return stringAt(lc, i)
 }
 
 // Times returns data as []time.Time
@@ -173,11 +167,9 @@ func (lc *LabelColumn) Times() ([]time.Time, error) {
 	return data, nil
 }
 
-// TimeAt returns time.Time value at index i (might panic)
-func (lc *LabelColumn) TimeAt(i int) time.Time {
-	lc.panicIfOutOfBounds(i)
-
-	return lc.value.(time.Time)
+// TimeAt returns time.Time value at index i
+func (lc *LabelColumn) TimeAt(i int) (time.Time, error) {
+	return timeAt(lc, i)
 }
 
 // Bools returns data as []bool
@@ -195,11 +187,9 @@ func (lc *LabelColumn) Bools() ([]bool, error) {
 	return data, nil
 }
 
-// BoolAt returns bool value at index i (might panic)
-func (lc *LabelColumn) BoolAt(i int) bool {
-	lc.panicIfOutOfBounds(i)
-
-	return lc.value.(bool)
+// BoolAt returns bool value at index i
+func (lc *LabelColumn) BoolAt(i int) (bool, error) {
+	return boolAt(lc, i)
 }
 
 // Slice returns a Column with is slice of data
@@ -218,15 +208,6 @@ func (lc *LabelColumn) Append(value interface{}) error {
 	}
 	lc.size++
 	return nil
-}
-
-func (lc *LabelColumn) panicIfOutOfBounds(i int) {
-	if i >= 0 && i < lc.Len() {
-		return
-	}
-
-	msg := fmt.Sprintf("index %d out of range [0:%d]", i, lc.Len()-1)
-	panic(msg)
 }
 
 // LabelColumnMessage is over-the-wire LabelColumn message

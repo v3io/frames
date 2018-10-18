@@ -76,8 +76,7 @@ func TestEnd2End(t *testing.T) {
 
 	frame, err := makeFrame()
 	if err != nil {
-		fmt.Printf("can't create frame - %s", err)
-		return
+		t.Fatalf("can't create frame - %s", err)
 	}
 
 	tableName := "e2e"

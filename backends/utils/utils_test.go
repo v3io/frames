@@ -85,7 +85,7 @@ func TestAppendNil(t *testing.T) {
 		t.Fatalf("bad size change - %d != %d", newSize, size+1)
 	}
 
-	val := col.FloatAt(size)
+	val, _ := col.FloatAt(size)
 	if !math.IsNaN(val) {
 		t.Fatalf("AppendNil didn't add NaN to floats (got %v)", val)
 	}
