@@ -276,7 +276,7 @@ class Client(object):
         request = {
             'backend': backend,
             'table': table,
-            'attributed': attrs,
+            'attributes': attrs,
             'schema': schema,
         }
 
