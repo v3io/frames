@@ -36,6 +36,7 @@ type Backend struct {
 	adapters      map[string]*tsdb.V3ioAdapter
 	backendConfig *frames.BackendConfig
 	framesConfig  *frames.Config
+	tsdbConfig    *config.V3ioConfig
 	logger        logger.Logger
 }
 
@@ -48,6 +49,23 @@ func NewBackend(logger logger.Logger, cfg *frames.BackendConfig, framesConfig *f
 		framesConfig:  framesConfig,
 	}
 
+	tsdbConfig := &config.V3ioConfig{
+		WebApiEndpoint: cfg.V3ioURL,
+		Container:      cfg.Container,
+		Username:       cfg.Username,
+		Password:       cfg.Password,
+		Workers:        cfg.Workers,
+		LogLevel:       framesConfig.Log.Level,
+	}
+
+	_, err := config.GetOrLoadFromStruct(tsdbConfig)
+	if err != nil {
+		// if we couldn't load the file and its not the default
+		return nil, err
+	}
+
+	newBackend.tsdbConfig = tsdbConfig
+
 	/*	if cfg.Path != "" {
 			adapter, err := newAdapter(cfg, cfg.Path)
 			if err != nil {
@@ -59,32 +77,15 @@ func NewBackend(logger logger.Logger, cfg *frames.BackendConfig, framesConfig *f
 	return &newBackend, nil
 }
 
-func newAdapter(cfg *frames.BackendConfig, path, logLevel string) (*tsdb.V3ioAdapter, error) {
+func (b *Backend) newAdapter(path string) (*tsdb.V3ioAdapter, error) {
 
 	if path == "" {
-		path = cfg.Path
+		path = b.backendConfig.Path
 	}
 
-	tsdbConfig := &config.V3ioConfig{
-		WebApiEndpoint: cfg.V3ioURL,
-		Container:      cfg.Container,
-		TablePath:      path,
-		Username:       cfg.Username,
-		Password:       cfg.Password,
-		Workers:        cfg.Workers,
-		LogLevel:       logLevel,
-	}
-
-	var err error
-	//tsdbConfig, err = config.GetOrLoadFromFile("v3io2.yaml")
-	_, err = config.GetOrLoadFromStruct(tsdbConfig)
-	if err != nil {
-		// if we couldn't load the file and its not the default
-		return nil, err
-	}
-
-	fmt.Println("conf:", tsdbConfig)
-	adapter, err := tsdb.NewV3ioAdapter(tsdbConfig, nil, nil)
+	b.tsdbConfig.TablePath = path
+	fmt.Println("conf:", b.tsdbConfig)
+	adapter, err := tsdb.NewV3ioAdapter(b.tsdbConfig, nil, nil)
 	if err != nil {
 		return nil, err
 	}
@@ -100,7 +101,7 @@ func (b *Backend) GetAdapter(path string) (*tsdb.V3ioAdapter, error) {
 	//	b.adapters[path] = adapter
 	//}
 
-	adapter, err := newAdapter(b.backendConfig, path, b.framesConfig.Log.Level)
+	adapter, err := b.newAdapter(path)
 	if err != nil {
 		return nil, err
 	}

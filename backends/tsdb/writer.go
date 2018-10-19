@@ -103,9 +103,9 @@ func (a *tsdbAppender) Add(frame frames.Frame) error {
 
 	for i := 0; i < frame.Len(); i++ {
 		t := times[i].UnixNano() / 1000 / 1000
-		fmt.Printf("t: %s ,", times[i].String())
 		tarray[i] = t
 	}
+	a.logger.DebugWith("Write Frame", "len", len(tarray), "names", names, "idxlen", len(frame.Indices()))
 
 	if len(tarray) > 1 && tarray[0] > tarray[len(tarray)-1] {
 		return errors.Wrap(err, "time column is out of order (need to be sorted by ascending time)")
