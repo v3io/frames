@@ -27,6 +27,9 @@ import (
 	"github.com/v3io/frames"
 	"github.com/v3io/frames/backends"
 
+	"github.com/pkg/errors"
+	"github.com/v3io/frames/v3ioutils"
+	"github.com/v3io/v3io-go-http"
 	"github.com/v3io/v3io-tsdb/pkg/config"
 	"github.com/v3io/v3io-tsdb/pkg/tsdb"
 )
@@ -38,13 +41,14 @@ type Backend struct {
 	framesConfig  *frames.Config
 	tsdbConfig    *config.V3ioConfig
 	logger        logger.Logger
+	container     *v3io.Container
 }
 
 // NewBackend return a new key/value backend
 func NewBackend(logger logger.Logger, cfg *frames.BackendConfig, framesConfig *frames.Config) (frames.DataBackend, error) {
 	newBackend := Backend{
 		adapters:      map[string]*tsdb.V3ioAdapter{},
-		logger:        logger,
+		logger:        logger.GetChild("tsdb"),
 		backendConfig: cfg,
 		framesConfig:  framesConfig,
 	}
@@ -66,6 +70,13 @@ func NewBackend(logger logger.Logger, cfg *frames.BackendConfig, framesConfig *f
 
 	newBackend.tsdbConfig = tsdbConfig
 
+	container, err := v3ioutils.CreateContainer(logger,
+		cfg.V3ioURL, cfg.Container, cfg.Username, cfg.Password, cfg.Workers)
+	if err != nil {
+		return nil, errors.Wrap(err, "Failed to create V3IO data container")
+	}
+	newBackend.container = container
+
 	/*	if cfg.Path != "" {
 			adapter, err := newAdapter(cfg, cfg.Path)
 			if err != nil {
@@ -85,7 +96,7 @@ func (b *Backend) newAdapter(path string) (*tsdb.V3ioAdapter, error) {
 
 	b.tsdbConfig.TablePath = path
 	fmt.Println("conf:", b.tsdbConfig)
-	adapter, err := tsdb.NewV3ioAdapter(b.tsdbConfig, nil, nil)
+	adapter, err := tsdb.NewV3ioAdapter(b.tsdbConfig, b.container, b.logger)
 	if err != nil {
 		return nil, err
 	}

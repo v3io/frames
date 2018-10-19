@@ -54,7 +54,7 @@ func NewBackend(logger logger.Logger, config *frames.BackendConfig, framesConfig
 	}
 
 	newBackend := Backend{
-		logger:     logger,
+		logger:     logger.GetChild("kv"),
 		container:  container,
 		numWorkers: config.Workers,
 	}

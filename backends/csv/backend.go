@@ -46,7 +46,7 @@ type Backend struct {
 func NewBackend(logger logger.Logger, config *frames.BackendConfig, framesConfig *frames.Config) (frames.DataBackend, error) {
 	backend := &Backend{
 		rootDir: config.RootDir,
-		logger:  logger,
+		logger:  logger.GetChild("csv"),
 	}
 
 	return backend, nil
