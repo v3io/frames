@@ -18,57 +18,34 @@ under the Apache 2.0 license is conditioned upon your compliance with
 such restriction.
 */
 
-package tsdb
+package stream
 
 import (
 	"fmt"
 	"github.com/nuclio/logger"
-
+	"github.com/pkg/errors"
 	"github.com/v3io/frames"
 	"github.com/v3io/frames/backends"
-
-	"github.com/pkg/errors"
 	"github.com/v3io/frames/v3ioutils"
 	"github.com/v3io/v3io-go-http"
-	"github.com/v3io/v3io-tsdb/pkg/config"
-	"github.com/v3io/v3io-tsdb/pkg/tsdb"
+	"strings"
 )
 
 // Backend is a tsdb backend
 type Backend struct {
-	adapters      map[string]*tsdb.V3ioAdapter
 	backendConfig *frames.BackendConfig
 	framesConfig  *frames.Config
-	tsdbConfig    *config.V3ioConfig
 	logger        logger.Logger
 	container     *v3io.Container
 }
 
-// NewBackend return a new tsdb backend
+// NewBackend return a new v3io stream backend
 func NewBackend(logger logger.Logger, cfg *frames.BackendConfig, framesConfig *frames.Config) (frames.DataBackend, error) {
 	newBackend := Backend{
-		adapters:      map[string]*tsdb.V3ioAdapter{},
-		logger:        logger.GetChild("tsdb"),
+		logger:        logger.GetChild("stream"),
 		backendConfig: cfg,
 		framesConfig:  framesConfig,
 	}
-
-	tsdbConfig := &config.V3ioConfig{
-		WebApiEndpoint: cfg.V3ioURL,
-		Container:      cfg.Container,
-		Username:       cfg.Username,
-		Password:       cfg.Password,
-		Workers:        cfg.Workers,
-		LogLevel:       framesConfig.Log.Level,
-	}
-
-	_, err := config.GetOrLoadFromStruct(tsdbConfig)
-	if err != nil {
-		// if we couldn't load the file and its not the default
-		return nil, err
-	}
-
-	newBackend.tsdbConfig = tsdbConfig
 
 	container, err := v3ioutils.CreateContainer(logger,
 		cfg.V3ioURL, cfg.Container, cfg.Username, cfg.Password, cfg.Workers)
@@ -77,51 +54,43 @@ func NewBackend(logger logger.Logger, cfg *frames.BackendConfig, framesConfig *f
 	}
 	newBackend.container = container
 
-	/*	if cfg.Path != "" {
-			adapter, err := newAdapter(cfg, cfg.Path)
-			if err != nil {
-				return nil, err
-			}
-			newBackend.adapters[cfg.Path] = adapter
-		}
-	*/
 	return &newBackend, nil
-}
-
-func (b *Backend) newAdapter(path string) (*tsdb.V3ioAdapter, error) {
-
-	if path == "" {
-		path = b.backendConfig.Path
-	}
-
-	b.tsdbConfig.TablePath = path
-	fmt.Println("conf:", b.tsdbConfig)
-	adapter, err := tsdb.NewV3ioAdapter(b.tsdbConfig, b.container, b.logger)
-	if err != nil {
-		return nil, err
-	}
-
-	return adapter, nil
-}
-
-// GetAdapter returns an adapter
-func (b *Backend) GetAdapter(path string) (*tsdb.V3ioAdapter, error) {
-	// TODO: maintain adapter cache, for now create new per read/write request
-	//adapter, ok := b.adapters[path]
-	//if !ok {
-	//	b.adapters[path] = adapter
-	//}
-
-	adapter, err := b.newAdapter(path)
-	if err != nil {
-		return nil, err
-	}
-	return adapter, nil
 }
 
 // Create creates a table
 func (b *Backend) Create(request *frames.CreateRequest) error {
-	return fmt.Errorf("Create not implemented")
+
+	var isInt bool
+
+	shards := 1
+	shardsVar, ok := request.Attributes["shards"]
+	if ok {
+		shards, isInt = shardsVar.(int)
+		if !isInt || shards < 1 {
+			return errors.Errorf("Shards attribute must be a positive integer (got %v)", shardsVar)
+		}
+	}
+
+	retention := 24
+	retentionVar, ok := request.Attributes["retention_hours"]
+	if ok {
+		retention, isInt = retentionVar.(int)
+		if !isInt || shards < 1 {
+			return errors.Errorf("retention_hours attribute must be a positive integer (got %v)", retentionVar)
+		}
+	}
+
+	if !strings.HasSuffix(request.Table, "/") {
+		request.Table += "/"
+	}
+
+	err := b.container.Sync.CreateStream(&v3io.CreateStreamInput{
+		Path: request.Table, ShardCount: shards, RetentionPeriodHours: retention})
+	if err != nil {
+		b.logger.ErrorWith("CreateStream failed", "path", request.Table, "err", err)
+	}
+
+	return nil
 }
 
 // Delete deletes a table or part of it
@@ -130,7 +99,7 @@ func (b *Backend) Delete(request *frames.DeleteRequest) error {
 }
 
 func init() {
-	if err := backends.Register("tsdb", NewBackend); err != nil {
+	if err := backends.Register("stream", NewBackend); err != nil {
 		panic(err)
 	}
 }
