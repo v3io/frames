@@ -46,8 +46,14 @@ func (b *Backend) Write(request *frames.WriteRequest) (frames.FrameAppender, err
 		logger:       b.logger,
 	}
 
-	return &appender, nil
+	if request.ImmidiateData != nil {
+		err := appender.Add(request.ImmidiateData)
+		if err != nil {
+			return &appender, err
+		}
+	}
 
+	return &appender, nil
 }
 
 type streamAppender struct {
