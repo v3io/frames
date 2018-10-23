@@ -151,6 +151,11 @@ type ReadRequest struct {
 	End         string `json:"end"`
 	StepRaw     string `json:"step"`        // time.Duration format
 	Aggragators string `json:"aggragators"` // TSDB aggregation functions
+
+	// Stream specific fields
+	Seek     string `json:"seek"`
+	ShardID  string `json:"shard"`
+	Sequence int    `json:"sequence"`
 }
 
 // JoinStruct is join data

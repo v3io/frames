@@ -21,9 +21,11 @@ such restriction.
 package stream
 
 import (
+	"encoding/json"
 	"fmt"
 	"github.com/v3io/frames"
 	"github.com/v3io/v3io-go-http"
+	"github.com/v3io/v3io-tsdb/pkg/utils"
 	"strings"
 	"time"
 )
@@ -34,28 +36,42 @@ type streamIterator struct {
 	currFrame    frames.Frame
 	nextLocation string
 	b            *Backend
+	endTime      int
+	isLast       bool
 }
 
 func (b *Backend) Read(request *frames.ReadRequest) (frames.FrameIterator, error) {
 
 	iter := streamIterator{request: request, b: b}
 
-	if request.Table == "" {
-		return nil, fmt.Errorf("missing stream path (<stream>/<shard-id>")
+	if request.Table == "" || request.Seek == "" || request.ShardID == "" {
+		return nil, fmt.Errorf("missing essential paramaters, need: table, seek, shard parameters")
 	}
-	input := v3io.SeekShardInput{Path: request.Table}
+	input := v3io.SeekShardInput{Path: request.Table + "/" + request.ShardID}
 
 	if request.MaxInMessage == 0 {
 		request.MaxInMessage = 1024
 	}
 
-	switch strings.ToLower(request.Start) {
+	if request.End != "" {
+		endTime, err := utils.Str2unixTime(request.End)
+		if err != nil {
+			return nil, err
+		}
+		iter.endTime = int(endTime)
+	}
+
+	switch strings.ToLower(request.Seek) {
 	case "time":
 		input.Type = v3io.SeekShardInputTypeTime
-		//input.Timestamp = commandeer.time
+		seekTime, err := utils.Str2unixTime(request.Start)
+		if err != nil {
+			return nil, err
+		}
+		input.Timestamp = int(seekTime / 1000)
 	case "seq", "sequence":
 		input.Type = v3io.SeekShardInputTypeSequence
-		//input.StartingSequenceNumber = commandeer.sequence
+		input.StartingSequenceNumber = request.Sequence
 	case "latest", "late":
 		input.Type = v3io.SeekShardInputTypeLatest
 	case "earliest":
@@ -68,7 +84,7 @@ func (b *Backend) Read(request *frames.ReadRequest) (frames.FrameIterator, error
 
 	resp, err := b.container.Sync.SeekShard(&input)
 	if err != nil {
-		return nil, fmt.Errorf("Error in Seek operation, make sure the path include the shard id (e.g. <stream>/0) - %v", err)
+		return nil, fmt.Errorf("Error in Seek operation - %v", err)
 	}
 	iter.nextLocation = resp.Output.(*v3io.SeekShardOutput).Location
 
@@ -77,8 +93,12 @@ func (b *Backend) Read(request *frames.ReadRequest) (frames.FrameIterator, error
 
 func (i *streamIterator) Next() bool {
 
+	if i.isLast {
+		return false
+	}
+
 	resp, err := i.b.container.Sync.GetRecords(&v3io.GetRecordsInput{
-		Path:     i.request.Table,
+		Path:     i.request.Table + "/" + i.request.ShardID,
 		Location: i.nextLocation,
 		Limit:    i.request.MaxInMessage,
 	})
@@ -89,18 +109,42 @@ func (i *streamIterator) Next() bool {
 	}
 
 	output := resp.Output.(*v3io.GetRecordsOutput)
+	rows := []map[string]interface{}{}
+	var lastSequence int
 	for _, r := range output.Records {
+
+		if i.endTime > 0 && r.ArrivalTimeSec > i.endTime {
+			i.isLast = true
+			break
+		}
 
 		recTime := time.Unix(int64(r.ArrivalTimeSec), int64(r.ArrivalTimeNSec))
 		i.b.logger.DebugWith("got stream record", "Time:", recTime, "Seq:", r.SequenceNumber, "Body:", string(r.Data))
 
-		// TODO: unmarshal data (json/msgpack) and convert to column struct
+		row := map[string]interface{}{}
+		err := json.Unmarshal(r.Data, &row)
+		if err != nil {
+			i.err = fmt.Errorf("Failed to unmarshal result - %v", err)
+			return false
+		}
+		row["stream_time"] = recTime
+
+		rows = append(rows, row)
 	}
 
+	labels := map[string]interface{}{"last_seq": lastSequence}
+	frame, err := frames.NewFrameFromRows(rows, []string{}, labels)
+	if err != nil {
+		i.err = fmt.Errorf("Failed to create frame - %v", err)
+		return false
+	}
+	i.currFrame = frame
+
 	i.nextLocation = output.NextLocation
+	i.isLast = i.isLast || (output.RecordsBehindLatest == 0)
 
 	// TODO: add timeout option, keep polling on stream for t more time
-	return output.RecordsBehindLatest != 0
+	return true
 }
 
 func (i *streamIterator) Err() error {

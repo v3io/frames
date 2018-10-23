@@ -137,7 +137,7 @@ func (it *rowIterator) frameColumns(frame Frame) ([]Column, error) {
 
 func (it *rowIterator) getRow(rowNum int, columns []Column) (map[string]interface{}, error) {
 	row := make(map[string]interface{})
-	for _, col := range it.columns {
+	for _, col := range columns {
 		var value interface{}
 		var err error
 		switch col.DType() {
@@ -159,7 +159,12 @@ func (it *rowIterator) getRow(rowNum int, columns []Column) (map[string]interfac
 			return nil, err
 		}
 
-		row[col.Name()] = value
+		// TODO: tmp bug fix (when index name is "")
+		name := col.Name()
+		if name == "" {
+			name = "__name__"
+		}
+		row[name] = value
 	}
 
 	return row, nil

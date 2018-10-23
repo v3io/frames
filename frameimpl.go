@@ -79,7 +79,7 @@ func NewFrameFromMap(data map[string]interface{}) (Frame, error) {
 }
 
 // NewFrameFromRows creates a new frame from rows
-func NewFrameFromRows(rows []map[string]interface{}, indices []string) (Frame, error) {
+func NewFrameFromRows(rows []map[string]interface{}, indices []string, labels map[string]interface{}) (Frame, error) {
 	allCols := make(map[string]Column)
 	for rowNum, row := range rows {
 		for name, value := range row {
@@ -110,7 +110,7 @@ func NewFrameFromRows(rows []map[string]interface{}, indices []string) (Frame, e
 		}
 	}
 
-	return NewFrame(dataCols, indexCols, nil)
+	return NewFrame(dataCols, indexCols, labels)
 }
 
 // Names returns the column names

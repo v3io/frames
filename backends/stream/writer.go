@@ -74,7 +74,7 @@ func (a *streamAppender) Add(frame frames.Frame) error {
 	iter := frame.IterRows()
 	for iter.Next() {
 
-		body, err := json.Marshal(iter.Row(false))
+		body, err := json.Marshal(iter.Row(true))
 		if err != nil {
 			return err
 		}
