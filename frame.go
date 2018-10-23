@@ -69,10 +69,10 @@ type Frame interface {
 
 // FrameRowIterator is an iterator over frame rows
 type FrameRowIterator interface {
-	Next() bool                      // Advance to next row
-	Row() map[string]interface{}     // Row as map of name->value
-	RowNum() int                     // Current row number
-	Index() interface{}              // Index value
-	Indices() map[string]interface{} // MultiIndex as name->value
-	Err() error                      // Iteration error
+	Next() bool                                   // Advance to next row
+	Row(includeIndex bool) map[string]interface{} // Row as map of name->value
+	RowNum() int                                  // Current row number
+	Index() interface{}                           // Index value
+	Indices() map[string]interface{}              // MultiIndex as name->value
+	Err() error                                   // Iteration error
 }

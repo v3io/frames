@@ -36,7 +36,7 @@ func TestRowIterator(t *testing.T) {
 			t.Fatalf("rowNum mismatch %d != %d", rowNum, it.RowNum())
 		}
 
-		row := it.Row()
+		row := it.Row(false)
 		if row == nil {
 			t.Fatalf("empty row")
 		}
@@ -107,4 +107,25 @@ func TestRowIteratorIndex(t *testing.T) {
 
 func TestRowIteratorIndices(t *testing.T) {
 	t.Skip("TODO")
+}
+
+func TestRowAll(t *testing.T) {
+	frame, err := makeFrame()
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	it := frame.IterRows()
+	if ok := it.Next(); !ok {
+		t.Fatalf("can't advance iterator")
+	}
+
+	if err := it.Err(); err != nil {
+		t.Fatalf("error in next - %s", err)
+	}
+
+	row := it.Row(true)
+	if len(row) != len(frame.Names())+len(frame.Indices()) {
+		t.Fatalf("bad row - %+v\n", row)
+	}
 }
