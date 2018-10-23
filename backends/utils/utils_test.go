@@ -63,7 +63,7 @@ func TestNewColumn(t *testing.T) {
 		t.Fatalf("bad new column %v != %v", out, expected)
 	}
 
-	_, err = NewColumn(false, 2)
+	_, err = NewColumn('a', 2)
 	if err == nil {
 		t.Fatal("no error on unknown type")
 	}

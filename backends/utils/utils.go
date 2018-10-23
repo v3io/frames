@@ -84,6 +84,8 @@ func NewColumn(value interface{}, size int) (interface{}, error) {
 		return make([]string, size), nil
 	case time.Time:
 		return make([]time.Time, size), nil
+	case bool:
+		return make([]bool, size), nil
 	}
 
 	return nil, fmt.Errorf("unknown type - %T", value)
@@ -100,6 +102,8 @@ func AppendNil(col frames.Column) error {
 		return col.Append("")
 	case frames.TimeType:
 		return col.Append(time.Unix(0, 0))
+	case frames.BoolType:
+		return col.Append(false)
 	}
 
 	return fmt.Errorf("unsupported data type - %s", col.DType())

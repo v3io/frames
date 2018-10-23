@@ -22,6 +22,8 @@ package frames
 
 import (
 	"fmt"
+	"math"
+	"time"
 
 	"github.com/pkg/errors"
 )
@@ -74,6 +76,41 @@ func NewFrameFromMap(data map[string]interface{}) (Frame, error) {
 	}
 
 	return NewFrame(columns, nil, nil)
+}
+
+// NewFrameFromRows creates a new frame from rows
+func NewFrameFromRows(rows []map[string]interface{}, indices []string) (Frame, error) {
+	allCols := make(map[string]Column)
+	for rowNum, row := range rows {
+		for name, value := range row {
+			col, ok := allCols[name]
+
+			if !ok {
+				var err error
+				col, err = newColumn(name, value)
+				if err != nil {
+					return nil, err
+				}
+				allCols[name] = col
+			}
+
+			extendCol(col, rowNum)
+			if err := col.Append(value); err != nil {
+				return nil, err
+			}
+		}
+	}
+
+	var dataCols, indexCols []Column
+	for name, col := range allCols {
+		if inSlice(name, indices) {
+			indexCols = append(indexCols, col)
+		} else {
+			dataCols = append(dataCols, col)
+		}
+	}
+
+	return NewFrame(dataCols, indexCols, nil)
 }
 
 // Names returns the column names
@@ -267,4 +304,68 @@ func sliceCols(columns []Column, start int, end int) ([]Column, error) {
 	}
 
 	return slices, nil
+}
+
+func zeroValue(dtype DType) (interface{}, error) {
+	switch dtype {
+	case IntType:
+		return int(0), nil
+	case FloatType:
+		return math.NaN(), nil
+	case StringType:
+		return "", nil
+	case TimeType:
+		return time.Unix(0, 0), nil
+	case BoolType:
+		return false, nil
+	}
+
+	return nil, fmt.Errorf("unsupported data type - %s", dtype)
+}
+
+// TODO: Unite with backend/utils.AppendNil
+func extendCol(col Column, size int) error {
+	value, err := zeroValue(col.DType())
+	if err != nil {
+		return err
+	}
+
+	for col.Len() < size {
+		if err := col.Append(value); err != nil {
+			return err
+		}
+	}
+
+	return nil
+}
+
+// TODO: Unite with backend/utils
+func newColumn(name string, value interface{}) (Column, error) {
+	var data interface{}
+	switch value.(type) {
+	case int:
+		data = []int{}
+	case float64:
+		data = []float64{}
+	case string:
+		data = []string{}
+	case time.Time:
+		data = []time.Time{}
+	case bool:
+		data = []bool{}
+	default:
+		return nil, fmt.Errorf("unsupported type %T", value)
+	}
+
+	return NewSliceColumn(name, data)
+}
+
+func inSlice(name string, names []string) bool {
+	for _, n := range names {
+		if name == n {
+			return true
+		}
+	}
+
+	return false
 }

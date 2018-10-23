@@ -110,6 +110,32 @@ func TestFrameIndex(t *testing.T) {
 	if len(frame.Indices()) != len(indices) {
 		t.Fatalf("index len mismatch (%d != %d)", len(frame.Indices()), len(indices))
 	}
+}
+
+func TestNewFrameFromRows(t *testing.T) {
+	rows := []map[string]interface{}{
+		{"x": 1, "y": "a"},
+		{"x": 2, "z": 1.0},
+		{"x": 3, "y": "b", "z": 2.0},
+	}
+
+	indices := []string{"z"}
+	frame, err := NewFrameFromRows(rows, indices)
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	if frame.Len() != len(rows) {
+		t.Fatalf("rows len mismatch %d != %d", frame.Len(), len(rows))
+	}
+
+	if len(frame.Names()) != 2 {
+		t.Fatalf("columns len mismatch %d != %d", len(frame.Names()), 2)
+	}
+
+	if len(frame.Indices()) != len(indices) {
+		t.Fatalf("indices len mismatch %d != %d", len(frame.Indices()), len(rows))
+	}
 
 }
 
