@@ -91,8 +91,22 @@ func (it *rowIterator) Err() error {
 	return it.err
 }
 
-func (it *rowIterator) Row() map[string]interface{} {
-	return it.row
+func (it *rowIterator) Row(includeIndex bool) map[string]interface{} {
+	if !includeIndex {
+		return it.row
+	}
+
+	// TODO: Do we want to keep a copy of this?
+	allCols := make(map[string]interface{})
+	for key, value := range it.row {
+		allCols[key] = value
+	}
+
+	for key, value := range it.indices {
+		allCols[key] = value
+	}
+
+	return allCols
 }
 
 func (it *rowIterator) Index() interface{} {
