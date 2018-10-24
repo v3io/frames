@@ -120,7 +120,7 @@ func TestNewFrameFromRows(t *testing.T) {
 	}
 
 	indices := []string{"z"}
-	frame, err := NewFrameFromRows(rows, indices)
+	frame, err := NewFrameFromRows(rows, indices, nil)
 	if err != nil {
 		t.Fatal(err)
 	}
