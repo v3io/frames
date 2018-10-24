@@ -248,9 +248,10 @@ func (s *Server) handleWrite(ctx *fasthttp.RequestCtx) {
 	close(ch)
 	<-done
 
+	// TODO: need to fix, writeError is not a decoding error, not sure why we dont address it right after the .Write()
 	if writeError != nil {
-		s.logger.ErrorWith("decode error", "error", err)
-		ctx.Error("decode error", http.StatusInternalServerError)
+		s.logger.ErrorWith("decode error", "error", writeError)
+		ctx.Error("decode error: "+string(writeError.Error()), http.StatusInternalServerError)
 		return
 	}
 

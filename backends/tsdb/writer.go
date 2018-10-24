@@ -107,10 +107,6 @@ func (a *tsdbAppender) Add(frame frames.Frame) error {
 	}
 	a.logger.DebugWith("Write Frame", "len", len(tarray), "names", names, "idxlen", len(frame.Indices()))
 
-	if len(tarray) > 1 && tarray[0] > tarray[len(tarray)-1] {
-		return errors.Wrap(err, "time column is out of order (need to be sorted by ascending time)")
-	}
-
 	values := make([][]float64, len(names))
 	for i, name := range names {
 		col, err := frame.Column(name)
@@ -135,6 +131,10 @@ func (a *tsdbAppender) Add(frame frames.Frame) error {
 	}
 
 	if len(frame.Indices()) == 1 {
+
+		if len(tarray) > 1 && tarray[0] > tarray[len(tarray)-1] {
+			return errors.New("time column is out of order (need to be sorted by ascending time)")
+		}
 
 		// in case we have a single index with or without labels
 		metrics := make([]*metricCtx, 0, len(names))

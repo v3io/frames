@@ -150,10 +150,14 @@ func (api *API) Write(request *frames.WriteRequest, in chan frames.Frame) (int, 
 	api.logger.Debug("write done")
 
 	// TODO: Specify timeout in request?
-	if err := appender.WaitForComplete(3 * time.Minute); err != nil {
-		msg := "can't wait for completion"
-		api.logger.ErrorWith(msg, "error", err)
-		return nFrames, nRows, errors.Wrap(err, msg)
+	if nRows > 0 {
+		if err := appender.WaitForComplete(5 * time.Second); err != nil {
+			msg := "can't wait for completion"
+			api.logger.ErrorWith(msg, "error", err)
+			return nFrames, nRows, errors.Wrap(err, msg)
+		}
+	} else {
+		api.logger.DebugWith("write request with zero rows", "frames", nFrames, "requst", request)
 	}
 
 	return nFrames, nRows, nil
