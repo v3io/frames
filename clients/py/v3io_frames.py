@@ -136,7 +136,7 @@ class Client(object):
         api_key : string
             API key (if empty will use V3IO_API_KEY environment variable)
         """
-        self.url = url or environ.get('V3IO_URL')
+        self.url = url or environ.get('FRAMESD_URL')
         if not self.url:
             raise ValueError('missing URL')
 
