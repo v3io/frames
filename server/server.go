@@ -232,14 +232,12 @@ func (s *Server) handleWrite(ctx *fasthttp.RequestCtx) {
 
 	for {
 		frame, err := dec.DecodeFrame()
-		if err == io.EOF {
-			break
-		}
-
 		if err != nil {
-			s.logger.ErrorWith("decode error", "error", err)
-			ctx.Error("decode error", http.StatusInternalServerError)
-			return
+			if err != io.EOF {
+				s.logger.ErrorWith("decode error", "error", err)
+				ctx.Error("decode error", http.StatusInternalServerError)
+			}
+			break
 		}
 
 		ch <- frame
