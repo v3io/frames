@@ -222,6 +222,7 @@ func (a *Appender) respWaitLoop(timeout time.Duration) {
 	requests := -1
 	a.doneChan = make(chan bool)
 	a.logger.Debug("write wait loop started")
+	timer := time.NewTimer(timeout)
 
 	active := false
 	for {
@@ -231,6 +232,7 @@ func (a *Appender) respWaitLoop(timeout time.Duration) {
 			a.logger.DebugWith("write response", "response", resp)
 			responses++
 			active = true
+			timer.Reset(timeout)
 
 			if resp.Error != nil {
 				a.logger.ErrorWith("failed write response", "error", resp.Error)
@@ -247,7 +249,7 @@ func (a *Appender) respWaitLoop(timeout time.Duration) {
 				return
 			}
 
-		case <-time.After(timeout):
+		case <-timer.C:
 			if !active {
 				a.logger.ErrorWith("Resp loop timed out! ", "requests", requests, "response", responses)
 				a.doneChan <- true
