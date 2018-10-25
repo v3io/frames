@@ -26,13 +26,13 @@ import (
 )
 
 type rowIterator struct {
+	// names for columns with no name
+	noNames      map[int]string
 	columns      []Column
 	err          error
 	frame        Frame
 	includeIndex bool
-	index        interface{}
-	indexName    string
-	indices      map[string]interface{}
+	numCols      int
 	once         sync.Once
 	row          map[string]interface{}
 	rowNum       int
@@ -46,14 +46,58 @@ func newRowIterator(frame Frame, includeIndex bool) *rowIterator {
 }
 
 func (it *rowIterator) init() {
-	it.columns, it.err = it.frameColumns(it.frame)
-	if it.err != nil {
-		return
+	names := it.frame.Names()
+	it.numCols = len(names)
+	size := len(names)
+	if it.includeIndex {
+		size += len(it.frame.Indices())
 	}
 
-	if idx := it.frame.Indices(); len(idx) == 1 {
-		it.indexName = idx[0].Name()
+	nameMap := make(map[string]bool)
+	columns := make([]Column, size)
+	noNames := make(map[int]string)
+	for i, name := range names {
+		// FIXME: Currently we allow duplicate names
+		col, err := it.frame.Column(name)
+		if err != nil {
+			it.err = err
+			return
+		}
+
+		if name == "" {
+			name = fmt.Sprintf("col-%d", i)
+			noNames[i] = name
+		}
+
+		if _, ok := nameMap[name]; ok {
+			it.err = fmt.Errorf("duplicate column name - %q", name)
+			return
+		}
+
+		nameMap[name] = true
+		columns[i] = col
 	}
+
+	if it.includeIndex {
+		for i, col := range it.frame.Indices() {
+			name := col.Name()
+			if name == "" {
+				name = fmt.Sprintf("index-%d", i)
+				noNames[it.numCols+i] = name
+			}
+
+			if _, ok := nameMap[name]; ok {
+				it.err = fmt.Errorf("duplicate name in columns and indices - %q", name)
+				return
+			}
+
+			nameMap[name] = true
+			columns[it.numCols+i] = col
+		}
+	}
+
+	it.noNames = noNames
+	it.columns = columns
 }
 
 func (it *rowIterator) Next() bool {
@@ -63,24 +107,9 @@ func (it *rowIterator) Next() bool {
 		return false
 	}
 
-	row, err := it.getRow(it.rowNum, it.columns)
-	if err != nil {
-		it.err = err
+	it.row, it.err = it.getRow()
+	if it.err != nil {
 		return false
-	}
-
-	indices, err := it.getRow(it.rowNum, it.frame.Indices())
-	if err != nil {
-		it.err = err
-		return false
-	}
-
-	it.row = row
-	it.indices = indices
-	if it.indexName != "" {
-		it.index = indices[it.indexName]
-	} else {
-		it.index = nil
 	}
 
 	it.rowNum++
@@ -91,53 +120,25 @@ func (it *rowIterator) Err() error {
 	return it.err
 }
 
-func (it *rowIterator) Row(includeIndex bool) map[string]interface{} {
-	if !includeIndex {
-		return it.row
+func (it *rowIterator) Row() map[string]interface{} {
+	if it.err != nil {
+		return nil
 	}
 
-	// TODO: Do we want to keep a copy of this?
-	allCols := make(map[string]interface{})
-	for key, value := range it.row {
-		allCols[key] = value
-	}
-
-	for key, value := range it.indices {
-		allCols[key] = value
-	}
-
-	return allCols
-}
-
-func (it *rowIterator) Index() interface{} {
-	return it.index
+	return it.row
 }
 
 func (it *rowIterator) Indices() map[string]interface{} {
-	return it.indices
+	return nil // TODO
 }
 
 func (it *rowIterator) RowNum() int {
 	return it.rowNum - 1
 }
 
-func (it *rowIterator) frameColumns(frame Frame) ([]Column, error) {
-	names := frame.Names()
-	columns := make([]Column, len(names))
-	for i, name := range names {
-		col, err := frame.Column(name)
-		if err != nil {
-			return nil, err
-		}
-		columns[i] = col
-	}
-
-	return columns, nil
-}
-
-func (it *rowIterator) getRow(rowNum int, columns []Column) (map[string]interface{}, error) {
+func (it *rowIterator) getRow() (map[string]interface{}, error) {
 	row := make(map[string]interface{})
-	for _, col := range columns {
+	for colNum, col := range it.columns {
 		var value interface{}
 		var err error
 		switch col.DType() {
@@ -159,10 +160,9 @@ func (it *rowIterator) getRow(rowNum int, columns []Column) (map[string]interfac
 			return nil, err
 		}
 
-		// TODO: tmp bug fix (when index name is "")
 		name := col.Name()
 		if name == "" {
-			name = "__name__"
+			name = it.noNames[colNum]
 		}
 		row[name] = value
 	}
