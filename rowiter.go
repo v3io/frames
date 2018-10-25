@@ -49,10 +49,8 @@ func (it *rowIterator) init() {
 		return
 	}
 
-	if len(it.frame.Indices()) == 1 {
-		for _, col := range it.frame.Indices() {
-			it.indexName = col.Name()
-		}
+	if idx := it.frame.Indices(); len(idx) == 1 {
+		it.indexName = idx[0].Name()
 	}
 }
 

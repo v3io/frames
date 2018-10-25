@@ -59,23 +59,18 @@ func NewFrame(columns []Column, indices []Column, labels map[string]interface{})
 }
 
 // NewFrameFromMap returns a new MapFrame from a map
-func NewFrameFromMap(data map[string]interface{}) (Frame, error) {
-	var (
-		columns = make([]Column, len(data))
-		i       = 0
-	)
-
-	for name, values := range data {
-		col, err := NewSliceColumn(name, values)
-		if err != nil {
-			return nil, errors.Wrapf(err, "can't create %T column", values)
-		}
-
-		columns[i] = col
-		i++
+func NewFrameFromMap(columns map[string]interface{}, indices map[string]interface{}) (Frame, error) {
+	cols, err := mapToColumns(columns)
+	if err != nil {
+		return nil, err
 	}
 
-	return NewFrame(columns, nil, nil)
+	idx, err := mapToColumns(indices)
+	if err != nil {
+		return nil, err
+	}
+
+	return NewFrame(cols, idx, nil)
 }
 
 // NewFrameFromRows creates a new frame from rows
@@ -368,4 +363,20 @@ func inSlice(name string, names []string) bool {
 	}
 
 	return false
+}
+
+func mapToColumns(data map[string]interface{}) ([]Column, error) {
+	columns := make([]Column, len(data))
+	i := 0
+
+	for name, values := range data {
+		column, err := NewSliceColumn(name, values)
+		if err != nil {
+			return nil, errors.Wrapf(err, "can't create column %q", name)
+		}
+		columns[i] = column
+		i++
+	}
+
+	return columns, nil
 }
