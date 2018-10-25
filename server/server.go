@@ -110,6 +110,8 @@ func (s *Server) Start() error {
 
 	s.server = &fasthttp.Server{
 		Handler: s.handler,
+		// TODO: Configuration?
+		MaxRequestBodySize: 8 * (1 << 30), // 8GB
 	}
 
 	go func() {
