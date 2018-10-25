@@ -110,6 +110,8 @@ func (s *Server) Start() error {
 
 	s.server = &fasthttp.Server{
 		Handler: s.handler,
+		// TODO: Configuration?
+		MaxRequestBodySize: 8 * (1 << 30), // 8GB
 	}
 
 	go func() {
@@ -232,14 +234,12 @@ func (s *Server) handleWrite(ctx *fasthttp.RequestCtx) {
 
 	for {
 		frame, err := dec.DecodeFrame()
-		if err == io.EOF {
-			break
-		}
-
 		if err != nil {
-			s.logger.ErrorWith("decode error", "error", err)
-			ctx.Error("decode error", http.StatusInternalServerError)
-			return
+			if err != io.EOF {
+				s.logger.ErrorWith("decode error", "error", err)
+				ctx.Error("decode error", http.StatusInternalServerError)
+			}
+			break
 		}
 
 		ch <- frame
@@ -248,10 +248,10 @@ func (s *Server) handleWrite(ctx *fasthttp.RequestCtx) {
 	close(ch)
 	<-done
 
-	// TODO: need to fix, writeError is not a decoding error, not sure why we dont address it right after the .Write()
+	// We can't handle writeError right after .Write since it's done in a goroutine
 	if writeError != nil {
-		s.logger.ErrorWith("decode error", "error", writeError)
-		ctx.Error("decode error: "+string(writeError.Error()), http.StatusInternalServerError)
+		s.logger.ErrorWith("write error", "error", writeError)
+		ctx.Error("write error: "+writeError.Error(), http.StatusInternalServerError)
 		return
 	}
 
