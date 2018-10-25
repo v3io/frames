@@ -71,10 +71,10 @@ type streamAppender struct {
 func (a *streamAppender) Add(frame frames.Frame) error {
 
 	records := make([]*v3io.StreamRecord, 0, frame.Len())
-	iter := frame.IterRows()
+	iter := frame.IterRows(true)
 	for iter.Next() {
 
-		body, err := json.Marshal(iter.Row(true))
+		body, err := json.Marshal(iter.Row())
 		if err != nil {
 			return err
 		}

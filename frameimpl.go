@@ -169,8 +169,8 @@ func (mf *frameImpl) Slice(start int, end int) (Frame, error) {
 }
 
 // FrameRowIterator returns iterator over rows
-func (mf *frameImpl) IterRows() FrameRowIterator {
-	return newRowIterator(mf)
+func (mf *frameImpl) IterRows(includeIndex bool) FrameRowIterator {
+	return newRowIterator(mf, includeIndex)
 }
 
 // ColumnMessage is a for encoding a column

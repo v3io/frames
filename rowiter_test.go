@@ -30,13 +30,13 @@ func TestRowIterator(t *testing.T) {
 		t.Fatalf("can't create frame - %s", err)
 	}
 
-	it := frame.IterRows()
+	it := frame.IterRows(false)
 	for rowNum := 0; it.Next(); rowNum++ {
 		if it.RowNum() != rowNum {
 			t.Fatalf("rowNum mismatch %d != %d", rowNum, it.RowNum())
 		}
 
-		row := it.Row(false)
+		row := it.Row()
 		if row == nil {
 			t.Fatalf("empty row")
 		}
@@ -115,7 +115,7 @@ func TestRowAll(t *testing.T) {
 		t.Fatal(err)
 	}
 
-	it := frame.IterRows()
+	it := frame.IterRows(true)
 	if ok := it.Next(); !ok {
 		t.Fatalf("can't advance iterator")
 	}
@@ -124,8 +124,57 @@ func TestRowAll(t *testing.T) {
 		t.Fatalf("error in next - %s", err)
 	}
 
-	row := it.Row(true)
+	row := it.Row()
 	if len(row) != len(frame.Names())+len(frame.Indices()) {
 		t.Fatalf("bad row - %+v\n", row)
+	}
+}
+
+func TestNoName(t *testing.T) {
+	col1, err := NewSliceColumn("ints", []int{1, 2, 3})
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	col2, err := NewSliceColumn("", []string{"a", "b", "c"})
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	col3, err := NewSliceColumn("floats", []float64{1.0, 2.0, 3.0})
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	cols := []Column{col1, col2, col3}
+	frame, err := NewFrame(cols, nil, nil)
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	it := frame.IterRows(false)
+	it.Next()
+	if err := it.Err(); err != nil {
+		t.Fatal(err)
+	}
+
+	row := it.Row()
+	if len(row) != len(cols) {
+		t.Fatalf("wrong number of columns - %d != %d", len(row), len(cols))
+	}
+
+	for _, col := range cols {
+		name := col.Name()
+		if name != "" {
+			if _, ok := row[name]; !ok {
+				t.Fatalf("can't find column %q", col.Name())
+			}
+		}
+	}
+
+	for name := range row {
+		if name == "" {
+			t.Fatalf("empty column name")
+		}
 	}
 }
