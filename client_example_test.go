@@ -107,5 +107,5 @@ func makeFrame() (Frame, error) {
 		"strings": sdata,
 		"times":   tdata,
 	}
-	return NewFrameFromMap(columns)
+	return NewFrameFromMap(columns, nil)
 }

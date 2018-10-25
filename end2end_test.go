@@ -162,5 +162,5 @@ func makeFrame() (frames.Frame, error) {
 		"times":   tdata,
 		"bools":   bdata,
 	}
-	return frames.NewFrameFromMap(columns)
+	return frames.NewFrameFromMap(columns, nil)
 }
