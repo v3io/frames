@@ -26,20 +26,22 @@ import (
 )
 
 type rowIterator struct {
-	columns   []Column
-	err       error
-	frame     Frame
-	index     interface{}
-	indexName string
-	indices   map[string]interface{}
-	once      sync.Once
-	row       map[string]interface{}
-	rowNum    int
+	columns      []Column
+	err          error
+	frame        Frame
+	includeIndex bool
+	index        interface{}
+	indexName    string
+	indices      map[string]interface{}
+	once         sync.Once
+	row          map[string]interface{}
+	rowNum       int
 }
 
-func newRowIterator(frame Frame) *rowIterator {
+func newRowIterator(frame Frame, includeIndex bool) *rowIterator {
 	return &rowIterator{
-		frame: frame,
+		frame:        frame,
+		includeIndex: includeIndex,
 	}
 }
 

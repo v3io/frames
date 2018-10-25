@@ -58,21 +58,21 @@ type Column interface {
 
 // Frame is a collection of columns
 type Frame interface {
-	Labels() map[string]interface{}          // Label set
-	Names() []string                         // Column names
-	Indices() []Column                       // Index columns
-	Len() int                                // Number of rows
-	Column(name string) (Column, error)      // Column by name
-	Slice(start int, end int) (Frame, error) // Slice of Frame
-	IterRows() FrameRowIterator              // Iterate over rows
+	Labels() map[string]interface{}              // Label set
+	Names() []string                             // Column names
+	Indices() []Column                           // Index columns
+	Len() int                                    // Number of rows
+	Column(name string) (Column, error)          // Column by name
+	Slice(start int, end int) (Frame, error)     // Slice of Frame
+	IterRows(includeIndex bool) FrameRowIterator // Iterate over rows
 }
 
 // FrameRowIterator is an iterator over frame rows
 type FrameRowIterator interface {
-	Next() bool                                   // Advance to next row
-	Row(includeIndex bool) map[string]interface{} // Row as map of name->value
-	RowNum() int                                  // Current row number
-	Index() interface{}                           // Index value
-	Indices() map[string]interface{}              // MultiIndex as name->value
-	Err() error                                   // Iteration error
+	Next() bool                      // Advance to next row
+	Row() map[string]interface{}     // Row as map of name->value
+	RowNum() int                     // Current row number
+	Index() interface{}              // Index value
+	Indices() map[string]interface{} // MultiIndex as name->value
+	Err() error                      // Iteration error
 }
