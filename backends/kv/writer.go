@@ -202,6 +202,14 @@ func (a *Appender) indexValFunc(frame frames.Frame, name string) (func(int) stri
 			tval, _ := indexCol.TimeAt(i)
 			return tval.Format(time.RFC3339Nano)
 		}
+	case frames.BoolType:
+		fn = func(i int) string {
+			bval, _ := indexCol.BoolAt(i)
+			if bval {
+				return "true"
+			}
+			return "false"
+		}
 	default:
 		return nil, fmt.Errorf("unknown column type - %v", indexCol.DType())
 	}
