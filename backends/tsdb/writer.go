@@ -130,13 +130,13 @@ func (a *tsdbAppender) Add(frame frames.Frame) error {
 		}
 	}
 
+	// Single index and single label set (may have few metric names)
 	if len(frame.Indices()) == 1 {
 
 		if len(tarray) > 1 && tarray[0] > tarray[len(tarray)-1] {
 			return errors.New("time column is out of order (need to be sorted by ascending time)")
 		}
 
-		// in case we have a single index with or without labels
 		metrics := make([]*metricCtx, 0, len(names))
 		for _, name := range names {
 			lset, err := newLset(frame.Labels(), name, len(names) == 1, nil, nil)
@@ -181,25 +181,25 @@ func (a *tsdbAppender) Add(frame frames.Frame) error {
 		for i := 0; i < frame.Len(); i++ {
 
 			sameIndex := true
-			for colidx, colval := range indexCols {
-				if colval[i] != lastIndexes[colidx] {
+			for iidx, colval := range indexCols {
+				if colval[i] != lastIndexes[iidx] {
 					sameIndex = false
-					lastIndexes[colidx] = colval[i]
+					lastIndexes[iidx] = colval[i]
 				}
 			}
 
 			if !sameIndex {
-				for idx, name := range names {
+				for colidx, name := range names {
 					lset, err := newLset(frame.Labels(), name, len(names) == 1, indexNames, lastIndexes)
 					if err != nil {
 						return err
 					}
 					metric := metricCtx{lset: lset}
-					metric.ref, err = a.appender.Add(metric.lset, tarray[0], values[idx][0])
+					metric.ref, err = a.appender.Add(metric.lset, tarray[i], values[colidx][i])
 					if err != nil {
 						return errors.Wrap(err, "failed to Add")
 					}
-					metrics[idx] = &metric
+					metrics[colidx] = &metric
 				}
 			} else {
 				for idx, metric := range metrics {

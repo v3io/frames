@@ -56,10 +56,6 @@ func main() {
 		log.Fatalf("error: can't unmarshal config - %s", err)
 	}
 
-	if err := cfg.Validate(); err != nil {
-		log.Fatalf("error: bad configuration file - %s", err)
-	}
-
 	frames.DefaultLogLevel = cfg.Log.Level
 
 	srv, err := server.New(cfg, addr, nil)
