@@ -46,6 +46,8 @@ type Backend struct {
 
 // NewBackend return a new tsdb backend
 func NewBackend(logger logger.Logger, cfg *frames.BackendConfig, framesConfig *frames.Config) (frames.DataBackend, error) {
+
+	frames.InitBackendDefaults(cfg, framesConfig)
 	newBackend := Backend{
 		adapters:      map[string]*tsdb.V3ioAdapter{},
 		logger:        logger.GetChild("tsdb"),
@@ -54,7 +56,7 @@ func NewBackend(logger logger.Logger, cfg *frames.BackendConfig, framesConfig *f
 	}
 
 	tsdbConfig := &config.V3ioConfig{
-		WebApiEndpoint: cfg.V3ioURL,
+		WebApiEndpoint: cfg.URL,
 		Container:      cfg.Container,
 		Username:       cfg.Username,
 		Password:       cfg.Password,
@@ -71,7 +73,7 @@ func NewBackend(logger logger.Logger, cfg *frames.BackendConfig, framesConfig *f
 	newBackend.tsdbConfig = tsdbConfig
 
 	container, err := v3ioutils.CreateContainer(logger,
-		cfg.V3ioURL, cfg.Container, cfg.Username, cfg.Password, cfg.Workers)
+		cfg.URL, cfg.Container, cfg.Username, cfg.Password, cfg.Workers)
 	if err != nil {
 		return nil, errors.Wrap(err, "Failed to create V3IO data container")
 	}

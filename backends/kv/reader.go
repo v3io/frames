@@ -47,8 +47,10 @@ type Backend struct {
 
 // NewBackend return a new key/value backend
 func NewBackend(logger logger.Logger, config *frames.BackendConfig, framesConfig *frames.Config) (frames.DataBackend, error) {
+
+	frames.InitBackendDefaults(config, framesConfig)
 	container, err := v3ioutils.CreateContainer(
-		logger, config.V3ioURL, config.Container, config.Username, config.Password, config.Workers)
+		logger, config.URL, config.Container, config.Username, config.Password, config.Workers)
 	if err != nil {
 		return nil, errors.Wrap(err, "failed to create data container")
 	}

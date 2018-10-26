@@ -22,7 +22,15 @@ package frames
 
 import (
 	"fmt"
+	"os"
 	"time"
+)
+
+const (
+	WebApiEndpointEnvironmentVariable  = "V3IO_URL"
+	WebApiContainerEnvironmentVariable = "V3IO_CONTAINER"
+	WebApiUsernameEnvironmentVariable  = "V3IO_USERNAME"
+	WebApiPasswordEnvironmentVariable  = "V3IO_PASSWORD"
 )
 
 // LogConfig is the logging configuration
@@ -35,7 +43,54 @@ type Config struct {
 	Log          LogConfig `json:"log"`
 	DefaultLimit int       `json:"limit,omitempty"`
 
+	// default V3IO connection details
+	WebApiEndpoint string `json:"webApiEndpoint"`
+	Container      string `json:"container"`
+	Username       string `json:"username,omitempty"`
+	Password       string `json:"password,omitempty"`
+	// Number of parallel V3IO worker routines
+	Workers int `json:"workers"`
+
 	Backends []*BackendConfig `json:"backends,omitempty"`
+}
+
+func (c *Config) InitDefaults() error {
+
+	if c.WebApiEndpoint == "" {
+		c.WebApiEndpoint = os.Getenv(WebApiEndpointEnvironmentVariable)
+	}
+	if c.Container == "" {
+		c.Container = os.Getenv(WebApiContainerEnvironmentVariable)
+	}
+	if c.Username == "" {
+		c.Username = os.Getenv(WebApiUsernameEnvironmentVariable)
+	}
+	if c.Password == "" {
+		c.Password = os.Getenv(WebApiPasswordEnvironmentVariable)
+	}
+	if c.Workers == 0 {
+		c.Workers = 8
+	}
+	return nil
+}
+
+func InitBackendDefaults(cfg *BackendConfig, framesConfig *Config) {
+
+	if cfg.URL == "" {
+		cfg.URL = framesConfig.WebApiEndpoint
+	}
+	if cfg.Container == "" {
+		cfg.Container = framesConfig.Container
+	}
+	if cfg.Username == "" {
+		cfg.Username = framesConfig.Username
+	}
+	if cfg.Password == "" {
+		cfg.Password = framesConfig.Password
+	}
+	if cfg.Workers == 0 {
+		cfg.Workers = framesConfig.Workers
+	}
 }
 
 // Validate validates the configuration
@@ -48,7 +103,7 @@ func (c *Config) Validate() error {
 
 	for i, backend := range c.Backends {
 		if backend.Name == "" {
-			return fmt.Errorf("backend %d missing name", i)
+			backend.Name = backend.Type
 		}
 
 		if backend.Type == "" {
@@ -70,13 +125,16 @@ type BackendConfig struct {
 	Type string `json:"type"` // v3io, csv, ...
 	Name string `json:"name"`
 
-	// V3IO backend
-	V3ioURL   string `json:"v3ioUrl,omitempty"`
+	// Backend API URL and credential
+	URL       string `json:"url,omitempty"`
 	Container string `json:"container,omitempty"`
 	Path      string `json:"path,omitempty"`
 	Username  string `json:"username,omitempty"`
 	Password  string `json:"password,omitempty"`
-	Workers   int    `json:"workers,omitempty"` // Number of parallel V3IO worker routines
+	Workers   int    `json:"workers"`
+
+	// backend specific options
+	Options map[string]interface{} `json:"options"`
 
 	// CSV backend
 	RootDir string `json:"rootdir,omitempty"`

@@ -73,6 +73,10 @@ func New(config *frames.Config, addr string, logger logger.Logger) (*Server, err
 		return nil, errors.Wrap(err, "bad configuration")
 	}
 
+	if err := config.InitDefaults(); err != nil {
+		return nil, errors.Wrap(err, "failed to init defaults")
+	}
+
 	if logger == nil {
 		logger, err = frames.NewLogger(config.Log.Level)
 		if err != nil {
