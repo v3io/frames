@@ -40,8 +40,9 @@ type LogConfig struct {
 
 // Config is server configuration
 type Config struct {
-	Log          LogConfig `json:"log"`
-	DefaultLimit int       `json:"limit,omitempty"`
+	Log            LogConfig `json:"log"`
+	DefaultLimit   int       `json:"limit,omitempty"`
+	DefaultTimeout int       `json:"timeout,omitempty"`
 
 	// default V3IO connection details
 	WebApiEndpoint string `json:"webApiEndpoint"`
@@ -56,6 +57,9 @@ type Config struct {
 
 func (c *Config) InitDefaults() error {
 
+	if c.DefaultTimeout == 0 {
+		c.DefaultTimeout = 30
+	}
 	if c.WebApiEndpoint == "" {
 		c.WebApiEndpoint = os.Getenv(WebApiEndpointEnvironmentVariable)
 	}

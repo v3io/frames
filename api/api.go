@@ -44,6 +44,7 @@ import (
 type API struct {
 	logger   logger.Logger
 	backends map[string]frames.DataBackend
+	config   *frames.Config
 }
 
 // New returns a new API layer struct
@@ -58,6 +59,7 @@ func New(logger logger.Logger, config *frames.Config) (*API, error) {
 
 	api := &API{
 		logger: logger,
+		config: config,
 	}
 
 	if err := api.createBackends(config); err != nil {
@@ -151,7 +153,7 @@ func (api *API) Write(request *frames.WriteRequest, in chan frames.Frame) (int, 
 
 	// TODO: Specify timeout in request?
 	if nRows > 0 {
-		if err := appender.WaitForComplete(30 * time.Second); err != nil {
+		if err := appender.WaitForComplete(time.Duration(api.config.DefaultTimeout) * time.Second); err != nil {
 			msg := "can't wait for completion"
 			api.logger.ErrorWith(msg, "error", err)
 			return nFrames, nRows, errors.Wrap(err, msg)
