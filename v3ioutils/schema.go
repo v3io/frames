@@ -1,14 +1,3 @@
-package v3ioutils
-
-import (
-	"encoding/json"
-	"fmt"
-	"github.com/pkg/errors"
-	"github.com/v3io/frames"
-	"github.com/v3io/v3io-go-http"
-	"time"
-)
-
 /*
 Copyright 2018 Iguazio Systems Ltd.
 
@@ -28,6 +17,17 @@ illegal under applicable law, and the grant of the foregoing license
 under the Apache 2.0 license is conditioned upon your compliance with
 such restriction.
 */
+
+package v3ioutils
+
+import (
+	"encoding/json"
+	"fmt"
+	"github.com/pkg/errors"
+	"github.com/v3io/frames"
+	"github.com/v3io/v3io-go-http"
+	"time"
+)
 
 func NewSchema(key string) V3ioSchema {
 	return &OldV3ioSchema{Fields: []OldSchemaField{}, Key: key}
