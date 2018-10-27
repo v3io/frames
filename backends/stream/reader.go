@@ -124,16 +124,19 @@ func (i *streamIterator) Next() bool {
 		row := map[string]interface{}{}
 		err := json.Unmarshal(r.Data, &row)
 		if err != nil {
-			i.err = fmt.Errorf("Failed to unmarshal result - %v", err)
-			return false
+			// if not a json return a raw data column
+			i.b.logger.InfoWith("record cannot be unmarshaled, returning raw data", "Time:",
+				recTime, "Seq:", r.SequenceNumber, "Body:", string(r.Data))
+			row = map[string]interface{}{"raw_data": string(r.Data)}
 		}
 		row["stream_time"] = recTime
+		row["seq_number"] = r.SequenceNumber
 
 		rows = append(rows, row)
 	}
 
 	labels := map[string]interface{}{"last_seq": lastSequence}
-	frame, err := frames.NewFrameFromRows(rows, []string{}, labels)
+	frame, err := frames.NewFrameFromRows(rows, []string{"seq_number"}, labels)
 	if err != nil {
 		i.err = fmt.Errorf("Failed to create frame - %v", err)
 		return false
