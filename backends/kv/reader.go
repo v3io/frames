@@ -118,6 +118,13 @@ func (ki *Iterator) Next() bool {
 	rowNum := 0
 	for ; rowNum < ki.request.MaxInMessage && ki.iter.Next(); rowNum++ {
 		row := ki.iter.GetFields()
+
+		// Skip table schema object
+		rowIndex, ok := row[indexColKey]
+		if ok && rowIndex == ".#schema" {
+			continue
+		}
+
 		for name, field := range row {
 			col, ok := byName[name]
 			if !ok {
