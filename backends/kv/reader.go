@@ -174,6 +174,7 @@ func (ki *Iterator) Next() bool {
 	if ok {
 		delete(byName, indexColKey)
 		indices = []frames.Column{indexCol}
+		columns = utils.RemoveColumn(indexColKey, columns)
 	}
 
 	var err error
