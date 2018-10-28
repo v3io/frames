@@ -44,12 +44,16 @@ github.com/stretchr/testify v1.2.2 h1:bSDNvY7ZPG5RlJ8otE/7V6gMiyenm9RtJ7IUVIAoJ1
 github.com/stretchr/testify v1.2.2/go.mod h1:a8OnRcib4nhh0OaRAV+Yts87kKdq0PP7pXfy6kDkUVs=
 github.com/v3io/v3io-go-http v0.0.0-20180823194319-36f737b2e799 h1:TlMrI//gqeLFe7ETMEmpDMfY4fDTVZmN9OJyE91+Eaw=
 github.com/v3io/v3io-go-http v0.0.0-20180823194319-36f737b2e799/go.mod h1:GXYcR9MxgfbE3BJdkXki5EclvtS8Nxu2RQNLA8hMMog=
+github.com/v3io/v3io-go-http v0.0.0-20181023145150-3c8ba0ce5ac8 h1:UCCL5naZZxBc3hBWZWZsW01ObKSOuQytzlvYfY4eYMM=
+github.com/v3io/v3io-go-http v0.0.0-20181023145150-3c8ba0ce5ac8/go.mod h1:GXYcR9MxgfbE3BJdkXki5EclvtS8Nxu2RQNLA8hMMog=
 github.com/v3io/v3io-tsdb v0.0.4-0.20181013185822-95fc46793c20 h1:AKaOWuularRzqrpVidLsnoq84w+42OkzcQwS4hwUv9A=
 github.com/v3io/v3io-tsdb v0.0.4-0.20181013185822-95fc46793c20/go.mod h1:A+5yKC16QxLf+Fy5v7VvIxSw+jwsKHLhUS7dCYFDLAA=
 github.com/v3io/v3io-tsdb v0.0.12 h1:CvjYfoBeJqsnotBMTO3u7SVicBaRvkAGAzbnMT9uNYc=
 github.com/v3io/v3io-tsdb v0.0.12/go.mod h1:A+5yKC16QxLf+Fy5v7VvIxSw+jwsKHLhUS7dCYFDLAA=
 github.com/v3io/v3io-tsdb v0.0.14 h1:4FURgUY//wTOhQPCpFVINO1+ZqK9UZuYV1EvIp9qkUE=
 github.com/v3io/v3io-tsdb v0.0.14/go.mod h1:A+5yKC16QxLf+Fy5v7VvIxSw+jwsKHLhUS7dCYFDLAA=
+github.com/v3io/v3io-tsdb v0.8.1 h1:RDHlpTZhRfpzhH3qZzuSWt/E9Wl/0riDUNRL9HQf1H4=
+github.com/v3io/v3io-tsdb v0.8.1/go.mod h1:A+5yKC16QxLf+Fy5v7VvIxSw+jwsKHLhUS7dCYFDLAA=
 github.com/valyala/bytebufferpool v1.0.0 h1:GqA5TC/0021Y/b9FG4Oi9Mr3q7XYx6KllzawFIhcdPw=
 github.com/valyala/bytebufferpool v1.0.0/go.mod h1:6bBcMArwyJ5K/AmCkWv1jt77kVWyCJ6HpOuEn7z0Csc=
 github.com/valyala/fasthttp v1.0.0 h1:BwIoZQbBsTo3v2F5lz5Oy3TlTq4wLKTLV260EVTEWco=

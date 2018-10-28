@@ -393,7 +393,7 @@ func (sc *SyncContainer) PutRecords(input *PutRecordsInput) (*Response, error) {
 
 		if record.PartitionKey != "" {
 			buffer.WriteString(`, "PartitionKey": `)
-			buffer.WriteString(`"` + record.PartitionKey + `"`)
+			buffer.WriteString(`"`+record.PartitionKey+`"`)
 		}
 
 		// add comma if not last
