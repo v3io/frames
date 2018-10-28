@@ -75,10 +75,10 @@ func NewFrameFromMap(columns map[string]interface{}, indices map[string]interfac
 
 // NewFrameFromRows creates a new frame from rows
 func NewFrameFromRows(rows []map[string]interface{}, indices []string, labels map[string]interface{}) (Frame, error) {
-	allCols := make(map[string]Column)
+	frameCols := make(map[string]Column)
 	for rowNum, row := range rows {
 		for name, value := range row {
-			col, ok := allCols[name]
+			col, ok := frameCols[name]
 
 			if !ok {
 				var err error
@@ -86,7 +86,7 @@ func NewFrameFromRows(rows []map[string]interface{}, indices []string, labels ma
 				if err != nil {
 					return nil, err
 				}
-				allCols[name] = col
+				frameCols[name] = col
 			}
 
 			extendCol(col, rowNum)
@@ -94,10 +94,17 @@ func NewFrameFromRows(rows []map[string]interface{}, indices []string, labels ma
 				return nil, err
 			}
 		}
+
+		// Extend columns not in row
+		for name, col := range frameCols {
+			if _, ok := row[name]; !ok {
+				extendCol(col, rowNum+1)
+			}
+		}
 	}
 
 	var dataCols, indexCols []Column
-	for name, col := range allCols {
+	for name, col := range frameCols {
 		if inSlice(name, indices) {
 			indexCols = append(indexCols, col)
 		} else {
@@ -320,6 +327,10 @@ func zeroValue(dtype DType) (interface{}, error) {
 
 // TODO: Unite with backend/utils.AppendNil
 func extendCol(col Column, size int) error {
+	if col.Len() >= size {
+		return nil
+	}
+
 	value, err := zeroValue(col.DType())
 	if err != nil {
 		return err

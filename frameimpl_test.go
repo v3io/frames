@@ -136,7 +136,22 @@ func TestNewFrameFromRows(t *testing.T) {
 	if len(frame.Indices()) != len(indices) {
 		t.Fatalf("indices len mismatch %d != %d", len(frame.Indices()), len(rows))
 	}
+}
 
+func TestNewFrameFromRowsMissing(t *testing.T) {
+	rows := []map[string]interface{}{
+		{"x": 1, "y": "a"},
+		{"x": 2, "z": 1.0},
+	}
+
+	frame, err := NewFrameFromRows(rows, nil, nil)
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	if frame.Len() != 2 {
+		t.Fatalf("frame length mismatch: %d != 2", frame.Len())
+	}
 }
 
 func newIntCols(t *testing.T, numCols int, size int) []Column {
