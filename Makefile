@@ -43,7 +43,8 @@ build-docker:
 wheel:
 	cd clients/py && python setup.py bdist_wheel
 
-update-tsdb-dep:
+update-v3io-dep:
 	GO111MODULE=on go get github.com/v3io/v3io-tsdb@development
+	GO111MODULE=on go get github.com/v3io/v3io-go-http@development
 	GO111MODULE=on go mod vendor
 	@echo "Done. Don't forget to commit ☺"
