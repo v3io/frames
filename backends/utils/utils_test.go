@@ -21,6 +21,7 @@ such restriction.
 package utils
 
 import (
+	"fmt"
 	"math"
 	"reflect"
 	"testing"
@@ -88,5 +89,38 @@ func TestAppendNil(t *testing.T) {
 	val, _ := col.FloatAt(size)
 	if !math.IsNaN(val) {
 		t.Fatalf("AppendNil didn't add NaN to floats (got %v)", val)
+	}
+}
+
+func TestRemoveColumn(t *testing.T) {
+	colName := func(i int) string {
+		return fmt.Sprintf("col-%d", i)
+	}
+
+	size := 7
+	columns := make([]frames.Column, size)
+	for i := 0; i < size; i++ {
+		col, err := frames.NewSliceColumn(colName(i), []int{})
+		if err != nil {
+			t.Fatalf("can't create column - %s", err)
+		}
+		columns[i] = col
+	}
+
+	name := colName(4)
+	newCols := RemoveColumn(name, columns)
+	if newSize := len(newCols); newSize != size-1 {
+		t.Fatalf("size after remove %d (wanted %d)", newSize, size-1)
+	}
+
+	for _, col := range newCols {
+		if col.Name() == name {
+			t.Fatalf("column %q found after removal", name)
+		}
+	}
+
+	newCols = RemoveColumn("no-such-column", columns)
+	if len(newCols) != len(columns) {
+		t.Fatal("no existing column removed")
 	}
 }

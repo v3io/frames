@@ -137,3 +137,17 @@ func ColAt(col frames.Column, i int) (interface{}, error) {
 		return nil, fmt.Errorf("unknown column type - %s", col.DType())
 	}
 }
+
+// RemoveColumn removes the first column that matches name from columns
+// If the column is not found, columns is unchanged
+func RemoveColumn(name string, columns []frames.Column) []frames.Column {
+	for i, col := range columns {
+		if col.Name() == name {
+			copy(columns[i:], columns[i+1:])
+			columns = columns[:len(columns)-1]
+			break
+		}
+	}
+
+	return columns
+}
