@@ -30,6 +30,9 @@ type Request struct {
 
 	// pointer to container
 	requestResponse *RequestResponse
+
+	// Request time
+	SendTimeNanoseconds int64
 }
 
 type Response struct {
@@ -146,14 +149,12 @@ type SetObjectInput struct {
 
 type PutItemInput struct {
 	Path       string
-	Condition  string
 	Attributes map[string]interface{}
 }
 
 type PutItemsInput struct {
-	Path      string
-	Condition string
-	Items     map[string]map[string]interface{}
+	Path  string
+	Items map[string]map[string]interface{}
 }
 
 type PutItemsOutput struct {
@@ -165,7 +166,6 @@ type UpdateItemInput struct {
 	Path       string
 	Attributes map[string]interface{}
 	Expression *string
-	Condition  string
 }
 
 type GetItemInput struct {
@@ -201,10 +201,8 @@ type CreateStreamInput struct {
 }
 
 type StreamRecord struct {
-	ShardID      *int
-	Data         []byte
-	ClientInfo   []byte
-	PartitionKey string
+	ShardID *int
+	Data    []byte
 }
 
 type PutRecordsInput struct {
@@ -258,7 +256,7 @@ type GetRecordsResult struct {
 	ArrivalTimeSec  int
 	ArrivalTimeNSec int
 	SequenceNumber  int
-	ClientInfo      []byte
+	ClientInfo      string
 	PartitionKey    string
 	Data            []byte
 }

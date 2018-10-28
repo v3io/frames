@@ -1,4 +1,4 @@
-# github.com/BurntSushi/toml v0.3.0
+# github.com/BurntSushi/toml v0.3.1
 github.com/BurntSushi/toml
 # github.com/cespare/xxhash v1.1.0
 github.com/cespare/xxhash
@@ -14,7 +14,7 @@ github.com/klauspost/compress/zlib
 github.com/klauspost/cpuid
 # github.com/mattn/go-colorable v0.0.9
 github.com/mattn/go-colorable
-# github.com/mattn/go-isatty v0.0.3
+# github.com/mattn/go-isatty v0.0.4
 github.com/mattn/go-isatty
 # github.com/mgutz/ansi v0.0.0-20170206155736-9520e82c474b
 github.com/mgutz/ansi
@@ -31,15 +31,15 @@ github.com/pavius/zap/internal/color
 github.com/pavius/zap/internal/exit
 # github.com/pkg/errors v0.8.0
 github.com/pkg/errors
-# github.com/rcrowley/go-metrics v0.0.0-20180503174638-e2704e165165
+# github.com/rcrowley/go-metrics v0.0.0-20181016184325-3113b8401b8a
 github.com/rcrowley/go-metrics
-# github.com/v3io/v3io-go-http v0.0.0-20180823194319-36f737b2e799
+# github.com/v3io/v3io-go-http v0.0.0-20181023145150-3c8ba0ce5ac8
 github.com/v3io/v3io-go-http
-# github.com/v3io/v3io-tsdb v0.0.4-0.20181013185822-95fc46793c20
+# github.com/v3io/v3io-tsdb v0.0.4-0.20181025142027-977f1fd393d3
+github.com/v3io/v3io-tsdb/pkg/utils
 github.com/v3io/v3io-tsdb/pkg/config
 github.com/v3io/v3io-tsdb/pkg/querier
 github.com/v3io/v3io-tsdb/pkg/tsdb
-github.com/v3io/v3io-tsdb/pkg/utils
 github.com/v3io/v3io-tsdb/internal/pkg/performance
 github.com/v3io/v3io-tsdb/pkg/aggregate
 github.com/v3io/v3io-tsdb/pkg/chunkenc
@@ -65,11 +65,11 @@ github.com/xwb1989/sqlparser/dependency/hack
 go.uber.org/atomic
 # go.uber.org/multierr v1.1.0
 go.uber.org/multierr
-# golang.org/x/net v0.0.0-20180911220305-26e67e76b6c3
+# golang.org/x/net v0.0.0-20181017193950-04a2e542c03f
 golang.org/x/net/context
-# golang.org/x/sys v0.0.0-20180824143301-4910a1d54f87
+# golang.org/x/sys v0.0.0-20181011152604-fa43e7bc11ba
 golang.org/x/sys/unix
-# google.golang.org/appengine v1.1.0
+# google.golang.org/appengine v1.2.0
 google.golang.org/appengine/datastore
 google.golang.org/appengine
 google.golang.org/appengine/internal
