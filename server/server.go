@@ -176,12 +176,12 @@ func (s *Server) handleRead(ctx *fasthttp.RequestCtx) {
 	s.logger.InfoWith("read request", "request", request)
 
 	ch := make(chan frames.Frame)
+	var apiError error
 	go func() {
-		err := s.api.Read(request, ch)
-		close(ch)
-		if err != nil {
-			// Can't set status since we already sent data
-			s.logger.ErrorWith("error reading", "error", err)
+		defer close(ch)
+		apiError = s.api.Read(request, ch)
+		if apiError != nil {
+			s.logger.ErrorWith("error reading", "error", apiError)
 		}
 	}()
 
@@ -189,14 +189,18 @@ func (s *Server) handleRead(ctx *fasthttp.RequestCtx) {
 		enc := frames.NewEncoder(w)
 		for frame := range ch {
 			if err := enc.Encode(frame); err != nil {
-				// Can't set status since we already sent data
 				s.logger.ErrorWith("can't encode result", "error", err)
+				enc.EncodeError(err)
 			}
 
 			if err := w.Flush(); err != nil {
-				// Can't set status since we already sent data
 				s.logger.ErrorWith("can't flush", "error", err)
+				enc.EncodeError(err)
 			}
+		}
+
+		if apiError != nil {
+			enc.EncodeError(apiError)
 		}
 	})
 }
