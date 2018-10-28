@@ -50,5 +50,3 @@ update-tsdb-dep:
 
 grpc-go:
 	protoc  frames.proto --go_out=plugins=grpc:grpc
-
-

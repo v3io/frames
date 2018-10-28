@@ -30,6 +30,7 @@ message SliceCol {
     repeated double floats = 4;
     repeated string strings = 5;
     repeated google.protobuf.Timestamp times = 6;
+    repeated bool bools = 7;
 }
 
 message LabelCol {
@@ -41,6 +42,7 @@ message LabelCol {
 	double fval = 5;
 	string sval = 6;
 	google.protobuf.Timestamp tval = 7;
+	bool bval = 8;
     }
 }
 
