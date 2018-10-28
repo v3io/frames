@@ -77,11 +77,7 @@ func NewFrameFromMap(columns map[string]interface{}, indices map[string]interfac
 func NewFrameFromRows(rows []map[string]interface{}, indices []string, labels map[string]interface{}) (Frame, error) {
 	frameCols := make(map[string]Column)
 	for rowNum, row := range rows {
-		// TODO: Think of a faster way without allocating map per line
-		rowCols := make(map[string]bool)
-
 		for name, value := range row {
-			rowCols[name] = true
 			col, ok := frameCols[name]
 
 			if !ok {
@@ -101,7 +97,7 @@ func NewFrameFromRows(rows []map[string]interface{}, indices []string, labels ma
 
 		// Extend columns not in row
 		for name, col := range frameCols {
-			if !rowCols[name] {
+			if _, ok := row[name]; !ok {
 				extendCol(col, rowNum+1)
 			}
 		}
