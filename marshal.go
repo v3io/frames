@@ -72,6 +72,19 @@ func (e *Encoder) Encode(frame Frame) error {
 	return nil
 }
 
+// EncodeError encodes an error
+func (e *Encoder) EncodeError(err error) error {
+	msg := &FrameMessage{
+		Error: err.Error(),
+	}
+
+	if err := e.encoder.Encode(msg); err != nil {
+		return errors.Wrap(err, "can't encode error")
+	}
+
+	return nil
+}
+
 // Decoder decodes message
 type Decoder struct {
 	decoder *msgpack.Decoder
@@ -96,6 +109,10 @@ func (d *Decoder) DecodeFrame() (Frame, error) {
 	msg := &FrameMessage{}
 	if err := d.decoder.Decode(msg); err != nil {
 		return nil, err
+	}
+
+	if msg.Error != "" {
+		return nil, fmt.Errorf(msg.Error)
 	}
 
 	columns, err := d.decodeColumns(msg.Columns)

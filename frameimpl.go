@@ -188,9 +188,10 @@ type ColumnMessage struct {
 
 // FrameMessage is over-the-wire frame data
 type FrameMessage struct {
-	Columns []ColumnMessage        `msgpack:"columns"`
+	Columns []ColumnMessage        `msgpack:"columns,omitempty"`
 	Indices []ColumnMessage        `msgpack:"indices,omitempty"`
 	Labels  map[string]interface{} `msgpack:"labels,omitempty"`
+	Error   string                 `msgpack:"error,omitempty"`
 }
 
 // Marshal marshals to native type
