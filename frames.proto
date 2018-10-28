@@ -1,0 +1,140 @@
+/*
+Copyright 2018 Iguazio Systems Ltd.
+
+Licensed under the Apache License, Version 2.0 (the "License") with
+an addition restriction as set forth herein. You may not use this
+file except in compliance with the License. You may obtain a copy of
+the License at http://www.apache.org/licenses/LICENSE-2.0.
+
+Unless required by applicable law or agreed to in writing, software
+distributed under the License is distributed on an "AS IS" BASIS,
+WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or
+implied. See the License for the specific language governing
+permissions and limitations under the License.
+
+In addition, you may not use the software for any purposes that are
+illegal under applicable law, and the grant of the foregoing license
+under the Apache 2.0 license is conditioned upon your compliance with
+such restriction.
+*/
+
+syntax = "proto3";
+package grpc;
+
+import "google/protobuf/timestamp.proto";
+
+message SliceCol {
+    string name = 1;
+    string dtype = 2;
+    repeated int64 ints = 3;
+    repeated double floats = 4;
+    repeated string strings = 5;
+    repeated google.protobuf.Timestamp times = 6;
+}
+
+message LabelCol {
+    string name = 1;
+    string dtype = 2;
+    int64 size = 3;
+    oneof value {
+	int64 ival = 4;
+	double fval = 5;
+	string sval = 6;
+	google.protobuf.Timestamp tval = 7;
+    }
+}
+
+message Column {
+    oneof data {
+	SliceCol slice = 1;
+	LabelCol label = 2;
+    }
+}
+
+message Frame {
+    repeated Column columns = 1;
+    repeated Column indices = 2;
+}
+
+message TableSchema {
+    string type = 1;
+    string namespace = 2;
+    string name = 3;
+    string doc = 4;
+    repeated string aliases = 5;
+/*
+    repeated SchemaField = 6;
+    SchemaKey key = 7;
+*/
+}
+
+message JoinStruct {
+}
+
+message ReadRequest {
+    string backend = 1;
+    TableSchema schema = 2;
+    string format = 3;
+    bool row_orientation = 4;
+    string query = 5; // SQL Query
+    string table = 6; // Table name
+    repeated string columns = 7;
+    string filter = 8;
+    string group_by = 9;
+    repeated JoinStruct join = 10;
+
+    int64 limit = 11;
+    int64 message_limit = 12;
+    string marker = 13;
+
+    // NoSQL
+    repeated int64 segments = 14;
+    int64 totoal_segments = 15;
+    repeated string sharding_keys = 16;
+    string sort_key_range_start = 17;
+    string sort_key_range_end = 18;
+
+
+    // TSDB
+    string start = 19;
+    string end = 20;
+    string step_duration = 21;
+    string aggragators = 22;
+}
+
+message Label {
+    string key = 1;
+    oneof value {
+	int64 ival = 2;
+	double fval = 3;
+	string sval = 4;
+	google.protobuf.Timestamp tval = 5;
+    }
+}
+
+message InitialWriteRequest {
+    string backend = 1;
+    string table = 2;
+    Frame data = 3;
+    string expression = 4;
+    repeated Label labels = 5;
+    bool more = 6;
+}
+
+message WriteRequest {
+    oneof type {
+	InitialWriteRequest request = 1;
+	Frame frame = 2;
+    }
+}
+
+message WriteRespose {
+    int64 frames = 1;
+    int64 rows = 2;
+}
+
+
+service Frames {
+    rpc Read(ReadRequest) returns (stream Frame) {}
+    rpc Write(stream WriteRequest) returns (WriteRespose) {}
+}

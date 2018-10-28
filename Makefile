@@ -47,3 +47,8 @@ update-tsdb-dep:
 	GO111MODULE=on go get github.com/v3io/v3io-tsdb@development
 	GO111MODULE=on go mod vendor
 	@echo "Done. Don't forget to commit ☺"
+
+grpc-go:
+	protoc  frames.proto --go_out=plugins=grpc:grpc
+
+
