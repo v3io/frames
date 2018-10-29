@@ -143,3 +143,14 @@ def test_integration(server):
         col = df[name]
         col2 = df2[name]
         assert col2.equals(col), 'column {} mismatch'.format(name)
+
+
+@pytest.mark.skipif(not has_go, reason='Go SDK not found')
+def test_integration_error(server):
+    assert wait_for_server(server_port, server_timeout), 'server did not start'
+
+    c = v3f.Client('http://localhost:{}'.format(server_port))
+
+    with pytest.raises(v3f.ReadError):
+        for df in c.read('no-such-backend', table='no such table'):
+            pass

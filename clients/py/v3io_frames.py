@@ -42,6 +42,10 @@ class MessageError(Error):
     """An error in message"""
 
 
+class ReadError(Error):
+    """An error in read"""
+
+
 class CreateError(Error):
     """An error in table creation"""
 
@@ -354,6 +358,9 @@ class Client(object):
         unpacker = msgpack.Unpacker(resp, ext_hook=ext_hook, raw=False)
 
         for msg in unpacker:
+            error = msg.get('error')
+            if error is not None:
+                raise ReadError(error)
             yield self._msg2df(msg)
 
     def _msg2df(self, msg):

@@ -64,7 +64,11 @@ func main() {
 	}
 
 	fmt.Println("server running")
-	for {
-		time.Sleep(60 * time.Second)
+	for srv.State() == server.RunningState {
+		time.Sleep(time.Second)
+	}
+
+	if err := srv.Err(); err != nil {
+		log.Fatalf("error: server error - %s", err)
 	}
 }
