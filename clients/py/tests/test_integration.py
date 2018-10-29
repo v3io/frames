@@ -30,7 +30,7 @@ def has_working_go():
     """Check we have go version >= 1.11"""
     try:
         out = check_output(['go', 'version']).decode('utf-8')
-        match = re.search('(\d+)\.(\d+)', out)
+        match = re.search(r'(\d+)\.(\d+)', out)
         if not match:
             print('warning: cannot find version in {!r}'.format(out))
             return False
