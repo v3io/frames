@@ -23,16 +23,21 @@ package grpc
 import (
 	"github.com/v3io/frames"
 	"github.com/v3io/frames/api"
+	"net"
 
 	"github.com/nuclio/logger"
 	"github.com/pkg/errors"
+	"google.golang.org/grpc"
+	"google.golang.org/grpc/reflection"
 )
 
 // Server is a frames gRPC server
 type Server struct {
-	config *frames.Config
-	api    *api.API
-	logger logger.Logger
+	address string
+	api     *api.API
+	server  *grpc.Server
+	config  *frames.Config
+	logger  logger.Logger
 }
 
 // NewServer returns a new gRPC server
@@ -59,12 +64,33 @@ func NewServer(config *frames.Config, addr string, logger logger.Logger) (*Serve
 	}
 
 	server := &Server{
-		config: config,
-		api:    api,
-		logger: logger,
+		address: addr,
+		config:  config,
+		api:     api,
+		logger:  logger,
+		server:  grpc.NewServer(),
 	}
 
+	RegisterFramesServer(server.server, server)
+	reflection.Register(server.server)
 	return server, nil
+}
+
+// Start starts the server
+func (s *Server) Start() error {
+	lis, err := net.Listen("tcp", s.address)
+	if err != nil {
+		return err
+	}
+
+	go func() {
+		if err := s.server.Serve(lis); err != nil {
+			s.logger.ErrorWith("can't serve", "error", err)
+			// TODO: Server state
+		}
+	}()
+
+	return nil
 }
 
 func (s *Server) Read(request *ReadRequest, stream Frames_ReadServer) error {

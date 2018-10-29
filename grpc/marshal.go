@@ -22,10 +22,19 @@ package grpc
 
 import (
 	"fmt"
+	"time"
 
 	"github.com/golang/protobuf/ptypes"
 	tspb "github.com/golang/protobuf/ptypes/timestamp"
 	"github.com/v3io/frames"
+)
+
+var (
+	intType    = frames.IntType.String()
+	floatType  = frames.FloatType.String()
+	stringType = frames.StringType.String()
+	timeType   = frames.TimeType.String()
+	boolType   = frames.BoolType.String()
 )
 
 func readRequest(request *ReadRequest) *frames.ReadRequest {
@@ -92,7 +101,8 @@ func columnMessage(column frames.Column) (*Column, error) {
 
 func pbSliceCol(column *frames.SliceColumn) (*Column_Slice, error) {
 	slice := SliceCol{
-		Name: column.Name(),
+		Name:  column.Name(),
+		Dtype: column.DType().String(),
 	}
 
 	switch column.DType() {
@@ -193,4 +203,80 @@ func pbLabelCol(column *frames.LabelColumn) (*Column_Label, error) {
 	}
 
 	return &Column_Label{label}, nil
+}
+
+func frameFromMessage(pbFrame *Frame) (frames.Frame, error) {
+	columns, err := colsToCols(pbFrame.Columns)
+	if err != nil {
+		return nil, err
+	}
+
+	indices, err := colsToCols(pbFrame.Indices)
+	if err != nil {
+		return nil, err
+	}
+
+	// TODO: labels
+	return frames.NewFrame(columns, indices, nil)
+}
+
+func colsToCols(pbCols []*Column) ([]frames.Column, error) {
+	columns := make([]frames.Column, len(pbCols))
+	for i, pbCol := range pbCols {
+		col, err := colFromMessage(pbCol)
+		if err != nil {
+			return nil, err
+		}
+		columns[i] = col
+	}
+
+	return columns, nil
+}
+
+func colFromMessage(pbCol *Column) (frames.Column, error) {
+	if sliceCol := pbCol.GetSlice(); sliceCol != nil {
+		return sliceColFromMessage(sliceCol)
+	}
+
+	if labelCol := pbCol.GetLabel(); labelCol != nil {
+		return labelColFromMessage(labelCol)
+	}
+
+	return nil, fmt.Errorf("empty column")
+}
+
+func sliceColFromMessage(pbCol *SliceCol) (frames.Column, error) {
+	var data interface{}
+	switch pbCol.Dtype {
+	case intType:
+		ints := make([]int, len(pbCol.Ints))
+		for i, val := range pbCol.Ints {
+			ints[i] = int(val)
+		}
+		data = ints
+	case floatType:
+		data = pbCol.Floats
+	case stringType:
+		data = pbCol.Strings
+	case timeType:
+		times := make([]time.Time, len(pbCol.Times))
+		for i, val := range pbCol.Times {
+			t, err := ptypes.Timestamp(val)
+			if err != nil {
+				return nil, err
+			}
+			times[i] = t
+			data = times
+		}
+	case boolType:
+		data = pbCol.Bools
+	default:
+		return nil, fmt.Errorf("%s: unknown dtype - %s", pbCol.Name, pbCol.Dtype)
+	}
+
+	return frames.NewSliceColumn(pbCol.Name, data)
+}
+
+func labelColFromMessage(pbCol *LabelCol) (frames.Column, error) {
+	return nil, fmt.Errorf("not implemented")
 }

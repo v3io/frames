@@ -6,6 +6,10 @@ github.com/cespare/xxhash
 github.com/ghodss/yaml
 # github.com/golang/protobuf v1.2.0
 github.com/golang/protobuf/proto
+github.com/golang/protobuf/ptypes
+github.com/golang/protobuf/ptypes/timestamp
+github.com/golang/protobuf/ptypes/any
+github.com/golang/protobuf/ptypes/duration
 # github.com/klauspost/compress v1.4.0
 github.com/klauspost/compress/flate
 github.com/klauspost/compress/gzip
@@ -67,8 +71,19 @@ go.uber.org/atomic
 go.uber.org/multierr
 # golang.org/x/net v0.0.0-20181023162649-9b4f9f5ad519
 golang.org/x/net/context
+golang.org/x/net/trace
+golang.org/x/net/internal/timeseries
+golang.org/x/net/http2
+golang.org/x/net/http2/hpack
+golang.org/x/net/http/httpguts
+golang.org/x/net/idna
 # golang.org/x/sys v0.0.0-20181026203630-95b1ffbd15a5
 golang.org/x/sys/unix
+# golang.org/x/text v0.3.0
+golang.org/x/text/secure/bidirule
+golang.org/x/text/unicode/bidi
+golang.org/x/text/unicode/norm
+golang.org/x/text/transform
 # google.golang.org/appengine v1.2.0
 google.golang.org/appengine/datastore
 google.golang.org/appengine
@@ -79,5 +94,34 @@ google.golang.org/appengine/internal/modules
 google.golang.org/appengine/internal/base
 google.golang.org/appengine/internal/log
 google.golang.org/appengine/internal/remote_api
+# google.golang.org/genproto v0.0.0-20181026194446-8b5d7a19e2d9
+google.golang.org/genproto/googleapis/rpc/status
+# google.golang.org/grpc v1.16.0
+google.golang.org/grpc
+google.golang.org/grpc/balancer
+google.golang.org/grpc/balancer/roundrobin
+google.golang.org/grpc/codes
+google.golang.org/grpc/connectivity
+google.golang.org/grpc/credentials
+google.golang.org/grpc/encoding
+google.golang.org/grpc/encoding/proto
+google.golang.org/grpc/grpclog
+google.golang.org/grpc/internal
+google.golang.org/grpc/internal/backoff
+google.golang.org/grpc/internal/channelz
+google.golang.org/grpc/internal/envconfig
+google.golang.org/grpc/internal/grpcrand
+google.golang.org/grpc/internal/transport
+google.golang.org/grpc/keepalive
+google.golang.org/grpc/metadata
+google.golang.org/grpc/naming
+google.golang.org/grpc/peer
+google.golang.org/grpc/resolver
+google.golang.org/grpc/resolver/dns
+google.golang.org/grpc/resolver/passthrough
+google.golang.org/grpc/stats
+google.golang.org/grpc/status
+google.golang.org/grpc/tap
+google.golang.org/grpc/balancer/base
 # gopkg.in/yaml.v2 v2.2.1
 gopkg.in/yaml.v2
