@@ -59,6 +59,7 @@ type Server struct {
 	address string // listen address
 	server  *fasthttp.Server
 	state   string
+	err     error
 
 	config *frames.Config
 	api    *api.API
@@ -123,12 +124,18 @@ func (s *Server) Start() error {
 		if err != nil {
 			s.logger.ErrorWith("error running HTTP server", "error", err)
 			s.state = ErrorState
+			s.err = err
 		}
 	}()
 
 	s.state = RunningState
 	s.logger.InfoWith("server started", "address", s.address)
 	return nil
+}
+
+// Err returns the last server error
+func (s *Server) Err() error {
+	return s.err
 }
 
 func (s *Server) handler(ctx *fasthttp.RequestCtx) {
@@ -227,20 +234,17 @@ func (s *Server) handleWrite(ctx *fasthttp.RequestCtx) {
 		return
 	}
 
-	var (
-		writeError error
-		nFrames    int
-		nRows      int
-	)
+	var nFrames, nRows int
+	var writeError error
 
-	ch := make(chan frames.Frame)
+	ch := make(chan frames.Frame, 1)
 	done := make(chan bool)
 	go func() {
+		defer close(done)
 		nFrames, nRows, writeError = s.api.Write(request, ch)
-		close(done)
 	}()
 
-	for {
+	for writeError == nil {
 		frame, err := dec.DecodeFrame()
 		if err != nil {
 			if err != io.EOF {
