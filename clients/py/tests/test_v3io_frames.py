@@ -180,8 +180,8 @@ def test_format_go_time():
     ts = v3f.format_go_time(dt)
 
     # 2018-10-04T16:54:05.434079562+03:00
-    match = \
-        re.match('\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}\.\d+\+\d{2}:\d{2}$', ts)
+    match = re.match(
+        r'\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}\.\d+\+\d{2}:\d{2}$', ts)
     assert match, 'bad timestamp format'
 
     # ...+03:00 -> (3, 0)
