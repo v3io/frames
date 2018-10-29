@@ -50,3 +50,10 @@ update-tsdb-dep:
 
 grpc-go:
 	protoc  frames.proto --go_out=plugins=grpc:grpc
+
+grpc-py:
+	cd clients/py && \
+	pipenv run python -m grpc_tools.protoc \
+		-I../.. --python_out=v3io_frames\
+		--grpc_python_out=v3io_frames \
+		../../frames.proto
