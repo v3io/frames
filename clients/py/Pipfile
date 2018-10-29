@@ -1,14 +1,15 @@
 [[source]]
+name = "pypi"
 url = "https://pypi.org/simple"
 verify_ssl = true
-name = "pypi"
 
 [packages]
+attrs = ">=18.2.0"
 msgpack-python = ">=0.5.6"
 pandas = ">=0.23.3"
 requests = ">=2.19.1"
 
 [dev-packages]
-pytest = "*"
 flake8 = "*"
+pytest = "*"
 twine = "*"

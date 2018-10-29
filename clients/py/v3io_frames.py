@@ -16,12 +16,12 @@
 
 import struct
 import warnings
-from collections import namedtuple
 from datetime import datetime
 from itertools import chain, count
 from os import environ
 from operator import attrgetter
 
+import attr
 import msgpack
 import numpy as np
 import pandas as pd
@@ -124,8 +124,26 @@ class BoolDType(DType):
 
 
 dtypes = {dtype.dtype: dtype for dtype in DType.__subclasses__()}
-Schema = namedtuple('Schema', 'type namespace name doc aliases fields key')
-SchemaField = namedtuple('SchemaField', 'name doc default type properties')
+
+
+@attr.s
+class Schema:
+    type = attr.ib(default='')
+    namespace = attr.ib(default='')
+    name = attr.ib(default='')
+    doc = attr.ib(default='')
+    aliases = attr.ib(default=attr.Factory(list))
+    fields = attr.ib(default=attr.Factory(list))
+    key = attr.ib(default='')
+
+
+@attr.s
+class SchemaField:
+    name = attr.ib(default='')
+    doc = attr.ib(default='')
+    default = attr.ib(default=None)
+    type = attr.ib(default=None)
+    properties = attr.ib(default=attr.Factory(dict))
 
 
 class Client(object):
@@ -275,7 +293,7 @@ class Client(object):
         if not table:
             raise CreateError('empty table')
 
-        schema = None if schema is None else encode_schema(schema)
+        schema = None if schema is None else attr.asdict(schema)
 
         request = {
             'backend': backend,
@@ -532,13 +550,6 @@ def dtype_of(val):
 
 def to_py(val):
     return dtype_of(val).to_py(val)
-
-
-def encode_schema(schema):
-    obj = schema._asdict()
-    if obj['fields']:
-        obj['fields'] = [field._asdict() for field in obj['fields']]
-    return obj
 
 
 def format_go_time(dt):
