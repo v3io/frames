@@ -39,9 +39,10 @@ var (
 
 func readRequest(request *ReadRequest) *frames.ReadRequest {
 	return &frames.ReadRequest{
-		Backend: request.Backend,
-		Table:   request.Table,
-		Query:   request.Query,
+		Backend:      request.Backend,
+		Table:        request.Table,
+		Query:        request.Query,
+		MaxInMessage: int(request.MessageLimit),
 	}
 }
 
