@@ -21,6 +21,8 @@ such restriction.
 package grpc
 
 import (
+	"fmt"
+
 	"github.com/golang/protobuf/ptypes"
 	tspb "github.com/golang/protobuf/ptypes/timestamp"
 	"github.com/v3io/frames"
@@ -34,8 +36,36 @@ func readRequest(request *ReadRequest) *frames.ReadRequest {
 	}
 }
 
-func frameMessage(frame frames.Frame) *Frame {
-	return nil
+func frameMessage(frame frames.Frame) (*Frame, error) {
+	names := frame.Names()
+	columns := make([]*Column, len(names))
+	for i, name := range names {
+		col, err := frame.Column(name)
+		if err != nil {
+			return nil, err
+		}
+
+		pbCol, err := columnMessage(col)
+		if err != nil {
+			return nil, err
+		}
+		columns[i] = pbCol
+	}
+
+	indices := make([]*Column, len(frame.Indices()))
+	for i, col := range frame.Indices() {
+		pbCol, err := columnMessage(col)
+		if err != nil {
+			return nil, err
+		}
+		indices[i] = pbCol
+	}
+
+	pbFrame := &Frame{
+		Columns: columns,
+		Indices: indices,
+	}
+	return pbFrame, nil
 }
 
 func columnMessage(column frames.Column) (*Column, error) {
@@ -48,6 +78,13 @@ func columnMessage(column frames.Column) (*Column, error) {
 		}
 		pbCol.Data = sliceCol
 	case *frames.LabelColumn:
+		labelCol, err := pbLabelCol(column.(*frames.LabelColumn))
+		if err != nil {
+			return nil, err
+		}
+		pbCol.Data = labelCol
+	default:
+		return nil, fmt.Errorf("unknown column type - %T", column)
 	}
 
 	return pbCol, nil

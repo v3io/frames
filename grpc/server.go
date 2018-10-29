@@ -35,8 +35,8 @@ type Server struct {
 	logger logger.Logger
 }
 
-// New returns a new gRPC server
-func New(config *frames.Config, addr string, logger logger.Logger) (*Server, error) {
+// NewServer returns a new gRPC server
+func NewServer(config *frames.Config, addr string, logger logger.Logger) (*Server, error) {
 	if err := config.Validate(); err != nil {
 		return nil, errors.Wrap(err, "bad configuration")
 	}
@@ -79,7 +79,18 @@ func (s *Server) Read(request *ReadRequest, stream Frames_ReadServer) error {
 		}
 	}()
 
-	return nil
+	for frame := range ch {
+		pbFrame, err := frameMessage(frame)
+		if err != nil {
+			return err
+		}
+
+		if err := stream.Send(pbFrame); err != nil {
+			return err
+		}
+	}
+
+	return apiError
 }
 
 func (s *Server) Write(Frames_WriteServer) error {
