@@ -12,33 +12,14 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-import sys
-from os import path
-from operator import attrgetter
-
 import grpc
 import pandas as pd
+import numpy as np
 
-# See https://github.com/protocolbuffers/protobuf/issues/1491
-here = path.dirname(path.abspath(__file__))
-sys.path.append(here)
+from .dtypes import dtypes
 
 from . import frames_pb2 as fpb  # noqa
 from . import frames_pb2_grpc as fgrpc  # noqa
-
-_int_dtype = '[]int'
-_float_dtype = '[]float64'
-_string_dtype = '[]string'
-_time_dtype = '[]time.Time'
-_bool_dtype = '[]bool'
-
-_slice_get = {
-    _int_dtype: getattr('ints'),
-    _float_dtype: getattr('floats'),
-    _string_dtype: getattr('strings'),
-    _time_dtype: getattr('times'),
-    _bool_dtype: getattr('bools'),
-}
 
 
 class Error(Exception):
@@ -63,18 +44,28 @@ class Client:
                 backend=backend,
                 query=query,
                 table=table,
+                message_limit=max_in_message,
+                limit=limit,
             )
             for frame in stub.Read(request):
-                yield frame
-
+                yield self._frame2df(frame)
 
     def _frame2df(self, frame):
         cols = {}
         for col in frame.columns:
-            if c.HasField('slice'):
-                scol = c.slice
-                get = _slice_get(scol.dtype)
-                if not get:
+            if col.HasField('slice'):
+                scol = col.slice
+                dtype = dtypes.get(scol.dtype)
+                if not dtype:
                     raise MessageError('unknown dtype: {}'.format(scol.dtype))
-                cols[scol.name] = get(scol)
-
+                cols[scol.name] = getattr(scol, dtype.slice_key)
+            elif col.HasField('label'):
+                lcol = col.label
+                dtype = dtypes[lcol.dtype]
+                if not dtype:
+                    raise MessageError('unknown dtype: {}'.format(lcol.dtype))
+                value = getattr(lcol, dtype.label_key)
+                # TODO: np dtype
+                cols[lcol.name] = np.full(lcol.size, value)
+        # TODO: indices
+        return pd.DataFrame(cols)
