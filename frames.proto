@@ -23,6 +23,8 @@ package grpc;
 
 import "google/protobuf/timestamp.proto";
 
+// TODO: Unite SliceCol with LabelCol, have a Kind enum
+
 message SliceCol {
     string name = 1;
     string dtype = 2;
