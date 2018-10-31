@@ -18,7 +18,7 @@ under the Apache 2.0 license is conditioned upon your compliance with
 such restriction.
 */
 
-package server
+package http
 
 import (
 	"bufio"
@@ -36,11 +36,7 @@ import (
 	"github.com/valyala/fasthttp"
 )
 
-// Possible states
 const (
-	ReadyState   = "ready"
-	RunningState = "running"
-	ErrorState   = "error"
 	maxBatchSize = 10000
 )
 
@@ -58,7 +54,7 @@ var (
 type Server struct {
 	address string // listen address
 	server  *fasthttp.Server
-	state   string
+	state   frames.ServerState
 	err     error
 
 	config *frames.Config
@@ -66,8 +62,8 @@ type Server struct {
 	logger logger.Logger
 }
 
-// New creates a new server
-func New(config *frames.Config, addr string, logger logger.Logger) (*Server, error) {
+// NewServer creates a new server
+func NewServer(config *frames.Config, addr string, logger logger.Logger) (*Server, error) {
 	var err error
 
 	if err := config.Validate(); err != nil {
@@ -92,7 +88,7 @@ func New(config *frames.Config, addr string, logger logger.Logger) (*Server, err
 
 	srv := &Server{
 		address: addr,
-		state:   ReadyState,
+		state:   frames.ReadyState,
 		config:  config,
 		logger:  logger,
 		api:     api,
@@ -102,13 +98,13 @@ func New(config *frames.Config, addr string, logger logger.Logger) (*Server, err
 }
 
 // State returns the server state
-func (s *Server) State() string {
+func (s *Server) State() frames.ServerState {
 	return s.state
 }
 
 // Start starts the server
 func (s *Server) Start() error {
-	if state := s.State(); state != ReadyState {
+	if state := s.State(); state != frames.ReadyState {
 		s.logger.ErrorWith("start from bad state", "state", state)
 		return fmt.Errorf("bad state - %s", state)
 	}
@@ -123,12 +119,12 @@ func (s *Server) Start() error {
 		err := s.server.ListenAndServe(s.address)
 		if err != nil {
 			s.logger.ErrorWith("error running HTTP server", "error", err)
-			s.state = ErrorState
+			s.state = frames.ErrorState
 			s.err = err
 		}
 	}()
 
-	s.state = RunningState
+	s.state = frames.RunningState
 	s.logger.InfoWith("server started", "address", s.address)
 	return nil
 }

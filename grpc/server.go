@@ -33,11 +33,13 @@ import (
 
 // Server is a frames gRPC server
 type Server struct {
+	frames.ServerBase
+
 	address string
 	api     *api.API
-	server  *grpc.Server
 	config  *frames.Config
 	logger  logger.Logger
+	server  *grpc.Server
 }
 
 // NewServer returns a new gRPC server
@@ -64,9 +66,11 @@ func NewServer(config *frames.Config, addr string, logger logger.Logger) (*Serve
 	}
 
 	server := &Server{
+		ServerBase: *frames.NewServerBase(),
+
 		address: addr,
-		config:  config,
 		api:     api,
+		config:  config,
 		logger:  logger,
 		server:  grpc.NewServer(),
 	}
@@ -80,13 +84,14 @@ func NewServer(config *frames.Config, addr string, logger logger.Logger) (*Serve
 func (s *Server) Start() error {
 	lis, err := net.Listen("tcp", s.address)
 	if err != nil {
+		s.SetError(err)
 		return err
 	}
 
 	go func() {
 		if err := s.server.Serve(lis); err != nil {
 			s.logger.ErrorWith("can't serve", "error", err)
-			// TODO: Server state
+			s.SetError(err)
 		}
 	}()
 

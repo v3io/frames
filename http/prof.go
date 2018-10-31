@@ -1,3 +1,5 @@
+// +build profile
+
 /*
 Copyright 2018 Iguazio Systems Ltd.
 
@@ -18,56 +20,25 @@ under the Apache 2.0 license is conditioned upon your compliance with
 such restriction.
 */
 
-package server
+package http
 
 import (
-	"fmt"
-	"time"
-
-	"github.com/BurntSushi/toml"
-
-	"github.com/v3io/frames"
+	"log"
+	"net/http"
+	// Install pprof web handler
+	_ "net/http/pprof"
+	"os"
 )
 
-var configData = `
-[log]
-level = "info"
-
-[[backends]]
-name = "v3io"
-type = "kv"
-v3ioURL = "http://v3.io"
-container = "a"
-path = "/data"
-username = "daffy"
-password = "duck"
-
-[[backends]]
-name = "weather"
-type = "csv"
-rootDir = "/tmp"
-`
-
-func ExampleServer() {
-	cfg := &frames.Config{}
-	if _, err := toml.Decode(configData, cfg); err != nil {
-		fmt.Printf("error: can't read config - %s", err)
-		return
+func init() {
+	addr := os.Getenv("V3IO_PROFILE_PORT")
+	if addr == "" {
+		addr = ":6767"
 	}
 
-	srv, err := New(cfg, ":8080", nil)
-	if err != nil {
-		fmt.Printf("error: can't create server - %s", err)
-		return
-	}
-
-	if err = srv.Start(); err != nil {
-		fmt.Printf("error: can't start server - %s", err)
-		return
-	}
-
-	fmt.Println("server running")
-	for {
-		time.Sleep(60 * time.Second)
-	}
+	go func() {
+		if err := http.ListenAndServe(addr, nil); err != nil {
+			log.Printf("error: profile: can't listen on %s", addr)
+		}
+	}()
 }

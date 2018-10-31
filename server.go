@@ -20,50 +20,48 @@ such restriction.
 
 package frames
 
-import (
-	"testing"
-	"testing/quick"
+// ServerState is state of server
+type ServerState string
+
+// Possible server states
+const (
+	ReadyState   ServerState = "ready"
+	RunningState ServerState = "running"
+	ErrorState   ServerState = "error"
 )
 
-func TestNewClient(t *testing.T) {
-	fn := func(url string, apiKey string) bool {
-		if url == "" {
-			return true
-		}
+// Server is frames server interface
+type Server interface {
+	Start() error
+	State() ServerState
+	Err() error
+}
 
-		client, err := NewClient(url, apiKey, nil)
-		if err != nil {
-			t.Logf("can't create client - %s", err)
-			return false
-		}
+// ServerBase have common functionality for server
+type ServerBase struct {
+	err   error
+	state ServerState
+}
 
-		if client.URL != url {
-			t.Logf("URL mismatch: %q != %q", client.URL, url)
-			return false
-		}
-
-		if client.apiKey != apiKey {
-			t.Logf("api key mismatch: %q != %q", client.apiKey, apiKey)
-			return false
-		}
-
-		if client.logger == nil {
-			t.Log("no logger")
-			return false
-		}
-
-		return true
-	}
-
-	if err := quick.Check(fn, nil); err != nil {
-		t.Fatal(err)
+// NewServerBase returns a new server base
+func NewServerBase() *ServerBase {
+	return &ServerBase{
+		state: ReadyState,
 	}
 }
 
-func TestClientRead(t *testing.T) {
-	t.Skip("TODO")
+// Err returns the server error
+func (s *ServerBase) Err() error {
+	return s.err
 }
 
-func TestClientWrite(t *testing.T) {
-	t.Skip("TODO")
+// State return the server state
+func (s *ServerBase) State() ServerState {
+	return s.state
+}
+
+// SetError sets current error and will change state to ErrorState
+func (s *ServerBase) SetError(err error) {
+	s.err = err
+	s.state = ErrorState
 }

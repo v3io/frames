@@ -28,25 +28,30 @@ import (
 
 	"github.com/ghodss/yaml"
 	"github.com/v3io/frames"
-	"github.com/v3io/frames/server"
+	"github.com/v3io/frames/grpc"
+	"github.com/v3io/frames/http"
 	"io/ioutil"
 )
 
 func main() {
-	var configFile string
-	var addr string
+	var config struct {
+		file     string
+		addr     string
+		protocol string // grpc or http
+	}
 
-	flag.StringVar(&configFile, "config", "", "path to configuration file (YAML)")
-	flag.StringVar(&addr, "addr", ":8080", "address to listen on")
+	flag.StringVar(&config.file, "config", "", "path to configuration file (YAML)")
+	flag.StringVar(&config.addr, "addr", ":8080", "address to listen on")
+	flag.StringVar(&config.protocol, "proto", "grpc", "Server protocol (grpc or http)")
 	flag.Parse()
 
 	log.SetFlags(0) // Show only messages
 
-	if configFile == "" {
+	if config.file == "" {
 		log.Fatal("error: no config file given")
 	}
 
-	data, err := ioutil.ReadFile(configFile)
+	data, err := ioutil.ReadFile(config.file)
 	if err != nil {
 		log.Fatalf("error: can't read config - %s", err)
 	}
@@ -58,13 +63,24 @@ func main() {
 
 	frames.DefaultLogLevel = cfg.Log.Level
 
-	srv, err := server.New(cfg, addr, nil)
+	var srv frames.Server
+	switch config.protocol {
+	case "http":
+		srv, err = http.NewServer(cfg, config.addr, nil)
+	case "grpc":
+		srv, err = grpc.NewServer(cfg, config.addr, nil)
+	}
+
+	if err != nil {
+		log.Fatalf("error: can't create server - %s", err)
+	}
+
 	if err = srv.Start(); err != nil {
 		log.Fatalf("error: can't start server - %s", err)
 	}
 
 	fmt.Println("server running")
-	for srv.State() == server.RunningState {
+	for srv.State() == frames.RunningState {
 		time.Sleep(time.Second)
 	}
 

@@ -18,7 +18,7 @@ under the Apache 2.0 license is conditioned upon your compliance with
 such restriction.
 */
 
-package server
+package http
 
 import (
 	"testing"
@@ -36,12 +36,12 @@ func TestNew(t *testing.T) {
 		},
 	}
 	address := ":8080"
-	srv, err := New(cfg, address, nil)
+	srv, err := NewServer(cfg, address, nil)
 	if err != nil {
 		t.Fatal(err)
 	}
 
-	if srv.State() != ReadyState {
+	if srv.State() != frames.ReadyState {
 		t.Fatalf("bad initial state - %q", srv.State())
 	}
 }

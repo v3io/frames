@@ -18,124 +18,74 @@ under the Apache 2.0 license is conditioned upon your compliance with
 such restriction.
 */
 
-package frames_test
+package http
 
 import (
 	"fmt"
-	"io/ioutil"
-	"net"
-	"reflect"
-	"testing"
 	"time"
 
 	"github.com/v3io/frames"
-	"github.com/v3io/frames/server"
 )
 
-func TestEnd2End(t *testing.T) {
-	tmpDir, err := ioutil.TempDir("", "frames-e2e")
+func ExampleClient() {
+
+	tableName := "example_table"
+	url := "http://localhost:8080"
+	apiKey := "t0ps3cr3t"
+	fmt.Println(">>> connecting")
+	client, err := NewClient(url, apiKey, nil)
 	if err != nil {
-		t.Fatal(err)
-	}
-
-	backendName := "e2e-backend"
-	cfg := &frames.Config{
-		Log: frames.LogConfig{
-			Level: "debug",
-		},
-		Backends: []*frames.BackendConfig{
-			&frames.BackendConfig{
-				Name:    backendName,
-				Type:    "csv",
-				RootDir: tmpDir,
-			},
-		},
-	}
-
-	port, err := freePort()
-	if err != nil {
-		t.Fatal(err)
-	}
-
-	srv, err := server.New(cfg, fmt.Sprintf(":%d", port), nil)
-	if err != nil {
-		t.Fatal(err)
-	}
-
-	if err := srv.Start(); err != nil {
-		t.Fatal(err)
-	}
-
-	time.Sleep(100 * time.Millisecond) // Let server start
-
-	url := fmt.Sprintf("http://localhost:%d", port)
-	client, err := frames.NewClient(url, "", nil)
-	if err != nil {
-		t.Fatal(err)
+		fmt.Printf("can't connect to %q - %s", url, err)
+		return
 	}
 
 	frame, err := makeFrame()
 	if err != nil {
-		t.Fatalf("can't create frame - %s", err)
+		fmt.Printf("can't create frame - %s", err)
+		return
 	}
 
-	tableName := "e2e"
+	fmt.Println(">>> writing")
 	writeReq := &frames.WriteRequest{
-		Backend: backendName,
+		Backend: "weather",
 		Table:   tableName,
 	}
 
 	appender, err := client.Write(writeReq)
-	if err != nil {
-		t.Fatal(err)
-	}
-
 	if err := appender.Add(frame); err != nil {
-		t.Fatal(err)
+		fmt.Printf("can't write frame - %s", err)
+		return
 	}
 
 	if err := appender.WaitForComplete(10 * time.Second); err != nil {
-		t.Fatal(err)
+		fmt.Printf("can't wait - %s", err)
+		return
 	}
 
+	fmt.Println(">>> reading")
 	readReq := &frames.ReadRequest{
-		Backend:      backendName,
+		Backend:      "weather",
 		Table:        tableName,
 		MaxInMessage: 100,
 	}
 
 	it, err := client.Read(readReq)
 	if err != nil {
-		t.Fatal(err)
+		fmt.Printf("can't query - %s", err)
+		return
 	}
 
-	nRows := 0
-
 	for it.Next() {
-		iFrame := it.At()
-		if !reflect.DeepEqual(iFrame.Names(), frame.Names()) {
-			t.Fatalf("columns mismatch: %v != %v", iFrame.Names(), frame.Names())
-		}
-		nRows += iFrame.Len()
+		frame := it.At()
+		fmt.Println(frame.Names())
+		fmt.Printf("%d rows\n", frame.Len())
+		fmt.Println("-----------")
 	}
 
 	if err := it.Err(); err != nil {
-		t.Fatal(err)
+		fmt.Printf("error in iterator - %s", err)
+		return
 	}
-
-	if nRows != frame.Len() {
-		t.Fatalf("# of rows mismatch - %d != %d", nRows, frame.Len())
-	}
-}
-
-func freePort() (int, error) {
-	l, err := net.Listen("tcp", ":0")
-	if err != nil {
-		return 0, err
-	}
-
-	l.Close()
-	return l.Addr().(*net.TCPAddr).Port, nil
 }
 
 func makeFrame() (frames.Frame, error) {
@@ -145,14 +95,12 @@ func makeFrame() (frames.Frame, error) {
 	fdata := make([]float64, size)
 	sdata := make([]string, size)
 	tdata := make([]time.Time, size)
-	bdata := make([]bool, size)
 
 	for i := 0; i < size; i++ {
 		idata[i] = i
 		fdata[i] = float64(i)
 		sdata[i] = fmt.Sprintf("val%d", i)
 		tdata[i] = now.Add(time.Duration(i) * time.Second)
-		bdata[i] = i%2 == 0
 	}
 
 	columns := map[string]interface{}{
@@ -160,7 +108,6 @@ func makeFrame() (frames.Frame, error) {
 		"floats":  fdata,
 		"strings": sdata,
 		"times":   tdata,
-		"bools":   bdata,
 	}
 	return frames.NewFrameFromMap(columns, nil)
 }

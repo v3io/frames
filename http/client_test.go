@@ -1,5 +1,3 @@
-// +build profile
-
 /*
 Copyright 2018 Iguazio Systems Ltd.
 
@@ -20,25 +18,52 @@ under the Apache 2.0 license is conditioned upon your compliance with
 such restriction.
 */
 
-package server
+package http
 
 import (
-	"log"
-	"net/http"
-	// Install pprof web handler
-	_ "net/http/pprof"
-	"os"
+	"testing"
+	"testing/quick"
 )
 
-func init() {
-	addr := os.Getenv("V3IO_PROFILE_PORT")
-	if addr == "" {
-		addr = ":6767"
+func TestNewClient(t *testing.T) {
+	fn := func(url string, apiKey string) bool {
+		if url == "" {
+			return true
+		}
+
+		client, err := NewClient(url, apiKey, nil)
+		if err != nil {
+			t.Logf("can't create client - %s", err)
+			return false
+		}
+
+		if client.URL != url {
+			t.Logf("URL mismatch: %q != %q", client.URL, url)
+			return false
+		}
+
+		if client.apiKey != apiKey {
+			t.Logf("api key mismatch: %q != %q", client.apiKey, apiKey)
+			return false
+		}
+
+		if client.logger == nil {
+			t.Log("no logger")
+			return false
+		}
+
+		return true
 	}
 
-	go func() {
-		if err := http.ListenAndServe(addr, nil); err != nil {
-			log.Printf("error: profile: can't listen on %s", addr)
-		}
-	}()
+	if err := quick.Check(fn, nil); err != nil {
+		t.Fatal(err)
+	}
+}
+
+func TestClientRead(t *testing.T) {
+	t.Skip("TODO")
+}
+
+func TestClientWrite(t *testing.T) {
+	t.Skip("TODO")
 }

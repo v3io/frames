@@ -18,58 +18,56 @@ under the Apache 2.0 license is conditioned upon your compliance with
 such restriction.
 */
 
-package main
+package http
 
 import (
-	"flag"
 	"fmt"
-	"io/ioutil"
-	"log"
 	"time"
 
-	"github.com/ghodss/yaml"
+	"github.com/BurntSushi/toml"
+
 	"github.com/v3io/frames"
-	"github.com/v3io/frames/grpc"
 )
 
-func main() {
-	var configFile string
-	var addr string
+var configData = `
+[log]
+level = "info"
 
-	flag.StringVar(&configFile, "config", "", "path to configuration file (YAML)")
-	flag.StringVar(&addr, "addr", ":8080", "address to listen on")
-	flag.Parse()
+[[backends]]
+name = "v3io"
+type = "kv"
+v3ioURL = "http://v3.io"
+container = "a"
+path = "/data"
+username = "daffy"
+password = "duck"
 
-	log.SetFlags(0) // Show only messages
+[[backends]]
+name = "weather"
+type = "csv"
+rootDir = "/tmp"
+`
 
-	if configFile == "" {
-		log.Fatal("error: no config file given")
-	}
-
-	data, err := ioutil.ReadFile(configFile)
-	if err != nil {
-		log.Fatalf("error: can't read config - %s", err)
-	}
-
+func ExampleServer() {
 	cfg := &frames.Config{}
-	if err := yaml.Unmarshal(data, &cfg); err != nil {
-		log.Fatalf("error: can't unmarshal config - %s", err)
+	if _, err := toml.Decode(configData, cfg); err != nil {
+		fmt.Printf("error: can't read config - %s", err)
+		return
 	}
 
-	frames.DefaultLogLevel = cfg.Log.Level
-
-	srv, err := grpc.NewServer(cfg, addr, nil)
+	srv, err := NewServer(cfg, ":8080", nil)
 	if err != nil {
-		log.Fatalf("error: can't create server - %s", err)
+		fmt.Printf("error: can't create server - %s", err)
+		return
 	}
 
 	if err = srv.Start(); err != nil {
-		log.Fatalf("error: can't start server - %s", err)
+		fmt.Printf("error: can't start server - %s", err)
+		return
 	}
 
-	fmt.Printf("serving gRPC on %s\n", addr)
-
+	fmt.Println("server running")
 	for {
-		time.Sleep(time.Second)
+		time.Sleep(60 * time.Second)
 	}
 }

@@ -18,7 +18,7 @@ under the Apache 2.0 license is conditioned upon your compliance with
 such restriction.
 */
 
-package frames
+package http
 
 import (
 	"bytes"
@@ -32,6 +32,8 @@ import (
 	"github.com/nuclio/logger"
 	"github.com/pkg/errors"
 	"github.com/vmihailenco/msgpack"
+
+	"github.com/v3io/frames"
 )
 
 // Client is v3io streaming client
@@ -42,11 +44,11 @@ type Client struct {
 	err    error // last error
 }
 
-// NewClient returns a new client
+// NewClient returns a new HTTP client
 func NewClient(url string, apiKey string, logger logger.Logger) (*Client, error) {
 	var err error
 	if logger == nil {
-		logger, err = NewLogger("info")
+		logger, err = frames.NewLogger("info")
 		if err != nil {
 			return nil, errors.Wrap(err, "can't create logger")
 		}
@@ -74,7 +76,7 @@ func NewClient(url string, apiKey string, logger logger.Logger) (*Client, error)
 }
 
 // Read runs a query on the client
-func (c *Client) Read(request *ReadRequest) (FrameIterator, error) {
+func (c *Client) Read(request *frames.ReadRequest) (frames.FrameIterator, error) {
 	var buf bytes.Buffer
 	if err := json.NewEncoder(&buf).Encode(request); err != nil {
 		return nil, errors.Wrap(err, "can't encode query")
@@ -101,7 +103,7 @@ func (c *Client) Read(request *ReadRequest) (FrameIterator, error) {
 
 	it := &streamFrameIterator{
 		reader:  resp.Body,
-		decoder: NewDecoder(resp.Body),
+		decoder: frames.NewDecoder(resp.Body),
 		logger:  c.logger,
 	}
 
@@ -109,7 +111,7 @@ func (c *Client) Read(request *ReadRequest) (FrameIterator, error) {
 }
 
 // Write writes data
-func (c *Client) Write(request *WriteRequest) (FrameAppender, error) {
+func (c *Client) Write(request *frames.WriteRequest) (frames.FrameAppender, error) {
 	if request.Backend == "" || request.Table == "" {
 		return nil, fmt.Errorf("missing request parameters")
 	}
@@ -128,7 +130,7 @@ func (c *Client) Write(request *WriteRequest) (FrameAppender, error) {
 	c.addAuth(req)
 	appender := &streamFrameAppender{
 		writer:  writer,
-		encoder: NewEncoder(writer),
+		encoder: frames.NewEncoder(writer),
 		ch:      make(chan *appenderHTTPResponse, 1),
 		logger:  c.logger,
 	}
@@ -147,12 +149,12 @@ func (c *Client) Write(request *WriteRequest) (FrameAppender, error) {
 }
 
 // Delete deletes data
-func (c *Client) Delete(request *DeleteRequest) error {
+func (c *Client) Delete(request *frames.DeleteRequest) error {
 	return c.jsonCall("/delete", request)
 }
 
 // Create creates a table
-func (c *Client) Create(request *CreateRequest) error {
+func (c *Client) Create(request *frames.CreateRequest) error {
 	return c.jsonCall("/create", request)
 }
 
@@ -193,10 +195,10 @@ func (c *Client) addAuth(req *http.Request) {
 
 // streamFrameIterator implements FrameIterator over io.Reader
 type streamFrameIterator struct {
-	frame   Frame
+	frame   frames.Frame
 	err     error
 	reader  io.Reader
-	decoder *Decoder
+	decoder *frames.Decoder
 	logger  logger.Logger
 }
 
@@ -223,7 +225,7 @@ func (it *streamFrameIterator) Next() bool {
 	return false
 }
 
-func (it *streamFrameIterator) At() Frame {
+func (it *streamFrameIterator) At() frames.Frame {
 	return it.frame
 }
 
@@ -239,12 +241,12 @@ type appenderHTTPResponse struct {
 // streamFrameAppender implements FrameAppender over io.Writer
 type streamFrameAppender struct {
 	writer  io.Writer
-	encoder *Encoder
+	encoder *frames.Encoder
 	ch      chan *appenderHTTPResponse
 	logger  logger.Logger
 }
 
-func (a *streamFrameAppender) Add(frame Frame) error {
+func (a *streamFrameAppender) Add(frame frames.Frame) error {
 	if err := a.encoder.Encode(frame); err != nil {
 		return errors.Wrap(err, "can't encode frame")
 	}

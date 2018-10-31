@@ -33,17 +33,26 @@ message SliceCol {
     repeated bool bools = 7;
 }
 
+message Value {
+    oneof value {
+	int64 ival = 1;
+	double fval = 2;
+	string sval = 3;
+	google.protobuf.Timestamp tval = 4;
+	bool bval = 5;
+    }
+}
+
+message MapEntry {
+    string key = 1;
+    Value value = 2;
+}
+
 message LabelCol {
     string name = 1;
     string dtype = 2;
     int64 size = 3;
-    oneof value {
-	int64 ival = 4;
-	double fval = 5;
-	string sval = 6;
-	google.protobuf.Timestamp tval = 7;
-	bool bval = 8;
-    }
+    Value value = 4;
 }
 
 message Column {
@@ -56,6 +65,21 @@ message Column {
 message Frame {
     repeated Column columns = 1;
     repeated Column indices = 2;
+    repeated MapEntry labels = 3;
+}
+
+message SchemaField {
+    string name = 1;
+    string doc = 2;
+    Value default = 3;
+    string type = 4;
+    repeated MapEntry properties = 5;
+}
+
+
+message SchemaKey {
+    repeated string sharding_key = 1;
+    repeated string sorting_key = 2;
 }
 
 message TableSchema {
@@ -64,10 +88,8 @@ message TableSchema {
     string name = 3;
     string doc = 4;
     repeated string aliases = 5;
-/*
-    repeated SchemaField = 6;
+    repeated SchemaField fields = 6;
     SchemaKey key = 7;
-*/
 }
 
 message JoinStruct {
@@ -76,32 +98,37 @@ message JoinStruct {
 message ReadRequest {
     string backend = 1;
     TableSchema schema = 2;
-    string format = 3;
-    bool row_orientation = 4;
-    string query = 5; // SQL Query
-    string table = 6; // Table name
-    repeated string columns = 7;
-    string filter = 8;
-    string group_by = 9;
-    repeated JoinStruct join = 10;
+    string data_format = 3;
+    bool row_layout = 4;
+    bool multi_index = 5;
+    string query = 6; // SQL Query
+    string table = 7; // Table name
+    repeated string columns = 8;
+    string filter = 9;
+    string group_by = 10;
+    repeated JoinStruct join = 11;
 
-    int64 limit = 11;
-    int64 message_limit = 12;
-    string marker = 13;
+    int64 limit = 12;
+    int64 message_limit = 13;
+    string marker = 14;
 
     // NoSQL
-    repeated int64 segments = 14;
-    int64 totoal_segments = 15;
-    repeated string sharding_keys = 16;
-    string sort_key_range_start = 17;
-    string sort_key_range_end = 18;
-
+    repeated int64 segments = 15;
+    int64 totoal_segments = 16;
+    repeated string sharding_keys = 17;
+    string sort_key_range_start = 18;
+    string sort_key_range_end = 19;
 
     // TSDB
-    string start = 19;
-    string end = 20;
-    string step_duration = 21;
-    string aggragators = 22;
+    string start = 20;
+    string end = 21;
+    string step_duration = 22;
+    string aggragators = 23;
+
+    // Stream
+    string seek = 24;
+    string shard_id = 25;
+    int64 sequence = 26;
 }
 
 message Label {
@@ -117,10 +144,9 @@ message Label {
 message InitialWriteRequest {
     string backend = 1;
     string table = 2;
-    Frame data = 3;
+    Frame initial_data = 3;
     string expression = 4;
-    repeated Label labels = 5;
-    bool more = 6;
+    bool more = 5;
 }
 
 message WriteRequest {

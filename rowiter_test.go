@@ -21,7 +21,9 @@ such restriction.
 package frames
 
 import (
+	"fmt"
 	"testing"
+	"time"
 )
 
 func TestRowIterator(t *testing.T) {
@@ -177,4 +179,32 @@ func TestNoName(t *testing.T) {
 			t.Fatalf("empty column name")
 		}
 	}
+}
+
+// TODO: Unite with http/end2end_test.go
+func makeFrame() (Frame, error) {
+	size := 1027
+	now := time.Now()
+	idata := make([]int, size)
+	fdata := make([]float64, size)
+	sdata := make([]string, size)
+	tdata := make([]time.Time, size)
+	bdata := make([]bool, size)
+
+	for i := 0; i < size; i++ {
+		idata[i] = i
+		fdata[i] = float64(i)
+		sdata[i] = fmt.Sprintf("val%d", i)
+		tdata[i] = now.Add(time.Duration(i) * time.Second)
+		bdata[i] = i%2 == 0
+	}
+
+	columns := map[string]interface{}{
+		"ints":    idata,
+		"floats":  fdata,
+		"strings": sdata,
+		"times":   tdata,
+		"bools":   bdata,
+	}
+	return NewFrameFromMap(columns, nil)
 }
