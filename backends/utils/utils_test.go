@@ -30,13 +30,13 @@ import (
 )
 
 func TestAppendValue(t *testing.T) {
-	data := []int{1, 2, 3}
-	out, err := AppendValue(data, 4)
+	data := []int64{1, 2, 3}
+	out, err := AppendValue(data, int64(4))
 	if err != nil {
 		t.Fatal(err)
 	}
 
-	expected := []int{1, 2, 3, 4}
+	expected := []int64{1, 2, 3, 4}
 	if !reflect.DeepEqual(out, expected) {
 		t.Fatalf("bad append %v != %v", out, expected)
 	}
@@ -53,13 +53,13 @@ func TestAppendValue(t *testing.T) {
 }
 
 func TestNewColumn(t *testing.T) {
-	i := 7
+	i := int64(7)
 	out, err := NewColumn(i, 3)
 	if err != nil {
 		t.Fatal(err)
 	}
 
-	expected := []int{0, 0, 0}
+	expected := []int64{0, 0, 0}
 	if !reflect.DeepEqual(out, expected) {
 		t.Fatalf("bad new column %v != %v", out, expected)
 	}
@@ -100,7 +100,7 @@ func TestRemoveColumn(t *testing.T) {
 	size := 7
 	columns := make([]frames.Column, size)
 	for i := 0; i < size; i++ {
-		col, err := frames.NewSliceColumn(colName(i), []int{})
+		col, err := frames.NewSliceColumn(colName(i), []int64{})
 		if err != nil {
 			t.Fatalf("can't create column - %s", err)
 		}

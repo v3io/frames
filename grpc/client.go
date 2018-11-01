@@ -82,7 +82,7 @@ func (it *frameIterator) Next() bool {
 	}
 
 	it.frame = nil
-	pbFrame, err := it.client.Recv()
+	msg, err := it.client.Recv()
 	if err != nil {
 		if err != io.EOF {
 			it.err = err
@@ -90,7 +90,7 @@ func (it *frameIterator) Next() bool {
 		return false
 	}
 
-	frame, err := frameFromMessage(pbFrame)
+	frame, err := asFrame(msg)
 	if err != nil {
 		it.err = err
 		return false

@@ -25,6 +25,7 @@ import (
 	"fmt"
 	"io"
 	"os"
+	"reflect"
 	"strconv"
 	"time"
 
@@ -254,11 +255,14 @@ func (it *FrameIterator) buildFrame(rows [][]string) (frames.Frame, error) {
 		)
 
 		switch val0.(type) {
-		case int:
-			typedData := make([]int, len(rows))
-			typedData[0] = val0.(int)
+		case int32, int16, int8, int:
+			typedData := make([]int64, len(rows))
+			typedData[0] = reflect.ValueOf(val0).Int()
+		case int64:
+			typedData := make([]int64, len(rows))
+			typedData[0] = val0.(int64)
 			for r, row := range rows[1:] {
-				val, ok := it.parseValue(row[c]).(int)
+				val, ok := it.parseValue(row[c]).(int64)
 				if !ok {
 					err := fmt.Errorf("type mismatch in row %d, col %d", it.nRows, c)
 					it.logger.ErrorWith("type mismatch", "error", err)

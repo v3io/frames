@@ -22,10 +22,7 @@ package grpc
 
 import (
 	"fmt"
-	"time"
 
-	"github.com/golang/protobuf/ptypes"
-	tspb "github.com/golang/protobuf/ptypes/timestamp"
 	"github.com/v3io/frames"
 )
 
@@ -37,11 +34,15 @@ var (
 	boolType   = frames.BoolType.String()
 )
 
-func readRequest(request *ReadRequest) *frames.ReadRequest {
+func decodeReadRequest(request *ReadRequest) *frames.ReadRequest {
 	return &frames.ReadRequest{
 		Backend:      request.Backend,
-		Table:        request.Table,
+		DataFormat:   request.DataFormat,
+		RowLayout:    request.RowLayout,
+		MultiIndex:   request.MultiIndex,
 		Query:        request.Query,
+		Table:        request.Table,
+		Columns:      request.Columns,
 		MaxInMessage: int(request.MessageLimit),
 	}
 }
@@ -55,7 +56,7 @@ func frameMessage(frame frames.Frame) (*Frame, error) {
 			return nil, err
 		}
 
-		pbCol, err := columnMessage(col)
+		pbCol, err := colToPB(col)
 		if err != nil {
 			return nil, err
 		}
@@ -64,7 +65,7 @@ func frameMessage(frame frames.Frame) (*Frame, error) {
 
 	indices := make([]*Column, len(frame.Indices()))
 	for i, col := range frame.Indices() {
-		pbCol, err := columnMessage(col)
+		pbCol, err := colToPB(col)
 		if err != nil {
 			return nil, err
 		}
@@ -78,206 +79,138 @@ func frameMessage(frame frames.Frame) (*Frame, error) {
 	return pbFrame, nil
 }
 
-func columnMessage(column frames.Column) (*Column, error) {
-	pbCol := &Column{}
+func colToPB(column frames.Column) (*Column, error) {
+	dtype, err := dtypeToPB(column.DType())
+	if err != nil {
+		return nil, err
+	}
+
+	msg := &Column{
+		Name:  column.Name(),
+		Dtype: dtype,
+	}
+
 	switch column.(type) {
 	case *frames.SliceColumn:
-		sliceCol, err := pbSliceCol(column.(*frames.SliceColumn))
-		if err != nil {
+		if err := fillSlice(dtype, msg, column); err != nil {
 			return nil, err
 		}
-		pbCol.Data = sliceCol
 	case *frames.LabelColumn:
-		labelCol, err := pbLabelCol(column.(*frames.LabelColumn))
-		if err != nil {
+		if err := fillLabel(dtype, msg, column); err != nil {
 			return nil, err
 		}
-		pbCol.Data = labelCol
 	default:
 		return nil, fmt.Errorf("unknown column type - %T", column)
 	}
 
-	return pbCol, nil
+	return msg, nil
 }
 
-func pbSliceCol(column *frames.SliceColumn) (*Column_Slice, error) {
-	slice := SliceCol{
-		Name:  column.Name(),
-		Dtype: column.DType().String(),
-	}
-
-	switch column.DType() {
-	case frames.IntType:
-		data, err := column.Ints()
+func fillSlice(dtype DType, msg *Column, column frames.Column) error {
+	msg.Kind = Column_SLICE
+	switch dtype {
+	case DType_BOOLEAN:
+		vals, err := column.Bools()
 		if err != nil {
-			return nil, err
+			return err
 		}
-		// TODO: Instead of copy use unsafe cast?
-		slice.Ints = make([]int64, len(data))
-		for i, n := range data {
-			slice.Ints[i] = int64(n)
-		}
-	case frames.FloatType:
-		data, err := column.Floats()
+
+		msg.Bools = vals
+	case DType_FLOAT:
+		vals, err := column.Floats()
 		if err != nil {
-			return nil, err
+			return err
 		}
-		slice.Floats = data
-	case frames.StringType:
-		data := column.Strings()
-		slice.Strings = data
-	case frames.TimeType:
-		data, err := column.Times()
+
+		msg.Floats = vals
+	case DType_INTEGER:
+		vals, err := column.Ints()
 		if err != nil {
-			return nil, err
+			return err
 		}
 
-		slice.Times = make([]*tspb.Timestamp, len(data))
-		for i, t := range data {
-			slice.Times[i], err = ptypes.TimestampProto(t)
-			if err != nil {
-				return nil, err
-			}
-		}
-	case frames.BoolType:
-		data, err := column.Bools()
+		msg.Ints = vals
+	case DType_STRING:
+		msg.Strings = column.Strings()
+	case DType_TIME:
+		vals, err := column.Times()
 		if err != nil {
-			return nil, err
+			return err
 		}
 
-		slice.Bools = data
-	}
-
-	return &Column_Slice{&slice}, nil
-}
-
-func pbLabelCol(column *frames.LabelColumn) (*Column_Label, error) {
-	label := &LabelCol{
-		Name:  column.Name(),
-		Size:  int64(column.Len()),
-		Dtype: column.DType().String(),
-	}
-
-	if label.Size > 0 {
-		switch column.DType() {
-		case frames.IntType:
-			value, err := column.IntAt(0)
-			if err != nil {
-				return nil, err
-			}
-
-			label.Value = &LabelCol_Ival{int64(value)}
-		case frames.FloatType:
-			value, err := column.FloatAt(0)
-			if err != nil {
-				return nil, err
-			}
-
-			label.Value = &LabelCol_Fval{value}
-		case frames.StringType:
-			value, err := column.StringAt(0)
-			if err != nil {
-				return nil, err
-			}
-
-			label.Value = &LabelCol_Sval{value}
-		case frames.TimeType:
-			value, err := column.TimeAt(0)
-			if err != nil {
-				return nil, err
-			}
-
-			ts, err := ptypes.TimestampProto(value)
-			if err != nil {
-				return nil, err
-			}
-
-			label.Value = &LabelCol_Tval{ts}
-		case frames.BoolType:
-			value, err := column.BoolAt(0)
-			if err != nil {
-				return nil, err
-			}
-
-			label.Value = &LabelCol_Bval{value}
+		times := make([]int64, len(vals))
+		for i, val := range vals {
+			times[i] = val.UnixNano()
 		}
-	}
 
-	return &Column_Label{label}, nil
-}
-
-func frameFromMessage(pbFrame *Frame) (frames.Frame, error) {
-	columns, err := colsToCols(pbFrame.Columns)
-	if err != nil {
-		return nil, err
-	}
-
-	indices, err := colsToCols(pbFrame.Indices)
-	if err != nil {
-		return nil, err
-	}
-
-	// TODO: labels
-	return frames.NewFrame(columns, indices, nil)
-}
-
-func colsToCols(pbCols []*Column) ([]frames.Column, error) {
-	columns := make([]frames.Column, len(pbCols))
-	for i, pbCol := range pbCols {
-		col, err := colFromMessage(pbCol)
-		if err != nil {
-			return nil, err
-		}
-		columns[i] = col
-	}
-
-	return columns, nil
-}
-
-func colFromMessage(pbCol *Column) (frames.Column, error) {
-	if sliceCol := pbCol.GetSlice(); sliceCol != nil {
-		return sliceColFromMessage(sliceCol)
-	}
-
-	if labelCol := pbCol.GetLabel(); labelCol != nil {
-		return labelColFromMessage(labelCol)
-	}
-
-	return nil, fmt.Errorf("empty column")
-}
-
-func sliceColFromMessage(pbCol *SliceCol) (frames.Column, error) {
-	var data interface{}
-	switch pbCol.Dtype {
-	case intType:
-		ints := make([]int, len(pbCol.Ints))
-		for i, val := range pbCol.Ints {
-			ints[i] = int(val)
-		}
-		data = ints
-	case floatType:
-		data = pbCol.Floats
-	case stringType:
-		data = pbCol.Strings
-	case timeType:
-		times := make([]time.Time, len(pbCol.Times))
-		for i, val := range pbCol.Times {
-			t, err := ptypes.Timestamp(val)
-			if err != nil {
-				return nil, err
-			}
-			times[i] = t
-			data = times
-		}
-	case boolType:
-		data = pbCol.Bools
+		msg.Times = times
 	default:
-		return nil, fmt.Errorf("%s: unknown dtype - %s", pbCol.Name, pbCol.Dtype)
+		return fmt.Errorf("unknown dtype - %s", column.DType())
 	}
 
-	return frames.NewSliceColumn(pbCol.Name, data)
+	return nil
 }
 
-func labelColFromMessage(pbCol *LabelCol) (frames.Column, error) {
-	return nil, fmt.Errorf("not implemented")
+func fillLabel(dtype DType, msg *Column, column frames.Column) error {
+	msg.Kind = Column_LABEL
+	msg.Size = int64(column.Len())
+
+	switch dtype {
+	case DType_BOOLEAN:
+		val, err := column.BoolAt(0)
+		if err != nil {
+			return err
+		}
+
+		msg.Bools = []bool{val}
+	case DType_FLOAT:
+		val, err := column.FloatAt(0)
+		if err != nil {
+			return err
+		}
+
+		msg.Floats = []float64{val}
+	case DType_INTEGER:
+		val, err := column.IntAt(0)
+		if err != nil {
+			return err
+		}
+
+		msg.Ints = []int64{val}
+	case DType_STRING:
+		val, err := column.StringAt(0)
+		if err != nil {
+			return err
+		}
+
+		msg.Strings = []string{val}
+	case DType_TIME:
+		val, err := column.TimeAt(0)
+		if err != nil {
+			return err
+		}
+
+		msg.Times = []int64{val.UnixNano()}
+	default:
+		return fmt.Errorf("unknown dtype - %s", column.DType())
+	}
+
+	return nil
+}
+
+func dtypeToPB(dtype frames.DType) (DType, error) {
+	switch dtype {
+	case frames.BoolType:
+		return DType_BOOLEAN, nil
+	case frames.FloatType:
+		return DType_FLOAT, nil
+	case frames.IntType:
+		return DType_INTEGER, nil
+	case frames.StringType:
+		return DType_STRING, nil
+	case frames.TimeType:
+		return DType_TIME, nil
+	}
+
+	return DType(-1), fmt.Errorf("unknown dtype - %d", dtype)
 }

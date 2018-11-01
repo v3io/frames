@@ -104,7 +104,7 @@ func (s *Server) Read(request *ReadRequest, stream Frames_ReadServer) error {
 	var apiError error
 	go func() {
 		defer close(ch)
-		apiError = s.api.Read(readRequest(request), ch)
+		apiError = s.api.Read(decodeReadRequest(request), ch)
 		if apiError != nil {
 			s.logger.ErrorWith("API error reading", "error", apiError)
 		}

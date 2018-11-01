@@ -133,7 +133,7 @@ func TestRowAll(t *testing.T) {
 }
 
 func TestNoName(t *testing.T) {
-	col1, err := NewSliceColumn("ints", []int{1, 2, 3})
+	col1, err := NewSliceColumn("ints", []int64{1, 2, 3})
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -185,14 +185,14 @@ func TestNoName(t *testing.T) {
 func makeFrame() (Frame, error) {
 	size := 1027
 	now := time.Now()
-	idata := make([]int, size)
+	idata := make([]int64, size)
 	fdata := make([]float64, size)
 	sdata := make([]string, size)
 	tdata := make([]time.Time, size)
 	bdata := make([]bool, size)
 
 	for i := 0; i < size; i++ {
-		idata[i] = i
+		idata[i] = int64(i)
 		fdata[i] = float64(i)
 		sdata[i] = fmt.Sprintf("val%d", i)
 		tdata[i] = now.Add(time.Duration(i) * time.Second)
