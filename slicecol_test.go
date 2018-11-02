@@ -76,9 +76,9 @@ func TestSliceColAPI(t *testing.T) {
 }
 
 func TestSliceColBadType(t *testing.T) {
-	_, err := NewSliceColumn("col7", []int8{1})
+	_, err := NewSliceColumn("col7", []uint8{1})
 	if err == nil {
-		t.Fatalf("created a column from int8")
+		t.Fatalf("created a column from uint8")
 	}
 }
 

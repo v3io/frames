@@ -25,8 +25,8 @@ import (
 	"fmt"
 	"io"
 	"os"
-	"reflect"
 	"strconv"
+	"strings"
 	"time"
 
 	"github.com/nuclio/logger"
@@ -255,9 +255,6 @@ func (it *FrameIterator) buildFrame(rows [][]string) (frames.Frame, error) {
 		)
 
 		switch val0.(type) {
-		case int32, int16, int8, int:
-			typedData := make([]int64, len(rows))
-			typedData[0] = reflect.ValueOf(val0).Int()
 		case int64:
 			typedData := make([]int64, len(rows))
 			typedData[0] = val0.(int64)
@@ -348,7 +345,7 @@ func (it *FrameIterator) parseValue(value string) interface{} {
 	}
 
 	// bool
-	switch value {
+	switch strings.ToLower(value) {
 	case "true":
 		return true
 	case "false":
@@ -358,7 +355,7 @@ func (it *FrameIterator) parseValue(value string) interface{} {
 	// int
 	i, err := strconv.Atoi(value)
 	if err == nil {
-		return i
+		return int64(i)
 	}
 
 	// float
