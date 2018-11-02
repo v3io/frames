@@ -57,5 +57,5 @@ grpc-py:
 		-I../.. --python_out=v3io_frames\
 		--grpc_python_out=v3io_frames \
 		../../frames.proto
-	python fix_pb_import.py \
+	python scripts/fix_pb_import.py \
 	    clients/py/v3io_frames/frames_pb2_grpc.py
