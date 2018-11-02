@@ -3,6 +3,7 @@
 
 import sys
 _b=sys.version_info[0]<3 and (lambda x:x) or (lambda x:x.encode('latin1'))
+from google.protobuf.internal import enum_type_wrapper
 from google.protobuf import descriptor as _descriptor
 from google.protobuf import message as _message
 from google.protobuf import reflection as _reflection
@@ -12,73 +13,147 @@ from google.protobuf import symbol_database as _symbol_database
 _sym_db = _symbol_database.Default()
 
 
-from google.protobuf import timestamp_pb2 as google_dot_protobuf_dot_timestamp__pb2
 
 
 DESCRIPTOR = _descriptor.FileDescriptor(
   name='frames.proto',
-  package='grpc',
+  package='pb',
   syntax='proto3',
   serialized_options=None,
-  serialized_pb=_b('\n\x0c\x66rames.proto\x12\x04grpc\x1a\x1fgoogle/protobuf/timestamp.proto\"\x90\x01\n\x08SliceCol\x12\x0c\n\x04name\x18\x01 \x01(\t\x12\r\n\x05\x64type\x18\x02 \x01(\t\x12\x0c\n\x04ints\x18\x03 \x03(\x03\x12\x0e\n\x06\x66loats\x18\x04 \x03(\x01\x12\x0f\n\x07strings\x18\x05 \x03(\t\x12)\n\x05times\x18\x06 \x03(\x0b\x32\x1a.google.protobuf.Timestamp\x12\r\n\x05\x62ools\x18\x07 \x03(\x08\"|\n\x05Value\x12\x0e\n\x04ival\x18\x01 \x01(\x03H\x00\x12\x0e\n\x04\x66val\x18\x02 \x01(\x01H\x00\x12\x0e\n\x04sval\x18\x03 \x01(\tH\x00\x12*\n\x04tval\x18\x04 \x01(\x0b\x32\x1a.google.protobuf.TimestampH\x00\x12\x0e\n\x04\x62val\x18\x05 \x01(\x08H\x00\x42\x07\n\x05value\"3\n\x08MapEntry\x12\x0b\n\x03key\x18\x01 \x01(\t\x12\x1a\n\x05value\x18\x02 \x01(\x0b\x32\x0b.grpc.Value\"Q\n\x08LabelCol\x12\x0c\n\x04name\x18\x01 \x01(\t\x12\r\n\x05\x64type\x18\x02 \x01(\t\x12\x0c\n\x04size\x18\x03 \x01(\x03\x12\x1a\n\x05value\x18\x04 \x01(\x0b\x32\x0b.grpc.Value\"R\n\x06\x43olumn\x12\x1f\n\x05slice\x18\x01 \x01(\x0b\x32\x0e.grpc.SliceColH\x00\x12\x1f\n\x05label\x18\x02 \x01(\x0b\x32\x0e.grpc.LabelColH\x00\x42\x06\n\x04\x64\x61ta\"e\n\x05\x46rame\x12\x1d\n\x07\x63olumns\x18\x01 \x03(\x0b\x32\x0c.grpc.Column\x12\x1d\n\x07indices\x18\x02 \x03(\x0b\x32\x0c.grpc.Column\x12\x1e\n\x06labels\x18\x03 \x03(\x0b\x32\x0e.grpc.MapEntry\"x\n\x0bSchemaField\x12\x0c\n\x04name\x18\x01 \x01(\t\x12\x0b\n\x03\x64oc\x18\x02 \x01(\t\x12\x1c\n\x07\x64\x65\x66\x61ult\x18\x03 \x01(\x0b\x32\x0b.grpc.Value\x12\x0c\n\x04type\x18\x04 \x01(\t\x12\"\n\nproperties\x18\x05 \x03(\x0b\x32\x0e.grpc.MapEntry\"6\n\tSchemaKey\x12\x14\n\x0csharding_key\x18\x01 \x03(\t\x12\x13\n\x0bsorting_key\x18\x02 \x03(\t\"\x9b\x01\n\x0bTableSchema\x12\x0c\n\x04type\x18\x01 \x01(\t\x12\x11\n\tnamespace\x18\x02 \x01(\t\x12\x0c\n\x04name\x18\x03 \x01(\t\x12\x0b\n\x03\x64oc\x18\x04 \x01(\t\x12\x0f\n\x07\x61liases\x18\x05 \x03(\t\x12!\n\x06\x66ields\x18\x06 \x03(\x0b\x32\x11.grpc.SchemaField\x12\x1c\n\x03key\x18\x07 \x01(\x0b\x32\x0f.grpc.SchemaKey\"\x0c\n\nJoinStruct\"\x9c\x04\n\x0bReadRequest\x12\x0f\n\x07\x62\x61\x63kend\x18\x01 \x01(\t\x12!\n\x06schema\x18\x02 \x01(\x0b\x32\x11.grpc.TableSchema\x12\x13\n\x0b\x64\x61ta_format\x18\x03 \x01(\t\x12\x12\n\nrow_layout\x18\x04 \x01(\x08\x12\x13\n\x0bmulti_index\x18\x05 \x01(\x08\x12\r\n\x05query\x18\x06 \x01(\t\x12\r\n\x05table\x18\x07 \x01(\t\x12\x0f\n\x07\x63olumns\x18\x08 \x03(\t\x12\x0e\n\x06\x66ilter\x18\t \x01(\t\x12\x10\n\x08group_by\x18\n \x01(\t\x12\x1e\n\x04join\x18\x0b \x03(\x0b\x32\x10.grpc.JoinStruct\x12\r\n\x05limit\x18\x0c \x01(\x03\x12\x15\n\rmessage_limit\x18\r \x01(\x03\x12\x0e\n\x06marker\x18\x0e \x01(\t\x12\x10\n\x08segments\x18\x0f \x03(\x03\x12\x17\n\x0ftotoal_segments\x18\x10 \x01(\x03\x12\x15\n\rsharding_keys\x18\x11 \x03(\t\x12\x1c\n\x14sort_key_range_start\x18\x12 \x01(\t\x12\x1a\n\x12sort_key_range_end\x18\x13 \x01(\t\x12\r\n\x05start\x18\x14 \x01(\t\x12\x0b\n\x03\x65nd\x18\x15 \x01(\t\x12\x15\n\rstep_duration\x18\x16 \x01(\t\x12\x13\n\x0b\x61ggragators\x18\x17 \x01(\t\x12\x0c\n\x04seek\x18\x18 \x01(\t\x12\x10\n\x08shard_id\x18\x19 \x01(\t\x12\x10\n\x08sequence\x18\x1a \x01(\x03\"y\n\x05Label\x12\x0b\n\x03key\x18\x01 \x01(\t\x12\x0e\n\x04ival\x18\x02 \x01(\x03H\x00\x12\x0e\n\x04\x66val\x18\x03 \x01(\x01H\x00\x12\x0e\n\x04sval\x18\x04 \x01(\tH\x00\x12*\n\x04tval\x18\x05 \x01(\x0b\x32\x1a.google.protobuf.TimestampH\x00\x42\x07\n\x05value\"z\n\x13InitialWriteRequest\x12\x0f\n\x07\x62\x61\x63kend\x18\x01 \x01(\t\x12\r\n\x05table\x18\x02 \x01(\t\x12!\n\x0cinitial_data\x18\x03 \x01(\x0b\x32\x0b.grpc.Frame\x12\x12\n\nexpression\x18\x04 \x01(\t\x12\x0c\n\x04more\x18\x05 \x01(\x08\"b\n\x0cWriteRequest\x12,\n\x07request\x18\x01 \x01(\x0b\x32\x19.grpc.InitialWriteRequestH\x00\x12\x1c\n\x05\x66rame\x18\x02 \x01(\x0b\x32\x0b.grpc.FrameH\x00\x42\x06\n\x04type\",\n\x0cWriteRespose\x12\x0e\n\x06\x66rames\x18\x01 \x01(\x03\x12\x0c\n\x04rows\x18\x02 \x01(\x03\x32i\n\x06\x46rames\x12*\n\x04Read\x12\x11.grpc.ReadRequest\x1a\x0b.grpc.Frame\"\x00\x30\x01\x12\x33\n\x05Write\x12\x12.grpc.WriteRequest\x1a\x12.grpc.WriteRespose\"\x00(\x01\x62\x06proto3')
-  ,
-  dependencies=[google_dot_protobuf_dot_timestamp__pb2.DESCRIPTOR,])
+  serialized_pb=_b('\n\x0c\x66rames.proto\x12\x02pb\"\xc8\x01\n\x06\x43olumn\x12\x1d\n\x04kind\x18\x01 \x01(\x0e\x32\x0f.pb.Column.Kind\x12\x0c\n\x04name\x18\x02 \x01(\t\x12\x18\n\x05\x64type\x18\x03 \x01(\x0e\x32\t.pb.DType\x12\x0c\n\x04size\x18\x04 \x01(\x03\x12\x0c\n\x04ints\x18\x05 \x03(\x03\x12\x0e\n\x06\x66loats\x18\x06 \x03(\x01\x12\x0f\n\x07strings\x18\x07 \x03(\t\x12\r\n\x05times\x18\x08 \x03(\x03\x12\r\n\x05\x62ools\x18\t \x03(\x08\"\x1c\n\x04Kind\x12\t\n\x05SLICE\x10\x00\x12\t\n\x05LABEL\x10\x01\"`\n\x05Value\x12\x0e\n\x04ival\x18\x01 \x01(\x03H\x00\x12\x0e\n\x04\x66val\x18\x02 \x01(\x01H\x00\x12\x0e\n\x04sval\x18\x03 \x01(\tH\x00\x12\x0e\n\x04tval\x18\x04 \x01(\x03H\x00\x12\x0e\n\x04\x62val\x18\x05 \x01(\x08H\x00\x42\x07\n\x05value\"\xa2\x01\n\x05\x46rame\x12\x1b\n\x07\x63olumns\x18\x01 \x03(\x0b\x32\n.pb.Column\x12\x1b\n\x07indices\x18\x02 \x03(\x0b\x32\n.pb.Column\x12%\n\x06labels\x18\x03 \x03(\x0b\x32\x15.pb.Frame.LabelsEntry\x1a\x38\n\x0bLabelsEntry\x12\x0b\n\x03key\x18\x01 \x01(\t\x12\x18\n\x05value\x18\x02 \x01(\x0b\x32\t.pb.Value:\x02\x38\x01\"\xc5\x01\n\x0bSchemaField\x12\x0c\n\x04name\x18\x01 \x01(\t\x12\x0b\n\x03\x64oc\x18\x02 \x01(\t\x12\x1a\n\x07\x64\x65\x66\x61ult\x18\x03 \x01(\x0b\x32\t.pb.Value\x12\x0c\n\x04type\x18\x04 \x01(\t\x12\x33\n\nproperties\x18\x05 \x03(\x0b\x32\x1f.pb.SchemaField.PropertiesEntry\x1a<\n\x0fPropertiesEntry\x12\x0b\n\x03key\x18\x01 \x01(\t\x12\x18\n\x05value\x18\x02 \x01(\x0b\x32\t.pb.Value:\x02\x38\x01\"6\n\tSchemaKey\x12\x14\n\x0csharding_key\x18\x01 \x03(\t\x12\x13\n\x0bsorting_key\x18\x02 \x03(\t\"\x97\x01\n\x0bTableSchema\x12\x0c\n\x04type\x18\x01 \x01(\t\x12\x11\n\tnamespace\x18\x02 \x01(\t\x12\x0c\n\x04name\x18\x03 \x01(\t\x12\x0b\n\x03\x64oc\x18\x04 \x01(\t\x12\x0f\n\x07\x61liases\x18\x05 \x03(\t\x12\x1f\n\x06\x66ields\x18\x06 \x03(\x0b\x32\x0f.pb.SchemaField\x12\x1a\n\x03key\x18\x07 \x01(\x0b\x32\r.pb.SchemaKey\"\x0c\n\nJoinStruct\"\x98\x04\n\x0bReadRequest\x12\x0f\n\x07\x62\x61\x63kend\x18\x01 \x01(\t\x12\x1f\n\x06schema\x18\x02 \x01(\x0b\x32\x0f.pb.TableSchema\x12\x13\n\x0b\x64\x61ta_format\x18\x03 \x01(\t\x12\x12\n\nrow_layout\x18\x04 \x01(\x08\x12\x13\n\x0bmulti_index\x18\x05 \x01(\x08\x12\r\n\x05query\x18\x06 \x01(\t\x12\r\n\x05table\x18\x07 \x01(\t\x12\x0f\n\x07\x63olumns\x18\x08 \x03(\t\x12\x0e\n\x06\x66ilter\x18\t \x01(\t\x12\x10\n\x08group_by\x18\n \x01(\t\x12\x1c\n\x04join\x18\x0b \x03(\x0b\x32\x0e.pb.JoinStruct\x12\r\n\x05limit\x18\x0c \x01(\x03\x12\x15\n\rmessage_limit\x18\r \x01(\x03\x12\x0e\n\x06marker\x18\x0e \x01(\t\x12\x10\n\x08segments\x18\x0f \x03(\x03\x12\x17\n\x0ftotoal_segments\x18\x10 \x01(\x03\x12\x15\n\rsharding_keys\x18\x11 \x03(\t\x12\x1c\n\x14sort_key_range_start\x18\x12 \x01(\t\x12\x1a\n\x12sort_key_range_end\x18\x13 \x01(\t\x12\r\n\x05start\x18\x14 \x01(\t\x12\x0b\n\x03\x65nd\x18\x15 \x01(\t\x12\x15\n\rstep_duration\x18\x16 \x01(\t\x12\x13\n\x0b\x61ggragators\x18\x17 \x01(\t\x12\x0c\n\x04seek\x18\x18 \x01(\t\x12\x10\n\x08shard_id\x18\x19 \x01(\t\x12\x10\n\x08sequence\x18\x1a \x01(\x03\"x\n\x13InitialWriteRequest\x12\x0f\n\x07\x62\x61\x63kend\x18\x01 \x01(\t\x12\r\n\x05table\x18\x02 \x01(\t\x12\x1f\n\x0cinitial_data\x18\x03 \x01(\x0b\x32\t.pb.Frame\x12\x12\n\nexpression\x18\x04 \x01(\t\x12\x0c\n\x04more\x18\x05 \x01(\x08\"^\n\x0cWriteRequest\x12*\n\x07request\x18\x01 \x01(\x0b\x32\x17.pb.InitialWriteRequestH\x00\x12\x1a\n\x05\x66rame\x18\x02 \x01(\x0b\x32\t.pb.FrameH\x00\x42\x06\n\x04type\",\n\x0cWriteRespose\x12\x0e\n\x06\x66rames\x18\x01 \x01(\x03\x12\x0c\n\x04rows\x18\x02 \x01(\x03*B\n\x05\x44Type\x12\x0b\n\x07INTEGER\x10\x00\x12\t\n\x05\x46LOAT\x10\x01\x12\n\n\x06STRING\x10\x02\x12\x08\n\x04TIME\x10\x03\x12\x0b\n\x07\x42OOLEAN\x10\x04\x32\x61\n\x06\x46rames\x12&\n\x04Read\x12\x0f.pb.ReadRequest\x1a\t.pb.Frame\"\x00\x30\x01\x12/\n\x05Write\x12\x10.pb.WriteRequest\x1a\x10.pb.WriteRespose\"\x00(\x01\x62\x06proto3')
+)
+
+_DTYPE = _descriptor.EnumDescriptor(
+  name='DType',
+  full_name='pb.DType',
+  filename=None,
+  file=DESCRIPTOR,
+  values=[
+    _descriptor.EnumValueDescriptor(
+      name='INTEGER', index=0, number=0,
+      serialized_options=None,
+      type=None),
+    _descriptor.EnumValueDescriptor(
+      name='FLOAT', index=1, number=1,
+      serialized_options=None,
+      type=None),
+    _descriptor.EnumValueDescriptor(
+      name='STRING', index=2, number=2,
+      serialized_options=None,
+      type=None),
+    _descriptor.EnumValueDescriptor(
+      name='TIME', index=3, number=3,
+      serialized_options=None,
+      type=None),
+    _descriptor.EnumValueDescriptor(
+      name='BOOLEAN', index=4, number=4,
+      serialized_options=None,
+      type=None),
+  ],
+  containing_type=None,
+  serialized_options=None,
+  serialized_start=1713,
+  serialized_end=1779,
+)
+_sym_db.RegisterEnumDescriptor(_DTYPE)
+
+DType = enum_type_wrapper.EnumTypeWrapper(_DTYPE)
+INTEGER = 0
+FLOAT = 1
+STRING = 2
+TIME = 3
+BOOLEAN = 4
 
 
+_COLUMN_KIND = _descriptor.EnumDescriptor(
+  name='Kind',
+  full_name='pb.Column.Kind',
+  filename=None,
+  file=DESCRIPTOR,
+  values=[
+    _descriptor.EnumValueDescriptor(
+      name='SLICE', index=0, number=0,
+      serialized_options=None,
+      type=None),
+    _descriptor.EnumValueDescriptor(
+      name='LABEL', index=1, number=1,
+      serialized_options=None,
+      type=None),
+  ],
+  containing_type=None,
+  serialized_options=None,
+  serialized_start=193,
+  serialized_end=221,
+)
+_sym_db.RegisterEnumDescriptor(_COLUMN_KIND)
 
 
-_SLICECOL = _descriptor.Descriptor(
-  name='SliceCol',
-  full_name='grpc.SliceCol',
+_COLUMN = _descriptor.Descriptor(
+  name='Column',
+  full_name='pb.Column',
   filename=None,
   file=DESCRIPTOR,
   containing_type=None,
   fields=[
     _descriptor.FieldDescriptor(
-      name='name', full_name='grpc.SliceCol.name', index=0,
-      number=1, type=9, cpp_type=9, label=1,
-      has_default_value=False, default_value=_b("").decode('utf-8'),
+      name='kind', full_name='pb.Column.kind', index=0,
+      number=1, type=14, cpp_type=8, label=1,
+      has_default_value=False, default_value=0,
       message_type=None, enum_type=None, containing_type=None,
       is_extension=False, extension_scope=None,
       serialized_options=None, file=DESCRIPTOR),
     _descriptor.FieldDescriptor(
-      name='dtype', full_name='grpc.SliceCol.dtype', index=1,
+      name='name', full_name='pb.Column.name', index=1,
       number=2, type=9, cpp_type=9, label=1,
       has_default_value=False, default_value=_b("").decode('utf-8'),
       message_type=None, enum_type=None, containing_type=None,
       is_extension=False, extension_scope=None,
       serialized_options=None, file=DESCRIPTOR),
     _descriptor.FieldDescriptor(
-      name='ints', full_name='grpc.SliceCol.ints', index=2,
-      number=3, type=3, cpp_type=2, label=3,
+      name='dtype', full_name='pb.Column.dtype', index=2,
+      number=3, type=14, cpp_type=8, label=1,
+      has_default_value=False, default_value=0,
+      message_type=None, enum_type=None, containing_type=None,
+      is_extension=False, extension_scope=None,
+      serialized_options=None, file=DESCRIPTOR),
+    _descriptor.FieldDescriptor(
+      name='size', full_name='pb.Column.size', index=3,
+      number=4, type=3, cpp_type=2, label=1,
+      has_default_value=False, default_value=0,
+      message_type=None, enum_type=None, containing_type=None,
+      is_extension=False, extension_scope=None,
+      serialized_options=None, file=DESCRIPTOR),
+    _descriptor.FieldDescriptor(
+      name='ints', full_name='pb.Column.ints', index=4,
+      number=5, type=3, cpp_type=2, label=3,
       has_default_value=False, default_value=[],
       message_type=None, enum_type=None, containing_type=None,
       is_extension=False, extension_scope=None,
       serialized_options=None, file=DESCRIPTOR),
     _descriptor.FieldDescriptor(
-      name='floats', full_name='grpc.SliceCol.floats', index=3,
-      number=4, type=1, cpp_type=5, label=3,
+      name='floats', full_name='pb.Column.floats', index=5,
+      number=6, type=1, cpp_type=5, label=3,
       has_default_value=False, default_value=[],
       message_type=None, enum_type=None, containing_type=None,
       is_extension=False, extension_scope=None,
       serialized_options=None, file=DESCRIPTOR),
     _descriptor.FieldDescriptor(
-      name='strings', full_name='grpc.SliceCol.strings', index=4,
-      number=5, type=9, cpp_type=9, label=3,
+      name='strings', full_name='pb.Column.strings', index=6,
+      number=7, type=9, cpp_type=9, label=3,
       has_default_value=False, default_value=[],
       message_type=None, enum_type=None, containing_type=None,
       is_extension=False, extension_scope=None,
       serialized_options=None, file=DESCRIPTOR),
     _descriptor.FieldDescriptor(
-      name='times', full_name='grpc.SliceCol.times', index=5,
-      number=6, type=11, cpp_type=10, label=3,
+      name='times', full_name='pb.Column.times', index=7,
+      number=8, type=3, cpp_type=2, label=3,
       has_default_value=False, default_value=[],
       message_type=None, enum_type=None, containing_type=None,
       is_extension=False, extension_scope=None,
       serialized_options=None, file=DESCRIPTOR),
     _descriptor.FieldDescriptor(
-      name='bools', full_name='grpc.SliceCol.bools', index=6,
-      number=7, type=8, cpp_type=7, label=3,
+      name='bools', full_name='pb.Column.bools', index=8,
+      number=9, type=8, cpp_type=7, label=3,
       has_default_value=False, default_value=[],
       message_type=None, enum_type=None, containing_type=None,
       is_extension=False, extension_scope=None,
@@ -88,6 +163,7 @@ _SLICECOL = _descriptor.Descriptor(
   ],
   nested_types=[],
   enum_types=[
+    _COLUMN_KIND,
   ],
   serialized_options=None,
   is_extendable=False,
@@ -95,48 +171,48 @@ _SLICECOL = _descriptor.Descriptor(
   extension_ranges=[],
   oneofs=[
   ],
-  serialized_start=56,
-  serialized_end=200,
+  serialized_start=21,
+  serialized_end=221,
 )
 
 
 _VALUE = _descriptor.Descriptor(
   name='Value',
-  full_name='grpc.Value',
+  full_name='pb.Value',
   filename=None,
   file=DESCRIPTOR,
   containing_type=None,
   fields=[
     _descriptor.FieldDescriptor(
-      name='ival', full_name='grpc.Value.ival', index=0,
+      name='ival', full_name='pb.Value.ival', index=0,
       number=1, type=3, cpp_type=2, label=1,
       has_default_value=False, default_value=0,
       message_type=None, enum_type=None, containing_type=None,
       is_extension=False, extension_scope=None,
       serialized_options=None, file=DESCRIPTOR),
     _descriptor.FieldDescriptor(
-      name='fval', full_name='grpc.Value.fval', index=1,
+      name='fval', full_name='pb.Value.fval', index=1,
       number=2, type=1, cpp_type=5, label=1,
       has_default_value=False, default_value=float(0),
       message_type=None, enum_type=None, containing_type=None,
       is_extension=False, extension_scope=None,
       serialized_options=None, file=DESCRIPTOR),
     _descriptor.FieldDescriptor(
-      name='sval', full_name='grpc.Value.sval', index=2,
+      name='sval', full_name='pb.Value.sval', index=2,
       number=3, type=9, cpp_type=9, label=1,
       has_default_value=False, default_value=_b("").decode('utf-8'),
       message_type=None, enum_type=None, containing_type=None,
       is_extension=False, extension_scope=None,
       serialized_options=None, file=DESCRIPTOR),
     _descriptor.FieldDescriptor(
-      name='tval', full_name='grpc.Value.tval', index=3,
-      number=4, type=11, cpp_type=10, label=1,
-      has_default_value=False, default_value=None,
+      name='tval', full_name='pb.Value.tval', index=3,
+      number=4, type=3, cpp_type=2, label=1,
+      has_default_value=False, default_value=0,
       message_type=None, enum_type=None, containing_type=None,
       is_extension=False, extension_scope=None,
       serialized_options=None, file=DESCRIPTOR),
     _descriptor.FieldDescriptor(
-      name='bval', full_name='grpc.Value.bval', index=4,
+      name='bval', full_name='pb.Value.bval', index=4,
       number=5, type=8, cpp_type=7, label=1,
       has_default_value=False, default_value=False,
       message_type=None, enum_type=None, containing_type=None,
@@ -154,30 +230,30 @@ _VALUE = _descriptor.Descriptor(
   extension_ranges=[],
   oneofs=[
     _descriptor.OneofDescriptor(
-      name='value', full_name='grpc.Value.value',
+      name='value', full_name='pb.Value.value',
       index=0, containing_type=None, fields=[]),
   ],
-  serialized_start=202,
-  serialized_end=326,
+  serialized_start=223,
+  serialized_end=319,
 )
 
 
-_MAPENTRY = _descriptor.Descriptor(
-  name='MapEntry',
-  full_name='grpc.MapEntry',
+_FRAME_LABELSENTRY = _descriptor.Descriptor(
+  name='LabelsEntry',
+  full_name='pb.Frame.LabelsEntry',
   filename=None,
   file=DESCRIPTOR,
   containing_type=None,
   fields=[
     _descriptor.FieldDescriptor(
-      name='key', full_name='grpc.MapEntry.key', index=0,
+      name='key', full_name='pb.Frame.LabelsEntry.key', index=0,
       number=1, type=9, cpp_type=9, label=1,
       has_default_value=False, default_value=_b("").decode('utf-8'),
       message_type=None, enum_type=None, containing_type=None,
       is_extension=False, extension_scope=None,
       serialized_options=None, file=DESCRIPTOR),
     _descriptor.FieldDescriptor(
-      name='value', full_name='grpc.MapEntry.value', index=1,
+      name='value', full_name='pb.Frame.LabelsEntry.value', index=1,
       number=2, type=11, cpp_type=10, label=1,
       has_default_value=False, default_value=None,
       message_type=None, enum_type=None, containing_type=None,
@@ -189,133 +265,39 @@ _MAPENTRY = _descriptor.Descriptor(
   nested_types=[],
   enum_types=[
   ],
-  serialized_options=None,
+  serialized_options=_b('8\001'),
   is_extendable=False,
   syntax='proto3',
   extension_ranges=[],
   oneofs=[
   ],
-  serialized_start=328,
-  serialized_end=379,
+  serialized_start=428,
+  serialized_end=484,
 )
-
-
-_LABELCOL = _descriptor.Descriptor(
-  name='LabelCol',
-  full_name='grpc.LabelCol',
-  filename=None,
-  file=DESCRIPTOR,
-  containing_type=None,
-  fields=[
-    _descriptor.FieldDescriptor(
-      name='name', full_name='grpc.LabelCol.name', index=0,
-      number=1, type=9, cpp_type=9, label=1,
-      has_default_value=False, default_value=_b("").decode('utf-8'),
-      message_type=None, enum_type=None, containing_type=None,
-      is_extension=False, extension_scope=None,
-      serialized_options=None, file=DESCRIPTOR),
-    _descriptor.FieldDescriptor(
-      name='dtype', full_name='grpc.LabelCol.dtype', index=1,
-      number=2, type=9, cpp_type=9, label=1,
-      has_default_value=False, default_value=_b("").decode('utf-8'),
-      message_type=None, enum_type=None, containing_type=None,
-      is_extension=False, extension_scope=None,
-      serialized_options=None, file=DESCRIPTOR),
-    _descriptor.FieldDescriptor(
-      name='size', full_name='grpc.LabelCol.size', index=2,
-      number=3, type=3, cpp_type=2, label=1,
-      has_default_value=False, default_value=0,
-      message_type=None, enum_type=None, containing_type=None,
-      is_extension=False, extension_scope=None,
-      serialized_options=None, file=DESCRIPTOR),
-    _descriptor.FieldDescriptor(
-      name='value', full_name='grpc.LabelCol.value', index=3,
-      number=4, type=11, cpp_type=10, label=1,
-      has_default_value=False, default_value=None,
-      message_type=None, enum_type=None, containing_type=None,
-      is_extension=False, extension_scope=None,
-      serialized_options=None, file=DESCRIPTOR),
-  ],
-  extensions=[
-  ],
-  nested_types=[],
-  enum_types=[
-  ],
-  serialized_options=None,
-  is_extendable=False,
-  syntax='proto3',
-  extension_ranges=[],
-  oneofs=[
-  ],
-  serialized_start=381,
-  serialized_end=462,
-)
-
-
-_COLUMN = _descriptor.Descriptor(
-  name='Column',
-  full_name='grpc.Column',
-  filename=None,
-  file=DESCRIPTOR,
-  containing_type=None,
-  fields=[
-    _descriptor.FieldDescriptor(
-      name='slice', full_name='grpc.Column.slice', index=0,
-      number=1, type=11, cpp_type=10, label=1,
-      has_default_value=False, default_value=None,
-      message_type=None, enum_type=None, containing_type=None,
-      is_extension=False, extension_scope=None,
-      serialized_options=None, file=DESCRIPTOR),
-    _descriptor.FieldDescriptor(
-      name='label', full_name='grpc.Column.label', index=1,
-      number=2, type=11, cpp_type=10, label=1,
-      has_default_value=False, default_value=None,
-      message_type=None, enum_type=None, containing_type=None,
-      is_extension=False, extension_scope=None,
-      serialized_options=None, file=DESCRIPTOR),
-  ],
-  extensions=[
-  ],
-  nested_types=[],
-  enum_types=[
-  ],
-  serialized_options=None,
-  is_extendable=False,
-  syntax='proto3',
-  extension_ranges=[],
-  oneofs=[
-    _descriptor.OneofDescriptor(
-      name='data', full_name='grpc.Column.data',
-      index=0, containing_type=None, fields=[]),
-  ],
-  serialized_start=464,
-  serialized_end=546,
-)
-
 
 _FRAME = _descriptor.Descriptor(
   name='Frame',
-  full_name='grpc.Frame',
+  full_name='pb.Frame',
   filename=None,
   file=DESCRIPTOR,
   containing_type=None,
   fields=[
     _descriptor.FieldDescriptor(
-      name='columns', full_name='grpc.Frame.columns', index=0,
+      name='columns', full_name='pb.Frame.columns', index=0,
       number=1, type=11, cpp_type=10, label=3,
       has_default_value=False, default_value=[],
       message_type=None, enum_type=None, containing_type=None,
       is_extension=False, extension_scope=None,
       serialized_options=None, file=DESCRIPTOR),
     _descriptor.FieldDescriptor(
-      name='indices', full_name='grpc.Frame.indices', index=1,
+      name='indices', full_name='pb.Frame.indices', index=1,
       number=2, type=11, cpp_type=10, label=3,
       has_default_value=False, default_value=[],
       message_type=None, enum_type=None, containing_type=None,
       is_extension=False, extension_scope=None,
       serialized_options=None, file=DESCRIPTOR),
     _descriptor.FieldDescriptor(
-      name='labels', full_name='grpc.Frame.labels', index=2,
+      name='labels', full_name='pb.Frame.labels', index=2,
       number=3, type=11, cpp_type=10, label=3,
       has_default_value=False, default_value=[],
       message_type=None, enum_type=None, containing_type=None,
@@ -324,7 +306,7 @@ _FRAME = _descriptor.Descriptor(
   ],
   extensions=[
   ],
-  nested_types=[],
+  nested_types=[_FRAME_LABELSENTRY, ],
   enum_types=[
   ],
   serialized_options=None,
@@ -333,50 +315,29 @@ _FRAME = _descriptor.Descriptor(
   extension_ranges=[],
   oneofs=[
   ],
-  serialized_start=548,
-  serialized_end=649,
+  serialized_start=322,
+  serialized_end=484,
 )
 
 
-_SCHEMAFIELD = _descriptor.Descriptor(
-  name='SchemaField',
-  full_name='grpc.SchemaField',
+_SCHEMAFIELD_PROPERTIESENTRY = _descriptor.Descriptor(
+  name='PropertiesEntry',
+  full_name='pb.SchemaField.PropertiesEntry',
   filename=None,
   file=DESCRIPTOR,
   containing_type=None,
   fields=[
     _descriptor.FieldDescriptor(
-      name='name', full_name='grpc.SchemaField.name', index=0,
+      name='key', full_name='pb.SchemaField.PropertiesEntry.key', index=0,
       number=1, type=9, cpp_type=9, label=1,
       has_default_value=False, default_value=_b("").decode('utf-8'),
       message_type=None, enum_type=None, containing_type=None,
       is_extension=False, extension_scope=None,
       serialized_options=None, file=DESCRIPTOR),
     _descriptor.FieldDescriptor(
-      name='doc', full_name='grpc.SchemaField.doc', index=1,
-      number=2, type=9, cpp_type=9, label=1,
-      has_default_value=False, default_value=_b("").decode('utf-8'),
-      message_type=None, enum_type=None, containing_type=None,
-      is_extension=False, extension_scope=None,
-      serialized_options=None, file=DESCRIPTOR),
-    _descriptor.FieldDescriptor(
-      name='default', full_name='grpc.SchemaField.default', index=2,
-      number=3, type=11, cpp_type=10, label=1,
+      name='value', full_name='pb.SchemaField.PropertiesEntry.value', index=1,
+      number=2, type=11, cpp_type=10, label=1,
       has_default_value=False, default_value=None,
-      message_type=None, enum_type=None, containing_type=None,
-      is_extension=False, extension_scope=None,
-      serialized_options=None, file=DESCRIPTOR),
-    _descriptor.FieldDescriptor(
-      name='type', full_name='grpc.SchemaField.type', index=3,
-      number=4, type=9, cpp_type=9, label=1,
-      has_default_value=False, default_value=_b("").decode('utf-8'),
-      message_type=None, enum_type=None, containing_type=None,
-      is_extension=False, extension_scope=None,
-      serialized_options=None, file=DESCRIPTOR),
-    _descriptor.FieldDescriptor(
-      name='properties', full_name='grpc.SchemaField.properties', index=4,
-      number=5, type=11, cpp_type=10, label=3,
-      has_default_value=False, default_value=[],
       message_type=None, enum_type=None, containing_type=None,
       is_extension=False, extension_scope=None,
       serialized_options=None, file=DESCRIPTOR),
@@ -386,33 +347,91 @@ _SCHEMAFIELD = _descriptor.Descriptor(
   nested_types=[],
   enum_types=[
   ],
+  serialized_options=_b('8\001'),
+  is_extendable=False,
+  syntax='proto3',
+  extension_ranges=[],
+  oneofs=[
+  ],
+  serialized_start=624,
+  serialized_end=684,
+)
+
+_SCHEMAFIELD = _descriptor.Descriptor(
+  name='SchemaField',
+  full_name='pb.SchemaField',
+  filename=None,
+  file=DESCRIPTOR,
+  containing_type=None,
+  fields=[
+    _descriptor.FieldDescriptor(
+      name='name', full_name='pb.SchemaField.name', index=0,
+      number=1, type=9, cpp_type=9, label=1,
+      has_default_value=False, default_value=_b("").decode('utf-8'),
+      message_type=None, enum_type=None, containing_type=None,
+      is_extension=False, extension_scope=None,
+      serialized_options=None, file=DESCRIPTOR),
+    _descriptor.FieldDescriptor(
+      name='doc', full_name='pb.SchemaField.doc', index=1,
+      number=2, type=9, cpp_type=9, label=1,
+      has_default_value=False, default_value=_b("").decode('utf-8'),
+      message_type=None, enum_type=None, containing_type=None,
+      is_extension=False, extension_scope=None,
+      serialized_options=None, file=DESCRIPTOR),
+    _descriptor.FieldDescriptor(
+      name='default', full_name='pb.SchemaField.default', index=2,
+      number=3, type=11, cpp_type=10, label=1,
+      has_default_value=False, default_value=None,
+      message_type=None, enum_type=None, containing_type=None,
+      is_extension=False, extension_scope=None,
+      serialized_options=None, file=DESCRIPTOR),
+    _descriptor.FieldDescriptor(
+      name='type', full_name='pb.SchemaField.type', index=3,
+      number=4, type=9, cpp_type=9, label=1,
+      has_default_value=False, default_value=_b("").decode('utf-8'),
+      message_type=None, enum_type=None, containing_type=None,
+      is_extension=False, extension_scope=None,
+      serialized_options=None, file=DESCRIPTOR),
+    _descriptor.FieldDescriptor(
+      name='properties', full_name='pb.SchemaField.properties', index=4,
+      number=5, type=11, cpp_type=10, label=3,
+      has_default_value=False, default_value=[],
+      message_type=None, enum_type=None, containing_type=None,
+      is_extension=False, extension_scope=None,
+      serialized_options=None, file=DESCRIPTOR),
+  ],
+  extensions=[
+  ],
+  nested_types=[_SCHEMAFIELD_PROPERTIESENTRY, ],
+  enum_types=[
+  ],
   serialized_options=None,
   is_extendable=False,
   syntax='proto3',
   extension_ranges=[],
   oneofs=[
   ],
-  serialized_start=651,
-  serialized_end=771,
+  serialized_start=487,
+  serialized_end=684,
 )
 
 
 _SCHEMAKEY = _descriptor.Descriptor(
   name='SchemaKey',
-  full_name='grpc.SchemaKey',
+  full_name='pb.SchemaKey',
   filename=None,
   file=DESCRIPTOR,
   containing_type=None,
   fields=[
     _descriptor.FieldDescriptor(
-      name='sharding_key', full_name='grpc.SchemaKey.sharding_key', index=0,
+      name='sharding_key', full_name='pb.SchemaKey.sharding_key', index=0,
       number=1, type=9, cpp_type=9, label=3,
       has_default_value=False, default_value=[],
       message_type=None, enum_type=None, containing_type=None,
       is_extension=False, extension_scope=None,
       serialized_options=None, file=DESCRIPTOR),
     _descriptor.FieldDescriptor(
-      name='sorting_key', full_name='grpc.SchemaKey.sorting_key', index=1,
+      name='sorting_key', full_name='pb.SchemaKey.sorting_key', index=1,
       number=2, type=9, cpp_type=9, label=3,
       has_default_value=False, default_value=[],
       message_type=None, enum_type=None, containing_type=None,
@@ -430,62 +449,62 @@ _SCHEMAKEY = _descriptor.Descriptor(
   extension_ranges=[],
   oneofs=[
   ],
-  serialized_start=773,
-  serialized_end=827,
+  serialized_start=686,
+  serialized_end=740,
 )
 
 
 _TABLESCHEMA = _descriptor.Descriptor(
   name='TableSchema',
-  full_name='grpc.TableSchema',
+  full_name='pb.TableSchema',
   filename=None,
   file=DESCRIPTOR,
   containing_type=None,
   fields=[
     _descriptor.FieldDescriptor(
-      name='type', full_name='grpc.TableSchema.type', index=0,
+      name='type', full_name='pb.TableSchema.type', index=0,
       number=1, type=9, cpp_type=9, label=1,
       has_default_value=False, default_value=_b("").decode('utf-8'),
       message_type=None, enum_type=None, containing_type=None,
       is_extension=False, extension_scope=None,
       serialized_options=None, file=DESCRIPTOR),
     _descriptor.FieldDescriptor(
-      name='namespace', full_name='grpc.TableSchema.namespace', index=1,
+      name='namespace', full_name='pb.TableSchema.namespace', index=1,
       number=2, type=9, cpp_type=9, label=1,
       has_default_value=False, default_value=_b("").decode('utf-8'),
       message_type=None, enum_type=None, containing_type=None,
       is_extension=False, extension_scope=None,
       serialized_options=None, file=DESCRIPTOR),
     _descriptor.FieldDescriptor(
-      name='name', full_name='grpc.TableSchema.name', index=2,
+      name='name', full_name='pb.TableSchema.name', index=2,
       number=3, type=9, cpp_type=9, label=1,
       has_default_value=False, default_value=_b("").decode('utf-8'),
       message_type=None, enum_type=None, containing_type=None,
       is_extension=False, extension_scope=None,
       serialized_options=None, file=DESCRIPTOR),
     _descriptor.FieldDescriptor(
-      name='doc', full_name='grpc.TableSchema.doc', index=3,
+      name='doc', full_name='pb.TableSchema.doc', index=3,
       number=4, type=9, cpp_type=9, label=1,
       has_default_value=False, default_value=_b("").decode('utf-8'),
       message_type=None, enum_type=None, containing_type=None,
       is_extension=False, extension_scope=None,
       serialized_options=None, file=DESCRIPTOR),
     _descriptor.FieldDescriptor(
-      name='aliases', full_name='grpc.TableSchema.aliases', index=4,
+      name='aliases', full_name='pb.TableSchema.aliases', index=4,
       number=5, type=9, cpp_type=9, label=3,
       has_default_value=False, default_value=[],
       message_type=None, enum_type=None, containing_type=None,
       is_extension=False, extension_scope=None,
       serialized_options=None, file=DESCRIPTOR),
     _descriptor.FieldDescriptor(
-      name='fields', full_name='grpc.TableSchema.fields', index=5,
+      name='fields', full_name='pb.TableSchema.fields', index=5,
       number=6, type=11, cpp_type=10, label=3,
       has_default_value=False, default_value=[],
       message_type=None, enum_type=None, containing_type=None,
       is_extension=False, extension_scope=None,
       serialized_options=None, file=DESCRIPTOR),
     _descriptor.FieldDescriptor(
-      name='key', full_name='grpc.TableSchema.key', index=6,
+      name='key', full_name='pb.TableSchema.key', index=6,
       number=7, type=11, cpp_type=10, label=1,
       has_default_value=False, default_value=None,
       message_type=None, enum_type=None, containing_type=None,
@@ -503,14 +522,14 @@ _TABLESCHEMA = _descriptor.Descriptor(
   extension_ranges=[],
   oneofs=[
   ],
-  serialized_start=830,
-  serialized_end=985,
+  serialized_start=743,
+  serialized_end=894,
 )
 
 
 _JOINSTRUCT = _descriptor.Descriptor(
   name='JoinStruct',
-  full_name='grpc.JoinStruct',
+  full_name='pb.JoinStruct',
   filename=None,
   file=DESCRIPTOR,
   containing_type=None,
@@ -527,195 +546,195 @@ _JOINSTRUCT = _descriptor.Descriptor(
   extension_ranges=[],
   oneofs=[
   ],
-  serialized_start=987,
-  serialized_end=999,
+  serialized_start=896,
+  serialized_end=908,
 )
 
 
 _READREQUEST = _descriptor.Descriptor(
   name='ReadRequest',
-  full_name='grpc.ReadRequest',
+  full_name='pb.ReadRequest',
   filename=None,
   file=DESCRIPTOR,
   containing_type=None,
   fields=[
     _descriptor.FieldDescriptor(
-      name='backend', full_name='grpc.ReadRequest.backend', index=0,
+      name='backend', full_name='pb.ReadRequest.backend', index=0,
       number=1, type=9, cpp_type=9, label=1,
       has_default_value=False, default_value=_b("").decode('utf-8'),
       message_type=None, enum_type=None, containing_type=None,
       is_extension=False, extension_scope=None,
       serialized_options=None, file=DESCRIPTOR),
     _descriptor.FieldDescriptor(
-      name='schema', full_name='grpc.ReadRequest.schema', index=1,
+      name='schema', full_name='pb.ReadRequest.schema', index=1,
       number=2, type=11, cpp_type=10, label=1,
       has_default_value=False, default_value=None,
       message_type=None, enum_type=None, containing_type=None,
       is_extension=False, extension_scope=None,
       serialized_options=None, file=DESCRIPTOR),
     _descriptor.FieldDescriptor(
-      name='data_format', full_name='grpc.ReadRequest.data_format', index=2,
+      name='data_format', full_name='pb.ReadRequest.data_format', index=2,
       number=3, type=9, cpp_type=9, label=1,
       has_default_value=False, default_value=_b("").decode('utf-8'),
       message_type=None, enum_type=None, containing_type=None,
       is_extension=False, extension_scope=None,
       serialized_options=None, file=DESCRIPTOR),
     _descriptor.FieldDescriptor(
-      name='row_layout', full_name='grpc.ReadRequest.row_layout', index=3,
+      name='row_layout', full_name='pb.ReadRequest.row_layout', index=3,
       number=4, type=8, cpp_type=7, label=1,
       has_default_value=False, default_value=False,
       message_type=None, enum_type=None, containing_type=None,
       is_extension=False, extension_scope=None,
       serialized_options=None, file=DESCRIPTOR),
     _descriptor.FieldDescriptor(
-      name='multi_index', full_name='grpc.ReadRequest.multi_index', index=4,
+      name='multi_index', full_name='pb.ReadRequest.multi_index', index=4,
       number=5, type=8, cpp_type=7, label=1,
       has_default_value=False, default_value=False,
       message_type=None, enum_type=None, containing_type=None,
       is_extension=False, extension_scope=None,
       serialized_options=None, file=DESCRIPTOR),
     _descriptor.FieldDescriptor(
-      name='query', full_name='grpc.ReadRequest.query', index=5,
+      name='query', full_name='pb.ReadRequest.query', index=5,
       number=6, type=9, cpp_type=9, label=1,
       has_default_value=False, default_value=_b("").decode('utf-8'),
       message_type=None, enum_type=None, containing_type=None,
       is_extension=False, extension_scope=None,
       serialized_options=None, file=DESCRIPTOR),
     _descriptor.FieldDescriptor(
-      name='table', full_name='grpc.ReadRequest.table', index=6,
+      name='table', full_name='pb.ReadRequest.table', index=6,
       number=7, type=9, cpp_type=9, label=1,
       has_default_value=False, default_value=_b("").decode('utf-8'),
       message_type=None, enum_type=None, containing_type=None,
       is_extension=False, extension_scope=None,
       serialized_options=None, file=DESCRIPTOR),
     _descriptor.FieldDescriptor(
-      name='columns', full_name='grpc.ReadRequest.columns', index=7,
+      name='columns', full_name='pb.ReadRequest.columns', index=7,
       number=8, type=9, cpp_type=9, label=3,
       has_default_value=False, default_value=[],
       message_type=None, enum_type=None, containing_type=None,
       is_extension=False, extension_scope=None,
       serialized_options=None, file=DESCRIPTOR),
     _descriptor.FieldDescriptor(
-      name='filter', full_name='grpc.ReadRequest.filter', index=8,
+      name='filter', full_name='pb.ReadRequest.filter', index=8,
       number=9, type=9, cpp_type=9, label=1,
       has_default_value=False, default_value=_b("").decode('utf-8'),
       message_type=None, enum_type=None, containing_type=None,
       is_extension=False, extension_scope=None,
       serialized_options=None, file=DESCRIPTOR),
     _descriptor.FieldDescriptor(
-      name='group_by', full_name='grpc.ReadRequest.group_by', index=9,
+      name='group_by', full_name='pb.ReadRequest.group_by', index=9,
       number=10, type=9, cpp_type=9, label=1,
       has_default_value=False, default_value=_b("").decode('utf-8'),
       message_type=None, enum_type=None, containing_type=None,
       is_extension=False, extension_scope=None,
       serialized_options=None, file=DESCRIPTOR),
     _descriptor.FieldDescriptor(
-      name='join', full_name='grpc.ReadRequest.join', index=10,
+      name='join', full_name='pb.ReadRequest.join', index=10,
       number=11, type=11, cpp_type=10, label=3,
       has_default_value=False, default_value=[],
       message_type=None, enum_type=None, containing_type=None,
       is_extension=False, extension_scope=None,
       serialized_options=None, file=DESCRIPTOR),
     _descriptor.FieldDescriptor(
-      name='limit', full_name='grpc.ReadRequest.limit', index=11,
+      name='limit', full_name='pb.ReadRequest.limit', index=11,
       number=12, type=3, cpp_type=2, label=1,
       has_default_value=False, default_value=0,
       message_type=None, enum_type=None, containing_type=None,
       is_extension=False, extension_scope=None,
       serialized_options=None, file=DESCRIPTOR),
     _descriptor.FieldDescriptor(
-      name='message_limit', full_name='grpc.ReadRequest.message_limit', index=12,
+      name='message_limit', full_name='pb.ReadRequest.message_limit', index=12,
       number=13, type=3, cpp_type=2, label=1,
       has_default_value=False, default_value=0,
       message_type=None, enum_type=None, containing_type=None,
       is_extension=False, extension_scope=None,
       serialized_options=None, file=DESCRIPTOR),
     _descriptor.FieldDescriptor(
-      name='marker', full_name='grpc.ReadRequest.marker', index=13,
+      name='marker', full_name='pb.ReadRequest.marker', index=13,
       number=14, type=9, cpp_type=9, label=1,
       has_default_value=False, default_value=_b("").decode('utf-8'),
       message_type=None, enum_type=None, containing_type=None,
       is_extension=False, extension_scope=None,
       serialized_options=None, file=DESCRIPTOR),
     _descriptor.FieldDescriptor(
-      name='segments', full_name='grpc.ReadRequest.segments', index=14,
+      name='segments', full_name='pb.ReadRequest.segments', index=14,
       number=15, type=3, cpp_type=2, label=3,
       has_default_value=False, default_value=[],
       message_type=None, enum_type=None, containing_type=None,
       is_extension=False, extension_scope=None,
       serialized_options=None, file=DESCRIPTOR),
     _descriptor.FieldDescriptor(
-      name='totoal_segments', full_name='grpc.ReadRequest.totoal_segments', index=15,
+      name='totoal_segments', full_name='pb.ReadRequest.totoal_segments', index=15,
       number=16, type=3, cpp_type=2, label=1,
       has_default_value=False, default_value=0,
       message_type=None, enum_type=None, containing_type=None,
       is_extension=False, extension_scope=None,
       serialized_options=None, file=DESCRIPTOR),
     _descriptor.FieldDescriptor(
-      name='sharding_keys', full_name='grpc.ReadRequest.sharding_keys', index=16,
+      name='sharding_keys', full_name='pb.ReadRequest.sharding_keys', index=16,
       number=17, type=9, cpp_type=9, label=3,
       has_default_value=False, default_value=[],
       message_type=None, enum_type=None, containing_type=None,
       is_extension=False, extension_scope=None,
       serialized_options=None, file=DESCRIPTOR),
     _descriptor.FieldDescriptor(
-      name='sort_key_range_start', full_name='grpc.ReadRequest.sort_key_range_start', index=17,
+      name='sort_key_range_start', full_name='pb.ReadRequest.sort_key_range_start', index=17,
       number=18, type=9, cpp_type=9, label=1,
       has_default_value=False, default_value=_b("").decode('utf-8'),
       message_type=None, enum_type=None, containing_type=None,
       is_extension=False, extension_scope=None,
       serialized_options=None, file=DESCRIPTOR),
     _descriptor.FieldDescriptor(
-      name='sort_key_range_end', full_name='grpc.ReadRequest.sort_key_range_end', index=18,
+      name='sort_key_range_end', full_name='pb.ReadRequest.sort_key_range_end', index=18,
       number=19, type=9, cpp_type=9, label=1,
       has_default_value=False, default_value=_b("").decode('utf-8'),
       message_type=None, enum_type=None, containing_type=None,
       is_extension=False, extension_scope=None,
       serialized_options=None, file=DESCRIPTOR),
     _descriptor.FieldDescriptor(
-      name='start', full_name='grpc.ReadRequest.start', index=19,
+      name='start', full_name='pb.ReadRequest.start', index=19,
       number=20, type=9, cpp_type=9, label=1,
       has_default_value=False, default_value=_b("").decode('utf-8'),
       message_type=None, enum_type=None, containing_type=None,
       is_extension=False, extension_scope=None,
       serialized_options=None, file=DESCRIPTOR),
     _descriptor.FieldDescriptor(
-      name='end', full_name='grpc.ReadRequest.end', index=20,
+      name='end', full_name='pb.ReadRequest.end', index=20,
       number=21, type=9, cpp_type=9, label=1,
       has_default_value=False, default_value=_b("").decode('utf-8'),
       message_type=None, enum_type=None, containing_type=None,
       is_extension=False, extension_scope=None,
       serialized_options=None, file=DESCRIPTOR),
     _descriptor.FieldDescriptor(
-      name='step_duration', full_name='grpc.ReadRequest.step_duration', index=21,
+      name='step_duration', full_name='pb.ReadRequest.step_duration', index=21,
       number=22, type=9, cpp_type=9, label=1,
       has_default_value=False, default_value=_b("").decode('utf-8'),
       message_type=None, enum_type=None, containing_type=None,
       is_extension=False, extension_scope=None,
       serialized_options=None, file=DESCRIPTOR),
     _descriptor.FieldDescriptor(
-      name='aggragators', full_name='grpc.ReadRequest.aggragators', index=22,
+      name='aggragators', full_name='pb.ReadRequest.aggragators', index=22,
       number=23, type=9, cpp_type=9, label=1,
       has_default_value=False, default_value=_b("").decode('utf-8'),
       message_type=None, enum_type=None, containing_type=None,
       is_extension=False, extension_scope=None,
       serialized_options=None, file=DESCRIPTOR),
     _descriptor.FieldDescriptor(
-      name='seek', full_name='grpc.ReadRequest.seek', index=23,
+      name='seek', full_name='pb.ReadRequest.seek', index=23,
       number=24, type=9, cpp_type=9, label=1,
       has_default_value=False, default_value=_b("").decode('utf-8'),
       message_type=None, enum_type=None, containing_type=None,
       is_extension=False, extension_scope=None,
       serialized_options=None, file=DESCRIPTOR),
     _descriptor.FieldDescriptor(
-      name='shard_id', full_name='grpc.ReadRequest.shard_id', index=24,
+      name='shard_id', full_name='pb.ReadRequest.shard_id', index=24,
       number=25, type=9, cpp_type=9, label=1,
       has_default_value=False, default_value=_b("").decode('utf-8'),
       message_type=None, enum_type=None, containing_type=None,
       is_extension=False, extension_scope=None,
       serialized_options=None, file=DESCRIPTOR),
     _descriptor.FieldDescriptor(
-      name='sequence', full_name='grpc.ReadRequest.sequence', index=25,
+      name='sequence', full_name='pb.ReadRequest.sequence', index=25,
       number=26, type=3, cpp_type=2, label=1,
       has_default_value=False, default_value=0,
       message_type=None, enum_type=None, containing_type=None,
@@ -733,110 +752,48 @@ _READREQUEST = _descriptor.Descriptor(
   extension_ranges=[],
   oneofs=[
   ],
-  serialized_start=1002,
-  serialized_end=1542,
-)
-
-
-_LABEL = _descriptor.Descriptor(
-  name='Label',
-  full_name='grpc.Label',
-  filename=None,
-  file=DESCRIPTOR,
-  containing_type=None,
-  fields=[
-    _descriptor.FieldDescriptor(
-      name='key', full_name='grpc.Label.key', index=0,
-      number=1, type=9, cpp_type=9, label=1,
-      has_default_value=False, default_value=_b("").decode('utf-8'),
-      message_type=None, enum_type=None, containing_type=None,
-      is_extension=False, extension_scope=None,
-      serialized_options=None, file=DESCRIPTOR),
-    _descriptor.FieldDescriptor(
-      name='ival', full_name='grpc.Label.ival', index=1,
-      number=2, type=3, cpp_type=2, label=1,
-      has_default_value=False, default_value=0,
-      message_type=None, enum_type=None, containing_type=None,
-      is_extension=False, extension_scope=None,
-      serialized_options=None, file=DESCRIPTOR),
-    _descriptor.FieldDescriptor(
-      name='fval', full_name='grpc.Label.fval', index=2,
-      number=3, type=1, cpp_type=5, label=1,
-      has_default_value=False, default_value=float(0),
-      message_type=None, enum_type=None, containing_type=None,
-      is_extension=False, extension_scope=None,
-      serialized_options=None, file=DESCRIPTOR),
-    _descriptor.FieldDescriptor(
-      name='sval', full_name='grpc.Label.sval', index=3,
-      number=4, type=9, cpp_type=9, label=1,
-      has_default_value=False, default_value=_b("").decode('utf-8'),
-      message_type=None, enum_type=None, containing_type=None,
-      is_extension=False, extension_scope=None,
-      serialized_options=None, file=DESCRIPTOR),
-    _descriptor.FieldDescriptor(
-      name='tval', full_name='grpc.Label.tval', index=4,
-      number=5, type=11, cpp_type=10, label=1,
-      has_default_value=False, default_value=None,
-      message_type=None, enum_type=None, containing_type=None,
-      is_extension=False, extension_scope=None,
-      serialized_options=None, file=DESCRIPTOR),
-  ],
-  extensions=[
-  ],
-  nested_types=[],
-  enum_types=[
-  ],
-  serialized_options=None,
-  is_extendable=False,
-  syntax='proto3',
-  extension_ranges=[],
-  oneofs=[
-    _descriptor.OneofDescriptor(
-      name='value', full_name='grpc.Label.value',
-      index=0, containing_type=None, fields=[]),
-  ],
-  serialized_start=1544,
-  serialized_end=1665,
+  serialized_start=911,
+  serialized_end=1447,
 )
 
 
 _INITIALWRITEREQUEST = _descriptor.Descriptor(
   name='InitialWriteRequest',
-  full_name='grpc.InitialWriteRequest',
+  full_name='pb.InitialWriteRequest',
   filename=None,
   file=DESCRIPTOR,
   containing_type=None,
   fields=[
     _descriptor.FieldDescriptor(
-      name='backend', full_name='grpc.InitialWriteRequest.backend', index=0,
+      name='backend', full_name='pb.InitialWriteRequest.backend', index=0,
       number=1, type=9, cpp_type=9, label=1,
       has_default_value=False, default_value=_b("").decode('utf-8'),
       message_type=None, enum_type=None, containing_type=None,
       is_extension=False, extension_scope=None,
       serialized_options=None, file=DESCRIPTOR),
     _descriptor.FieldDescriptor(
-      name='table', full_name='grpc.InitialWriteRequest.table', index=1,
+      name='table', full_name='pb.InitialWriteRequest.table', index=1,
       number=2, type=9, cpp_type=9, label=1,
       has_default_value=False, default_value=_b("").decode('utf-8'),
       message_type=None, enum_type=None, containing_type=None,
       is_extension=False, extension_scope=None,
       serialized_options=None, file=DESCRIPTOR),
     _descriptor.FieldDescriptor(
-      name='initial_data', full_name='grpc.InitialWriteRequest.initial_data', index=2,
+      name='initial_data', full_name='pb.InitialWriteRequest.initial_data', index=2,
       number=3, type=11, cpp_type=10, label=1,
       has_default_value=False, default_value=None,
       message_type=None, enum_type=None, containing_type=None,
       is_extension=False, extension_scope=None,
       serialized_options=None, file=DESCRIPTOR),
     _descriptor.FieldDescriptor(
-      name='expression', full_name='grpc.InitialWriteRequest.expression', index=3,
+      name='expression', full_name='pb.InitialWriteRequest.expression', index=3,
       number=4, type=9, cpp_type=9, label=1,
       has_default_value=False, default_value=_b("").decode('utf-8'),
       message_type=None, enum_type=None, containing_type=None,
       is_extension=False, extension_scope=None,
       serialized_options=None, file=DESCRIPTOR),
     _descriptor.FieldDescriptor(
-      name='more', full_name='grpc.InitialWriteRequest.more', index=4,
+      name='more', full_name='pb.InitialWriteRequest.more', index=4,
       number=5, type=8, cpp_type=7, label=1,
       has_default_value=False, default_value=False,
       message_type=None, enum_type=None, containing_type=None,
@@ -854,27 +811,27 @@ _INITIALWRITEREQUEST = _descriptor.Descriptor(
   extension_ranges=[],
   oneofs=[
   ],
-  serialized_start=1667,
-  serialized_end=1789,
+  serialized_start=1449,
+  serialized_end=1569,
 )
 
 
 _WRITEREQUEST = _descriptor.Descriptor(
   name='WriteRequest',
-  full_name='grpc.WriteRequest',
+  full_name='pb.WriteRequest',
   filename=None,
   file=DESCRIPTOR,
   containing_type=None,
   fields=[
     _descriptor.FieldDescriptor(
-      name='request', full_name='grpc.WriteRequest.request', index=0,
+      name='request', full_name='pb.WriteRequest.request', index=0,
       number=1, type=11, cpp_type=10, label=1,
       has_default_value=False, default_value=None,
       message_type=None, enum_type=None, containing_type=None,
       is_extension=False, extension_scope=None,
       serialized_options=None, file=DESCRIPTOR),
     _descriptor.FieldDescriptor(
-      name='frame', full_name='grpc.WriteRequest.frame', index=1,
+      name='frame', full_name='pb.WriteRequest.frame', index=1,
       number=2, type=11, cpp_type=10, label=1,
       has_default_value=False, default_value=None,
       message_type=None, enum_type=None, containing_type=None,
@@ -892,30 +849,30 @@ _WRITEREQUEST = _descriptor.Descriptor(
   extension_ranges=[],
   oneofs=[
     _descriptor.OneofDescriptor(
-      name='type', full_name='grpc.WriteRequest.type',
+      name='type', full_name='pb.WriteRequest.type',
       index=0, containing_type=None, fields=[]),
   ],
-  serialized_start=1791,
-  serialized_end=1889,
+  serialized_start=1571,
+  serialized_end=1665,
 )
 
 
 _WRITERESPOSE = _descriptor.Descriptor(
   name='WriteRespose',
-  full_name='grpc.WriteRespose',
+  full_name='pb.WriteRespose',
   filename=None,
   file=DESCRIPTOR,
   containing_type=None,
   fields=[
     _descriptor.FieldDescriptor(
-      name='frames', full_name='grpc.WriteRespose.frames', index=0,
+      name='frames', full_name='pb.WriteRespose.frames', index=0,
       number=1, type=3, cpp_type=2, label=1,
       has_default_value=False, default_value=0,
       message_type=None, enum_type=None, containing_type=None,
       is_extension=False, extension_scope=None,
       serialized_options=None, file=DESCRIPTOR),
     _descriptor.FieldDescriptor(
-      name='rows', full_name='grpc.WriteRespose.rows', index=1,
+      name='rows', full_name='pb.WriteRespose.rows', index=1,
       number=2, type=3, cpp_type=2, label=1,
       has_default_value=False, default_value=0,
       message_type=None, enum_type=None, containing_type=None,
@@ -933,12 +890,13 @@ _WRITERESPOSE = _descriptor.Descriptor(
   extension_ranges=[],
   oneofs=[
   ],
-  serialized_start=1891,
-  serialized_end=1935,
+  serialized_start=1667,
+  serialized_end=1711,
 )
 
-_SLICECOL.fields_by_name['times'].message_type = google_dot_protobuf_dot_timestamp__pb2._TIMESTAMP
-_VALUE.fields_by_name['tval'].message_type = google_dot_protobuf_dot_timestamp__pb2._TIMESTAMP
+_COLUMN.fields_by_name['kind'].enum_type = _COLUMN_KIND
+_COLUMN.fields_by_name['dtype'].enum_type = _DTYPE
+_COLUMN_KIND.containing_type = _COLUMN
 _VALUE.oneofs_by_name['value'].fields.append(
   _VALUE.fields_by_name['ival'])
 _VALUE.fields_by_name['ival'].containing_oneof = _VALUE.oneofs_by_name['value']
@@ -954,38 +912,19 @@ _VALUE.fields_by_name['tval'].containing_oneof = _VALUE.oneofs_by_name['value']
 _VALUE.oneofs_by_name['value'].fields.append(
   _VALUE.fields_by_name['bval'])
 _VALUE.fields_by_name['bval'].containing_oneof = _VALUE.oneofs_by_name['value']
-_MAPENTRY.fields_by_name['value'].message_type = _VALUE
-_LABELCOL.fields_by_name['value'].message_type = _VALUE
-_COLUMN.fields_by_name['slice'].message_type = _SLICECOL
-_COLUMN.fields_by_name['label'].message_type = _LABELCOL
-_COLUMN.oneofs_by_name['data'].fields.append(
-  _COLUMN.fields_by_name['slice'])
-_COLUMN.fields_by_name['slice'].containing_oneof = _COLUMN.oneofs_by_name['data']
-_COLUMN.oneofs_by_name['data'].fields.append(
-  _COLUMN.fields_by_name['label'])
-_COLUMN.fields_by_name['label'].containing_oneof = _COLUMN.oneofs_by_name['data']
+_FRAME_LABELSENTRY.fields_by_name['value'].message_type = _VALUE
+_FRAME_LABELSENTRY.containing_type = _FRAME
 _FRAME.fields_by_name['columns'].message_type = _COLUMN
 _FRAME.fields_by_name['indices'].message_type = _COLUMN
-_FRAME.fields_by_name['labels'].message_type = _MAPENTRY
+_FRAME.fields_by_name['labels'].message_type = _FRAME_LABELSENTRY
+_SCHEMAFIELD_PROPERTIESENTRY.fields_by_name['value'].message_type = _VALUE
+_SCHEMAFIELD_PROPERTIESENTRY.containing_type = _SCHEMAFIELD
 _SCHEMAFIELD.fields_by_name['default'].message_type = _VALUE
-_SCHEMAFIELD.fields_by_name['properties'].message_type = _MAPENTRY
+_SCHEMAFIELD.fields_by_name['properties'].message_type = _SCHEMAFIELD_PROPERTIESENTRY
 _TABLESCHEMA.fields_by_name['fields'].message_type = _SCHEMAFIELD
 _TABLESCHEMA.fields_by_name['key'].message_type = _SCHEMAKEY
 _READREQUEST.fields_by_name['schema'].message_type = _TABLESCHEMA
 _READREQUEST.fields_by_name['join'].message_type = _JOINSTRUCT
-_LABEL.fields_by_name['tval'].message_type = google_dot_protobuf_dot_timestamp__pb2._TIMESTAMP
-_LABEL.oneofs_by_name['value'].fields.append(
-  _LABEL.fields_by_name['ival'])
-_LABEL.fields_by_name['ival'].containing_oneof = _LABEL.oneofs_by_name['value']
-_LABEL.oneofs_by_name['value'].fields.append(
-  _LABEL.fields_by_name['fval'])
-_LABEL.fields_by_name['fval'].containing_oneof = _LABEL.oneofs_by_name['value']
-_LABEL.oneofs_by_name['value'].fields.append(
-  _LABEL.fields_by_name['sval'])
-_LABEL.fields_by_name['sval'].containing_oneof = _LABEL.oneofs_by_name['value']
-_LABEL.oneofs_by_name['value'].fields.append(
-  _LABEL.fields_by_name['tval'])
-_LABEL.fields_by_name['tval'].containing_oneof = _LABEL.oneofs_by_name['value']
 _INITIALWRITEREQUEST.fields_by_name['initial_data'].message_type = _FRAME
 _WRITEREQUEST.fields_by_name['request'].message_type = _INITIALWRITEREQUEST
 _WRITEREQUEST.fields_by_name['frame'].message_type = _FRAME
@@ -995,142 +934,129 @@ _WRITEREQUEST.fields_by_name['request'].containing_oneof = _WRITEREQUEST.oneofs_
 _WRITEREQUEST.oneofs_by_name['type'].fields.append(
   _WRITEREQUEST.fields_by_name['frame'])
 _WRITEREQUEST.fields_by_name['frame'].containing_oneof = _WRITEREQUEST.oneofs_by_name['type']
-DESCRIPTOR.message_types_by_name['SliceCol'] = _SLICECOL
-DESCRIPTOR.message_types_by_name['Value'] = _VALUE
-DESCRIPTOR.message_types_by_name['MapEntry'] = _MAPENTRY
-DESCRIPTOR.message_types_by_name['LabelCol'] = _LABELCOL
 DESCRIPTOR.message_types_by_name['Column'] = _COLUMN
+DESCRIPTOR.message_types_by_name['Value'] = _VALUE
 DESCRIPTOR.message_types_by_name['Frame'] = _FRAME
 DESCRIPTOR.message_types_by_name['SchemaField'] = _SCHEMAFIELD
 DESCRIPTOR.message_types_by_name['SchemaKey'] = _SCHEMAKEY
 DESCRIPTOR.message_types_by_name['TableSchema'] = _TABLESCHEMA
 DESCRIPTOR.message_types_by_name['JoinStruct'] = _JOINSTRUCT
 DESCRIPTOR.message_types_by_name['ReadRequest'] = _READREQUEST
-DESCRIPTOR.message_types_by_name['Label'] = _LABEL
 DESCRIPTOR.message_types_by_name['InitialWriteRequest'] = _INITIALWRITEREQUEST
 DESCRIPTOR.message_types_by_name['WriteRequest'] = _WRITEREQUEST
 DESCRIPTOR.message_types_by_name['WriteRespose'] = _WRITERESPOSE
+DESCRIPTOR.enum_types_by_name['DType'] = _DTYPE
 _sym_db.RegisterFileDescriptor(DESCRIPTOR)
-
-SliceCol = _reflection.GeneratedProtocolMessageType('SliceCol', (_message.Message,), dict(
-  DESCRIPTOR = _SLICECOL,
-  __module__ = 'frames_pb2'
-  # @@protoc_insertion_point(class_scope:grpc.SliceCol)
-  ))
-_sym_db.RegisterMessage(SliceCol)
-
-Value = _reflection.GeneratedProtocolMessageType('Value', (_message.Message,), dict(
-  DESCRIPTOR = _VALUE,
-  __module__ = 'frames_pb2'
-  # @@protoc_insertion_point(class_scope:grpc.Value)
-  ))
-_sym_db.RegisterMessage(Value)
-
-MapEntry = _reflection.GeneratedProtocolMessageType('MapEntry', (_message.Message,), dict(
-  DESCRIPTOR = _MAPENTRY,
-  __module__ = 'frames_pb2'
-  # @@protoc_insertion_point(class_scope:grpc.MapEntry)
-  ))
-_sym_db.RegisterMessage(MapEntry)
-
-LabelCol = _reflection.GeneratedProtocolMessageType('LabelCol', (_message.Message,), dict(
-  DESCRIPTOR = _LABELCOL,
-  __module__ = 'frames_pb2'
-  # @@protoc_insertion_point(class_scope:grpc.LabelCol)
-  ))
-_sym_db.RegisterMessage(LabelCol)
 
 Column = _reflection.GeneratedProtocolMessageType('Column', (_message.Message,), dict(
   DESCRIPTOR = _COLUMN,
   __module__ = 'frames_pb2'
-  # @@protoc_insertion_point(class_scope:grpc.Column)
+  # @@protoc_insertion_point(class_scope:pb.Column)
   ))
 _sym_db.RegisterMessage(Column)
 
+Value = _reflection.GeneratedProtocolMessageType('Value', (_message.Message,), dict(
+  DESCRIPTOR = _VALUE,
+  __module__ = 'frames_pb2'
+  # @@protoc_insertion_point(class_scope:pb.Value)
+  ))
+_sym_db.RegisterMessage(Value)
+
 Frame = _reflection.GeneratedProtocolMessageType('Frame', (_message.Message,), dict(
+
+  LabelsEntry = _reflection.GeneratedProtocolMessageType('LabelsEntry', (_message.Message,), dict(
+    DESCRIPTOR = _FRAME_LABELSENTRY,
+    __module__ = 'frames_pb2'
+    # @@protoc_insertion_point(class_scope:pb.Frame.LabelsEntry)
+    ))
+  ,
   DESCRIPTOR = _FRAME,
   __module__ = 'frames_pb2'
-  # @@protoc_insertion_point(class_scope:grpc.Frame)
+  # @@protoc_insertion_point(class_scope:pb.Frame)
   ))
 _sym_db.RegisterMessage(Frame)
+_sym_db.RegisterMessage(Frame.LabelsEntry)
 
 SchemaField = _reflection.GeneratedProtocolMessageType('SchemaField', (_message.Message,), dict(
+
+  PropertiesEntry = _reflection.GeneratedProtocolMessageType('PropertiesEntry', (_message.Message,), dict(
+    DESCRIPTOR = _SCHEMAFIELD_PROPERTIESENTRY,
+    __module__ = 'frames_pb2'
+    # @@protoc_insertion_point(class_scope:pb.SchemaField.PropertiesEntry)
+    ))
+  ,
   DESCRIPTOR = _SCHEMAFIELD,
   __module__ = 'frames_pb2'
-  # @@protoc_insertion_point(class_scope:grpc.SchemaField)
+  # @@protoc_insertion_point(class_scope:pb.SchemaField)
   ))
 _sym_db.RegisterMessage(SchemaField)
+_sym_db.RegisterMessage(SchemaField.PropertiesEntry)
 
 SchemaKey = _reflection.GeneratedProtocolMessageType('SchemaKey', (_message.Message,), dict(
   DESCRIPTOR = _SCHEMAKEY,
   __module__ = 'frames_pb2'
-  # @@protoc_insertion_point(class_scope:grpc.SchemaKey)
+  # @@protoc_insertion_point(class_scope:pb.SchemaKey)
   ))
 _sym_db.RegisterMessage(SchemaKey)
 
 TableSchema = _reflection.GeneratedProtocolMessageType('TableSchema', (_message.Message,), dict(
   DESCRIPTOR = _TABLESCHEMA,
   __module__ = 'frames_pb2'
-  # @@protoc_insertion_point(class_scope:grpc.TableSchema)
+  # @@protoc_insertion_point(class_scope:pb.TableSchema)
   ))
 _sym_db.RegisterMessage(TableSchema)
 
 JoinStruct = _reflection.GeneratedProtocolMessageType('JoinStruct', (_message.Message,), dict(
   DESCRIPTOR = _JOINSTRUCT,
   __module__ = 'frames_pb2'
-  # @@protoc_insertion_point(class_scope:grpc.JoinStruct)
+  # @@protoc_insertion_point(class_scope:pb.JoinStruct)
   ))
 _sym_db.RegisterMessage(JoinStruct)
 
 ReadRequest = _reflection.GeneratedProtocolMessageType('ReadRequest', (_message.Message,), dict(
   DESCRIPTOR = _READREQUEST,
   __module__ = 'frames_pb2'
-  # @@protoc_insertion_point(class_scope:grpc.ReadRequest)
+  # @@protoc_insertion_point(class_scope:pb.ReadRequest)
   ))
 _sym_db.RegisterMessage(ReadRequest)
-
-Label = _reflection.GeneratedProtocolMessageType('Label', (_message.Message,), dict(
-  DESCRIPTOR = _LABEL,
-  __module__ = 'frames_pb2'
-  # @@protoc_insertion_point(class_scope:grpc.Label)
-  ))
-_sym_db.RegisterMessage(Label)
 
 InitialWriteRequest = _reflection.GeneratedProtocolMessageType('InitialWriteRequest', (_message.Message,), dict(
   DESCRIPTOR = _INITIALWRITEREQUEST,
   __module__ = 'frames_pb2'
-  # @@protoc_insertion_point(class_scope:grpc.InitialWriteRequest)
+  # @@protoc_insertion_point(class_scope:pb.InitialWriteRequest)
   ))
 _sym_db.RegisterMessage(InitialWriteRequest)
 
 WriteRequest = _reflection.GeneratedProtocolMessageType('WriteRequest', (_message.Message,), dict(
   DESCRIPTOR = _WRITEREQUEST,
   __module__ = 'frames_pb2'
-  # @@protoc_insertion_point(class_scope:grpc.WriteRequest)
+  # @@protoc_insertion_point(class_scope:pb.WriteRequest)
   ))
 _sym_db.RegisterMessage(WriteRequest)
 
 WriteRespose = _reflection.GeneratedProtocolMessageType('WriteRespose', (_message.Message,), dict(
   DESCRIPTOR = _WRITERESPOSE,
   __module__ = 'frames_pb2'
-  # @@protoc_insertion_point(class_scope:grpc.WriteRespose)
+  # @@protoc_insertion_point(class_scope:pb.WriteRespose)
   ))
 _sym_db.RegisterMessage(WriteRespose)
 
 
+_FRAME_LABELSENTRY._options = None
+_SCHEMAFIELD_PROPERTIESENTRY._options = None
 
 _FRAMES = _descriptor.ServiceDescriptor(
   name='Frames',
-  full_name='grpc.Frames',
+  full_name='pb.Frames',
   file=DESCRIPTOR,
   index=0,
   serialized_options=None,
-  serialized_start=1937,
-  serialized_end=2042,
+  serialized_start=1781,
+  serialized_end=1878,
   methods=[
   _descriptor.MethodDescriptor(
     name='Read',
-    full_name='grpc.Frames.Read',
+    full_name='pb.Frames.Read',
     index=0,
     containing_service=None,
     input_type=_READREQUEST,
@@ -1139,7 +1065,7 @@ _FRAMES = _descriptor.ServiceDescriptor(
   ),
   _descriptor.MethodDescriptor(
     name='Write',
-    full_name='grpc.Frames.Write',
+    full_name='pb.Frames.Write',
     index=1,
     containing_service=None,
     input_type=_WRITEREQUEST,

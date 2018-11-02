@@ -15,12 +15,12 @@ class FramesStub(object):
       channel: A grpc.Channel.
     """
     self.Read = channel.unary_stream(
-        '/grpc.Frames/Read',
+        '/pb.Frames/Read',
         request_serializer=frames__pb2.ReadRequest.SerializeToString,
         response_deserializer=frames__pb2.Frame.FromString,
         )
     self.Write = channel.stream_unary(
-        '/grpc.Frames/Write',
+        '/pb.Frames/Write',
         request_serializer=frames__pb2.WriteRequest.SerializeToString,
         response_deserializer=frames__pb2.WriteRespose.FromString,
         )
@@ -59,5 +59,5 @@ def add_FramesServicer_to_server(servicer, server):
       ),
   }
   generic_handler = grpc.method_handlers_generic_handler(
-      'grpc.Frames', rpc_method_handlers)
+      'pb.Frames', rpc_method_handlers)
   server.add_generic_rpc_handlers((generic_handler,))
