@@ -24,6 +24,7 @@ import (
 	"fmt"
 
 	"github.com/v3io/frames"
+	"github.com/v3io/frames/pb"
 )
 
 var (
@@ -34,7 +35,7 @@ var (
 	boolType   = frames.BoolType.String()
 )
 
-func decodeReadRequest(request *ReadRequest) *frames.ReadRequest {
+func decodeReadRequest(request *pb.ReadRequest) *frames.ReadRequest {
 	return &frames.ReadRequest{
 		Backend:      request.Backend,
 		DataFormat:   request.DataFormat,
@@ -47,9 +48,9 @@ func decodeReadRequest(request *ReadRequest) *frames.ReadRequest {
 	}
 }
 
-func frameMessage(frame frames.Frame) (*Frame, error) {
+func frameMessage(frame frames.Frame) (*pb.Frame, error) {
 	names := frame.Names()
-	columns := make([]*Column, len(names))
+	columns := make([]*pb.Column, len(names))
 	for i, name := range names {
 		col, err := frame.Column(name)
 		if err != nil {
@@ -63,7 +64,7 @@ func frameMessage(frame frames.Frame) (*Frame, error) {
 		columns[i] = pbCol
 	}
 
-	indices := make([]*Column, len(frame.Indices()))
+	indices := make([]*pb.Column, len(frame.Indices()))
 	for i, col := range frame.Indices() {
 		pbCol, err := colToPB(col)
 		if err != nil {
@@ -72,20 +73,20 @@ func frameMessage(frame frames.Frame) (*Frame, error) {
 		indices[i] = pbCol
 	}
 
-	pbFrame := &Frame{
+	pbFrame := &pb.Frame{
 		Columns: columns,
 		Indices: indices,
 	}
 	return pbFrame, nil
 }
 
-func colToPB(column frames.Column) (*Column, error) {
+func colToPB(column frames.Column) (*pb.Column, error) {
 	dtype, err := dtypeToPB(column.DType())
 	if err != nil {
 		return nil, err
 	}
 
-	msg := &Column{
+	msg := &pb.Column{
 		Name:  column.Name(),
 		Dtype: dtype,
 	}
@@ -106,33 +107,33 @@ func colToPB(column frames.Column) (*Column, error) {
 	return msg, nil
 }
 
-func fillSlice(dtype DType, msg *Column, column frames.Column) error {
-	msg.Kind = Column_SLICE
+func fillSlice(dtype pb.DType, msg *pb.Column, column frames.Column) error {
+	msg.Kind = pb.Column_SLICE
 	switch dtype {
-	case DType_BOOLEAN:
+	case pb.DType_BOOLEAN:
 		vals, err := column.Bools()
 		if err != nil {
 			return err
 		}
 
 		msg.Bools = vals
-	case DType_FLOAT:
+	case pb.DType_FLOAT:
 		vals, err := column.Floats()
 		if err != nil {
 			return err
 		}
 
 		msg.Floats = vals
-	case DType_INTEGER:
+	case pb.DType_INTEGER:
 		vals, err := column.Ints()
 		if err != nil {
 			return err
 		}
 
 		msg.Ints = vals
-	case DType_STRING:
+	case pb.DType_STRING:
 		msg.Strings = column.Strings()
-	case DType_TIME:
+	case pb.DType_TIME:
 		vals, err := column.Times()
 		if err != nil {
 			return err
@@ -151,40 +152,40 @@ func fillSlice(dtype DType, msg *Column, column frames.Column) error {
 	return nil
 }
 
-func fillLabel(dtype DType, msg *Column, column frames.Column) error {
-	msg.Kind = Column_LABEL
+func fillLabel(dtype pb.DType, msg *pb.Column, column frames.Column) error {
+	msg.Kind = pb.Column_LABEL
 	msg.Size = int64(column.Len())
 
 	switch dtype {
-	case DType_BOOLEAN:
+	case pb.DType_BOOLEAN:
 		val, err := column.BoolAt(0)
 		if err != nil {
 			return err
 		}
 
 		msg.Bools = []bool{val}
-	case DType_FLOAT:
+	case pb.DType_FLOAT:
 		val, err := column.FloatAt(0)
 		if err != nil {
 			return err
 		}
 
 		msg.Floats = []float64{val}
-	case DType_INTEGER:
+	case pb.DType_INTEGER:
 		val, err := column.IntAt(0)
 		if err != nil {
 			return err
 		}
 
 		msg.Ints = []int64{val}
-	case DType_STRING:
+	case pb.DType_STRING:
 		val, err := column.StringAt(0)
 		if err != nil {
 			return err
 		}
 
 		msg.Strings = []string{val}
-	case DType_TIME:
+	case pb.DType_TIME:
 		val, err := column.TimeAt(0)
 		if err != nil {
 			return err
@@ -198,19 +199,19 @@ func fillLabel(dtype DType, msg *Column, column frames.Column) error {
 	return nil
 }
 
-func dtypeToPB(dtype frames.DType) (DType, error) {
+func dtypeToPB(dtype frames.DType) (pb.DType, error) {
 	switch dtype {
 	case frames.BoolType:
-		return DType_BOOLEAN, nil
+		return pb.DType_BOOLEAN, nil
 	case frames.FloatType:
-		return DType_FLOAT, nil
+		return pb.DType_FLOAT, nil
 	case frames.IntType:
-		return DType_INTEGER, nil
+		return pb.DType_INTEGER, nil
 	case frames.StringType:
-		return DType_STRING, nil
+		return pb.DType_STRING, nil
 	case frames.TimeType:
-		return DType_TIME, nil
+		return pb.DType_TIME, nil
 	}
 
-	return DType(-1), fmt.Errorf("unknown dtype - %d", dtype)
+	return pb.DType(-1), fmt.Errorf("unknown dtype - %d", dtype)
 }

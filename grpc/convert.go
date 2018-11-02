@@ -22,45 +22,47 @@ package grpc
 
 import (
 	"fmt"
-	"github.com/v3io/frames"
 	"strconv"
 	"time"
+
+	"github.com/v3io/frames"
+	"github.com/v3io/frames/pb"
 )
 
 // TODO: Find a way for frames to use the .proto
 var (
-	dtypes = map[DType]frames.DType{
-		DType_INTEGER: frames.IntType,
-		DType_FLOAT:   frames.FloatType,
-		DType_STRING:  frames.StringType,
-		DType_TIME:    frames.TimeType,
-		DType_BOOLEAN: frames.BoolType,
+	dtypes = map[pb.DType]frames.DType{
+		pb.DType_INTEGER: frames.IntType,
+		pb.DType_FLOAT:   frames.FloatType,
+		pb.DType_STRING:  frames.StringType,
+		pb.DType_TIME:    frames.TimeType,
+		pb.DType_BOOLEAN: frames.BoolType,
 	}
 )
 
 type colImpl struct {
 	// We can embed column since the field names and the method names are the same
 	// (e.g. Name string and Name() string)
-	msg   *Column
+	msg   *pb.Column
 	times []time.Time
 }
 
 func (c *colImpl) Len() int {
-	if c.msg.Kind == Column_LABEL {
+	if c.msg.Kind == pb.Column_LABEL {
 		return int(c.msg.Size)
 	}
 
 	// Slice column
 	switch c.msg.Dtype {
-	case DType_INTEGER:
+	case pb.DType_INTEGER:
 		return len(c.msg.Ints)
-	case DType_FLOAT:
+	case pb.DType_FLOAT:
 		return len(c.msg.Floats)
-	case DType_STRING:
+	case pb.DType_STRING:
 		return len(c.msg.Strings)
-	case DType_TIME:
+	case pb.DType_TIME:
 		return len(c.msg.Times)
-	case DType_BOOLEAN:
+	case pb.DType_BOOLEAN:
 		return len(c.msg.Bools)
 	}
 
@@ -77,12 +79,12 @@ func (c *colImpl) DType() frames.DType {
 }
 
 func (c *colImpl) Ints() ([]int64, error) {
-	if err := c.checkDType(DType_INTEGER); err != nil {
+	if err := c.checkDType(pb.DType_INTEGER); err != nil {
 		return nil, err
 	}
 
 	var data []int64
-	if c.msg.Kind == Column_SLICE {
+	if c.msg.Kind == pb.Column_SLICE {
 		data = c.msg.Ints
 	} else {
 		data = make([]int64, c.msg.Size)
@@ -95,23 +97,23 @@ func (c *colImpl) Ints() ([]int64, error) {
 }
 
 func (c *colImpl) IntAt(i int) (int64, error) {
-	if err := c.validateAt(DType_INTEGER, i); err != nil {
+	if err := c.validateAt(pb.DType_INTEGER, i); err != nil {
 		return 0, err
 	}
 
-	if c.msg.Kind == Column_LABEL {
+	if c.msg.Kind == pb.Column_LABEL {
 		i = 0
 	}
 	return c.msg.Ints[i], nil
 }
 
 func (c *colImpl) Floats() ([]float64, error) {
-	if err := c.checkDType(DType_FLOAT); err != nil {
+	if err := c.checkDType(pb.DType_FLOAT); err != nil {
 		return nil, err
 	}
 
 	var data []float64
-	if c.msg.Kind == Column_SLICE {
+	if c.msg.Kind == pb.Column_SLICE {
 		data = c.msg.Floats
 	} else {
 		data = make([]float64, c.msg.Size)
@@ -124,18 +126,18 @@ func (c *colImpl) Floats() ([]float64, error) {
 }
 
 func (c *colImpl) FloatAt(i int) (float64, error) {
-	if err := c.validateAt(DType_FLOAT, i); err != nil {
+	if err := c.validateAt(pb.DType_FLOAT, i); err != nil {
 		return 0.0, err
 	}
 
-	if c.msg.Kind == Column_LABEL {
+	if c.msg.Kind == pb.Column_LABEL {
 		i = 0
 	}
 	return c.msg.Floats[i], nil
 }
 
 func (c *colImpl) Strings() []string {
-	if c.msg.Dtype == DType_STRING && c.msg.Kind == Column_SLICE {
+	if c.msg.Dtype == pb.DType_STRING && c.msg.Kind == pb.Column_SLICE {
 		return c.msg.Strings
 	}
 
@@ -154,31 +156,31 @@ func (c *colImpl) StringAt(i int) (string, error) {
 
 	dtype := c.msg.Dtype
 	switch dtype {
-	case DType_INTEGER:
+	case pb.DType_INTEGER:
 		val, err := c.IntAt(i)
 		if err != nil {
 			return "", err
 		}
 
 		return strconv.FormatInt(val, 10), nil
-	case DType_FLOAT:
+	case pb.DType_FLOAT:
 		val, err := c.FloatAt(i)
 		if err != nil {
 			return "", err
 		}
 		return strconv.FormatFloat(val, 'f', -1, 64), nil
-	case DType_STRING:
-		if c.msg.Kind == Column_LABEL {
+	case pb.DType_STRING:
+		if c.msg.Kind == pb.Column_LABEL {
 			i = 0
 		}
 		return c.msg.Strings[i], nil
-	case DType_TIME:
+	case pb.DType_TIME:
 		val, err := c.TimeAt(i)
 		if err != nil {
 			return "", err
 		}
 		return val.Format(time.RFC3339Nano), nil
-	case DType_BOOLEAN:
+	case pb.DType_BOOLEAN:
 		val, err := c.BoolAt(i)
 		if err != nil {
 			return "", err
@@ -195,7 +197,7 @@ func (c *colImpl) StringAt(i int) (string, error) {
 }
 
 func (c *colImpl) Times() ([]time.Time, error) {
-	if err := c.checkDType(DType_TIME); err != nil {
+	if err := c.checkDType(pb.DType_TIME); err != nil {
 		return nil, err
 	}
 
@@ -213,7 +215,7 @@ func (c *colImpl) Times() ([]time.Time, error) {
 }
 
 func (c *colImpl) TimeAt(i int) (time.Time, error) {
-	if err := c.validateAt(DType_TIME, i); err != nil {
+	if err := c.validateAt(pb.DType_TIME, i); err != nil {
 		return time.Time{}, err
 	}
 
@@ -222,7 +224,7 @@ func (c *colImpl) TimeAt(i int) (time.Time, error) {
 }
 
 func (c *colImpl) Bools() ([]bool, error) {
-	if err := c.checkDType(DType_BOOLEAN); err != nil {
+	if err := c.checkDType(pb.DType_BOOLEAN); err != nil {
 		return nil, err
 	}
 
@@ -230,7 +232,7 @@ func (c *colImpl) Bools() ([]bool, error) {
 }
 
 func (c *colImpl) BoolAt(i int) (bool, error) {
-	if err := c.validateAt(DType_BOOLEAN, i); err != nil {
+	if err := c.validateAt(pb.DType_BOOLEAN, i); err != nil {
 		return false, err
 	}
 
@@ -252,44 +254,44 @@ func (c *colImpl) Slice(start int, end int) (frames.Column, error) {
 		}
 	}
 
-	msg := &Column{
+	msg := &pb.Column{
 		Kind:  c.msg.Kind,
 		Dtype: c.msg.Dtype,
 		Name:  c.msg.Name,
 	}
 
-	if c.msg.Kind == Column_LABEL {
+	if c.msg.Kind == pb.Column_LABEL {
 		msg.Size = int64(start - end)
 	}
 
 	switch c.msg.Dtype {
-	case DType_INTEGER:
+	case pb.DType_INTEGER:
 		data := c.msg.Ints
-		if c.msg.Kind == Column_SLICE {
+		if c.msg.Kind == pb.Column_SLICE {
 			data = data[start:end]
 		}
 		msg.Ints = data
-	case DType_FLOAT:
+	case pb.DType_FLOAT:
 		data := c.msg.Floats
-		if c.msg.Kind == Column_SLICE {
+		if c.msg.Kind == pb.Column_SLICE {
 			data = data[start:end]
 		}
 		msg.Floats = data
-	case DType_STRING:
+	case pb.DType_STRING:
 		data := c.msg.Strings
-		if c.msg.Kind == Column_SLICE {
+		if c.msg.Kind == pb.Column_SLICE {
 			data = data[start:end]
 		}
 		msg.Strings = data
-	case DType_TIME:
+	case pb.DType_TIME:
 		data := c.msg.Times
-		if c.msg.Kind == Column_SLICE {
+		if c.msg.Kind == pb.Column_SLICE {
 			data = data[start:end]
 		}
 		msg.Times = data
-	case DType_BOOLEAN:
+	case pb.DType_BOOLEAN:
 		data := c.msg.Bools
-		if c.msg.Kind == Column_SLICE {
+		if c.msg.Kind == pb.Column_SLICE {
 			data = data[start:end]
 		}
 		msg.Bools = data
@@ -302,7 +304,7 @@ func (c *colImpl) Slice(start int, end int) (frames.Column, error) {
 }
 
 func (c *colImpl) Append(value interface{}) error {
-	if c.msg.Kind == Column_LABEL {
+	if c.msg.Kind == pb.Column_LABEL {
 		return c.appendLabel(value)
 	}
 
@@ -311,35 +313,35 @@ func (c *colImpl) Append(value interface{}) error {
 
 func (c *colImpl) appendSlice(value interface{}) error {
 	switch c.msg.Dtype {
-	case DType_INTEGER:
+	case pb.DType_INTEGER:
 		v, ok := value.(int64)
 		if !ok {
 			return fmt.Errorf("wrong type for int64 - %T", value)
 		}
 		c.msg.Ints = append(c.msg.Ints, v)
 		return nil
-	case DType_FLOAT:
+	case pb.DType_FLOAT:
 		v, ok := value.(float64)
 		if !ok {
 			return fmt.Errorf("wrong type for float64 - %T", value)
 		}
 		c.msg.Floats = append(c.msg.Floats, v)
 		return nil
-	case DType_STRING:
+	case pb.DType_STRING:
 		v, ok := value.(string)
 		if !ok {
 			return fmt.Errorf("wrong type for string - %T", value)
 		}
 		c.msg.Strings = append(c.msg.Strings, v)
 		return nil
-	case DType_TIME:
+	case pb.DType_TIME:
 		v, ok := value.(time.Time)
 		if !ok {
 			return fmt.Errorf("wrong type for time.Time - %T", value)
 		}
 		c.msg.Times = append(c.msg.Times, v.UnixNano())
 		return nil
-	case DType_BOOLEAN:
+	case pb.DType_BOOLEAN:
 		v, ok := value.(bool)
 		if !ok {
 			return fmt.Errorf("wrong type for bool - %T", value)
@@ -362,31 +364,31 @@ func (c *colImpl) appendLabel(value interface{}) error {
 
 func (c *colImpl) sameLableValue(value interface{}) bool {
 	switch c.msg.Dtype {
-	case DType_INTEGER:
+	case pb.DType_INTEGER:
 		v, ok := value.(int64)
 		if !ok {
 			return false
 		}
 		return v == c.msg.Ints[0]
-	case DType_FLOAT:
+	case pb.DType_FLOAT:
 		v, ok := value.(float64)
 		if !ok {
 			return false
 		}
 		return v == c.msg.Floats[0]
-	case DType_STRING:
+	case pb.DType_STRING:
 		v, ok := value.(string)
 		if !ok {
 			return false
 		}
 		return v == c.msg.Strings[0]
-	case DType_TIME:
+	case pb.DType_TIME:
 		v, ok := value.(time.Time)
 		if !ok {
 			return false
 		}
 		return v.UnixNano() == c.msg.Times[0]
-	case DType_BOOLEAN:
+	case pb.DType_BOOLEAN:
 		v, ok := value.(bool)
 		if !ok {
 			return false
@@ -397,7 +399,7 @@ func (c *colImpl) sameLableValue(value interface{}) bool {
 	return false
 }
 
-func (c *colImpl) validateAt(dtype DType, i int) error {
+func (c *colImpl) validateAt(dtype pb.DType, i int) error {
 	if err := c.checkDType(dtype); err != nil {
 		return err
 	}
@@ -412,7 +414,7 @@ func (c *colImpl) checkInbounds(i int) error {
 	return fmt.Errorf("index %d out of bounds [0:%d]", i, c.Len())
 }
 
-func (c *colImpl) checkDType(dtype DType) error {
+func (c *colImpl) checkDType(dtype pb.DType) error {
 	if c.msg.Dtype != dtype {
 		return fmt.Errorf("wrong dtype")
 	}
@@ -424,7 +426,7 @@ func nsToTime(ns int64) time.Time {
 	return time.Unix(ns/1000, ns%1000)
 }
 
-func asFrame(msg *Frame) (frames.Frame, error) {
+func asFrame(msg *pb.Frame) (frames.Frame, error) {
 	labels, err := asMap(msg.Labels)
 	if err != nil {
 		return nil, err
@@ -435,19 +437,19 @@ func asFrame(msg *Frame) (frames.Frame, error) {
 	return frames.NewFrame(columns, indices, labels)
 }
 
-func asMap(mv map[string]*Value) (map[string]interface{}, error) {
+func asMap(mv map[string]*pb.Value) (map[string]interface{}, error) {
 	m := make(map[string]interface{})
 	for key, value := range mv {
 		switch value.GetValue().(type) {
-		case *Value_Ival:
+		case *pb.Value_Ival:
 			m[key] = value.GetIval()
-		case *Value_Fval:
+		case *pb.Value_Fval:
 			m[key] = value.GetFval()
-		case *Value_Sval:
+		case *pb.Value_Sval:
 			m[key] = value.GetSval()
-		case *Value_Tval:
+		case *pb.Value_Tval:
 			m[key] = nsToTime(value.GetTval())
-		case *Value_Bval:
+		case *pb.Value_Bval:
 			m[key] = value.GetBval()
 		default:
 			return nil, fmt.Errorf("unknown value type - %T", value.GetValue())
@@ -457,7 +459,7 @@ func asMap(mv map[string]*Value) (map[string]interface{}, error) {
 	return m, nil
 }
 
-func asCols(cols []*Column) []frames.Column {
+func asCols(cols []*pb.Column) []frames.Column {
 	fcols := make([]frames.Column, len(cols))
 	for i, col := range cols {
 		fcols[i] = &colImpl{
@@ -468,6 +470,6 @@ func asCols(cols []*Column) []frames.Column {
 	return fcols
 }
 
-func dtypeName(dtype DType) string {
-	return DType_name[int32(dtype)]
+func dtypeName(dtype pb.DType) string {
+	return pb.DType_name[int32(dtype)]
 }

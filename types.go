@@ -26,11 +26,12 @@ import (
 	"time"
 )
 
+// Configuration environment variables
 const (
-	WebApiEndpointEnvironmentVariable  = "V3IO_URL"
-	WebApiContainerEnvironmentVariable = "V3IO_CONTAINER"
-	WebApiUsernameEnvironmentVariable  = "V3IO_USERNAME"
-	WebApiPasswordEnvironmentVariable  = "V3IO_PASSWORD"
+	WebAPIEndpointEnvironmentVariable  = "V3IO_URL"
+	WebAPIContainerEnvironmentVariable = "V3IO_CONTAINER"
+	WebAPIUsernameEnvironmentVariable  = "V3IO_USERNAME"
+	WebAPIPasswordEnvironmentVariable  = "V3IO_PASSWORD"
 )
 
 // LogConfig is the logging configuration
@@ -45,7 +46,7 @@ type Config struct {
 	DefaultTimeout int       `json:"timeout,omitempty"`
 
 	// default V3IO connection details
-	WebApiEndpoint string `json:"webApiEndpoint"`
+	WebAPIEndpoint string `json:"webApiEndpoint"`
 	Container      string `json:"container"`
 	Username       string `json:"username,omitempty"`
 	Password       string `json:"password,omitempty"`
@@ -55,22 +56,22 @@ type Config struct {
 	Backends []*BackendConfig `json:"backends,omitempty"`
 }
 
+// InitDefaults initializes the defaults for configuration
 func (c *Config) InitDefaults() error {
-
 	if c.DefaultTimeout == 0 {
 		c.DefaultTimeout = 30
 	}
-	if c.WebApiEndpoint == "" {
-		c.WebApiEndpoint = os.Getenv(WebApiEndpointEnvironmentVariable)
+	if c.WebAPIEndpoint == "" {
+		c.WebAPIEndpoint = os.Getenv(WebAPIEndpointEnvironmentVariable)
 	}
 	if c.Container == "" {
-		c.Container = os.Getenv(WebApiContainerEnvironmentVariable)
+		c.Container = os.Getenv(WebAPIContainerEnvironmentVariable)
 	}
 	if c.Username == "" {
-		c.Username = os.Getenv(WebApiUsernameEnvironmentVariable)
+		c.Username = os.Getenv(WebAPIUsernameEnvironmentVariable)
 	}
 	if c.Password == "" {
-		c.Password = os.Getenv(WebApiPasswordEnvironmentVariable)
+		c.Password = os.Getenv(WebAPIPasswordEnvironmentVariable)
 	}
 	if c.Workers == 0 {
 		c.Workers = 8
@@ -78,10 +79,10 @@ func (c *Config) InitDefaults() error {
 	return nil
 }
 
+// InitBackendDefaults initializes default configuration for backend
 func InitBackendDefaults(cfg *BackendConfig, framesConfig *Config) {
-
 	if cfg.URL == "" {
-		cfg.URL = framesConfig.WebApiEndpoint
+		cfg.URL = framesConfig.WebAPIEndpoint
 	}
 	if cfg.Container == "" {
 		cfg.Container = framesConfig.Container

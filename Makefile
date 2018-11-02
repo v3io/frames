@@ -49,7 +49,7 @@ update-tsdb-dep:
 	@echo "Done. Don't forget to commit ☺"
 
 grpc-go:
-	protoc  frames.proto --go_out=plugins=grpc:grpc
+	protoc  frames.proto --go_out=plugins=grpc:pb
 
 grpc-py:
 	cd clients/py && \

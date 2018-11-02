@@ -23,6 +23,7 @@ package grpc
 import (
 	"context"
 	"github.com/v3io/frames"
+	"github.com/v3io/frames/pb"
 	"io"
 
 	"github.com/nuclio/logger"
@@ -32,7 +33,7 @@ import (
 
 // Client is frames gRPC client
 type Client struct {
-	client FramesClient
+	client pb.FramesClient
 }
 
 // NewClient returns a new gRPC client
@@ -43,14 +44,14 @@ func NewClient(address string, logger logger.Logger) (*Client, error) {
 	}
 
 	client := &Client{
-		client: NewFramesClient(conn),
+		client: pb.NewFramesClient(conn),
 	}
 
 	return client, nil
 }
 
 func (c *Client) Read(request *frames.ReadRequest) (frames.FrameIterator, error) {
-	req := &ReadRequest{
+	req := &pb.ReadRequest{
 		Backend:      request.Backend,
 		Table:        request.Table,
 		Query:        request.Query,
@@ -70,7 +71,7 @@ func (c *Client) Read(request *frames.ReadRequest) (frames.FrameIterator, error)
 }
 
 type frameIterator struct {
-	client Frames_ReadClient
+	client pb.Frames_ReadClient
 	frame  frames.Frame
 	err    error
 	done   bool

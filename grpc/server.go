@@ -29,6 +29,8 @@ import (
 	"github.com/pkg/errors"
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/reflection"
+
+	"github.com/v3io/frames/pb"
 )
 
 // Server is a frames gRPC server
@@ -75,7 +77,7 @@ func NewServer(config *frames.Config, addr string, logger logger.Logger) (*Serve
 		server:  grpc.NewServer(),
 	}
 
-	RegisterFramesServer(server.server, server)
+	pb.RegisterFramesServer(server.server, server)
 	reflection.Register(server.server)
 	return server, nil
 }
@@ -98,7 +100,7 @@ func (s *Server) Start() error {
 	return nil
 }
 
-func (s *Server) Read(request *ReadRequest, stream Frames_ReadServer) error {
+func (s *Server) Read(request *pb.ReadRequest, stream pb.Frames_ReadServer) error {
 	ch := make(chan frames.Frame)
 
 	var apiError error
@@ -124,6 +126,6 @@ func (s *Server) Read(request *ReadRequest, stream Frames_ReadServer) error {
 	return apiError
 }
 
-func (s *Server) Write(Frames_WriteServer) error {
+func (s *Server) Write(pb.Frames_WriteServer) error {
 	return nil
 }

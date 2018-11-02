@@ -19,7 +19,7 @@ such restriction.
 */
 
 syntax = "proto3";
-package grpc;
+package pb;
 
 enum DType {
     INTEGER = 0;
