@@ -18,41 +18,43 @@ under the Apache 2.0 license is conditioned upon your compliance with
 such restriction.
 */
 
-package frames
+package pb
 
 import (
-	"testing"
+	"time"
 )
 
-func TestSchemaFieldProperty(t *testing.T) {
-	t.Skip("FIXME - PB")
-
-	key, value := "yale", 42
-	field := &SchemaField{}
-	/* TODO
-	field.Properties = map[string]interface{}{
-		key: value,
-	}
-	*/
-
-	prop, ok := field.Property(key)
-	if !ok {
-		t.Fatal("property not found")
-	}
-
-	if prop != value {
-		t.Fatalf("%q property mismatch: %v != %v", key, prop, value)
+// GoValue return value as interface{}
+func (v *Value) GoValue() interface{} {
+	switch v.GetValue().(type) {
+	case *Value_Ival:
+		return v.GetIval()
+	case *Value_Fval:
+		return v.GetFval()
+	case *Value_Sval:
+		return v.GetSval()
+	case *Value_Tval:
+		return NSToTime(v.GetTval())
+	case *Value_Bval:
+		return v.GetBval()
 	}
 
-	prop, ok = field.Property("no such property")
-	if ok {
-		t.Fatal("found non existing property")
+	// TODO: Panic?
+	return nil
+}
+
+// Attributes return the attibutes
+// TODO: Calculate once (how to add field in generate protobuf code?)
+func (r *CreateRequest) Attributes() map[string]interface{} {
+	m := make(map[string]interface{})
+	for key, value := range r.AttributeMap {
+		m[key] = value.GoValue()
 	}
 
-	// Check with nil Properties
-	field = &SchemaField{}
-	prop, ok = field.Property(key)
-	if ok {
-		t.Fatal("found non existing property (nil)")
-	}
+	return m
+}
+
+// NSToTime returns time from epoch nanoseconds
+func NSToTime(ns int64) time.Time {
+	return time.Unix(ns/1000, ns%1000)
 }

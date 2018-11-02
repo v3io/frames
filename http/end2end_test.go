@@ -101,7 +101,7 @@ func TestEnd2End(t *testing.T) {
 	readReq := &frames.ReadRequest{
 		Backend:      backendName,
 		Table:        tableName,
-		MaxInMessage: 100,
+		MessageLimit: 100,
 	}
 
 	it, err := client.Read(readReq)

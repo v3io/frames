@@ -66,7 +66,7 @@ func ExampleClient() {
 	readReq := &frames.ReadRequest{
 		Backend:      "weather",
 		Table:        tableName,
-		MaxInMessage: 100,
+		MessageLimit: 100,
 	}
 
 	it, err := client.Read(readReq)

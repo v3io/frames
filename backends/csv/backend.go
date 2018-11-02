@@ -126,8 +126,8 @@ func (b *Backend) Read(request *frames.ReadRequest) (frames.FrameIterator, error
 		path:        request.Table,
 		reader:      reader,
 		columnNames: columns,
-		limit:       request.Limit,
-		frameLimit:  request.MaxInMessage,
+		limit:       int(request.Limit),
+		frameLimit:  int(request.MessageLimit),
 	}
 
 	return it, nil

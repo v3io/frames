@@ -28,27 +28,16 @@ import (
 )
 
 var (
-	intType    = frames.IntType.String()
-	floatType  = frames.FloatType.String()
-	stringType = frames.StringType.String()
-	timeType   = frames.TimeType.String()
-	boolType   = frames.BoolType.String()
+	dtypeToPB = map[frames.DType]pb.DType{
+		frames.BoolType:   pb.DType_BOOLEAN,
+		frames.FloatType:  pb.DType_FLOAT,
+		frames.IntType:    pb.DType_INTEGER,
+		frames.StringType: pb.DType_STRING,
+		frames.TimeType:   pb.DType_TIME,
+	}
 )
 
-func decodeReadRequest(request *pb.ReadRequest) *frames.ReadRequest {
-	return &frames.ReadRequest{
-		Backend:      request.Backend,
-		DataFormat:   request.DataFormat,
-		RowLayout:    request.RowLayout,
-		MultiIndex:   request.MultiIndex,
-		Query:        request.Query,
-		Table:        request.Table,
-		Columns:      request.Columns,
-		MaxInMessage: int(request.MessageLimit),
-	}
-}
-
-func frameMessage(frame frames.Frame) (*pb.Frame, error) {
+func frameToPB(frame frames.Frame) (*pb.Frame, error) {
 	names := frame.Names()
 	columns := make([]*pb.Column, len(names))
 	for i, name := range names {
@@ -81,9 +70,9 @@ func frameMessage(frame frames.Frame) (*pb.Frame, error) {
 }
 
 func colToPB(column frames.Column) (*pb.Column, error) {
-	dtype, err := dtypeToPB(column.DType())
-	if err != nil {
-		return nil, err
+	dtype, ok := dtypeToPB[column.DType()]
+	if !ok {
+		return nil, fmt.Errorf("unknown dtype - %s", column.DType())
 	}
 
 	msg := &pb.Column{
@@ -197,21 +186,4 @@ func fillLabel(dtype pb.DType, msg *pb.Column, column frames.Column) error {
 	}
 
 	return nil
-}
-
-func dtypeToPB(dtype frames.DType) (pb.DType, error) {
-	switch dtype {
-	case frames.BoolType:
-		return pb.DType_BOOLEAN, nil
-	case frames.FloatType:
-		return pb.DType_FLOAT, nil
-	case frames.IntType:
-		return pb.DType_INTEGER, nil
-	case frames.StringType:
-		return pb.DType_STRING, nil
-	case frames.TimeType:
-		return pb.DType_TIME, nil
-	}
-
-	return pb.DType(-1), fmt.Errorf("unknown dtype - %d", dtype)
 }

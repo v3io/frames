@@ -86,9 +86,8 @@ func TestCSV(t *testing.T) {
 func TestLimit(t *testing.T) {
 	limit := numCSVRows - 3
 
-	req := &frames.ReadRequest{
-		Limit: limit,
-	}
+	req := &frames.ReadRequest{}
+	req.Limit = int64(limit)
 
 	result := loadTempCSV(t, req)
 	if nRows := totalRows(result); nRows != limit {
@@ -99,9 +98,8 @@ func TestLimit(t *testing.T) {
 func TestMaxInMessage(t *testing.T) {
 	frameLimit := numCSVRows / 3
 
-	req := &frames.ReadRequest{
-		MaxInMessage: frameLimit,
-	}
+	req := &frames.ReadRequest{}
+	req.MessageLimit = int64(frameLimit)
 
 	result := loadTempCSV(t, req)
 	if nRows := totalRows(result); nRows != numCSVRows {

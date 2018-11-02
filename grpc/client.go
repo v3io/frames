@@ -51,15 +51,7 @@ func NewClient(address string, logger logger.Logger) (*Client, error) {
 }
 
 func (c *Client) Read(request *frames.ReadRequest) (frames.FrameIterator, error) {
-	req := &pb.ReadRequest{
-		Backend:      request.Backend,
-		Table:        request.Table,
-		Query:        request.Query,
-		MessageLimit: int64(request.MaxInMessage),
-		// TODO: More fields
-	}
-
-	client, err := c.client.Read(context.Background(), req)
+	client, err := c.client.Read(context.Background(), request)
 	if err != nil {
 		return nil, err
 	}

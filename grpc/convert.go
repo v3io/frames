@@ -205,7 +205,7 @@ func (c *colImpl) Times() ([]time.Time, error) {
 	if c.times == nil {
 		times := make([]time.Time, c.Len())
 		for i := 0; i < c.Len(); i++ {
-			c.times[i] = nsToTime(c.msg.Times[i])
+			c.times[i] = pb.NSToTime(c.msg.Times[i])
 		}
 
 		c.times = times
@@ -220,7 +220,7 @@ func (c *colImpl) TimeAt(i int) (time.Time, error) {
 	}
 
 	ns := c.msg.Times[i]
-	return nsToTime(ns), nil
+	return pb.NSToTime(ns), nil
 }
 
 func (c *colImpl) Bools() ([]bool, error) {
@@ -354,7 +354,7 @@ func (c *colImpl) appendSlice(value interface{}) error {
 }
 
 func (c *colImpl) appendLabel(value interface{}) error {
-	if !c.sameLableValue(value) {
+	if !c.sameLabelValue(value) {
 		return fmt.Errorf("append - wrong type or value mismatch - %v", value)
 	}
 
@@ -362,7 +362,7 @@ func (c *colImpl) appendLabel(value interface{}) error {
 	return nil
 }
 
-func (c *colImpl) sameLableValue(value interface{}) bool {
+func (c *colImpl) sameLabelValue(value interface{}) bool {
 	switch c.msg.Dtype {
 	case pb.DType_INTEGER:
 		v, ok := value.(int64)
@@ -422,10 +422,6 @@ func (c *colImpl) checkDType(dtype pb.DType) error {
 	return nil
 }
 
-func nsToTime(ns int64) time.Time {
-	return time.Unix(ns/1000, ns%1000)
-}
-
 func asFrame(msg *pb.Frame) (frames.Frame, error) {
 	labels, err := asMap(msg.Labels)
 	if err != nil {
@@ -448,7 +444,7 @@ func asMap(mv map[string]*pb.Value) (map[string]interface{}, error) {
 		case *pb.Value_Sval:
 			m[key] = value.GetSval()
 		case *pb.Value_Tval:
-			m[key] = nsToTime(value.GetTval())
+			m[key] = pb.NSToTime(value.GetTval())
 		case *pb.Value_Bval:
 			m[key] = value.GetBval()
 		default:

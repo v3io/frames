@@ -38,7 +38,7 @@ type tsdbIterator struct {
 
 func (b *Backend) Read(request *frames.ReadRequest) (frames.FrameIterator, error) {
 
-	step, err := tsdbutils.Str2duration(request.StepRaw)
+	step, err := tsdbutils.Str2duration(request.StepDuration)
 	if err != nil {
 		return nil, err
 	}

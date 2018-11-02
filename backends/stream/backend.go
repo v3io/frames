@@ -61,11 +61,11 @@ func NewBackend(logger logger.Logger, cfg *frames.BackendConfig, framesConfig *f
 
 // Create creates a table
 func (b *Backend) Create(request *frames.CreateRequest) error {
-
 	var isInt bool
-
+	attrs := request.Attributes()
 	shards := 1
-	shardsVar, ok := request.Attributes["shards"]
+
+	shardsVar, ok := attrs["shards"]
 	if ok {
 		shards, isInt = shardsVar.(int)
 		if !isInt || shards < 1 {
@@ -74,7 +74,7 @@ func (b *Backend) Create(request *frames.CreateRequest) error {
 	}
 
 	retention := 24
-	retentionVar, ok := request.Attributes["retention_hours"]
+	retentionVar, ok := attrs["retention_hours"]
 	if ok {
 		retention, isInt = retentionVar.(int)
 		if !isInt || shards < 1 {
