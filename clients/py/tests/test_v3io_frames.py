@@ -30,7 +30,7 @@ unpack = partial(msgpack.unpackb, raw=False)
 
 
 class patch_requests:
-    orig_requests = v3f.requests
+    orig_requests = v3f.client.requests
 
     def __init__(self, data=None):
         self.requests = []
@@ -39,11 +39,11 @@ class patch_requests:
         self.write_frames = []
 
     def __enter__(self):
-        v3f.requests = self
+        v3f.client.requests = self
         return self
 
     def __exit__(self, exc_type=None, exc_val=None, tb=None):
-        v3f.requests = self.orig_requests
+        v3f.client.requests = self.orig_requests
 
     def post(self, *args, **kw):
         self.requests.append((args, kw))
@@ -180,8 +180,8 @@ def test_format_go_time():
     ts = v3f.format_go_time(dt)
 
     # 2018-10-04T16:54:05.434079562+03:00
-    match = \
-        re.match('\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}\.\d+\+\d{2}:\d{2}$', ts)
+    match = re.match(
+        r'\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}\.\d+\+\d{2}:\d{2}$', ts)
     assert match, 'bad timestamp format'
 
     # ...+03:00 -> (3, 0)
