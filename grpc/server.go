@@ -21,6 +21,7 @@ such restriction.
 package grpc
 
 import (
+	"context"
 	"github.com/v3io/frames"
 	"github.com/v3io/frames/api"
 	"net"
@@ -126,6 +127,20 @@ func (s *Server) Read(request *pb.ReadRequest, stream pb.Frames_ReadServer) erro
 	return apiError
 }
 
+// Write write data to table
 func (s *Server) Write(pb.Frames_WriteServer) error {
+	// FIXME
 	return nil
+}
+
+// Create creates a table
+func (s *Server) Create(context.Context, *pb.CreateRequest) (*pb.CreateResponse, error) {
+	// FIXME
+	return nil, nil
+}
+
+// Delete deletes a table
+func (s *Server) Delete(context.Context, *pb.DeleteRequest) (*pb.DeleteResponse, error) {
+	// FIXME
+	return nil, nil
 }

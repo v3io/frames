@@ -21,6 +21,7 @@ such restriction.
 package pb
 
 import (
+	"fmt"
 	"time"
 )
 
@@ -39,22 +40,26 @@ func (v *Value) GoValue() interface{} {
 		return v.GetBval()
 	}
 
-	// TODO: Panic?
-	return nil
+	panic(fmt.Sprintf("unknown type - %T", v.GetValue()))
 }
 
 // Attributes return the attibutes
 // TODO: Calculate once (how to add field in generate protobuf code?)
 func (r *CreateRequest) Attributes() map[string]interface{} {
-	m := make(map[string]interface{})
-	for key, value := range r.AttributeMap {
-		m[key] = value.GoValue()
-	}
-
-	return m
+	return AsGoMap(r.AttributeMap)
 }
 
 // NSToTime returns time from epoch nanoseconds
 func NSToTime(ns int64) time.Time {
 	return time.Unix(ns/1000, ns%1000)
+}
+
+// AsGoMap returns map with interface{} values
+func AsGoMap(mv map[string]*Value) map[string]interface{} {
+	m := make(map[string]interface{})
+	for key, value := range mv {
+		m[key] = value.GoValue()
+	}
+
+	return m
 }

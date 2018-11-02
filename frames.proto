@@ -154,6 +154,8 @@ message CreateRequest {
     TableSchema schema = 4; // Schema (for describing unstructured/schemaless data)
 }
 
+message CreateResponse {}
+
 // DeleteRequest is a deletion request
 message DeleteRequest {
     string backend = 1; // Name of the backend
@@ -165,7 +167,11 @@ message DeleteRequest {
     string end = 6;
 }
 
+message DeleteResponse {}
+
 service Frames {
     rpc Read(ReadRequest) returns (stream Frame) {}
     rpc Write(stream WriteRequest) returns (WriteRespose) {}
+    rpc Create(CreateRequest) returns (CreateResponse) {}
+    rpc Delete(DeleteRequest) returns (DeleteResponse) {}
 }

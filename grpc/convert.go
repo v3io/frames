@@ -423,36 +423,11 @@ func (c *colImpl) checkDType(dtype pb.DType) error {
 }
 
 func asFrame(msg *pb.Frame) (frames.Frame, error) {
-	labels, err := asMap(msg.Labels)
-	if err != nil {
-		return nil, err
-	}
+	labels := pb.AsGoMap(msg.Labels)
 
 	columns := asCols(msg.Columns)
 	indices := asCols(msg.Indices)
 	return frames.NewFrame(columns, indices, labels)
-}
-
-func asMap(mv map[string]*pb.Value) (map[string]interface{}, error) {
-	m := make(map[string]interface{})
-	for key, value := range mv {
-		switch value.GetValue().(type) {
-		case *pb.Value_Ival:
-			m[key] = value.GetIval()
-		case *pb.Value_Fval:
-			m[key] = value.GetFval()
-		case *pb.Value_Sval:
-			m[key] = value.GetSval()
-		case *pb.Value_Tval:
-			m[key] = pb.NSToTime(value.GetTval())
-		case *pb.Value_Bval:
-			m[key] = value.GetBval()
-		default:
-			return nil, fmt.Errorf("unknown value type - %T", value.GetValue())
-		}
-	}
-
-	return m, nil
 }
 
 func asCols(cols []*pb.Column) []frames.Column {
