@@ -21,11 +21,8 @@ such restriction.
 package kv
 
 import (
-	"fmt"
 	"strings"
 
-	"github.com/nuclio/logger"
-	"github.com/pkg/errors"
 	"github.com/v3io/v3io-go-http"
 
 	"github.com/v3io/frames"
@@ -37,42 +34,6 @@ import (
 const (
 	indexColKey = "__name"
 )
-
-// Backend is key/value backend
-type Backend struct {
-	container  *v3io.Container
-	logger     logger.Logger
-	numWorkers int
-}
-
-// NewBackend return a new key/value backend
-func NewBackend(logger logger.Logger, config *frames.BackendConfig, framesConfig *frames.Config) (frames.DataBackend, error) {
-
-	frames.InitBackendDefaults(config, framesConfig)
-	container, err := v3ioutils.CreateContainer(
-		logger, config.URL, config.Container, config.Username, config.Password, config.Workers)
-	if err != nil {
-		return nil, errors.Wrap(err, "failed to create data container")
-	}
-
-	newBackend := Backend{
-		logger:     logger.GetChild("kv"),
-		container:  container,
-		numWorkers: config.Workers,
-	}
-
-	return &newBackend, nil
-}
-
-// Create creates a table
-func (kv *Backend) Create(request *frames.CreateRequest) error {
-	return fmt.Errorf("not implemented")
-}
-
-// Delete deletes a table (or part of it)
-func (kv *Backend) Delete(request *frames.DeleteRequest) error {
-	return fmt.Errorf("not implemented")
-}
 
 // Read does a read request
 func (kv *Backend) Read(request *frames.ReadRequest) (frames.FrameIterator, error) {
