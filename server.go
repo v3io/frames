@@ -55,6 +55,11 @@ func (s *ServerBase) Err() error {
 	return s.err
 }
 
+// SetState sets the server state
+func (s *ServerBase) SetState(state ServerState) {
+	s.state = state
+}
+
 // State return the server state
 func (s *ServerBase) State() ServerState {
 	return s.state

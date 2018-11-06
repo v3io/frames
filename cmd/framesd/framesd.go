@@ -79,12 +79,14 @@ func main() {
 		log.Fatalf("error: can't start server - %s", err)
 	}
 
-	fmt.Println("server running")
+	fmt.Printf("%s server running on %s\n", config.protocol, config.addr)
 	for srv.State() == frames.RunningState {
 		time.Sleep(time.Second)
 	}
 
 	if err := srv.Err(); err != nil {
 		log.Fatalf("error: server error - %s", err)
+	} else {
+		fmt.Println("server down")
 	}
 }
