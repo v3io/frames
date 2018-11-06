@@ -32,27 +32,53 @@ var (
 )
 
 // GoValue return value as interface{}
-func (v *Value) GoValue() interface{} {
+func (v *Value) GoValue() (interface{}, error) {
 	switch v.GetValue().(type) {
 	case *Value_Ival:
-		return v.GetIval()
+		return v.GetIval(), nil
 	case *Value_Fval:
-		return v.GetFval()
+		return v.GetFval(), nil
 	case *Value_Sval:
-		return v.GetSval()
+		return v.GetSval(), nil
 	case *Value_Tval:
-		return NSToTime(v.GetTval())
+		return NSToTime(v.GetTval()), nil
 	case *Value_Bval:
-		return v.GetBval()
+		return v.GetBval(), nil
 	}
 
-	panic(fmt.Sprintf("unknown type - %T", v.GetValue()))
+	return nil, fmt.Errorf("unknown Value type - %T", v.GetValue())
+}
+
+// SetValue sets the value from Go type
+func (v *Value) SetValue(i interface{}) error {
+	switch i.(type) {
+	case bool:
+		v.Value = &Value_Bval{Bval: i.(bool)}
+	case float64: // JSON encodes numbers as floats
+		v.Value = &Value_Fval{Fval: i.(float64)}
+	case int64:
+		v.Value = &Value_Ival{Ival: i.(int64)}
+	case string:
+		v.Value = &Value_Sval{Sval: i.(string)}
+	case time.Time:
+		t := i.(time.Time)
+		v.Value = &Value_Tval{Tval: t.UnixNano()}
+	default:
+		return fmt.Errorf("unsupported type for %T - %T", v, i)
+	}
+
+	return nil
 }
 
 // Attributes return the attibutes
 // TODO: Calculate once (how to add field in generate protobuf code?)
 func (r *CreateRequest) Attributes() map[string]interface{} {
 	return AsGoMap(r.AttributeMap)
+}
+
+// SetAttribute sets an attribute
+func (r *CreateRequest) SetAttribute(key string, value interface{}) error {
+	return nil
 }
 
 // NSToTime returns time from epoch nanoseconds
@@ -64,7 +90,7 @@ func NSToTime(ns int64) time.Time {
 func AsGoMap(mv map[string]*Value) map[string]interface{} {
 	m := make(map[string]interface{})
 	for key, value := range mv {
-		m[key] = value.GoValue()
+		m[key], _ = value.GoValue()
 	}
 
 	return m
@@ -72,20 +98,11 @@ func AsGoMap(mv map[string]*Value) map[string]interface{} {
 
 // MarshalJSON marshal Value as JSON object
 func (v *Value) MarshalJSON() ([]byte, error) {
-	switch v.GetValue().(type) {
-	case *Value_Bval:
-		return json.Marshal(v.GetBval())
-	case *Value_Fval:
-		return json.Marshal(v.GetFval())
-	case *Value_Ival:
-		return json.Marshal(v.GetIval())
-	case *Value_Sval:
-		return json.Marshal(v.GetSval())
-	case *Value_Tval:
-		return json.Marshal(v.GetTval())
+	val, err := v.GoValue()
+	if err != nil {
+		return nil, err
 	}
-
-	return nil, fmt.Errorf("unknown Value type - %T", v.GetValue())
+	return json.Marshal(val)
 }
 
 // UnmarshalJSON will unmarshal encoded native Go type to value
@@ -96,24 +113,14 @@ func (v *Value) UnmarshalJSON(data []byte) error {
 		return err
 	}
 
-	// FIXME: Time
-	switch i.(type) {
-	case float64: // JSON encodes numbers as floats
-		f := i.(float64)
-		if intRe.Match(data) {
-			v.Value = &Value_Ival{Ival: int64(f)}
-		} else {
-			v.Value = &Value_Fval{Fval: f}
-		}
-	case string:
-		v.Value = &Value_Sval{Sval: i.(string)}
-	case bool:
-		v.Value = &Value_Bval{Bval: i.(bool)}
-	default:
-		return fmt.Errorf("unsupported type for value - %T", i)
+	// JSON encodes numbers as floats
+	f, ok := i.(float64)
+	if ok && intRe.Match(data) {
+		i = int64(f)
 	}
 
-	return nil
+	// TODO: Time
+	return v.SetValue(i)
 }
 
 // Property return a schema property
@@ -127,5 +134,10 @@ func (s *SchemaField) Property(key string) (interface{}, bool) {
 		return nil, false
 	}
 
-	return val.GoValue(), true
+	v, err := val.GoValue()
+	if err != nil {
+		return nil, false
+	}
+
+	return v, true
 }
