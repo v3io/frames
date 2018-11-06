@@ -21,7 +21,6 @@ such restriction.
 package stream
 
 import (
-	"fmt"
 	"github.com/nuclio/logger"
 	"github.com/pkg/errors"
 	"github.com/v3io/frames"
@@ -61,6 +60,9 @@ func NewBackend(logger logger.Logger, cfg *frames.BackendConfig, framesConfig *f
 
 // Create creates a table
 func (b *Backend) Create(request *frames.CreateRequest) error {
+
+	// TODO: check if Stream exist, if it already has the desired params can silently ignore, may need a -silent flag
+
 	var isInt bool
 	attrs := request.Attributes()
 	shards := 1
@@ -97,7 +99,13 @@ func (b *Backend) Create(request *frames.CreateRequest) error {
 
 // Delete deletes a table or part of it
 func (b *Backend) Delete(request *frames.DeleteRequest) error {
-	return fmt.Errorf("Delete not implemented")
+
+	err := b.container.Sync.DeleteStream(&v3io.DeleteStreamInput{Path: request.Table})
+	if err != nil {
+		b.logger.ErrorWith("DeleteStream failed", "path", request.Table, "err", err)
+	}
+
+	return nil
 }
 
 func init() {

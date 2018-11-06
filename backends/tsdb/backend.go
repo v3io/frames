@@ -32,6 +32,8 @@ import (
 	"github.com/v3io/v3io-go-http"
 	"github.com/v3io/v3io-tsdb/pkg/config"
 	"github.com/v3io/v3io-tsdb/pkg/tsdb"
+	"github.com/v3io/v3io-tsdb/pkg/tsdb/schema"
+	tsdbutils "github.com/v3io/v3io-tsdb/pkg/utils"
 )
 
 // Backend is a tsdb backend
@@ -79,14 +81,6 @@ func NewBackend(logger logger.Logger, cfg *frames.BackendConfig, framesConfig *f
 	}
 	newBackend.container = container
 
-	/*	if cfg.Path != "" {
-			adapter, err := newAdapter(cfg, cfg.Path)
-			if err != nil {
-				return nil, err
-			}
-			newBackend.adapters[cfg.Path] = adapter
-		}
-	*/
 	return &newBackend, nil
 }
 
@@ -123,12 +117,74 @@ func (b *Backend) GetAdapter(path string) (*tsdb.V3ioAdapter, error) {
 
 // Create creates a table
 func (b *Backend) Create(request *frames.CreateRequest) error {
-	return fmt.Errorf("Create not implemented")
+
+	attrs := request.Attributes()
+
+	attr, ok := attrs["rate"]
+	if !ok {
+		return errors.New("Must specify 'rate' attribute to specify maximum sample rate, e.g. '1/m'")
+	}
+	rate, isStr := attr.(string)
+	if !isStr {
+		return errors.New("'rate' attribute must be a string, e.g. '1/m'")
+	}
+
+	aggregationGranularity := config.DefaultAggregationGranularity
+	attr, ok = attrs["aggregation-granularity"]
+	if ok {
+		val, isStr := attr.(string)
+		if !isStr {
+			return errors.New("'aggregation-granularity' attribute must be a string")
+		}
+		aggregationGranularity = val
+	}
+
+	defaultRollups := ""
+	attr, ok = attrs["aggregates"]
+	if ok {
+		val, isStr := attr.(string)
+		if !isStr {
+			return errors.New("'aggregates' attribute must be a string")
+		}
+		defaultRollups = val
+	}
+
+	// TODO: create unique tsdb cfg object, avoid conflict w other requests
+	b.tsdbConfig.TablePath = request.Table
+	dbSchema, err := schema.NewSchema(
+		b.tsdbConfig,
+		rate,
+		aggregationGranularity,
+		defaultRollups)
+
+	if err != nil {
+		return errors.Wrap(err, "Failed to create a TSDB schema.")
+	}
+
+	return tsdb.CreateTSDB(b.tsdbConfig, dbSchema)
 }
 
 // Delete deletes a table or part of it
 func (b *Backend) Delete(request *frames.DeleteRequest) error {
-	return fmt.Errorf("Delete not implemented")
+
+	start, err := tsdbutils.Str2duration(request.Start)
+	if err != nil {
+		return err
+	}
+
+	end, err := tsdbutils.Str2duration(request.End)
+	if err != nil {
+		return err
+	}
+
+	delAll := request.Start == "" && request.End == ""
+
+	adapter, err := b.GetAdapter(request.Table)
+	if err != nil {
+		return err
+	}
+
+	return adapter.DeleteDB(delAll, request.Force, start, end)
 }
 
 func init() {

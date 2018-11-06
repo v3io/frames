@@ -217,7 +217,7 @@ class Client(object):
         headers = self._headers()
         resp = requests.post(url, headers=headers, json=request)
         if not resp.ok:
-            raise CreateError(resp.reason)
+            raise CreateError(resp.text)
 
     def delete(self, backend, table, filter='', force=False, start='', end=''):
         """Delete a table
@@ -265,7 +265,7 @@ class Client(object):
         # TODO: Make it DELETE ?
         resp = requests.post(url, headers=headers, json=request)
         if not resp.ok:
-            raise CreateError(resp.reason)
+            raise CreateError(resp.text)
 
     def _headers(self, json=False):
         headers = {}
