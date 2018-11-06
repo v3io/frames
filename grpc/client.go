@@ -22,9 +22,11 @@ package grpc
 
 import (
 	"context"
+	"fmt"
 	"github.com/v3io/frames"
 	"github.com/v3io/frames/pb"
 	"io"
+	"time"
 
 	"github.com/nuclio/logger"
 	"github.com/pkg/errors"
@@ -51,19 +53,73 @@ func NewClient(address string, logger logger.Logger) (*Client, error) {
 }
 
 func (c *Client) Read(request *frames.ReadRequest) (frames.FrameIterator, error) {
-	client, err := c.client.Read(context.Background(), request)
+	stream, err := c.client.Read(context.Background(), request)
 	if err != nil {
 		return nil, err
 	}
 
 	it := &frameIterator{
-		client: client,
+		stream: stream,
 	}
 	return it, nil
 }
 
+func (c *Client) Write(request *frames.WriteRequest) (frames.FrameAppender, error) {
+	var frame *pb.Frame
+	if request.ImmidiateData != nil {
+		var err error
+		frame, err = frameToPB(request.ImmidiateData)
+		if err != nil {
+			return nil, err
+		}
+	}
+
+	stream, err := c.client.Write(context.Background())
+	if err != nil {
+		return nil, err
+	}
+
+	ireq := &pb.InitialWriteRequest{
+		Backend:     request.Backend,
+		Table:       request.Table,
+		InitialData: frame,
+		Expression:  request.Expression,
+		More:        request.HaveMore,
+	}
+
+	req := &pb.WriteRequest{
+		Type: &pb.WriteRequest_Request{
+			Request: ireq,
+		},
+	}
+
+	if err := stream.Send(req); err != nil {
+		stream.CloseAndRecv()
+		return nil, err
+	}
+
+	fa := &frameAppender{
+		stream: stream,
+		closed: false,
+	}
+
+	return fa, nil
+}
+
+// Create creates a table
+func (c *Client) Create(request *frames.CreateRequest) error {
+	_, err := c.client.Create(context.Background(), request)
+	return err
+}
+
+// Delete deletes data or table
+func (c *Client) Delete(request *frames.DeleteRequest) error {
+	_, err := c.client.Delete(context.Background(), request)
+	return err
+}
+
 type frameIterator struct {
-	client pb.Frames_ReadClient
+	stream pb.Frames_ReadClient
 	frame  frames.Frame
 	err    error
 	done   bool
@@ -75,7 +131,7 @@ func (it *frameIterator) Next() bool {
 	}
 
 	it.frame = nil
-	msg, err := it.client.Recv()
+	msg, err := it.stream.Recv()
 	if err != nil {
 		if err != io.EOF {
 			it.err = err
@@ -99,4 +155,46 @@ func (it *frameIterator) Err() error {
 
 func (it *frameIterator) At() frames.Frame {
 	return it.frame
+}
+
+type frameAppender struct {
+	stream pb.Frames_WriteClient
+	closed bool
+}
+
+func (fa *frameAppender) Add(frame frames.Frame) error {
+	if fa.closed {
+		return fmt.Errorf("stream closed")
+	}
+
+	fMsg, err := frameToPB(frame)
+	if err != nil {
+		fa.stream.CloseAndRecv()
+		fa.closed = true
+		return err
+	}
+
+	msg := &pb.WriteRequest{
+		Type: &pb.WriteRequest_Frame{
+			Frame: fMsg,
+		},
+	}
+
+	if err := fa.stream.Send(msg); err != nil {
+		fa.stream.CloseAndRecv()
+		fa.closed = true
+		return err
+	}
+
+	return nil
+}
+
+func (fa *frameAppender) WaitForComplete(timeout time.Duration) error {
+	if fa.closed {
+		return fmt.Errorf("stream closed")
+	}
+
+	// TODO: timeout
+	_, err := fa.stream.CloseAndRecv()
+	return err
 }
