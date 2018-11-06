@@ -27,6 +27,8 @@ import (
 	"github.com/nuclio/logger"
 	"github.com/pkg/errors"
 	"github.com/v3io/v3io-go-http"
+	"github.com/v3io/v3io-tsdb/pkg/utils"
+	"net/url"
 )
 
 // CreateContainer creates a new container
@@ -85,7 +87,8 @@ func DeleteTable(logger logger.Logger, container *v3io.Container, path, filter s
 	i := 0
 	for iter.Next() {
 		name := iter.GetField("__name").(string)
-		req, err := container.DeleteObject(&v3io.DeleteObjectInput{Path: path + "/" + name}, nil, responseChan)
+		req, err := container.DeleteObject(&v3io.DeleteObjectInput{
+			Path: path + "/" + url.QueryEscape(name)}, nil, responseChan)
 		if err != nil {
 			commChan <- i
 			return errors.Wrap(err, "failed to delete object "+name)
@@ -100,6 +103,13 @@ func DeleteTable(logger logger.Logger, container *v3io.Container, path, filter s
 	}
 
 	<-doneChan
+
+	err = container.Sync.DeleteObject(&v3io.DeleteObjectInput{Path: path})
+	if err != nil {
+		if !utils.IsNotExistsError(err) {
+			return errors.Wrapf(err, "Failed to delete table object '%s'.", path)
+		}
+	}
 
 	return nil
 }

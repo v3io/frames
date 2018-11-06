@@ -99,6 +99,10 @@ func (b *Backend) Create(request *frames.CreateRequest) error {
 // Delete deletes a table or part of it
 func (b *Backend) Delete(request *frames.DeleteRequest) error {
 
+	if !strings.HasSuffix(request.Table, "/") {
+		request.Table += "/"
+	}
+
 	err := b.container.Sync.DeleteStream(&v3io.DeleteStreamInput{Path: request.Table})
 	if err != nil {
 		b.logger.ErrorWith("DeleteStream failed", "path", request.Table, "err", err)
