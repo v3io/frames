@@ -6,11 +6,11 @@ github.com/cespare/xxhash
 github.com/ghodss/yaml
 # github.com/golang/protobuf v1.2.0
 github.com/golang/protobuf/proto
+github.com/golang/protobuf/protoc-gen-go/descriptor
 github.com/golang/protobuf/ptypes
-github.com/golang/protobuf/ptypes/timestamp
 github.com/golang/protobuf/ptypes/any
 github.com/golang/protobuf/ptypes/duration
-github.com/golang/protobuf/protoc-gen-go/descriptor
+github.com/golang/protobuf/ptypes/timestamp
 # github.com/klauspost/compress v1.4.0
 github.com/klauspost/compress/flate
 github.com/klauspost/compress/gzip
@@ -45,12 +45,12 @@ github.com/v3io/v3io-tsdb/pkg/utils
 github.com/v3io/v3io-tsdb/pkg/config
 github.com/v3io/v3io-tsdb/pkg/querier
 github.com/v3io/v3io-tsdb/pkg/tsdb
+github.com/v3io/v3io-tsdb/pkg/tsdb/schema
 github.com/v3io/v3io-tsdb/internal/pkg/performance
 github.com/v3io/v3io-tsdb/pkg/aggregate
 github.com/v3io/v3io-tsdb/pkg/chunkenc
 github.com/v3io/v3io-tsdb/pkg/partmgr
 github.com/v3io/v3io-tsdb/pkg/appender
-github.com/v3io/v3io-tsdb/pkg/tsdb/schema
 # github.com/valyala/bytebufferpool v1.0.0
 github.com/valyala/bytebufferpool
 # github.com/valyala/fasthttp v1.0.0
