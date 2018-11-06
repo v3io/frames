@@ -115,3 +115,17 @@ func (v *Value) UnmarshalJSON(data []byte) error {
 
 	return nil
 }
+
+// Property return a schema property
+func (s *SchemaField) Property(key string) (interface{}, bool) {
+	if s.Properties == nil {
+		return nil, false
+	}
+
+	val, ok := s.Properties[key]
+	if !ok {
+		return nil, false
+	}
+
+	return val.GoValue(), true
+}

@@ -52,10 +52,10 @@ var (
 
 // Server is HTTP server
 type Server struct {
+	*frames.ServerBase
+
 	address string // listen address
 	server  *fasthttp.Server
-	state   frames.ServerState
-	err     error
 
 	config *frames.Config
 	api    *api.API
@@ -87,19 +87,15 @@ func NewServer(config *frames.Config, addr string, logger logger.Logger) (*Serve
 	}
 
 	srv := &Server{
+		ServerBase: frames.NewServerBase(),
+
 		address: addr,
-		state:   frames.ReadyState,
 		config:  config,
 		logger:  logger,
 		api:     api,
 	}
 
 	return srv, nil
-}
-
-// State returns the server state
-func (s *Server) State() frames.ServerState {
-	return s.state
 }
 
 // Start starts the server
@@ -119,19 +115,13 @@ func (s *Server) Start() error {
 		err := s.server.ListenAndServe(s.address)
 		if err != nil {
 			s.logger.ErrorWith("error running HTTP server", "error", err)
-			s.state = frames.ErrorState
-			s.err = err
+			s.SetError(err)
 		}
 	}()
 
-	s.state = frames.RunningState
+	s.SetState(frames.RunningState)
 	s.logger.InfoWith("server started", "address", s.address)
 	return nil
-}
-
-// Err returns the last server error
-func (s *Server) Err() error {
-	return s.err
 }
 
 func (s *Server) handler(ctx *fasthttp.RequestCtx) {

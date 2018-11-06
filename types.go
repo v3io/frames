@@ -71,39 +71,14 @@ type WriteRequest struct {
 // CreateRequest is a table creation request
 type CreateRequest = pb.CreateRequest
 
-/*
-	*pb.CreateRequest
-	// list of attributes used for creating the table
-	Attributes map[string]interface{} `json:"attributes,omitempty"`
-}
-*/
-
 // DeleteRequest is a deletion request
-type DeleteRequest struct {
-	*pb.DeleteRequest
-}
+type DeleteRequest = pb.DeleteRequest
 
 // TableSchema is a table schema
-type TableSchema struct {
-	*pb.TableSchema
-}
+type TableSchema = pb.TableSchema
 
 // SchemaField represents a schema field for Avro record.
-type SchemaField struct {
-	*pb.SchemaField
-}
-
-// Property return a schema property
-func (s *SchemaField) Property(key string) (interface{}, bool) {
-	if s.Properties == nil {
-		return nil, false
-	}
-
-	val, ok := s.Properties[key]
-	return val, ok
-}
+type SchemaField = pb.SchemaField
 
 // SchemaKey is a schema key
-type SchemaKey struct {
-	*pb.SchemaKey
-}
+type SchemaKey = pb.SchemaKey

@@ -22,8 +22,10 @@ package grpc
 
 import (
 	"context"
+	"fmt"
 	"github.com/v3io/frames"
 	"github.com/v3io/frames/api"
+	"io"
 	"net"
 
 	"github.com/nuclio/logger"
@@ -91,6 +93,7 @@ func (s *Server) Start() error {
 		return err
 	}
 
+	s.SetState(frames.RunningState)
 	go func() {
 		if err := s.server.Serve(lis); err != nil {
 			s.logger.ErrorWith("can't serve", "error", err)
@@ -128,19 +131,104 @@ func (s *Server) Read(request *pb.ReadRequest, stream pb.Frames_ReadServer) erro
 }
 
 // Write write data to table
-func (s *Server) Write(pb.Frames_WriteServer) error {
-	// FIXME
-	return nil
+func (s *Server) Write(stream pb.Frames_WriteServer) error {
+	msg, err := stream.Recv()
+	if err != nil {
+		return err
+	}
+
+	pbReq := msg.GetRequest()
+	if pbReq == nil {
+		return fmt.Errorf("stream didn't start with write request")
+	}
+
+	var frame frames.Frame
+	if pbReq.InitialData != nil {
+		var err error
+		frame, err = asFrame(pbReq.InitialData)
+		if err != nil {
+			return nil
+		}
+	}
+
+	req := &frames.WriteRequest{
+		Backend:       pbReq.Backend,
+		Expression:    pbReq.Expression,
+		HaveMore:      pbReq.More,
+		ImmidiateData: frame,
+		Table:         pbReq.Table,
+	}
+
+	// TODO: Unite with the code in HTTP server
+	var (
+		writeError     error
+		nFrames, nRows int
+		ch             = make(chan frames.Frame, 1)
+		done           = make(chan bool)
+	)
+
+	go func() {
+		defer close(done)
+		nFrames, nRows, writeError = s.api.Write(req, ch)
+	}()
+
+	for writeError == nil {
+		msg, err := stream.Recv()
+		if err != nil {
+			if err != io.EOF {
+				s.logger.ErrorWith("stream error", "error", err)
+				return err
+			}
+			break
+		}
+
+		frameMessage := msg.GetFrame()
+		if frameMessage == nil {
+			s.logger.ErrorWith("nil frame", "message", msg)
+			return fmt.Errorf("nil frame")
+		}
+
+		frame, err := asFrame(frameMessage)
+		if err != nil {
+			s.logger.ErrorWith("frame error", "error", err)
+			return err
+		}
+
+		ch <- frame
+	}
+
+	close(ch)
+	<-done
+
+	// We can't handle writeError right after .Write since it's done in a goroutine
+	if writeError != nil {
+		s.logger.ErrorWith("write error", "error", writeError)
+		return writeError
+	}
+
+	resp := &pb.WriteRespose{
+		Frames: int64(nFrames),
+		Rows:   int64(nRows),
+	}
+
+	return stream.SendAndClose(resp)
 }
 
 // Create creates a table
-func (s *Server) Create(context.Context, *pb.CreateRequest) (*pb.CreateResponse, error) {
-	// FIXME
-	return nil, nil
+func (s *Server) Create(ctx context.Context, req *pb.CreateRequest) (*pb.CreateResponse, error) {
+	// TODO: Use ctx for timeout
+	if err := s.api.Create(req); err != nil {
+		return nil, err
+	}
+
+	return &pb.CreateResponse{}, nil
 }
 
 // Delete deletes a table
-func (s *Server) Delete(context.Context, *pb.DeleteRequest) (*pb.DeleteResponse, error) {
-	// FIXME
-	return nil, nil
+func (s *Server) Delete(ctx context.Context, req *pb.DeleteRequest) (*pb.DeleteResponse, error) {
+	if err := s.api.Delete(req); err != nil {
+		return nil, err
+	}
+
+	return &pb.DeleteResponse{}, nil
 }
