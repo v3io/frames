@@ -408,7 +408,7 @@ func (c *colImpl) validateAt(dtype pb.DType, i int) error {
 }
 
 func (c *colImpl) checkInbounds(i int) error {
-	if i > 0 && i < c.Len() {
+	if i >= 0 && i < c.Len() {
 		return nil
 	}
 	return fmt.Errorf("index %d out of bounds [0:%d]", i, c.Len())
