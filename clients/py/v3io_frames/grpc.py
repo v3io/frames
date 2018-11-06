@@ -16,21 +16,12 @@ import grpc
 import pandas as pd
 import numpy as np
 
-from .dtypes import dtypes
-
 from . import frames_pb2 as fpb  # noqa
 from . import frames_pb2_grpc as fgrpc  # noqa
+from .errors import MessageError
 
 
-class Error(Exception):
-    pass
-
-
-class MessageError(Error):
-    pass
-
-
-class Client:
+class gRPCClient:
     def __init__(self, address=''):
         self.address = address
 
@@ -51,21 +42,32 @@ class Client:
                 yield self._frame2df(frame)
 
     def _frame2df(self, frame):
-        cols = {}
-        for col in frame.columns:
-            if col.HasField('slice'):
-                scol = col.slice
-                dtype = dtypes.get(scol.dtype)
-                if not dtype:
-                    raise MessageError('unknown dtype: {}'.format(scol.dtype))
-                cols[scol.name] = getattr(scol, dtype.slice_key)
-            elif col.HasField('label'):
-                lcol = col.label
-                dtype = dtypes[lcol.dtype]
-                if not dtype:
-                    raise MessageError('unknown dtype: {}'.format(lcol.dtype))
-                value = getattr(lcol, dtype.label_key)
-                # TODO: np dtype
-                cols[lcol.name] = np.full(lcol.size, value)
-        # TODO: indices
-        return pd.DataFrame(cols)
+        cols = {col.name: self._col2series(col) for col in frame.columns}
+        df = pd.DataFrame(cols)
+
+        indices = [self._col2series(idx) for idx in frame.indices]
+        if len(indices) == 1:
+            df.index = indices[0]
+        elif len(indices) > 1:
+            df.index = pd.MultiIndex.from_arrays(indices)
+
+        return df
+
+    def _col2series(self, col):
+        if col.dtype == fpb.BOOLEAN:
+            data = pd.Series(col.bools, dtype=np.bool)
+        elif col.dtype == fpb.FLOAT:
+            data = pd.Series(col.floats, dtype=np.float64)
+        elif col.dtype == fpb.INTEGER:
+            data = pd.Series(col.ints, dtype=np.int64)
+        elif col.dtype == fpb.STRING:
+            data = pd.Series(col.strings)
+        elif col.dtype == fpb.TIME:
+            data = pd.to_datetime(pd.Series(col.times, unit='ns'))
+        else:
+            raise MessageError('unknown dtype - {}'.format(col.dtype))
+
+        if col.kind == col.LABEL:
+            data = data.reindex(pd.RangeIndex(col.size), method='pad')
+
+        return data

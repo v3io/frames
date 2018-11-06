@@ -95,6 +95,7 @@ def server():
         server_exe,
         '-addr', ':{}'.format(server_port),
         '-config', cfg_file,
+        '-proto', 'http',
     ]
     pipe = Popen(cmd)
     yield pipe
@@ -127,7 +128,7 @@ def test_integration(server):
         'lf': 3.22,
         'ls': 'hi',
     }
-    c = v3f.Client('http://localhost:{}'.format(server_port))
+    c = v3f.HTTPClient('http://localhost:{}'.format(server_port))
     c.write(backend, table, [df], labels=lables)
 
     sleep(1)  # Let disk flush
@@ -149,7 +150,7 @@ def test_integration(server):
 def test_integration_error(server):
     assert wait_for_server(server_port, server_timeout), 'server did not start'
 
-    c = v3f.Client('http://localhost:{}'.format(server_port))
+    c = v3f.HTTPClient('http://localhost:{}'.format(server_port))
 
     with pytest.raises(v3f.ReadError):
         for df in c.read('no-such-backend', table='no such table'):

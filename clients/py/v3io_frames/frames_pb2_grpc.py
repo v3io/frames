@@ -24,6 +24,16 @@ class FramesStub(object):
         request_serializer=frames__pb2.WriteRequest.SerializeToString,
         response_deserializer=frames__pb2.WriteRespose.FromString,
         )
+    self.Create = channel.unary_unary(
+        '/pb.Frames/Create',
+        request_serializer=frames__pb2.CreateRequest.SerializeToString,
+        response_deserializer=frames__pb2.CreateResponse.FromString,
+        )
+    self.Delete = channel.unary_unary(
+        '/pb.Frames/Delete',
+        request_serializer=frames__pb2.DeleteRequest.SerializeToString,
+        response_deserializer=frames__pb2.DeleteResponse.FromString,
+        )
 
 
 class FramesServicer(object):
@@ -44,6 +54,20 @@ class FramesServicer(object):
     context.set_details('Method not implemented!')
     raise NotImplementedError('Method not implemented!')
 
+  def Create(self, request, context):
+    # missing associated documentation comment in .proto file
+    pass
+    context.set_code(grpc.StatusCode.UNIMPLEMENTED)
+    context.set_details('Method not implemented!')
+    raise NotImplementedError('Method not implemented!')
+
+  def Delete(self, request, context):
+    # missing associated documentation comment in .proto file
+    pass
+    context.set_code(grpc.StatusCode.UNIMPLEMENTED)
+    context.set_details('Method not implemented!')
+    raise NotImplementedError('Method not implemented!')
+
 
 def add_FramesServicer_to_server(servicer, server):
   rpc_method_handlers = {
@@ -56,6 +80,16 @@ def add_FramesServicer_to_server(servicer, server):
           servicer.Write,
           request_deserializer=frames__pb2.WriteRequest.FromString,
           response_serializer=frames__pb2.WriteRespose.SerializeToString,
+      ),
+      'Create': grpc.unary_unary_rpc_method_handler(
+          servicer.Create,
+          request_deserializer=frames__pb2.CreateRequest.FromString,
+          response_serializer=frames__pb2.CreateResponse.SerializeToString,
+      ),
+      'Delete': grpc.unary_unary_rpc_method_handler(
+          servicer.Delete,
+          request_deserializer=frames__pb2.DeleteRequest.FromString,
+          response_serializer=frames__pb2.DeleteResponse.SerializeToString,
       ),
   }
   generic_handler = grpc.method_handlers_generic_handler(

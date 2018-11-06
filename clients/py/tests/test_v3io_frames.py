@@ -30,7 +30,7 @@ unpack = partial(msgpack.unpackb, raw=False)
 
 
 class patch_requests:
-    orig_requests = v3f.client.requests
+    orig_requests = v3f.http.requests
 
     def __init__(self, data=None):
         self.requests = []
@@ -39,11 +39,11 @@ class patch_requests:
         self.write_frames = []
 
     def __enter__(self):
-        v3f.client.requests = self
+        v3f.http.requests = self
         return self
 
     def __exit__(self, exc_type=None, exc_val=None, tb=None):
-        v3f.client.requests = self.orig_requests
+        v3f.http.requests = self.orig_requests
 
     def post(self, *args, **kw):
         self.requests.append((args, kw))
@@ -105,7 +105,7 @@ def test_read():
         },
     ]
 
-    client = v3f.Client(url, api_key)
+    client = v3f.HTTPClient(url, api_key)
     with patch_requests(data) as patch:
         dfs = client.read(query=query)
 
@@ -120,7 +120,7 @@ def test_read():
 
 
 def test_encode_df():
-    c = v3f.Client('http://localhost:8080')
+    c = v3f.HTTPClient('http://localhost:8080')
     labels = {
         'int': 7,
         'str': 'wassup?',
@@ -164,7 +164,7 @@ def test_decode():
         'l2': 'two',
     }
 
-    c = v3f.Client('http://localhost:8080')
+    c = v3f.HTTPClient('http://localhost:8080')
     data = c._encode_df(df, labels)
     dfs = list(c._iter_dfs(BytesIO(data)))
 
@@ -177,7 +177,7 @@ def test_format_go_time():
     tz = pytz.timezone('Asia/Jerusalem')
     now = datetime.now()
     dt = now.astimezone(tz)
-    ts = v3f.format_go_time(dt)
+    ts = v3f.http.format_go_time(dt)
 
     # 2018-10-04T16:54:05.434079562+03:00
     match = re.match(
@@ -202,7 +202,7 @@ def test_encode_labels():
         'worker': 12,
     }
 
-    client = v3f.Client('http://example.com')
+    client = v3f.HTTPClient('http://example.com')
     with patch_requests() as patch:
         client.write(
             'csv', 'weather', [df], max_in_message=size//7, labels=labels)
@@ -226,7 +226,7 @@ def test_multi_index():
     df = pd.DataFrame(index=index)
     df['x'] = range(len(df))
 
-    client = v3f.Client('http://example.com')
+    client = v3f.HTTPClient('http://example.com')
     data = client._encode_df(df)
     msg = msgpack.unpackb(data, raw=False)
 
@@ -242,7 +242,7 @@ def test_labelcol_name():
         'size': 17,
     }
 
-    c = v3f.Client('http://example.com')
+    c = v3f.HTTPClient('http://example.com')
     col = c._handle_label_col(msg)
     assert col.name == msg['name'], 'bad name'
     assert len(col) == msg['size'], 'bad size'
@@ -256,7 +256,7 @@ def test_empty_col():
             'name': 'fcol',
         }
     }
-    c = v3f.Client('http://example.com')
+    c = v3f.HTTPClient('http://example.com')
 
     col = c._handle_col_msg(0, msg)
     assert col.name == msg['slice']['name'], 'bad name'
@@ -273,6 +273,6 @@ def test_bool_col():
         },
     }
 
-    c = v3f.Client('http://example.com')
+    c = v3f.HTTPClient('http://example.com')
     col = c._handle_col_msg(0, msg)
     assert col.dtype == bool, 'bad dtype'

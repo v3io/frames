@@ -20,7 +20,7 @@ DESCRIPTOR = _descriptor.FileDescriptor(
   package='pb',
   syntax='proto3',
   serialized_options=None,
-  serialized_pb=_b('\n\x0c\x66rames.proto\x12\x02pb\"\xc8\x01\n\x06\x43olumn\x12\x1d\n\x04kind\x18\x01 \x01(\x0e\x32\x0f.pb.Column.Kind\x12\x0c\n\x04name\x18\x02 \x01(\t\x12\x18\n\x05\x64type\x18\x03 \x01(\x0e\x32\t.pb.DType\x12\x0c\n\x04size\x18\x04 \x01(\x03\x12\x0c\n\x04ints\x18\x05 \x03(\x03\x12\x0e\n\x06\x66loats\x18\x06 \x03(\x01\x12\x0f\n\x07strings\x18\x07 \x03(\t\x12\r\n\x05times\x18\x08 \x03(\x03\x12\r\n\x05\x62ools\x18\t \x03(\x08\"\x1c\n\x04Kind\x12\t\n\x05SLICE\x10\x00\x12\t\n\x05LABEL\x10\x01\"`\n\x05Value\x12\x0e\n\x04ival\x18\x01 \x01(\x03H\x00\x12\x0e\n\x04\x66val\x18\x02 \x01(\x01H\x00\x12\x0e\n\x04sval\x18\x03 \x01(\tH\x00\x12\x0e\n\x04tval\x18\x04 \x01(\x03H\x00\x12\x0e\n\x04\x62val\x18\x05 \x01(\x08H\x00\x42\x07\n\x05value\"\xa2\x01\n\x05\x46rame\x12\x1b\n\x07\x63olumns\x18\x01 \x03(\x0b\x32\n.pb.Column\x12\x1b\n\x07indices\x18\x02 \x03(\x0b\x32\n.pb.Column\x12%\n\x06labels\x18\x03 \x03(\x0b\x32\x15.pb.Frame.LabelsEntry\x1a\x38\n\x0bLabelsEntry\x12\x0b\n\x03key\x18\x01 \x01(\t\x12\x18\n\x05value\x18\x02 \x01(\x0b\x32\t.pb.Value:\x02\x38\x01\"\xc5\x01\n\x0bSchemaField\x12\x0c\n\x04name\x18\x01 \x01(\t\x12\x0b\n\x03\x64oc\x18\x02 \x01(\t\x12\x1a\n\x07\x64\x65\x66\x61ult\x18\x03 \x01(\x0b\x32\t.pb.Value\x12\x0c\n\x04type\x18\x04 \x01(\t\x12\x33\n\nproperties\x18\x05 \x03(\x0b\x32\x1f.pb.SchemaField.PropertiesEntry\x1a<\n\x0fPropertiesEntry\x12\x0b\n\x03key\x18\x01 \x01(\t\x12\x18\n\x05value\x18\x02 \x01(\x0b\x32\t.pb.Value:\x02\x38\x01\"6\n\tSchemaKey\x12\x14\n\x0csharding_key\x18\x01 \x03(\t\x12\x13\n\x0bsorting_key\x18\x02 \x03(\t\"\x97\x01\n\x0bTableSchema\x12\x0c\n\x04type\x18\x01 \x01(\t\x12\x11\n\tnamespace\x18\x02 \x01(\t\x12\x0c\n\x04name\x18\x03 \x01(\t\x12\x0b\n\x03\x64oc\x18\x04 \x01(\t\x12\x0f\n\x07\x61liases\x18\x05 \x03(\t\x12\x1f\n\x06\x66ields\x18\x06 \x03(\x0b\x32\x0f.pb.SchemaField\x12\x1a\n\x03key\x18\x07 \x01(\x0b\x32\r.pb.SchemaKey\"\x0c\n\nJoinStruct\"\x98\x04\n\x0bReadRequest\x12\x0f\n\x07\x62\x61\x63kend\x18\x01 \x01(\t\x12\x1f\n\x06schema\x18\x02 \x01(\x0b\x32\x0f.pb.TableSchema\x12\x13\n\x0b\x64\x61ta_format\x18\x03 \x01(\t\x12\x12\n\nrow_layout\x18\x04 \x01(\x08\x12\x13\n\x0bmulti_index\x18\x05 \x01(\x08\x12\r\n\x05query\x18\x06 \x01(\t\x12\r\n\x05table\x18\x07 \x01(\t\x12\x0f\n\x07\x63olumns\x18\x08 \x03(\t\x12\x0e\n\x06\x66ilter\x18\t \x01(\t\x12\x10\n\x08group_by\x18\n \x01(\t\x12\x1c\n\x04join\x18\x0b \x03(\x0b\x32\x0e.pb.JoinStruct\x12\r\n\x05limit\x18\x0c \x01(\x03\x12\x15\n\rmessage_limit\x18\r \x01(\x03\x12\x0e\n\x06marker\x18\x0e \x01(\t\x12\x10\n\x08segments\x18\x0f \x03(\x03\x12\x17\n\x0ftotoal_segments\x18\x10 \x01(\x03\x12\x15\n\rsharding_keys\x18\x11 \x03(\t\x12\x1c\n\x14sort_key_range_start\x18\x12 \x01(\t\x12\x1a\n\x12sort_key_range_end\x18\x13 \x01(\t\x12\r\n\x05start\x18\x14 \x01(\t\x12\x0b\n\x03\x65nd\x18\x15 \x01(\t\x12\x15\n\rstep_duration\x18\x16 \x01(\t\x12\x13\n\x0b\x61ggragators\x18\x17 \x01(\t\x12\x0c\n\x04seek\x18\x18 \x01(\t\x12\x10\n\x08shard_id\x18\x19 \x01(\t\x12\x10\n\x08sequence\x18\x1a \x01(\x03\"x\n\x13InitialWriteRequest\x12\x0f\n\x07\x62\x61\x63kend\x18\x01 \x01(\t\x12\r\n\x05table\x18\x02 \x01(\t\x12\x1f\n\x0cinitial_data\x18\x03 \x01(\x0b\x32\t.pb.Frame\x12\x12\n\nexpression\x18\x04 \x01(\t\x12\x0c\n\x04more\x18\x05 \x01(\x08\"^\n\x0cWriteRequest\x12*\n\x07request\x18\x01 \x01(\x0b\x32\x17.pb.InitialWriteRequestH\x00\x12\x1a\n\x05\x66rame\x18\x02 \x01(\x0b\x32\t.pb.FrameH\x00\x42\x06\n\x04type\",\n\x0cWriteRespose\x12\x0e\n\x06\x66rames\x18\x01 \x01(\x03\x12\x0c\n\x04rows\x18\x02 \x01(\x03*B\n\x05\x44Type\x12\x0b\n\x07INTEGER\x10\x00\x12\t\n\x05\x46LOAT\x10\x01\x12\n\n\x06STRING\x10\x02\x12\x08\n\x04TIME\x10\x03\x12\x0b\n\x07\x42OOLEAN\x10\x04\x32\x61\n\x06\x46rames\x12&\n\x04Read\x12\x0f.pb.ReadRequest\x1a\t.pb.Frame\"\x00\x30\x01\x12/\n\x05Write\x12\x10.pb.WriteRequest\x1a\x10.pb.WriteRespose\"\x00(\x01\x62\x06proto3')
+  serialized_pb=_b('\n\x0c\x66rames.proto\x12\x02pb\"\xc8\x01\n\x06\x43olumn\x12\x1d\n\x04kind\x18\x01 \x01(\x0e\x32\x0f.pb.Column.Kind\x12\x0c\n\x04name\x18\x02 \x01(\t\x12\x18\n\x05\x64type\x18\x03 \x01(\x0e\x32\t.pb.DType\x12\x0c\n\x04size\x18\x04 \x01(\x03\x12\x0c\n\x04ints\x18\x05 \x03(\x03\x12\x0e\n\x06\x66loats\x18\x06 \x03(\x01\x12\x0f\n\x07strings\x18\x07 \x03(\t\x12\r\n\x05times\x18\x08 \x03(\x03\x12\r\n\x05\x62ools\x18\t \x03(\x08\"\x1c\n\x04Kind\x12\t\n\x05SLICE\x10\x00\x12\t\n\x05LABEL\x10\x01\"`\n\x05Value\x12\x0e\n\x04ival\x18\x01 \x01(\x03H\x00\x12\x0e\n\x04\x66val\x18\x02 \x01(\x01H\x00\x12\x0e\n\x04sval\x18\x03 \x01(\tH\x00\x12\x0e\n\x04tval\x18\x04 \x01(\x03H\x00\x12\x0e\n\x04\x62val\x18\x05 \x01(\x08H\x00\x42\x07\n\x05value\"\xa2\x01\n\x05\x46rame\x12\x1b\n\x07\x63olumns\x18\x01 \x03(\x0b\x32\n.pb.Column\x12\x1b\n\x07indices\x18\x02 \x03(\x0b\x32\n.pb.Column\x12%\n\x06labels\x18\x03 \x03(\x0b\x32\x15.pb.Frame.LabelsEntry\x1a\x38\n\x0bLabelsEntry\x12\x0b\n\x03key\x18\x01 \x01(\t\x12\x18\n\x05value\x18\x02 \x01(\x0b\x32\t.pb.Value:\x02\x38\x01\"\xc5\x01\n\x0bSchemaField\x12\x0c\n\x04name\x18\x01 \x01(\t\x12\x0b\n\x03\x64oc\x18\x02 \x01(\t\x12\x1a\n\x07\x64\x65\x66\x61ult\x18\x03 \x01(\x0b\x32\t.pb.Value\x12\x0c\n\x04type\x18\x04 \x01(\t\x12\x33\n\nproperties\x18\x05 \x03(\x0b\x32\x1f.pb.SchemaField.PropertiesEntry\x1a<\n\x0fPropertiesEntry\x12\x0b\n\x03key\x18\x01 \x01(\t\x12\x18\n\x05value\x18\x02 \x01(\x0b\x32\t.pb.Value:\x02\x38\x01\"6\n\tSchemaKey\x12\x14\n\x0csharding_key\x18\x01 \x03(\t\x12\x13\n\x0bsorting_key\x18\x02 \x03(\t\"\x97\x01\n\x0bTableSchema\x12\x0c\n\x04type\x18\x01 \x01(\t\x12\x11\n\tnamespace\x18\x02 \x01(\t\x12\x0c\n\x04name\x18\x03 \x01(\t\x12\x0b\n\x03\x64oc\x18\x04 \x01(\t\x12\x0f\n\x07\x61liases\x18\x05 \x03(\t\x12\x1f\n\x06\x66ields\x18\x06 \x03(\x0b\x32\x0f.pb.SchemaField\x12\x1a\n\x03key\x18\x07 \x01(\x0b\x32\r.pb.SchemaKey\"\x0c\n\nJoinStruct\"\x98\x04\n\x0bReadRequest\x12\x0f\n\x07\x62\x61\x63kend\x18\x01 \x01(\t\x12\x1f\n\x06schema\x18\x02 \x01(\x0b\x32\x0f.pb.TableSchema\x12\x13\n\x0b\x64\x61ta_format\x18\x03 \x01(\t\x12\x12\n\nrow_layout\x18\x04 \x01(\x08\x12\x13\n\x0bmulti_index\x18\x05 \x01(\x08\x12\r\n\x05query\x18\x06 \x01(\t\x12\r\n\x05table\x18\x07 \x01(\t\x12\x0f\n\x07\x63olumns\x18\x08 \x03(\t\x12\x0e\n\x06\x66ilter\x18\t \x01(\t\x12\x10\n\x08group_by\x18\n \x01(\t\x12\x1c\n\x04join\x18\x0b \x03(\x0b\x32\x0e.pb.JoinStruct\x12\r\n\x05limit\x18\x0c \x01(\x03\x12\x15\n\rmessage_limit\x18\r \x01(\x03\x12\x0e\n\x06marker\x18\x0e \x01(\t\x12\x10\n\x08segments\x18\x0f \x03(\x03\x12\x17\n\x0ftotoal_segments\x18\x10 \x01(\x03\x12\x15\n\rsharding_keys\x18\x11 \x03(\t\x12\x1c\n\x14sort_key_range_start\x18\x12 \x01(\t\x12\x1a\n\x12sort_key_range_end\x18\x13 \x01(\t\x12\r\n\x05start\x18\x14 \x01(\t\x12\x0b\n\x03\x65nd\x18\x15 \x01(\t\x12\x15\n\rstep_duration\x18\x16 \x01(\t\x12\x13\n\x0b\x61ggragators\x18\x17 \x01(\t\x12\x0c\n\x04seek\x18\x18 \x01(\t\x12\x10\n\x08shard_id\x18\x19 \x01(\t\x12\x10\n\x08sequence\x18\x1a \x01(\x03\"x\n\x13InitialWriteRequest\x12\x0f\n\x07\x62\x61\x63kend\x18\x01 \x01(\t\x12\r\n\x05table\x18\x02 \x01(\t\x12\x1f\n\x0cinitial_data\x18\x03 \x01(\x0b\x32\t.pb.Frame\x12\x12\n\nexpression\x18\x04 \x01(\t\x12\x0c\n\x04more\x18\x05 \x01(\x08\"^\n\x0cWriteRequest\x12*\n\x07request\x18\x01 \x01(\x0b\x32\x17.pb.InitialWriteRequestH\x00\x12\x1a\n\x05\x66rame\x18\x02 \x01(\x0b\x32\t.pb.FrameH\x00\x42\x06\n\x04type\",\n\x0cWriteRespose\x12\x0e\n\x06\x66rames\x18\x01 \x01(\x03\x12\x0c\n\x04rows\x18\x02 \x01(\x03\"\xcc\x01\n\rCreateRequest\x12\x0f\n\x07\x62\x61\x63kend\x18\x01 \x01(\t\x12\r\n\x05table\x18\x02 \x01(\t\x12:\n\rattribute_map\x18\x03 \x03(\x0b\x32#.pb.CreateRequest.AttributeMapEntry\x12\x1f\n\x06schema\x18\x04 \x01(\x0b\x32\x0f.pb.TableSchema\x1a>\n\x11\x41ttributeMapEntry\x12\x0b\n\x03key\x18\x01 \x01(\t\x12\x18\n\x05value\x18\x02 \x01(\x0b\x32\t.pb.Value:\x02\x38\x01\"\x10\n\x0e\x43reateResponse\"j\n\rDeleteRequest\x12\x0f\n\x07\x62\x61\x63kend\x18\x01 \x01(\t\x12\r\n\x05table\x18\x02 \x01(\t\x12\x0e\n\x06\x66ilter\x18\x03 \x01(\t\x12\r\n\x05\x66orce\x18\x04 \x01(\x08\x12\r\n\x05start\x18\x05 \x01(\t\x12\x0b\n\x03\x65nd\x18\x06 \x01(\t\"\x10\n\x0e\x44\x65leteResponse*B\n\x05\x44Type\x12\x0b\n\x07INTEGER\x10\x00\x12\t\n\x05\x46LOAT\x10\x01\x12\n\n\x06STRING\x10\x02\x12\x08\n\x04TIME\x10\x03\x12\x0b\n\x07\x42OOLEAN\x10\x04\x32\xc7\x01\n\x06\x46rames\x12&\n\x04Read\x12\x0f.pb.ReadRequest\x1a\t.pb.Frame\"\x00\x30\x01\x12/\n\x05Write\x12\x10.pb.WriteRequest\x1a\x10.pb.WriteRespose\"\x00(\x01\x12\x31\n\x06\x43reate\x12\x11.pb.CreateRequest\x1a\x12.pb.CreateResponse\"\x00\x12\x31\n\x06\x44\x65lete\x12\x11.pb.DeleteRequest\x1a\x12.pb.DeleteResponse\"\x00\x62\x06proto3')
 )
 
 _DTYPE = _descriptor.EnumDescriptor(
@@ -52,8 +52,8 @@ _DTYPE = _descriptor.EnumDescriptor(
   ],
   containing_type=None,
   serialized_options=None,
-  serialized_start=1713,
-  serialized_end=1779,
+  serialized_start=2064,
+  serialized_end=2130,
 )
 _sym_db.RegisterEnumDescriptor(_DTYPE)
 
@@ -894,6 +894,209 @@ _WRITERESPOSE = _descriptor.Descriptor(
   serialized_end=1711,
 )
 
+
+_CREATEREQUEST_ATTRIBUTEMAPENTRY = _descriptor.Descriptor(
+  name='AttributeMapEntry',
+  full_name='pb.CreateRequest.AttributeMapEntry',
+  filename=None,
+  file=DESCRIPTOR,
+  containing_type=None,
+  fields=[
+    _descriptor.FieldDescriptor(
+      name='key', full_name='pb.CreateRequest.AttributeMapEntry.key', index=0,
+      number=1, type=9, cpp_type=9, label=1,
+      has_default_value=False, default_value=_b("").decode('utf-8'),
+      message_type=None, enum_type=None, containing_type=None,
+      is_extension=False, extension_scope=None,
+      serialized_options=None, file=DESCRIPTOR),
+    _descriptor.FieldDescriptor(
+      name='value', full_name='pb.CreateRequest.AttributeMapEntry.value', index=1,
+      number=2, type=11, cpp_type=10, label=1,
+      has_default_value=False, default_value=None,
+      message_type=None, enum_type=None, containing_type=None,
+      is_extension=False, extension_scope=None,
+      serialized_options=None, file=DESCRIPTOR),
+  ],
+  extensions=[
+  ],
+  nested_types=[],
+  enum_types=[
+  ],
+  serialized_options=_b('8\001'),
+  is_extendable=False,
+  syntax='proto3',
+  extension_ranges=[],
+  oneofs=[
+  ],
+  serialized_start=1856,
+  serialized_end=1918,
+)
+
+_CREATEREQUEST = _descriptor.Descriptor(
+  name='CreateRequest',
+  full_name='pb.CreateRequest',
+  filename=None,
+  file=DESCRIPTOR,
+  containing_type=None,
+  fields=[
+    _descriptor.FieldDescriptor(
+      name='backend', full_name='pb.CreateRequest.backend', index=0,
+      number=1, type=9, cpp_type=9, label=1,
+      has_default_value=False, default_value=_b("").decode('utf-8'),
+      message_type=None, enum_type=None, containing_type=None,
+      is_extension=False, extension_scope=None,
+      serialized_options=None, file=DESCRIPTOR),
+    _descriptor.FieldDescriptor(
+      name='table', full_name='pb.CreateRequest.table', index=1,
+      number=2, type=9, cpp_type=9, label=1,
+      has_default_value=False, default_value=_b("").decode('utf-8'),
+      message_type=None, enum_type=None, containing_type=None,
+      is_extension=False, extension_scope=None,
+      serialized_options=None, file=DESCRIPTOR),
+    _descriptor.FieldDescriptor(
+      name='attribute_map', full_name='pb.CreateRequest.attribute_map', index=2,
+      number=3, type=11, cpp_type=10, label=3,
+      has_default_value=False, default_value=[],
+      message_type=None, enum_type=None, containing_type=None,
+      is_extension=False, extension_scope=None,
+      serialized_options=None, file=DESCRIPTOR),
+    _descriptor.FieldDescriptor(
+      name='schema', full_name='pb.CreateRequest.schema', index=3,
+      number=4, type=11, cpp_type=10, label=1,
+      has_default_value=False, default_value=None,
+      message_type=None, enum_type=None, containing_type=None,
+      is_extension=False, extension_scope=None,
+      serialized_options=None, file=DESCRIPTOR),
+  ],
+  extensions=[
+  ],
+  nested_types=[_CREATEREQUEST_ATTRIBUTEMAPENTRY, ],
+  enum_types=[
+  ],
+  serialized_options=None,
+  is_extendable=False,
+  syntax='proto3',
+  extension_ranges=[],
+  oneofs=[
+  ],
+  serialized_start=1714,
+  serialized_end=1918,
+)
+
+
+_CREATERESPONSE = _descriptor.Descriptor(
+  name='CreateResponse',
+  full_name='pb.CreateResponse',
+  filename=None,
+  file=DESCRIPTOR,
+  containing_type=None,
+  fields=[
+  ],
+  extensions=[
+  ],
+  nested_types=[],
+  enum_types=[
+  ],
+  serialized_options=None,
+  is_extendable=False,
+  syntax='proto3',
+  extension_ranges=[],
+  oneofs=[
+  ],
+  serialized_start=1920,
+  serialized_end=1936,
+)
+
+
+_DELETEREQUEST = _descriptor.Descriptor(
+  name='DeleteRequest',
+  full_name='pb.DeleteRequest',
+  filename=None,
+  file=DESCRIPTOR,
+  containing_type=None,
+  fields=[
+    _descriptor.FieldDescriptor(
+      name='backend', full_name='pb.DeleteRequest.backend', index=0,
+      number=1, type=9, cpp_type=9, label=1,
+      has_default_value=False, default_value=_b("").decode('utf-8'),
+      message_type=None, enum_type=None, containing_type=None,
+      is_extension=False, extension_scope=None,
+      serialized_options=None, file=DESCRIPTOR),
+    _descriptor.FieldDescriptor(
+      name='table', full_name='pb.DeleteRequest.table', index=1,
+      number=2, type=9, cpp_type=9, label=1,
+      has_default_value=False, default_value=_b("").decode('utf-8'),
+      message_type=None, enum_type=None, containing_type=None,
+      is_extension=False, extension_scope=None,
+      serialized_options=None, file=DESCRIPTOR),
+    _descriptor.FieldDescriptor(
+      name='filter', full_name='pb.DeleteRequest.filter', index=2,
+      number=3, type=9, cpp_type=9, label=1,
+      has_default_value=False, default_value=_b("").decode('utf-8'),
+      message_type=None, enum_type=None, containing_type=None,
+      is_extension=False, extension_scope=None,
+      serialized_options=None, file=DESCRIPTOR),
+    _descriptor.FieldDescriptor(
+      name='force', full_name='pb.DeleteRequest.force', index=3,
+      number=4, type=8, cpp_type=7, label=1,
+      has_default_value=False, default_value=False,
+      message_type=None, enum_type=None, containing_type=None,
+      is_extension=False, extension_scope=None,
+      serialized_options=None, file=DESCRIPTOR),
+    _descriptor.FieldDescriptor(
+      name='start', full_name='pb.DeleteRequest.start', index=4,
+      number=5, type=9, cpp_type=9, label=1,
+      has_default_value=False, default_value=_b("").decode('utf-8'),
+      message_type=None, enum_type=None, containing_type=None,
+      is_extension=False, extension_scope=None,
+      serialized_options=None, file=DESCRIPTOR),
+    _descriptor.FieldDescriptor(
+      name='end', full_name='pb.DeleteRequest.end', index=5,
+      number=6, type=9, cpp_type=9, label=1,
+      has_default_value=False, default_value=_b("").decode('utf-8'),
+      message_type=None, enum_type=None, containing_type=None,
+      is_extension=False, extension_scope=None,
+      serialized_options=None, file=DESCRIPTOR),
+  ],
+  extensions=[
+  ],
+  nested_types=[],
+  enum_types=[
+  ],
+  serialized_options=None,
+  is_extendable=False,
+  syntax='proto3',
+  extension_ranges=[],
+  oneofs=[
+  ],
+  serialized_start=1938,
+  serialized_end=2044,
+)
+
+
+_DELETERESPONSE = _descriptor.Descriptor(
+  name='DeleteResponse',
+  full_name='pb.DeleteResponse',
+  filename=None,
+  file=DESCRIPTOR,
+  containing_type=None,
+  fields=[
+  ],
+  extensions=[
+  ],
+  nested_types=[],
+  enum_types=[
+  ],
+  serialized_options=None,
+  is_extendable=False,
+  syntax='proto3',
+  extension_ranges=[],
+  oneofs=[
+  ],
+  serialized_start=2046,
+  serialized_end=2062,
+)
+
 _COLUMN.fields_by_name['kind'].enum_type = _COLUMN_KIND
 _COLUMN.fields_by_name['dtype'].enum_type = _DTYPE
 _COLUMN_KIND.containing_type = _COLUMN
@@ -934,6 +1137,10 @@ _WRITEREQUEST.fields_by_name['request'].containing_oneof = _WRITEREQUEST.oneofs_
 _WRITEREQUEST.oneofs_by_name['type'].fields.append(
   _WRITEREQUEST.fields_by_name['frame'])
 _WRITEREQUEST.fields_by_name['frame'].containing_oneof = _WRITEREQUEST.oneofs_by_name['type']
+_CREATEREQUEST_ATTRIBUTEMAPENTRY.fields_by_name['value'].message_type = _VALUE
+_CREATEREQUEST_ATTRIBUTEMAPENTRY.containing_type = _CREATEREQUEST
+_CREATEREQUEST.fields_by_name['attribute_map'].message_type = _CREATEREQUEST_ATTRIBUTEMAPENTRY
+_CREATEREQUEST.fields_by_name['schema'].message_type = _TABLESCHEMA
 DESCRIPTOR.message_types_by_name['Column'] = _COLUMN
 DESCRIPTOR.message_types_by_name['Value'] = _VALUE
 DESCRIPTOR.message_types_by_name['Frame'] = _FRAME
@@ -945,6 +1152,10 @@ DESCRIPTOR.message_types_by_name['ReadRequest'] = _READREQUEST
 DESCRIPTOR.message_types_by_name['InitialWriteRequest'] = _INITIALWRITEREQUEST
 DESCRIPTOR.message_types_by_name['WriteRequest'] = _WRITEREQUEST
 DESCRIPTOR.message_types_by_name['WriteRespose'] = _WRITERESPOSE
+DESCRIPTOR.message_types_by_name['CreateRequest'] = _CREATEREQUEST
+DESCRIPTOR.message_types_by_name['CreateResponse'] = _CREATERESPONSE
+DESCRIPTOR.message_types_by_name['DeleteRequest'] = _DELETEREQUEST
+DESCRIPTOR.message_types_by_name['DeleteResponse'] = _DELETERESPONSE
 DESCRIPTOR.enum_types_by_name['DType'] = _DTYPE
 _sym_db.RegisterFileDescriptor(DESCRIPTOR)
 
@@ -1041,9 +1252,46 @@ WriteRespose = _reflection.GeneratedProtocolMessageType('WriteRespose', (_messag
   ))
 _sym_db.RegisterMessage(WriteRespose)
 
+CreateRequest = _reflection.GeneratedProtocolMessageType('CreateRequest', (_message.Message,), dict(
+
+  AttributeMapEntry = _reflection.GeneratedProtocolMessageType('AttributeMapEntry', (_message.Message,), dict(
+    DESCRIPTOR = _CREATEREQUEST_ATTRIBUTEMAPENTRY,
+    __module__ = 'frames_pb2'
+    # @@protoc_insertion_point(class_scope:pb.CreateRequest.AttributeMapEntry)
+    ))
+  ,
+  DESCRIPTOR = _CREATEREQUEST,
+  __module__ = 'frames_pb2'
+  # @@protoc_insertion_point(class_scope:pb.CreateRequest)
+  ))
+_sym_db.RegisterMessage(CreateRequest)
+_sym_db.RegisterMessage(CreateRequest.AttributeMapEntry)
+
+CreateResponse = _reflection.GeneratedProtocolMessageType('CreateResponse', (_message.Message,), dict(
+  DESCRIPTOR = _CREATERESPONSE,
+  __module__ = 'frames_pb2'
+  # @@protoc_insertion_point(class_scope:pb.CreateResponse)
+  ))
+_sym_db.RegisterMessage(CreateResponse)
+
+DeleteRequest = _reflection.GeneratedProtocolMessageType('DeleteRequest', (_message.Message,), dict(
+  DESCRIPTOR = _DELETEREQUEST,
+  __module__ = 'frames_pb2'
+  # @@protoc_insertion_point(class_scope:pb.DeleteRequest)
+  ))
+_sym_db.RegisterMessage(DeleteRequest)
+
+DeleteResponse = _reflection.GeneratedProtocolMessageType('DeleteResponse', (_message.Message,), dict(
+  DESCRIPTOR = _DELETERESPONSE,
+  __module__ = 'frames_pb2'
+  # @@protoc_insertion_point(class_scope:pb.DeleteResponse)
+  ))
+_sym_db.RegisterMessage(DeleteResponse)
+
 
 _FRAME_LABELSENTRY._options = None
 _SCHEMAFIELD_PROPERTIESENTRY._options = None
+_CREATEREQUEST_ATTRIBUTEMAPENTRY._options = None
 
 _FRAMES = _descriptor.ServiceDescriptor(
   name='Frames',
@@ -1051,8 +1299,8 @@ _FRAMES = _descriptor.ServiceDescriptor(
   file=DESCRIPTOR,
   index=0,
   serialized_options=None,
-  serialized_start=1781,
-  serialized_end=1878,
+  serialized_start=2133,
+  serialized_end=2332,
   methods=[
   _descriptor.MethodDescriptor(
     name='Read',
@@ -1070,6 +1318,24 @@ _FRAMES = _descriptor.ServiceDescriptor(
     containing_service=None,
     input_type=_WRITEREQUEST,
     output_type=_WRITERESPOSE,
+    serialized_options=None,
+  ),
+  _descriptor.MethodDescriptor(
+    name='Create',
+    full_name='pb.Frames.Create',
+    index=2,
+    containing_service=None,
+    input_type=_CREATEREQUEST,
+    output_type=_CREATERESPONSE,
+    serialized_options=None,
+  ),
+  _descriptor.MethodDescriptor(
+    name='Delete',
+    full_name='pb.Frames.Delete',
+    index=3,
+    containing_service=None,
+    input_type=_DELETEREQUEST,
+    output_type=_DELETERESPONSE,
     serialized_options=None,
   ),
 ])

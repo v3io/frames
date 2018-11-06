@@ -27,38 +27,17 @@ import pandas as pd
 import requests
 
 from .dtypes import dtypes, BoolDType
-
-
-class Error(Exception):
-    """v3io_frames Exception"""
-
-
-class BadRequest(Exception):
-    """An error in query"""
-
-
-class MessageError(Error):
-    """An error in message"""
-
-
-class ReadError(Error):
-    """An error in read"""
-
-
-class CreateError(Error):
-    """An error in table creation"""
-
-
-class DeleteError(Error):
-    """An error in table deletion"""
+from .errors import (
+    BadRequest, CreateError, DeleteError, MessageError, Error, ReadError
+)
 
 
 Schema = namedtuple('Schema', 'type namespace name doc aliases fields key')
 SchemaField = namedtuple('SchemaField', 'name doc default type properties')
 
 
-class Client(object):
-    """Client is a nuclio stream client"""
+class HTTPClient(object):
+    """Client is a nuclio stream HTTP client"""
 
     def __init__(self, url='', api_key=''):
         """
