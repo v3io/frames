@@ -21,8 +21,14 @@ such restriction.
 package pb
 
 import (
+	"encoding/json"
 	"fmt"
+	"regexp"
 	"time"
+)
+
+var (
+	intRe = regexp.MustCompile("^[0-9]+$")
 )
 
 // GoValue return value as interface{}
@@ -62,4 +68,50 @@ func AsGoMap(mv map[string]*Value) map[string]interface{} {
 	}
 
 	return m
+}
+
+// MarshalJSON marshal Value as JSON object
+func (v *Value) MarshalJSON() ([]byte, error) {
+	switch v.GetValue().(type) {
+	case *Value_Bval:
+		return json.Marshal(v.GetBval())
+	case *Value_Fval:
+		return json.Marshal(v.GetFval())
+	case *Value_Ival:
+		return json.Marshal(v.GetIval())
+	case *Value_Sval:
+		return json.Marshal(v.GetSval())
+	case *Value_Tval:
+		return json.Marshal(v.GetTval())
+	}
+
+	return nil, fmt.Errorf("unknown Value type - %T", v.GetValue())
+}
+
+// UnmarshalJSON will unmarshal encoded native Go type to value
+// (Implement json.Unmarshaler interface)
+func (v *Value) UnmarshalJSON(data []byte) error {
+	var i interface{}
+	if err := json.Unmarshal(data, &i); err != nil {
+		return err
+	}
+
+	// FIXME: Time
+	switch i.(type) {
+	case float64: // JSON encodes numbers as floats
+		f := i.(float64)
+		if intRe.Match(data) {
+			v.Value = &Value_Ival{Ival: int64(f)}
+		} else {
+			v.Value = &Value_Fval{Fval: f}
+		}
+	case string:
+		v.Value = &Value_Sval{Sval: i.(string)}
+	case bool:
+		v.Value = &Value_Bval{Bval: i.(bool)}
+	default:
+		return fmt.Errorf("unsupported type for value - %T", i)
+	}
+
+	return nil
 }
