@@ -13,14 +13,8 @@ require (
 	github.com/fatih/gomodifytags v0.0.0-20180914191908-141225bf62b6 // indirect
 	github.com/fatih/motion v0.0.0-20180408211639-218875ebe238 // indirect
 	github.com/ghodss/yaml v1.0.0
-	github.com/golang/lint v0.0.0-20181026193005-c67002cb31c3 // indirect
 	github.com/golang/protobuf v1.2.0
-	github.com/google/shlex v0.0.0-20150127133951-6f45313302b9 // indirect
-	github.com/josharian/impl v0.0.0-20180228163738-3d0f908298c4 // indirect
-	github.com/jstemmer/gotags v1.4.1 // indirect
-	github.com/kisielk/errcheck v1.1.0 // indirect
-	github.com/klauspost/asmfmt v0.0.0-20171230121622-022c51c61cbd // indirect
-	github.com/koron/iferr v0.0.0-20180615142939-bb332a3b1d91 // indirect
+	github.com/imdario/mergo v0.3.6 // indirect
 	github.com/mattn/go-colorable v0.0.9 // indirect
 	github.com/mattn/go-isatty v0.0.4 // indirect
 	github.com/mdempsky/gocode v0.0.0-20181105154058-0af7a86943a6 // indirect
@@ -39,7 +33,7 @@ require (
 	github.com/spf13/pflag v1.0.3 // indirect
 	github.com/stamblerre/gocode v0.0.0-20181016172724-12640289f650 // indirect
 	github.com/v3io/v3io-go-http v0.0.0-20181023145150-3c8ba0ce5ac8
-	github.com/v3io/v3io-tsdb v0.8.1
+	github.com/v3io/v3io-tsdb v0.8.2-dep
 	github.com/valyala/fasthttp v1.0.0
 	github.com/vmihailenco/msgpack v4.0.0+incompatible
 	github.com/xwb1989/sqlparser v0.0.0-20180606152119-120387863bf2
