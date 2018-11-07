@@ -27,6 +27,21 @@ import re
 import v3io_frames as v3f
 
 
+schema = v3f.Schema(
+    'type',
+    'namesapce',
+    'name',
+    'doc',
+    [],  # aliases
+    [
+        v3f.SchemaField('field1', '', '', 't1', None),
+        v3f.SchemaField('field2', '', '', 't2', None),
+        v3f.SchemaField('field3', '', '', 't3', None),
+    ],
+    None,  # Key
+)
+
+
 def has_working_go():
     """Check we have go version >= 1.11"""
     try:
@@ -160,6 +175,10 @@ def test_integration(client_cls, proto):
             col = df[name]
             col2 = df2[name]
             assert col2.equals(col), 'column {} mismatch'.format(name)
+
+        new_table = 'test-table'
+        c.create(backend, new_table, schema=schema)
+        c.delete(backend, new_table)
 
 
 @pytest.mark.skipif(not has_go, reason='Go SDK not found')
