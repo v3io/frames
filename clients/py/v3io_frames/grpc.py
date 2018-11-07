@@ -107,7 +107,7 @@ class gRPCClient:
             for frame in stub.Read(request):
                 yield self._frame2df(frame)
 
-    def write(self, backend, table, dfs, expression=''):
+    def write(self, backend, table, dfs, expression='', labels=None):
         """Write to table
 
         Parameters
@@ -120,6 +120,8 @@ class gRPCClient:
             Frames to write
         experssion : str
             Write expression
+        labels : dict
+            Set of lables
 
         Returns:
             Write result
