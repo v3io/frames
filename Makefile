@@ -34,7 +34,7 @@ build:
 	GO111MODULE=on go build -v $(modflag) ./...
 
 test-python:
-	cd clients/py && pipenv run flake8 v3io_frames.py tests
+	cd clients/py && pipenv run flake8 --exclude 'frames_pb2*.py' v3io_frames tests
 	cd clients/py && pipenv run python -m pytest -v
 
 build-docker:
