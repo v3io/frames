@@ -12,6 +12,8 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+from datetime import datetime
+
 import grpc
 import pandas as pd
 import numpy as np
@@ -20,35 +22,14 @@ import pytz
 from . import frames_pb2 as fpb  # noqa
 from . import frames_pb2_grpc as fgrpc  # noqa
 from .errors import MessageError, WriteError
+from .http import format_go_time
 
 _ts = pd.Series(pd.Timestamp(0))
 _time_dt = _ts.dtype
 _time_tz_dt = _ts.dt.tz_localize(pytz.UTC).dtype
 
 
-# We can't use a set since hash(np.int64) != hash(pd.Series([1]).dtype)
-def _is_int_dtype(dtype):
-    return \
-        dtype == np.int64 or \
-        dtype == np.int32 or \
-        dtype == np.int16 or \
-        dtype == np.int8 or \
-        dtype == np.int
-
-
-def _is_float_dtype(dtype):
-    return \
-        dtype == np.float64 or \
-        dtype == np.float32 or \
-        dtype == np.float16 or \
-        dtype == np.float
-
-
-def _is_time_dtype(dtype):
-    return dtype == _time_dt or dtype == _time_tz_dt
-
-
-class gRPCClient:
+class Client:
     def __init__(self, address=''):
         self.address = address
 
@@ -105,7 +86,7 @@ class gRPCClient:
                 **kw
             )
             for frame in stub.Read(request):
-                yield self._frame2df(frame)
+                yield frame2df(frame)
 
     def write(self, backend, table, dfs, expression='', labels=None):
         """Write to table
@@ -137,91 +118,257 @@ class gRPCClient:
                 table=table,
                 expression=expression,
             )
-            stub.Write(self._write_stream(request, dfs))
+            stub.Write(write_stream(request, dfs))
 
-    def _frame2df(self, frame):
-        cols = {col.name: self._col2series(col) for col in frame.columns}
-        df = pd.DataFrame(cols)
+    def create(self, backend, table, attrs=None, schema=None):
+        """Create a table
 
-        indices = [self._col2series(idx) for idx in frame.indices]
-        if len(indices) == 1:
-            df.index = indices[0]
-        elif len(indices) > 1:
-            df.index = pd.MultiIndex.from_arrays(indices)
+        Parameters
+        ----------
+        backend : str
+            Backend name
+        table : str
+            Table to create
+        attrs : dict
+            Table attributes
+        schema: Schema or None
+            Table schema
 
-        return df
+        Raises
+        ------
+        CreateError:
+            On request error or backend error
+        """
+        attrs = {k: pb_value(v) for k, v in attrs.items()} if attrs else None
+        schema = schema2pb(schema) if schema else None
 
-    def _col2series(self, col):
-        if col.dtype == fpb.BOOLEAN:
-            data = pd.Series(col.bools, dtype=np.bool)
-        elif col.dtype == fpb.FLOAT:
-            data = pd.Series(col.floats, dtype=np.float64)
-        elif col.dtype == fpb.INTEGER:
-            data = pd.Series(col.ints, dtype=np.int64)
-        elif col.dtype == fpb.STRING:
-            data = pd.Series(col.strings)
-        elif col.dtype == fpb.TIME:
-            data = pd.to_datetime(pd.Series(col.times, unit='ns'))
+        with grpc.insecure_channel(self.address) as channel:
+            stub = fgrpc.FramesStub(channel)
+            request = fpb.CreateRequest(
+                backend=backend,
+                table=table,
+                attribute_map=attrs,
+                schema=schema,
+            )
+            stub.Create(request)
+
+    def delete(self, backend, table, filter='', force=False, start='', end=''):
+        """Delete a table
+
+        Parameters
+        ----------
+        backend : str
+            Backend name
+        table : str
+            Table to create
+        filter : str
+            Filter for selective delete
+        force : bool
+            Force deletion
+        start : string
+            Delete since start (TSDB/Stream)
+        end : string
+            Delete up to end (TSDB/Stream)
+
+        Raises
+        ------
+        DeleteError
+            On request error or backend error
+        """
+        start, end = time2str(start), time2str(end)
+        with grpc.insecure_channel(self.address) as channel:
+            stub = fgrpc.FramesStub(channel)
+            request = fpb.DeleteRequest(
+                backend=backend,
+                table=table,
+                filter=filter,
+                force=force,
+                start=start,
+                end=end,
+            )
+            stub.Delete(request)
+
+
+def frame2df(frame):
+    cols = {col.name: col2series(col) for col in frame.columns}
+    df = pd.DataFrame(cols)
+
+    indices = [col2series(idx) for idx in frame.indices]
+    if len(indices) == 1:
+        df.index = indices[0]
+    elif len(indices) > 1:
+        df.index = pd.MultiIndex.from_arrays(indices)
+
+    return df
+
+
+def col2series(col):
+    if col.dtype == fpb.BOOLEAN:
+        data = pd.Series(col.bools, dtype=np.bool)
+    elif col.dtype == fpb.FLOAT:
+        data = pd.Series(col.floats, dtype=np.float64)
+    elif col.dtype == fpb.INTEGER:
+        data = pd.Series(col.ints, dtype=np.int64)
+    elif col.dtype == fpb.STRING:
+        data = pd.Series(col.strings)
+    elif col.dtype == fpb.TIME:
+        data = pd.to_datetime(pd.Series(col.times, unit='ns'))
+    else:
+        raise MessageError('unknown dtype - {}'.format(col.dtype))
+
+    if col.kind == col.LABEL:
+        data = data.reindex(pd.RangeIndex(col.size), method='pad')
+
+    return data
+
+
+def write_stream(request, dfs):
+    yield fpb.WriteRequest(request=request)
+    for df in dfs:
+        yield fpb.WriteRequest(frame=df2msg(df))
+
+
+def df2msg(df):
+    indices = None
+    if should_encode_index(df):
+        if hasattr(df.index, 'levels'):
+            by_name = df.index.get_level_values
+            names = df.index.names
+            serieses = (by_name(name).to_series() for name in names)
+            indices = [series2col(s) for s in serieses]
         else:
-            raise MessageError('unknown dtype - {}'.format(col.dtype))
+            indices = [series2col(df.index.to_series())]
 
-        if col.kind == col.LABEL:
-            data = data.reindex(pd.RangeIndex(col.size), method='pad')
+    return fpb.Frame(
+        columns=[series2col(df[name]) for name in df.columns],
+        indices=indices,
+    )
 
-        return data
 
-    def _write_stream(self, request, dfs):
-        yield fpb.WriteRequest(request=request)
-        for df in dfs:
-            yield fpb.WriteRequest(frame=self._df2msg(df))
+def series2col(s):
+    col = fpb.Column(
+        name=s.name or '',
+        kind=fpb.Column.SLICE,
+    )
 
-    def _df2msg(self, df):
-        indices = None
-        if self._should_encode_index(df):
-            if hasattr(df.index, 'levels'):
-                by_name = df.index.get_level_values
-                names = df.index.names
-                serieses = (by_name(name).to_series() for name in names)
-                indices = [self._series2col(s) for s in serieses]
-            else:
-                indices = [self._series2col(df.index.to_series())]
+    if is_int_dtype(s.dtype):
+        col.ints.extend(s)
+        col.dtype = fpb.INTEGER
+    elif is_float_dtype(s.dtype):
+        col.floats.extend(s)
+        col.dtype = fpb.FLOAT
+    elif s.dtype == np.object:  # Pandas dtype for str is object
+        col.strings.extend(s)
+        col.dtype = fpb.STRING
+    elif s.dtype == np.bool:
+        col.bools.extend(s)
+        col.dtype = fpb.BOOLEAN
+    elif is_time_dtype(s.dtype):
+        if s.dt.tz:
+            s = s.dt.tz_localize(pytz.UTC)
+        col.times.extend(s.astype(np.int64))
+        col.dtype = fpb.TIME
+    else:
+        raise WriteError(
+            '{} - unsupported type - {}'.format(s.name, s.dtype))
 
-        return fpb.Frame(
-            columns=[self._series2col(df[name]) for name in df.columns],
-            indices=indices,
+    return col
+
+
+def should_encode_index(df):
+    if df.index.name:
+        return True
+
+    return not isinstance(df.index, pd.RangeIndex)
+
+
+def schema2pb(schema):
+    fields = schema.fields
+    if fields:
+        fields = [field2pb(f) for f in fields]
+
+    key = schema.key
+    if key:
+        key = fpb.SchemaKey(
+            sharding_key=key.sharding,
+            sorting_key=key.sorting,
         )
 
-    def _series2col(self, s):
-        col = fpb.Column(
-            name=s.name or '',
-            kind=fpb.Column.SLICE,
-        )
+    return fpb.TableSchema(
+        type=schema.type,
+        namespace=schema.namespace,
+        name=schema.name,
+        doc=schema.doc,
+        aliases=schema.aliases or [],
+        fields=fields,
+        key=key,
+    )
 
-        if _is_int_dtype(s.dtype):
-            col.ints.extend(s)
-            col.dtype = fpb.INTEGER
-        elif _is_float_dtype(s.dtype):
-            col.floats.extend(s)
-            col.dtype = fpb.FLOAT
-        elif s.dtype == np.object:  # Pandas dtype for str is object
-            col.strings.extend(s)
-            col.dtype = fpb.STRING
-        elif s.dtype == np.bool:
-            col.bools.extend(s)
-            col.dtype = fpb.BOOLEAN
-        elif _is_time_dtype(s.dtype):
-            if s.dt.tz:
-                s = s.dt.tz_localize(pytz.UTC)
-            col.times.extend(s.astype(np.int64))
-            col.dtype = fpb.TIME
-        else:
-            raise WriteError(
-                '{} - unsupported type - {}'.format(s.name, s.dtype))
 
-        return col
+def field2pb(field):
+    properties = field.properties
+    if properties:
+        properties = {k: pb_value(v) for k, v in field.properties.items()}
 
-    def _should_encode_index(self, df):
-        if df.index.name:
-            return True
+    pbf = fpb.SchemaField(
+        name=field.name,
+        doc=field.doc,
+        default=pb_value(field.default),
+        type=field.type,
+        properties=properties,
+    )
 
-        return not isinstance(df.index, pd.RangeIndex)
+    return pbf
+
+
+def pb_value(v):
+    if v is None:
+        return None
+
+    if isinstance(v, (bool, np.bool_)):
+        return fpb.Value(bval=v)
+
+    if isinstance(v, (np.inexact, float)):
+        return fpb.Value(fval=v)
+
+    if isinstance(v, (int, np.integer)):
+        return fpb.Value(ival=v)
+
+    if isinstance(v, str):
+        return fpb.Value(sval=v)
+
+    if isinstance(v, (datetime, pd.Timestamp)):
+        # Convert to epoch nano
+        v = pd.Timestamp(v).to_datetime64().astype(np.int64)
+        return fpb.Value(tval=v)
+
+    raise TypeError('unsupported Value type - {}'.format(type(v)))
+
+
+# We can't use a set since hash(np.int64) != hash(pd.Series([1]).dtype)
+def is_int_dtype(dtype):
+    return \
+        dtype == np.int64 or \
+        dtype == np.int32 or \
+        dtype == np.int16 or \
+        dtype == np.int8 or \
+        dtype == np.int
+
+
+def is_float_dtype(dtype):
+    return \
+        dtype == np.float64 or \
+        dtype == np.float32 or \
+        dtype == np.float16 or \
+        dtype == np.float
+
+
+def is_time_dtype(dtype):
+    return dtype == _time_dt or dtype == _time_tz_dt
+
+
+def time2str(ts):
+    if not isinstance(ts, (datetime, pd.Timestamp)):
+        return ts
+
+    return format_go_time(ts)

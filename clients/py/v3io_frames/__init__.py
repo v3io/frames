@@ -15,6 +15,6 @@
 __version__ = '0.1.2'
 
 
-from .http import HTTPClient  # noqa
-from .grpc import gRPCClient  # noqa
+from .http import Client as HTTPClient, Schema, SchemaField  # noqa
+from .grpc import Client as gRPCClient  # noqa
 from .errors import *  # noqa

@@ -32,11 +32,13 @@ from .errors import (
 )
 
 
+# TODO: Move this to a common file
 Schema = namedtuple('Schema', 'type namespace name doc aliases fields key')
 SchemaField = namedtuple('SchemaField', 'name doc default type properties')
+SchemaKey = namedtuple('SchemaKey', 'sharding sorting')
 
 
-class HTTPClient(object):
+class Client(object):
     """Client is a nuclio stream HTTP client"""
 
     def __init__(self, url='', api_key=''):
