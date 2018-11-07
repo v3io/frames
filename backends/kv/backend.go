@@ -27,6 +27,7 @@ import (
 	"github.com/v3io/frames"
 	"github.com/v3io/frames/v3ioutils"
 	"github.com/v3io/v3io-go-http"
+	"strings"
 )
 
 // Backend is key/value backend
@@ -62,6 +63,10 @@ func (b *Backend) Create(request *frames.CreateRequest) error {
 
 // Delete deletes a table (or part of it)
 func (b *Backend) Delete(request *frames.DeleteRequest) error {
+
+	if !strings.HasSuffix(request.Table, "/") {
+		request.Table += "/"
+	}
 
 	return v3ioutils.DeleteTable(b.logger, b.container, request.Table, request.Filter, b.numWorkers)
 	// TODO: delete the table directory entry if filter == ""

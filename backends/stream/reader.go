@@ -129,6 +129,7 @@ func (i *streamIterator) Next() bool {
 				recTime, "Seq:", r.SequenceNumber, "Body:", string(r.Data))
 			row = map[string]interface{}{"raw_data": string(r.Data)}
 		}
+		lastSequence = r.SequenceNumber
 		row["stream_time"] = recTime
 		row["seq_number"] = r.SequenceNumber
 
