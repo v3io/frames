@@ -6,6 +6,8 @@ github.com/cespare/xxhash
 github.com/ghodss/yaml
 # github.com/golang/protobuf v1.2.0
 github.com/golang/protobuf/proto
+# github.com/imdario/mergo v0.3.6
+github.com/imdario/mergo
 # github.com/klauspost/compress v1.4.0
 github.com/klauspost/compress/flate
 github.com/klauspost/compress/gzip
@@ -35,17 +37,17 @@ github.com/pkg/errors
 github.com/rcrowley/go-metrics
 # github.com/v3io/v3io-go-http v0.0.0-20181023145150-3c8ba0ce5ac8
 github.com/v3io/v3io-go-http
-# github.com/v3io/v3io-tsdb v0.8.1
+# github.com/v3io/v3io-tsdb v0.8.2-dep
 github.com/v3io/v3io-tsdb/pkg/utils
 github.com/v3io/v3io-tsdb/pkg/config
 github.com/v3io/v3io-tsdb/pkg/querier
 github.com/v3io/v3io-tsdb/pkg/tsdb
+github.com/v3io/v3io-tsdb/pkg/tsdb/schema
 github.com/v3io/v3io-tsdb/internal/pkg/performance
 github.com/v3io/v3io-tsdb/pkg/aggregate
 github.com/v3io/v3io-tsdb/pkg/chunkenc
 github.com/v3io/v3io-tsdb/pkg/partmgr
 github.com/v3io/v3io-tsdb/pkg/appender
-github.com/v3io/v3io-tsdb/pkg/tsdb/schema
 # github.com/valyala/bytebufferpool v1.0.0
 github.com/valyala/bytebufferpool
 # github.com/valyala/fasthttp v1.0.0
