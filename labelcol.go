@@ -35,16 +35,16 @@ type LabelColumn struct {
 // NewLabelColumn returns new label column
 func NewLabelColumn(name string, value interface{}, size int) (*LabelColumn, error) {
 	switch value.(type) {
-	case int, float64, string, time.Time, bool:
+	case int64, float64, string, time.Time, bool:
 		// OK
 	case int8:
-		value = int(value.(int8))
+		value = int64(value.(int8))
 	case int16:
-		value = int(value.(int16))
+		value = int64(value.(int16))
 	case int32:
-		value = int(value.(int32))
-	case int64:
-		value = int(value.(int64))
+		value = int64(value.(int32))
+	case int:
+		value = int64(value.(int))
 	case float32:
 		value = float64(value.(float32))
 	default:
@@ -75,7 +75,7 @@ func (lc *LabelColumn) DType() DType {
 	switch lc.value.(type) {
 	case string:
 		return StringType
-	case int:
+	case int64:
 		return IntType
 	case float64:
 		return FloatType
@@ -89,13 +89,13 @@ func (lc *LabelColumn) DType() DType {
 }
 
 // Ints returns data as []int
-func (lc *LabelColumn) Ints() ([]int, error) {
-	typedVal, ok := lc.value.(int)
+func (lc *LabelColumn) Ints() ([]int64, error) {
+	typedVal, ok := lc.value.(int64)
 	if !ok {
 		return nil, fmt.Errorf("wrong type (type is %s)", lc.DType())
 	}
 
-	data := make([]int, lc.Len())
+	data := make([]int64, lc.Len())
 	for i := range data {
 		data[i] = typedVal
 	}
@@ -104,7 +104,7 @@ func (lc *LabelColumn) Ints() ([]int, error) {
 }
 
 // IntAt returns int value at index i
-func (lc *LabelColumn) IntAt(i int) (int, error) {
+func (lc *LabelColumn) IntAt(i int) (int64, error) {
 	return intAt(lc, i)
 }
 

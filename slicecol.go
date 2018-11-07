@@ -26,6 +26,13 @@ import (
 	"time"
 )
 
+var (
+	int32Type      DType = reflect.TypeOf([]int32{})
+	int16Type      DType = reflect.TypeOf([]int16{})
+	int8Type       DType = reflect.TypeOf([]int8{})
+	intDefaultType DType = reflect.TypeOf([]int{})
+)
+
 // SliceColumn is a column with slice data
 type SliceColumn struct {
 	name string
@@ -39,7 +46,15 @@ func NewSliceColumn(name string, data interface{}) (*SliceColumn, error) {
 
 	switch reflect.TypeOf(data) {
 	case IntType:
-		size = len(data.([]int))
+		size = len(data.([]int64))
+	case int32Type, int16Type, int8Type, intDefaultType:
+		size = reflect.ValueOf(data).Len()
+		typedData := make([]int64, size)
+		val := reflect.ValueOf(data)
+		for i := 0; i < size; i++ {
+			typedData[i] = val.Index(i).Int()
+		}
+		data = typedData
 	case FloatType:
 		size = len(data.([]float64))
 	case StringType:
@@ -76,9 +91,9 @@ func (sc *SliceColumn) DType() DType {
 	return reflect.TypeOf(sc.data)
 }
 
-// Ints returns data as []int
-func (sc *SliceColumn) Ints() ([]int, error) {
-	typedCol, ok := sc.data.([]int)
+// Ints returns data as []int64
+func (sc *SliceColumn) Ints() ([]int64, error) {
+	typedCol, ok := sc.data.([]int64)
 	if !ok {
 		return nil, fmt.Errorf("wrong type (type is %s)", sc.DType())
 	}
@@ -87,7 +102,7 @@ func (sc *SliceColumn) Ints() ([]int, error) {
 }
 
 // IntAt returns int value at index i
-func (sc *SliceColumn) IntAt(i int) (int, error) {
+func (sc *SliceColumn) IntAt(i int) (int64, error) {
 	return intAt(sc, i)
 }
 
@@ -219,7 +234,12 @@ func (sc *SliceColumn) Slice(start int, end int) (Column, error) {
 func (sc *SliceColumn) Append(value interface{}) error {
 	switch sc.DType() {
 	case IntType:
-		typedVal, ok := value.(int)
+		switch value.(type) {
+		case int32, int16, int8, int:
+			value = reflect.ValueOf(value).Int()
+		}
+
+		typedVal, ok := value.(int64)
 		if !ok {
 			// if the new value is a float, convert the col to floats
 			floatVal, ok := value.(float64)
@@ -280,11 +300,11 @@ func (sc *SliceColumn) inBounds(i int) error {
 
 // SliceColumnMessage is SliceColum over-the-wirte message
 // We encode this way and not have single `Data interface{}` since msgpack
-// then will packs []int to int8, int16 ...
+// then will packs []int64 to int8, int16 ...
 type SliceColumnMessage struct {
 	Name       string      `msgpack:"name"`
 	DType      string      `msgpack:"dtype"`
-	IntData    []int       `msgpack:"ints,omitempty"`
+	IntData    []int64     `msgpack:"ints,omitempty"`
 	FloatData  []float64   `msgpack:"floats,omitempty"`
 	StringData []string    `msgpack:"strings,omitempty"`
 	TimeData   []time.Time `msgpack:"times,omitempty"`
@@ -302,7 +322,7 @@ func (sc *SliceColumn) Marshal() (interface{}, error) {
 
 	switch sc.DType() {
 	case IntType:
-		msg.IntData = sc.data.([]int)
+		msg.IntData = sc.data.([]int64)
 	case FloatType:
 		msg.FloatData = sc.data.([]float64)
 	case StringType:

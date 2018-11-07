@@ -118,7 +118,9 @@ func (b *Backend) GetAdapter(path string) (*tsdb.V3ioAdapter, error) {
 // Create creates a table
 func (b *Backend) Create(request *frames.CreateRequest) error {
 
-	attr, ok := request.Attributes["rate"]
+	attrs := request.Attributes()
+
+	attr, ok := attrs["rate"]
 	if !ok {
 		return errors.New("Must specify 'rate' attribute to specify maximum sample rate, e.g. '1/m'")
 	}
@@ -128,7 +130,7 @@ func (b *Backend) Create(request *frames.CreateRequest) error {
 	}
 
 	aggregationGranularity := config.DefaultAggregationGranularity
-	attr, ok = request.Attributes["aggregation-granularity"]
+	attr, ok = attrs["aggregation-granularity"]
 	if ok {
 		val, isStr := attr.(string)
 		if !isStr {
@@ -138,7 +140,7 @@ func (b *Backend) Create(request *frames.CreateRequest) error {
 	}
 
 	defaultRollups := ""
-	attr, ok = request.Attributes["aggregates"]
+	attr, ok = attrs["aggregates"]
 	if ok {
 		val, isStr := attr.(string)
 		if !isStr {
@@ -160,8 +162,6 @@ func (b *Backend) Create(request *frames.CreateRequest) error {
 	}
 
 	return tsdb.CreateTSDB(b.tsdbConfig, dbSchema)
-
-	return fmt.Errorf("Create not implemented")
 }
 
 // Delete deletes a table or part of it

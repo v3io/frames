@@ -1,0 +1,177 @@
+/*
+Copyright 2018 Iguazio Systems Ltd.
+
+Licensed under the Apache License, Version 2.0 (the "License") with
+an addition restriction as set forth herein. You may not use this
+file except in compliance with the License. You may obtain a copy of
+the License at http://www.apache.org/licenses/LICENSE-2.0.
+
+Unless required by applicable law or agreed to in writing, software
+distributed under the License is distributed on an "AS IS" BASIS,
+WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or
+implied. See the License for the specific language governing
+permissions and limitations under the License.
+
+In addition, you may not use the software for any purposes that are
+illegal under applicable law, and the grant of the foregoing license
+under the Apache 2.0 license is conditioned upon your compliance with
+such restriction.
+*/
+
+syntax = "proto3";
+package pb;
+
+enum DType {
+    INTEGER = 0;
+    FLOAT = 1;
+    STRING = 2;
+    TIME = 3;
+    BOOLEAN = 4;
+}
+
+message Column {
+    enum Kind {
+	SLICE = 0;
+	LABEL = 1;
+    }
+
+    Kind kind = 1;
+    string name = 2;
+    DType dtype = 3;
+    int64 size = 4; // used only in SLICE
+    // In slice columns these arrays will be of length 1
+    repeated int64 ints = 5;
+    repeated double floats = 6;
+    repeated string strings = 7;
+    repeated int64 times = 8; // epoch nano
+    repeated bool bools = 9;
+}
+
+// Union of values
+message Value {
+    oneof value {
+	int64 ival = 1;
+	double fval = 2;
+	string sval = 3;
+	int64 tval = 4; // epoch nano
+	bool bval = 5;
+    }
+}
+
+message Frame {
+    repeated Column columns = 1;
+    repeated Column indices = 2;
+    map<string, Value> labels = 3;
+}
+
+message SchemaField {
+    string name = 1;
+    string doc = 2;
+    Value default = 3;
+    string type = 4;
+    map<string, Value> properties = 5;
+}
+
+message SchemaKey {
+    repeated string sharding_key = 1;
+    repeated string sorting_key = 2;
+}
+
+message TableSchema {
+    string type = 1;
+    string namespace = 2;
+    string name = 3;
+    string doc = 4;
+    repeated string aliases = 5;
+    repeated SchemaField fields = 6;
+    SchemaKey key = 7;
+}
+
+message JoinStruct {
+}
+
+message ReadRequest {
+    string backend = 1;
+    TableSchema schema = 2;
+    string data_format = 3;
+    bool row_layout = 4;
+    bool multi_index = 5;
+    string query = 6; // SQL Query
+    string table = 7; // Table name
+    repeated string columns = 8;
+    string filter = 9;
+    string group_by = 10;
+    repeated JoinStruct join = 11;
+
+    int64 limit = 12;
+    int64 message_limit = 13;
+    string marker = 14;
+
+    // NoSQL
+    repeated int64 segments = 15;
+    int64 totoal_segments = 16;
+    repeated string sharding_keys = 17;
+    string sort_key_range_start = 18;
+    string sort_key_range_end = 19;
+
+    // TSDB
+    string start = 20;
+    string end = 21;
+    string step_duration = 22;
+    string aggragators = 23;
+
+    // Stream
+    string seek = 24;
+    string shard_id = 25;
+    int64 sequence = 26;
+}
+
+message InitialWriteRequest {
+    string backend = 1;
+    string table = 2;
+    Frame initial_data = 3;
+    string expression = 4;
+    bool more = 5;
+}
+
+message WriteRequest {
+    oneof type {
+	InitialWriteRequest request = 1;
+	Frame frame = 2;
+    }
+}
+
+message WriteRespose {
+    int64 frames = 1;
+    int64 rows = 2;
+}
+
+// CreateRequest is a table creation request
+message CreateRequest {
+    string backend = 1; // name of the backend
+    string table = 2; // Table name (path)
+    map<string, Value> attribute_map = 3; // List of attributes used for creating the table
+    TableSchema schema = 4; // Schema (for describing unstructured/schemaless data)
+}
+
+message CreateResponse {}
+
+// DeleteRequest is a deletion request
+message DeleteRequest {
+    string backend = 1; // Name of the backend
+    string table = 2; // Table name (path)
+    string filter = 3; // Filter string for selective delete
+    bool force = 4; // Force delete
+    // TSDB and Stream specific fields
+    string start = 5;
+    string end = 6;
+}
+
+message DeleteResponse {}
+
+service Frames {
+    rpc Read(ReadRequest) returns (stream Frame) {}
+    rpc Write(stream WriteRequest) returns (WriteRespose) {}
+    rpc Create(CreateRequest) returns (CreateResponse) {}
+    rpc Delete(DeleteRequest) returns (DeleteResponse) {}
+}

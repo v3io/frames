@@ -36,7 +36,7 @@ func checkInBounds(col Column, i int) error {
 	return fmt.Errorf("index %d out of bounds [0:%d]", i, col.Len())
 }
 
-func intAt(col Column, i int) (int, error) {
+func intAt(col Column, i int) (int64, error) {
 	if err := checkInBounds(col, i); err != nil {
 		return 0, err
 	}

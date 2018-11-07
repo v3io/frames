@@ -64,9 +64,10 @@ func (b *Backend) Create(request *frames.CreateRequest) error {
 	// TODO: check if Stream exist, if it already has the desired params can silently ignore, may need a -silent flag
 
 	var isInt bool
-
+	attrs := request.Attributes()
 	shards := 1
-	shardsVar, ok := request.Attributes["shards"]
+
+	shardsVar, ok := attrs["shards"]
 	if ok {
 		shards, isInt = shardsVar.(int)
 		if !isInt || shards < 1 {
@@ -75,7 +76,7 @@ func (b *Backend) Create(request *frames.CreateRequest) error {
 	}
 
 	retention := 24
-	retentionVar, ok := request.Attributes["retention_hours"]
+	retentionVar, ok := attrs["retention_hours"]
 	if ok {
 		retention, isInt = retentionVar.(int)
 		if !isInt || shards < 1 {

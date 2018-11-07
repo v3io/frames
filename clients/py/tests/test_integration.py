@@ -17,6 +17,7 @@ from os import path, makedirs
 from time import sleep, time
 from socket import socket, error as SocketError
 from shutil import rmtree
+from contextlib import contextmanager
 
 import pytest
 import pandas as pd
@@ -24,6 +25,21 @@ import numpy as np
 import re
 
 import v3io_frames as v3f
+
+
+schema = v3f.Schema(
+    'type',
+    'namesapce',
+    'name',
+    'doc',
+    [],  # aliases
+    [
+        v3f.SchemaField('field1', '', '', 't1', None),
+        v3f.SchemaField('field2', '', '', 't2', None),
+        v3f.SchemaField('field3', '', '', 't3', None),
+    ],
+    None,  # Key
+)
 
 
 def has_working_go():
@@ -62,8 +78,8 @@ def wait_for_server(port, timeout):
     return False
 
 
-@pytest.fixture(scope='function')
-def server():
+@contextmanager
+def new_server(proto):
     if path.exists(root_dir):
         rmtree(root_dir)
     makedirs(root_dir)
@@ -95,10 +111,15 @@ def server():
         server_exe,
         '-addr', ':{}'.format(server_port),
         '-config', cfg_file,
+        '-proto', proto,
     ]
     pipe = Popen(cmd)
-    yield pipe
-    pipe.kill()
+    assert wait_for_server(server_port, server_timeout), 'server did not start'
+
+    try:
+        yield pipe
+    finally:
+        pipe.kill()
 
 
 def random_df(size):
@@ -115,42 +136,56 @@ def random_df(size):
     return pd.DataFrame(data)
 
 
-@pytest.mark.skipif(not has_go, reason='Go SDK not found')
-def test_integration(server):
-    assert wait_for_server(server_port, server_timeout), 'server did not start'
-
-    size = 1932
-    table = 'random.csv'
-    df = random_df(size)
-    lables = {
-        'li': 17,
-        'lf': 3.22,
-        'ls': 'hi',
-    }
-    c = v3f.Client('http://localhost:{}'.format(server_port))
-    c.write(backend, table, [df], labels=lables)
-
-    sleep(1)  # Let disk flush
-
-    dfs = [df for df in c.read(backend, table=table)]
-    df2 = pd.concat(dfs)
-
-    assert set(df2.columns) == set(df.columns), 'columns mismatch'
-    for name in df.columns:
-        if name == 'tcol':
-            # FIXME: Time zones
-            continue
-        col = df[name]
-        col2 = df2[name]
-        assert col2.equals(col), 'column {} mismatch'.format(name)
+integration_cases = [
+    (v3f.HTTPClient, 'http'),
+    (v3f.gRPCClient, 'grpc'),
+]
 
 
 @pytest.mark.skipif(not has_go, reason='Go SDK not found')
-def test_integration_error(server):
-    assert wait_for_server(server_port, server_timeout), 'server did not start'
+@pytest.mark.parametrize('client_cls,proto', integration_cases)
+def test_integration(client_cls, proto):
+    with new_server(proto):
+        size = 1932
+        table = 'random.csv'
+        df = random_df(size)
+        lables = {
+            'li': 17,
+            'lf': 3.22,
+            'ls': 'hi',
+        }
 
-    c = v3f.Client('http://localhost:{}'.format(server_port))
+        addr = 'localhost:{}'.format(server_port)
+        if proto == 'http':
+            addr = 'http://' + addr
 
-    with pytest.raises(v3f.ReadError):
-        for df in c.read('no-such-backend', table='no such table'):
-            pass
+        c = client_cls(addr)
+        c.write(backend, table, [df], labels=lables)
+
+        sleep(1)  # Let disk flush
+
+        dfs = [df for df in c.read(backend, table=table)]
+        df2 = pd.concat(dfs)
+
+        assert set(df2.columns) == set(df.columns), 'columns mismatch'
+        for name in df.columns:
+            if name == 'tcol':
+                # FIXME: Time zones
+                continue
+            col = df[name]
+            col2 = df2[name]
+            assert col2.equals(col), 'column {} mismatch'.format(name)
+
+        new_table = 'test-table'
+        c.create(backend, new_table, schema=schema)
+        c.delete(backend, new_table)
+
+
+@pytest.mark.skipif(not has_go, reason='Go SDK not found')
+def test_integration_http_error():
+    with new_server('http'):
+        c = v3f.HTTPClient('http://localhost:{}'.format(server_port))
+
+        with pytest.raises(v3f.ReadError):
+            for df in c.read('no-such-backend', table='no such table'):
+                pass

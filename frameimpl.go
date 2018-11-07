@@ -176,7 +176,7 @@ func (mf *frameImpl) Slice(start int, end int) (Frame, error) {
 }
 
 // FrameRowIterator returns iterator over rows
-func (mf *frameImpl) IterRows(includeIndex bool) FrameRowIterator {
+func (mf *frameImpl) IterRows(includeIndex bool) RowIterator {
 	return newRowIterator(mf, includeIndex)
 }
 
@@ -312,7 +312,7 @@ func sliceCols(columns []Column, start int, end int) ([]Column, error) {
 func zeroValue(dtype DType) (interface{}, error) {
 	switch dtype {
 	case IntType:
-		return int(0), nil
+		return int64(0), nil
 	case FloatType:
 		return math.NaN(), nil
 	case StringType:
@@ -350,9 +350,9 @@ func extendCol(col Column, size int) error {
 func newColumn(name string, value interface{}) (Column, error) {
 	var data interface{}
 	switch value.(type) {
-	case int:
-		data = []int{}
-	case float64:
+	case int64, int32, int16, int8, int:
+		data = []int64{}
+	case float64, float32:
 		data = []float64{}
 	case string:
 		data = []string{}

@@ -42,8 +42,8 @@ func (kv *Backend) Read(request *frames.ReadRequest) (frames.FrameIterator, erro
 		tablePath += "/"
 	}
 
-	if request.MaxInMessage == 0 {
-		request.MaxInMessage = 256 // TODO: More?
+	if request.MessageLimit == 0 {
+		request.MessageLimit = 256 // TODO: More?
 	}
 
 	columns := request.Columns
@@ -77,7 +77,7 @@ func (ki *Iterator) Next() bool {
 	byName := map[string]frames.Column{}
 
 	rowNum := 0
-	for ; rowNum < ki.request.MaxInMessage && ki.iter.Next(); rowNum++ {
+	for ; rowNum < int(ki.request.MessageLimit) && ki.iter.Next(); rowNum++ {
 		row := ki.iter.GetFields()
 
 		// Skip table schema object

@@ -30,7 +30,7 @@ type DType reflect.Type
 
 // Possible data types
 var (
-	IntType    DType = reflect.TypeOf([]int{})
+	IntType    DType = reflect.TypeOf([]int64{})
 	FloatType  DType = reflect.TypeOf([]float64{})
 	StringType DType = reflect.TypeOf([]string{})
 	TimeType   DType = reflect.TypeOf([]time.Time{})
@@ -42,8 +42,8 @@ type Column interface {
 	Len() int                                 // Number of elements
 	Name() string                             // Column name
 	DType() DType                             // Data type (e.g. IntType, FloatType ...)
-	Ints() ([]int, error)                     // Data as []int
-	IntAt(i int) (int, error)                 // Int value at index i
+	Ints() ([]int64, error)                   // Data as []int64
+	IntAt(i int) (int64, error)               // Int value at index i
 	Floats() ([]float64, error)               // Data as []float64
 	FloatAt(i int) (float64, error)           // Float value at index i
 	Strings() []string                        // Data as []string
@@ -58,17 +58,17 @@ type Column interface {
 
 // Frame is a collection of columns
 type Frame interface {
-	Labels() map[string]interface{}              // Label set
-	Names() []string                             // Column names
-	Indices() []Column                           // Index columns
-	Len() int                                    // Number of rows
-	Column(name string) (Column, error)          // Column by name
-	Slice(start int, end int) (Frame, error)     // Slice of Frame
-	IterRows(includeIndex bool) FrameRowIterator // Iterate over rows
+	Labels() map[string]interface{}          // Label set
+	Names() []string                         // Column names
+	Indices() []Column                       // Index columns
+	Len() int                                // Number of rows
+	Column(name string) (Column, error)      // Column by name
+	Slice(start int, end int) (Frame, error) // Slice of Frame
+	IterRows(includeIndex bool) RowIterator  // Iterate over rows
 }
 
-// FrameRowIterator is an iterator over frame rows
-type FrameRowIterator interface {
+// RowIterator is an iterator over frame rows
+type RowIterator interface {
 	Next() bool                      // Advance to next row
 	Row() map[string]interface{}     // Row as map of name->value
 	RowNum() int                     // Current row number

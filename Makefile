@@ -34,7 +34,7 @@ build:
 	GO111MODULE=on go build -v $(modflag) ./...
 
 test-python:
-	cd clients/py && pipenv run flake8 v3io_frames.py tests
+	cd clients/py && pipenv run flake8 --exclude 'frames_pb2*.py' v3io_frames tests
 	cd clients/py && pipenv run python -m pytest -v
 
 build-docker:
@@ -47,3 +47,15 @@ update-tsdb-dep:
 	GO111MODULE=on go get github.com/v3io/v3io-tsdb@development
 	GO111MODULE=on go mod vendor
 	@echo "Done. Don't forget to commit ☺"
+
+grpc-go:
+	protoc  frames.proto --go_out=plugins=grpc:pb
+
+grpc-py:
+	cd clients/py && \
+	pipenv run python -m grpc_tools.protoc \
+		-I../.. --python_out=v3io_frames\
+		--grpc_python_out=v3io_frames \
+		../../frames.proto
+	python scripts/fix_pb_import.py \
+	    clients/py/v3io_frames/frames_pb2_grpc.py

@@ -19,7 +19,7 @@ except ImportError:
 
 
 def version():
-    with open('v3io_frames.py') as fp:
+    with open('v3io_frames/__init__.py') as fp:
         for line in fp:
             if '__version__' in line:
                 _, version = line.split('=')

@@ -31,12 +31,12 @@ import (
 // AppendValue appends a value to data
 func AppendValue(data interface{}, value interface{}) (interface{}, error) {
 	switch data.(type) {
-	case []int:
-		ival, ok := value.(int)
+	case []int64:
+		ival, ok := value.(int64)
 		if !ok {
 			return nil, fmt.Errorf("append type mismatch data is %T while value is %T", data, value)
 		}
-		idata := data.([]int)
+		idata := data.([]int64)
 		idata = append(idata, ival)
 		return idata, nil
 	case []float64:
@@ -71,8 +71,8 @@ func AppendValue(data interface{}, value interface{}) (interface{}, error) {
 // NewColumn creates a new column from type of value
 func NewColumn(value interface{}, size int) (interface{}, error) {
 	switch value.(type) {
-	case int:
-		return make([]int, size), nil
+	case int64, int32, int16, int8, int:
+		return make([]int64, size), nil
 	case float64:
 		data := make([]float64, size)
 		for i := range data {

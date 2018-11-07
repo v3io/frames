@@ -26,6 +26,7 @@ import (
 	"io"
 	"os"
 	"strconv"
+	"strings"
 	"time"
 
 	"github.com/nuclio/logger"
@@ -125,8 +126,8 @@ func (b *Backend) Read(request *frames.ReadRequest) (frames.FrameIterator, error
 		path:        request.Table,
 		reader:      reader,
 		columnNames: columns,
-		limit:       request.Limit,
-		frameLimit:  request.MaxInMessage,
+		limit:       int(request.Limit),
+		frameLimit:  int(request.MessageLimit),
 	}
 
 	return it, nil
@@ -254,11 +255,11 @@ func (it *FrameIterator) buildFrame(rows [][]string) (frames.Frame, error) {
 		)
 
 		switch val0.(type) {
-		case int:
-			typedData := make([]int, len(rows))
-			typedData[0] = val0.(int)
+		case int64:
+			typedData := make([]int64, len(rows))
+			typedData[0] = val0.(int64)
 			for r, row := range rows[1:] {
-				val, ok := it.parseValue(row[c]).(int)
+				val, ok := it.parseValue(row[c]).(int64)
 				if !ok {
 					err := fmt.Errorf("type mismatch in row %d, col %d", it.nRows, c)
 					it.logger.ErrorWith("type mismatch", "error", err)
@@ -344,7 +345,7 @@ func (it *FrameIterator) parseValue(value string) interface{} {
 	}
 
 	// bool
-	switch value {
+	switch strings.ToLower(value) {
 	case "true":
 		return true
 	case "false":
@@ -354,7 +355,7 @@ func (it *FrameIterator) parseValue(value string) interface{} {
 	// int
 	i, err := strconv.Atoi(value)
 	if err == nil {
-		return i
+		return int64(i)
 	}
 
 	// float

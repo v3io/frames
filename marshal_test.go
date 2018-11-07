@@ -83,7 +83,7 @@ func createFrame(t *testing.T) Frame {
 		err     error
 	)
 
-	col, err = NewSliceColumn("icol", []int{1, 2, 3})
+	col, err = NewSliceColumn("icol", []int64{1, 2, 3})
 	if err != nil {
 		t.Fatal(err)
 	}

@@ -44,13 +44,13 @@ func (b *Backend) Read(request *frames.ReadRequest) (frames.FrameIterator, error
 
 	iter := streamIterator{request: request, b: b}
 
-	if request.Table == "" || request.Seek == "" || request.ShardID == "" {
+	if request.Table == "" || request.Seek == "" || request.ShardId == "" {
 		return nil, fmt.Errorf("missing essential paramaters, need: table, seek, shard parameters")
 	}
-	input := v3io.SeekShardInput{Path: request.Table + "/" + request.ShardID}
+	input := v3io.SeekShardInput{Path: request.Table + "/" + request.ShardId}
 
-	if request.MaxInMessage == 0 {
-		request.MaxInMessage = 1024
+	if request.MessageLimit == 0 {
+		request.MessageLimit = 1024
 	}
 
 	if request.End != "" {
@@ -71,7 +71,7 @@ func (b *Backend) Read(request *frames.ReadRequest) (frames.FrameIterator, error
 		input.Timestamp = int(seekTime / 1000)
 	case "seq", "sequence":
 		input.Type = v3io.SeekShardInputTypeSequence
-		input.StartingSequenceNumber = request.Sequence
+		input.StartingSequenceNumber = int(request.Sequence)
 	case "latest", "late":
 		input.Type = v3io.SeekShardInputTypeLatest
 	case "earliest":
@@ -98,9 +98,9 @@ func (i *streamIterator) Next() bool {
 	}
 
 	resp, err := i.b.container.Sync.GetRecords(&v3io.GetRecordsInput{
-		Path:     i.request.Table + "/" + i.request.ShardID,
+		Path:     i.request.Table + "/" + i.request.ShardId,
 		Location: i.nextLocation,
-		Limit:    i.request.MaxInMessage,
+		Limit:    int(i.request.MessageLimit),
 	})
 
 	if err != nil {

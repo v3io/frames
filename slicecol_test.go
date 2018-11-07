@@ -26,6 +26,10 @@ import (
 	"time"
 )
 
+var (
+	currentTest *testing.T
+)
+
 func TestSliceColMatchInterface(t *testing.T) {
 	var col Column = &SliceColumn{} // Will fail if doesn't match interface
 
@@ -72,9 +76,9 @@ func TestSliceColAPI(t *testing.T) {
 }
 
 func TestSliceColBadType(t *testing.T) {
-	_, err := NewSliceColumn("col7", []int8{1})
+	_, err := NewSliceColumn("col7", []uint8{1})
 	if err == nil {
-		t.Fatalf("created a column from int8")
+		t.Fatalf("created a column from uint8")
 	}
 }
 
@@ -86,7 +90,9 @@ var quickSliceColDTypes = []DType{
 	BoolType,
 }
 
-func quickSliceCol(name string, dtypeIdx int, size int, ivals []int, fvals []float64, svals []string, tvals []int64, bvals []bool) bool {
+func quickSliceCol(name string, dtypeIdx int, size int, ivals []int64, fvals []float64, svals []string, tvals []int64, bvals []bool) bool {
+
+	t := currentTest
 
 	if dtypeIdx < 0 {
 		dtypeIdx = -dtypeIdx
@@ -108,7 +114,7 @@ func quickSliceCol(name string, dtypeIdx int, size int, ivals []int, fvals []flo
 			return true
 		}
 
-		data := make([]int, size)
+		data := make([]int64, size)
 		for i := 0; i < size; i++ {
 			data[i] = ivals[i%len(ivals)]
 		}
@@ -161,14 +167,17 @@ func quickSliceCol(name string, dtypeIdx int, size int, ivals []int, fvals []flo
 	}
 
 	if err != nil {
+		t.Logf("can't create slice - %s", err)
 		return false
 	}
 
 	if col.DType() != dtype {
+		t.Logf("wrong dtype %s != %s", col.DType(), dtype)
 		return false
 	}
 
 	if col.Len() != size {
+		t.Logf("wrong length %d != %d", col.Len(), size)
 		return false
 	}
 
@@ -176,6 +185,11 @@ func quickSliceCol(name string, dtypeIdx int, size int, ivals []int, fvals []flo
 }
 
 func TestSliceColQuick(t *testing.T) {
+	currentTest = t
+	defer func() {
+		currentTest = nil
+	}()
+
 	if err := quick.Check(quickSliceCol, nil); err != nil {
 		t.Fatal(err)
 	}
