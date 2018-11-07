@@ -87,8 +87,8 @@ func (a *Appender) Add(frame frames.Frame) error {
 	if indices := frame.Indices(); indices != nil {
 		indexName = indices[0].Name()
 	}
-
 	newSchema := v3ioutils.NewSchema(indexName)
+
 	for _, name := range frame.Names() {
 		col, err := frame.Column(name)
 		if err != nil {
@@ -113,7 +113,7 @@ func (a *Appender) Add(frame frames.Frame) error {
 		return err
 	}
 
-	indexVal, err := a.indexValFunc(frame, names[0])
+	indexVal, err := a.indexValFunc(frame)
 	if err != nil {
 		return err
 	}
@@ -165,18 +165,27 @@ func (a *Appender) WaitForComplete(timeout time.Duration) error {
 	return nil
 }
 
-func (a *Appender) indexValFunc(frame frames.Frame, name string) (func(int) string, error) {
+func (a *Appender) indexValFunc(frame frames.Frame) (func(int) string, error) {
+	var indexCol frames.Column
 
-	indexName := name
 	if indices := frame.Indices(); indices != nil {
-		if name := indices[0].Name(); name != "" {
-			indexName = name
+		if len(indices) != 1 {
+			return nil, fmt.Errorf("can't set key from multi-index frame")
 		}
-	}
 
-	indexCol, err := frame.Column(indexName)
-	if err != nil {
-		return nil, err
+		indexCol = indices[0]
+	} else {
+		names := frame.Names()
+		if len(names) == 0 {
+			return nil, fmt.Errorf("no index and no columns")
+		}
+
+		// Use first column as index
+		var err error
+		indexCol, err = frame.Column(names[0])
+		if err != nil {
+			return nil, err
+		}
 	}
 
 	var fn func(int) string
