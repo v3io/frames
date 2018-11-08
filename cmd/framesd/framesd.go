@@ -36,13 +36,13 @@ import (
 func main() {
 	var config struct {
 		file     string
-		addr     string
-		protocol string // grpc or http
+		httpAddr string
+		grpcAddr string
 	}
 
 	flag.StringVar(&config.file, "config", "", "path to configuration file (YAML)")
-	flag.StringVar(&config.addr, "addr", ":8080", "address to listen on")
-	flag.StringVar(&config.protocol, "proto", "grpc", "Server protocol (grpc or http)")
+	flag.StringVar(&config.httpAddr, "httpAddr", ":8080", "address to listen on HTTP")
+	flag.StringVar(&config.grpcAddr, "grpcAddr", ":8081", "address to listen on gRPC")
 	flag.Parse()
 
 	log.SetFlags(0) // Show only messages
@@ -63,30 +63,36 @@ func main() {
 
 	frames.DefaultLogLevel = cfg.Log.Level
 
-	var srv frames.Server
-	switch config.protocol {
-	case "http":
-		srv, err = http.NewServer(cfg, config.addr, nil)
-	case "grpc":
-		srv, err = grpc.NewServer(cfg, config.addr, nil)
-	}
-
+	hsrv, err := http.NewServer(cfg, config.httpAddr, nil)
 	if err != nil {
-		log.Fatalf("error: can't create server - %s", err)
+		log.Fatalf("error: can't create HTTP server - %s", err)
 	}
 
-	if err = srv.Start(); err != nil {
-		log.Fatalf("error: can't start server - %s", err)
+	if err := hsrv.Start(); err != nil {
+		log.Fatalf("error: can't start HTTP server - %s", err)
 	}
 
-	fmt.Printf("%s server running on %s\n", config.protocol, config.addr)
-	for srv.State() == frames.RunningState {
+	gsrv, err := grpc.NewServer(cfg, config.grpcAddr, nil)
+	if err != nil {
+		log.Fatalf("error: can't create gRPC server - %s", err)
+	}
+
+	if err := gsrv.Start(); err != nil {
+		log.Fatalf("error: can't start gRPC server - %s", err)
+	}
+
+	fmt.Printf("server running on http=%s, grpc=%s\n", config.httpAddr, config.grpcAddr)
+	for hsrv.State() == frames.RunningState && gsrv.State() == frames.RunningState {
 		time.Sleep(time.Second)
 	}
 
-	if err := srv.Err(); err != nil {
-		log.Fatalf("error: server error - %s", err)
-	} else {
-		fmt.Println("server down")
+	if err := hsrv.Err(); err != nil {
+		log.Fatalf("error: HTTP server error - %s", err)
 	}
+
+	if err := gsrv.Err(); err != nil {
+		log.Fatalf("error: gRPC server error - %s", err)
+	}
+
+	fmt.Println("server down")
 }
