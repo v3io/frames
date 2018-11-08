@@ -25,14 +25,6 @@ import (
 	"os"
 )
 
-// Configuration environment variables
-const (
-	WebAPIEndpointEnvironmentVariable  = "V3IO_URL"
-	WebAPIContainerEnvironmentVariable = "V3IO_CONTAINER"
-	WebAPIUsernameEnvironmentVariable  = "V3IO_USERNAME"
-	WebAPIPasswordEnvironmentVariable  = "V3IO_PASSWORD"
-)
-
 // LogConfig is the logging configuration
 type LogConfig struct {
 	Level string `json:"level,omitempty"`
@@ -43,12 +35,6 @@ type Config struct {
 	Log            LogConfig `json:"log"`
 	DefaultLimit   int       `json:"limit,omitempty"`
 	DefaultTimeout int       `json:"timeout,omitempty"`
-
-	// default V3IO connection details
-	WebAPIEndpoint string `json:"webApiEndpoint"`
-	Container      string `json:"container"`
-	Username       string `json:"username,omitempty"`
-	Password       string `json:"password,omitempty"`
 	// Number of parallel V3IO worker routines
 	Workers int `json:"workers"`
 
@@ -60,38 +46,12 @@ func (c *Config) InitDefaults() error {
 	if c.DefaultTimeout == 0 {
 		c.DefaultTimeout = 30
 	}
-	if c.WebAPIEndpoint == "" {
-		c.WebAPIEndpoint = os.Getenv(WebAPIEndpointEnvironmentVariable)
-	}
-	if c.Container == "" {
-		c.Container = os.Getenv(WebAPIContainerEnvironmentVariable)
-	}
-	if c.Username == "" {
-		c.Username = os.Getenv(WebAPIUsernameEnvironmentVariable)
-	}
-	if c.Password == "" {
-		c.Password = os.Getenv(WebAPIPasswordEnvironmentVariable)
-	}
-	if c.Workers == 0 {
-		c.Workers = 8
-	}
+
 	return nil
 }
 
 // InitBackendDefaults initializes default configuration for backend
 func InitBackendDefaults(cfg *BackendConfig, framesConfig *Config) {
-	if cfg.URL == "" {
-		cfg.URL = framesConfig.WebAPIEndpoint
-	}
-	if cfg.Container == "" {
-		cfg.Container = framesConfig.Container
-	}
-	if cfg.Username == "" {
-		cfg.Username = framesConfig.Username
-	}
-	if cfg.Password == "" {
-		cfg.Password = framesConfig.Password
-	}
 	if cfg.Workers == 0 {
 		cfg.Workers = framesConfig.Workers
 	}
@@ -124,22 +84,51 @@ func (c *Config) Validate() error {
 	return nil
 }
 
-// BackendConfig is backend configuration
+// BackendConfig is default backend configuration
 type BackendConfig struct {
-	Type string `json:"type"` // v3io, csv, ...
-	Name string `json:"name"`
-
-	// Backend API URL and credential
-	URL       string `json:"url,omitempty"`
-	Container string `json:"container,omitempty"`
-	Path      string `json:"path,omitempty"`
-	Username  string `json:"username,omitempty"`
-	Password  string `json:"password,omitempty"`
-	Workers   int    `json:"workers"`
-
+	Type    string `json:"type"` // v3io, csv, ...
+	Name    string `json:"name"`
+	Workers int    `json:"workers"`
 	// backend specific options
 	Options map[string]interface{} `json:"options"`
 
 	// CSV backend
 	RootDir string `json:"rootdir,omitempty"`
+}
+
+// NewSession will create a new session. It will populate missing values from
+// the environment.  Environment variables have V3IO_ prefix (e.g. V3IO_USER)
+func NewSession(url, container, path, user, password, token string) *Session {
+	if url == "" {
+		url = os.Getenv("V3IO_URL")
+	}
+
+	if container == "" {
+		container = os.Getenv("V3IO_CONTAINER")
+	}
+
+	if path == "" {
+		path = os.Getenv("V3IO_PATH")
+	}
+
+	if user == "" {
+		user = os.Getenv("V3IO_USER")
+	}
+
+	if password == "" {
+		password = os.Getenv("V3IO_PASSWORD")
+	}
+
+	if token == "" {
+		token = os.Getenv("V3IO_TOKEN")
+	}
+
+	return &Session{
+		Url:       url,
+		Container: container,
+		Path:      path,
+		User:      user,
+		Password:  password,
+		Token:     token,
+	}
 }

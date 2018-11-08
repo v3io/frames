@@ -68,7 +68,7 @@ func TestEnd2End(t *testing.T) {
 	time.Sleep(100 * time.Millisecond) // Let server start
 
 	url := fmt.Sprintf("localhost:%d", port)
-	client, err := grpc.NewClient(url, nil)
+	client, err := grpc.NewClient(url, nil, nil)
 	if err != nil {
 		t.Fatal(err)
 	}

@@ -16,7 +16,6 @@
 
 import struct
 import warnings
-from collections import namedtuple
 from datetime import datetime
 from itertools import chain, count
 from os import environ
@@ -30,23 +29,20 @@ from .dtypes import dtypes, BoolDType
 from .errors import (
     BadRequest, CreateError, DeleteError, MessageError, Error, ReadError
 )
-
-
-# TODO: Move this to a common file
-Schema = namedtuple('Schema', 'type namespace name doc aliases fields key')
-SchemaField = namedtuple('SchemaField', 'name doc default type properties')
-SchemaKey = namedtuple('SchemaKey', 'sharding sorting')
+from .pbutils import pb2py
 
 
 class Client(object):
     """Client is a nuclio stream HTTP client"""
 
-    def __init__(self, url='', api_key=''):
+    def __init__(self, url, session, api_key=''):
         """
         Parameters
         ----------
         url : string
             Server URL (if empty will use V3IO_URL environment variable)
+        session : Session
+            Session information
         api_key : string
             API key (if empty will use V3IO_API_KEY environment variable)
         """
@@ -55,6 +51,7 @@ class Client(object):
             raise ValueError('missing URL')
 
         self.api_key = api_key or environ.get('V3IO_API_KEY')
+        self.session = session
 
     def read(self, backend='', query='', table='', columns=None, filter='',
              group_by='', limit=0, data_format='', row_layout=False,
@@ -93,6 +90,7 @@ class Client(object):
             attribute.
         """
         request = {
+            'session': pb2py(self.session),
             'backend': backend,
             'table': table,
             'query': query,
@@ -107,8 +105,8 @@ class Client(object):
             'marker': marker,
         }
 
-        request.update(kw)
         convert_go_times(kw, ('start', 'end'))
+        request.update(kw)
 
         self._validate_read_request(request)
         url = self.url + '/read'
@@ -143,6 +141,7 @@ class Client(object):
             dfs = [dfs]
 
         request = msgpack.packb({
+            'session': pb2py(self.session),
             'backend': backend,
             'table': table,
             'labels': labels,
@@ -185,13 +184,12 @@ class Client(object):
         if not table:
             raise CreateError('empty table')
 
-        schema = None if schema is None else encode_schema(schema)
-
         request = {
+            'session': pb2py(self.session),
             'backend': backend,
             'table': table,
             'attributes': attrs,
-            'schema': schema,
+            'schema': pb2py(schema),
         }
 
         url = self.url + '/create'
@@ -231,6 +229,7 @@ class Client(object):
             raise DeleteError('empty table')
 
         request = {
+            'session': pb2py(self.session),
             'backend': backend,
             'table': table,
             'filter': filter,
@@ -438,17 +437,6 @@ def dtype_of(val):
             return dtype
 
     raise TypeError(f'unknown type - {val!r}')
-
-
-def to_py(val):
-    return dtype_of(val).to_py(val)
-
-
-def encode_schema(schema):
-    obj = schema._asdict()
-    if obj['fields']:
-        obj['fields'] = [field._asdict() for field in obj['fields']]
-    return obj
 
 
 def format_go_time(dt):

@@ -18,11 +18,13 @@ import grpc
 import pandas as pd
 import numpy as np
 import pytz
+import warnings
 
 from . import frames_pb2 as fpb  # noqa
 from . import frames_pb2_grpc as fgrpc  # noqa
 from .errors import MessageError, WriteError
 from .http import format_go_time
+from .pbutils import pb_map, pb2py
 
 _ts = pd.Series(pd.Timestamp(0))
 _time_dt = _ts.dtype
@@ -30,8 +32,9 @@ _time_tz_dt = _ts.dt.tz_localize(pytz.UTC).dtype
 
 
 class Client:
-    def __init__(self, address=''):
+    def __init__(self, address, session):
         self.address = address
+        self.session = session
 
     def read(self, backend='', query='', table='', columns=None, filter='',
              group_by='', limit=0, data_format='', row_layout=False,
@@ -73,6 +76,7 @@ class Client:
         with grpc.insecure_channel(self.address) as channel:
             stub = fgrpc.FramesStub(channel)
             request = fpb.ReadRequest(
+                session=self.session,
                 backend=backend,
                 query=query,
                 table=table,
@@ -114,6 +118,7 @@ class Client:
         with grpc.insecure_channel(self.address) as channel:
             stub = fgrpc.FramesStub(channel)
             request = fpb.InitialWriteRequest(
+                session=self.session,
                 backend=backend,
                 table=table,
                 expression=expression,
@@ -139,12 +144,12 @@ class Client:
         CreateError:
             On request error or backend error
         """
-        attrs = {k: pb_value(v) for k, v in attrs.items()} if attrs else None
-        schema = schema2pb(schema) if schema else None
+        attrs = pb_map(attrs)
 
         with grpc.insecure_channel(self.address) as channel:
             stub = fgrpc.FramesStub(channel)
             request = fpb.CreateRequest(
+                session=self.session,
                 backend=backend,
                 table=table,
                 attribute_map=attrs,
@@ -179,6 +184,7 @@ class Client:
         with grpc.insecure_channel(self.address) as channel:
             stub = fgrpc.FramesStub(channel)
             request = fpb.DeleteRequest(
+                session=self.session,
                 backend=backend,
                 table=table,
                 filter=filter,
@@ -199,6 +205,9 @@ def frame2df(frame):
     elif len(indices) > 1:
         df.index = pd.MultiIndex.from_arrays(indices)
 
+    with warnings.catch_warnings():
+        warnings.simplefilter('ignore')
+        df.labels = pb2py(frame.labels)
     return df
 
 
@@ -280,69 +289,6 @@ def should_encode_index(df):
         return True
 
     return not isinstance(df.index, pd.RangeIndex)
-
-
-def schema2pb(schema):
-    fields = schema.fields
-    if fields:
-        fields = [field2pb(f) for f in fields]
-
-    key = schema.key
-    if key:
-        key = fpb.SchemaKey(
-            sharding_key=key.sharding,
-            sorting_key=key.sorting,
-        )
-
-    return fpb.TableSchema(
-        type=schema.type,
-        namespace=schema.namespace,
-        name=schema.name,
-        doc=schema.doc,
-        aliases=schema.aliases or [],
-        fields=fields,
-        key=key,
-    )
-
-
-def field2pb(field):
-    properties = field.properties
-    if properties:
-        properties = {k: pb_value(v) for k, v in field.properties.items()}
-
-    pbf = fpb.SchemaField(
-        name=field.name,
-        doc=field.doc,
-        default=pb_value(field.default),
-        type=field.type,
-        properties=properties,
-    )
-
-    return pbf
-
-
-def pb_value(v):
-    if v is None:
-        return None
-
-    if isinstance(v, (bool, np.bool_)):
-        return fpb.Value(bval=v)
-
-    if isinstance(v, (np.inexact, float)):
-        return fpb.Value(fval=v)
-
-    if isinstance(v, (int, np.integer)):
-        return fpb.Value(ival=v)
-
-    if isinstance(v, str):
-        return fpb.Value(sval=v)
-
-    if isinstance(v, (datetime, pd.Timestamp)):
-        # Convert to epoch nano
-        v = pd.Timestamp(v).to_datetime64().astype(np.int64)
-        return fpb.Value(tval=v)
-
-    raise TypeError('unsupported Value type - {}'.format(type(v)))
 
 
 # We can't use a set since hash(np.int64) != hash(pd.Series([1]).dtype)

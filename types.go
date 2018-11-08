@@ -58,8 +58,9 @@ type JoinStruct = pb.JoinStruct
 // TODO: Unite with probouf (currenly the protobuf message combines both this
 // and a frame message)
 type WriteRequest struct {
-	Backend string `msgpack:"backend"` // backend name
-	Table   string `msgpack:"table"`   // Table name (path)
+	Session *Session `msgpack:"session"`
+	Backend string   `msgpack:"backend"` // backend name
+	Table   string   `msgpack:"table"`   // Table name (path)
 	// Data message sent with the write request (in case of a stream multiple messages can follow)
 	ImmidiateData Frame `msgpack:"intermidate,omitempty"`
 	// Expression template, for update expressions generated from combining columns data with expression
@@ -82,3 +83,6 @@ type SchemaField = pb.SchemaField
 
 // SchemaKey is a schema key
 type SchemaKey = pb.SchemaKey
+
+// Session information
+type Session = pb.Session

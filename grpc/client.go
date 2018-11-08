@@ -35,24 +35,30 @@ import (
 
 // Client is frames gRPC client
 type Client struct {
-	client pb.FramesClient
+	client  pb.FramesClient
+	session *frames.Session
 }
 
 // NewClient returns a new gRPC client
-func NewClient(address string, logger logger.Logger) (*Client, error) {
+func NewClient(address string, session *frames.Session, logger logger.Logger) (*Client, error) {
 	conn, err := grpc.Dial(address, grpc.WithInsecure())
 	if err != nil {
 		return nil, errors.Wrap(err, "can't create gRPC connection")
 	}
 
 	client := &Client{
-		client: pb.NewFramesClient(conn),
+		client:  pb.NewFramesClient(conn),
+		session: session,
 	}
 
 	return client, nil
 }
 
 func (c *Client) Read(request *frames.ReadRequest) (frames.FrameIterator, error) {
+	if request.Session == nil {
+		request.Session = c.session
+	}
+
 	stream, err := c.client.Read(context.Background(), request)
 	if err != nil {
 		return nil, err
@@ -65,6 +71,10 @@ func (c *Client) Read(request *frames.ReadRequest) (frames.FrameIterator, error)
 }
 
 func (c *Client) Write(request *frames.WriteRequest) (frames.FrameAppender, error) {
+	if request.Session == nil {
+		request.Session = c.session
+	}
+
 	var frame *pb.Frame
 	if request.ImmidiateData != nil {
 		var err error
@@ -108,12 +118,20 @@ func (c *Client) Write(request *frames.WriteRequest) (frames.FrameAppender, erro
 
 // Create creates a table
 func (c *Client) Create(request *frames.CreateRequest) error {
+	if request.Session == nil {
+		request.Session = c.session
+	}
+
 	_, err := c.client.Create(context.Background(), request)
 	return err
 }
 
 // Delete deletes data or table
 func (c *Client) Delete(request *frames.DeleteRequest) error {
+	if request.Session == nil {
+		request.Session = c.session
+	}
+
 	_, err := c.client.Delete(context.Background(), request)
 	return err
 }

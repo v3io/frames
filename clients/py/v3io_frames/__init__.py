@@ -12,9 +12,11 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-__version__ = '0.1.2'
+__version__ = '0.2.0'
 
 
-from .http import Client as HTTPClient, Schema, SchemaField  # noqa
+from .http import Client as HTTPClient  # noqa
 from .grpc import Client as gRPCClient  # noqa
 from .errors import *  # noqa
+from .frames_pb2 import TableSchema as Schema, SchemaKey  # noqa
+from .pbutils import SchemaField, Session # noqa 

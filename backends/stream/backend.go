@@ -35,7 +35,6 @@ type Backend struct {
 	backendConfig *frames.BackendConfig
 	framesConfig  *frames.Config
 	logger        logger.Logger
-	container     *v3io.Container
 }
 
 // NewBackend return a new v3io stream backend
@@ -47,13 +46,6 @@ func NewBackend(logger logger.Logger, cfg *frames.BackendConfig, framesConfig *f
 		backendConfig: cfg,
 		framesConfig:  framesConfig,
 	}
-
-	container, err := v3ioutils.CreateContainer(logger,
-		cfg.URL, cfg.Container, cfg.Username, cfg.Password, cfg.Workers)
-	if err != nil {
-		return nil, errors.Wrap(err, "Failed to create V3IO data container")
-	}
-	newBackend.container = container
 
 	return &newBackend, nil
 }
@@ -88,7 +80,12 @@ func (b *Backend) Create(request *frames.CreateRequest) error {
 		request.Table += "/"
 	}
 
-	err := b.container.Sync.CreateStream(&v3io.CreateStreamInput{
+	container, err := b.newContainer(request.Session)
+	if err != nil {
+		return err
+	}
+
+	err = container.Sync.CreateStream(&v3io.CreateStreamInput{
 		Path: request.Table, ShardCount: shards, RetentionPeriodHours: retention})
 	if err != nil {
 		b.logger.ErrorWith("CreateStream failed", "path", request.Table, "err", err)
@@ -104,12 +101,32 @@ func (b *Backend) Delete(request *frames.DeleteRequest) error {
 		request.Table += "/"
 	}
 
-	err := b.container.Sync.DeleteStream(&v3io.DeleteStreamInput{Path: request.Table})
+	container, err := b.newContainer(request.Session)
+	if err != nil {
+		return err
+	}
+
+	err = container.Sync.DeleteStream(&v3io.DeleteStreamInput{Path: request.Table})
 	if err != nil {
 		b.logger.ErrorWith("DeleteStream failed", "path", request.Table, "err", err)
 	}
 
 	return nil
+}
+
+func (b *Backend) newContainer(session *frames.Session) (*v3io.Container, error) {
+	container, err := v3ioutils.CreateContainer(
+		b.logger,
+		session.Url, session.Container,
+		session.User, session.Password,
+		b.backendConfig.Workers,
+	)
+
+	if err != nil {
+		return nil, errors.Wrap(err, "Failed to create V3IO data container")
+	}
+
+	return container, nil
 }
 
 func init() {

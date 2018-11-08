@@ -20,7 +20,7 @@ DESCRIPTOR = _descriptor.FileDescriptor(
   package='pb',
   syntax='proto3',
   serialized_options=None,
-  serialized_pb=_b('\n\x0c\x66rames.proto\x12\x02pb\"\xc8\x01\n\x06\x43olumn\x12\x1d\n\x04kind\x18\x01 \x01(\x0e\x32\x0f.pb.Column.Kind\x12\x0c\n\x04name\x18\x02 \x01(\t\x12\x18\n\x05\x64type\x18\x03 \x01(\x0e\x32\t.pb.DType\x12\x0c\n\x04size\x18\x04 \x01(\x03\x12\x0c\n\x04ints\x18\x05 \x03(\x03\x12\x0e\n\x06\x66loats\x18\x06 \x03(\x01\x12\x0f\n\x07strings\x18\x07 \x03(\t\x12\r\n\x05times\x18\x08 \x03(\x03\x12\r\n\x05\x62ools\x18\t \x03(\x08\"\x1c\n\x04Kind\x12\t\n\x05SLICE\x10\x00\x12\t\n\x05LABEL\x10\x01\"`\n\x05Value\x12\x0e\n\x04ival\x18\x01 \x01(\x03H\x00\x12\x0e\n\x04\x66val\x18\x02 \x01(\x01H\x00\x12\x0e\n\x04sval\x18\x03 \x01(\tH\x00\x12\x0e\n\x04tval\x18\x04 \x01(\x03H\x00\x12\x0e\n\x04\x62val\x18\x05 \x01(\x08H\x00\x42\x07\n\x05value\"\xa2\x01\n\x05\x46rame\x12\x1b\n\x07\x63olumns\x18\x01 \x03(\x0b\x32\n.pb.Column\x12\x1b\n\x07indices\x18\x02 \x03(\x0b\x32\n.pb.Column\x12%\n\x06labels\x18\x03 \x03(\x0b\x32\x15.pb.Frame.LabelsEntry\x1a\x38\n\x0bLabelsEntry\x12\x0b\n\x03key\x18\x01 \x01(\t\x12\x18\n\x05value\x18\x02 \x01(\x0b\x32\t.pb.Value:\x02\x38\x01\"\xc5\x01\n\x0bSchemaField\x12\x0c\n\x04name\x18\x01 \x01(\t\x12\x0b\n\x03\x64oc\x18\x02 \x01(\t\x12\x1a\n\x07\x64\x65\x66\x61ult\x18\x03 \x01(\x0b\x32\t.pb.Value\x12\x0c\n\x04type\x18\x04 \x01(\t\x12\x33\n\nproperties\x18\x05 \x03(\x0b\x32\x1f.pb.SchemaField.PropertiesEntry\x1a<\n\x0fPropertiesEntry\x12\x0b\n\x03key\x18\x01 \x01(\t\x12\x18\n\x05value\x18\x02 \x01(\x0b\x32\t.pb.Value:\x02\x38\x01\"6\n\tSchemaKey\x12\x14\n\x0csharding_key\x18\x01 \x03(\t\x12\x13\n\x0bsorting_key\x18\x02 \x03(\t\"\x97\x01\n\x0bTableSchema\x12\x0c\n\x04type\x18\x01 \x01(\t\x12\x11\n\tnamespace\x18\x02 \x01(\t\x12\x0c\n\x04name\x18\x03 \x01(\t\x12\x0b\n\x03\x64oc\x18\x04 \x01(\t\x12\x0f\n\x07\x61liases\x18\x05 \x03(\t\x12\x1f\n\x06\x66ields\x18\x06 \x03(\x0b\x32\x0f.pb.SchemaField\x12\x1a\n\x03key\x18\x07 \x01(\x0b\x32\r.pb.SchemaKey\"\x0c\n\nJoinStruct\"\x98\x04\n\x0bReadRequest\x12\x0f\n\x07\x62\x61\x63kend\x18\x01 \x01(\t\x12\x1f\n\x06schema\x18\x02 \x01(\x0b\x32\x0f.pb.TableSchema\x12\x13\n\x0b\x64\x61ta_format\x18\x03 \x01(\t\x12\x12\n\nrow_layout\x18\x04 \x01(\x08\x12\x13\n\x0bmulti_index\x18\x05 \x01(\x08\x12\r\n\x05query\x18\x06 \x01(\t\x12\r\n\x05table\x18\x07 \x01(\t\x12\x0f\n\x07\x63olumns\x18\x08 \x03(\t\x12\x0e\n\x06\x66ilter\x18\t \x01(\t\x12\x10\n\x08group_by\x18\n \x01(\t\x12\x1c\n\x04join\x18\x0b \x03(\x0b\x32\x0e.pb.JoinStruct\x12\r\n\x05limit\x18\x0c \x01(\x03\x12\x15\n\rmessage_limit\x18\r \x01(\x03\x12\x0e\n\x06marker\x18\x0e \x01(\t\x12\x10\n\x08segments\x18\x0f \x03(\x03\x12\x17\n\x0ftotoal_segments\x18\x10 \x01(\x03\x12\x15\n\rsharding_keys\x18\x11 \x03(\t\x12\x1c\n\x14sort_key_range_start\x18\x12 \x01(\t\x12\x1a\n\x12sort_key_range_end\x18\x13 \x01(\t\x12\r\n\x05start\x18\x14 \x01(\t\x12\x0b\n\x03\x65nd\x18\x15 \x01(\t\x12\x15\n\rstep_duration\x18\x16 \x01(\t\x12\x13\n\x0b\x61ggragators\x18\x17 \x01(\t\x12\x0c\n\x04seek\x18\x18 \x01(\t\x12\x10\n\x08shard_id\x18\x19 \x01(\t\x12\x10\n\x08sequence\x18\x1a \x01(\x03\"x\n\x13InitialWriteRequest\x12\x0f\n\x07\x62\x61\x63kend\x18\x01 \x01(\t\x12\r\n\x05table\x18\x02 \x01(\t\x12\x1f\n\x0cinitial_data\x18\x03 \x01(\x0b\x32\t.pb.Frame\x12\x12\n\nexpression\x18\x04 \x01(\t\x12\x0c\n\x04more\x18\x05 \x01(\x08\"^\n\x0cWriteRequest\x12*\n\x07request\x18\x01 \x01(\x0b\x32\x17.pb.InitialWriteRequestH\x00\x12\x1a\n\x05\x66rame\x18\x02 \x01(\x0b\x32\t.pb.FrameH\x00\x42\x06\n\x04type\",\n\x0cWriteRespose\x12\x0e\n\x06\x66rames\x18\x01 \x01(\x03\x12\x0c\n\x04rows\x18\x02 \x01(\x03\"\xcc\x01\n\rCreateRequest\x12\x0f\n\x07\x62\x61\x63kend\x18\x01 \x01(\t\x12\r\n\x05table\x18\x02 \x01(\t\x12:\n\rattribute_map\x18\x03 \x03(\x0b\x32#.pb.CreateRequest.AttributeMapEntry\x12\x1f\n\x06schema\x18\x04 \x01(\x0b\x32\x0f.pb.TableSchema\x1a>\n\x11\x41ttributeMapEntry\x12\x0b\n\x03key\x18\x01 \x01(\t\x12\x18\n\x05value\x18\x02 \x01(\x0b\x32\t.pb.Value:\x02\x38\x01\"\x10\n\x0e\x43reateResponse\"j\n\rDeleteRequest\x12\x0f\n\x07\x62\x61\x63kend\x18\x01 \x01(\t\x12\r\n\x05table\x18\x02 \x01(\t\x12\x0e\n\x06\x66ilter\x18\x03 \x01(\t\x12\r\n\x05\x66orce\x18\x04 \x01(\x08\x12\r\n\x05start\x18\x05 \x01(\t\x12\x0b\n\x03\x65nd\x18\x06 \x01(\t\"\x10\n\x0e\x44\x65leteResponse*B\n\x05\x44Type\x12\x0b\n\x07INTEGER\x10\x00\x12\t\n\x05\x46LOAT\x10\x01\x12\n\n\x06STRING\x10\x02\x12\x08\n\x04TIME\x10\x03\x12\x0b\n\x07\x42OOLEAN\x10\x04\x32\xc7\x01\n\x06\x46rames\x12&\n\x04Read\x12\x0f.pb.ReadRequest\x1a\t.pb.Frame\"\x00\x30\x01\x12/\n\x05Write\x12\x10.pb.WriteRequest\x1a\x10.pb.WriteRespose\"\x00(\x01\x12\x31\n\x06\x43reate\x12\x11.pb.CreateRequest\x1a\x12.pb.CreateResponse\"\x00\x12\x31\n\x06\x44\x65lete\x12\x11.pb.DeleteRequest\x1a\x12.pb.DeleteResponse\"\x00\x62\x06proto3')
+  serialized_pb=_b('\n\x0c\x66rames.proto\x12\x02pb\"\xc8\x01\n\x06\x43olumn\x12\x1d\n\x04kind\x18\x01 \x01(\x0e\x32\x0f.pb.Column.Kind\x12\x0c\n\x04name\x18\x02 \x01(\t\x12\x18\n\x05\x64type\x18\x03 \x01(\x0e\x32\t.pb.DType\x12\x0c\n\x04size\x18\x04 \x01(\x03\x12\x0c\n\x04ints\x18\x05 \x03(\x03\x12\x0e\n\x06\x66loats\x18\x06 \x03(\x01\x12\x0f\n\x07strings\x18\x07 \x03(\t\x12\r\n\x05times\x18\x08 \x03(\x03\x12\r\n\x05\x62ools\x18\t \x03(\x08\"\x1c\n\x04Kind\x12\t\n\x05SLICE\x10\x00\x12\t\n\x05LABEL\x10\x01\"`\n\x05Value\x12\x0e\n\x04ival\x18\x01 \x01(\x03H\x00\x12\x0e\n\x04\x66val\x18\x02 \x01(\x01H\x00\x12\x0e\n\x04sval\x18\x03 \x01(\tH\x00\x12\x0e\n\x04tval\x18\x04 \x01(\x03H\x00\x12\x0e\n\x04\x62val\x18\x05 \x01(\x08H\x00\x42\x07\n\x05value\"\xa2\x01\n\x05\x46rame\x12\x1b\n\x07\x63olumns\x18\x01 \x03(\x0b\x32\n.pb.Column\x12\x1b\n\x07indices\x18\x02 \x03(\x0b\x32\n.pb.Column\x12%\n\x06labels\x18\x03 \x03(\x0b\x32\x15.pb.Frame.LabelsEntry\x1a\x38\n\x0bLabelsEntry\x12\x0b\n\x03key\x18\x01 \x01(\t\x12\x18\n\x05value\x18\x02 \x01(\x0b\x32\t.pb.Value:\x02\x38\x01\"\xc5\x01\n\x0bSchemaField\x12\x0c\n\x04name\x18\x01 \x01(\t\x12\x0b\n\x03\x64oc\x18\x02 \x01(\t\x12\x1a\n\x07\x64\x65\x66\x61ult\x18\x03 \x01(\x0b\x32\t.pb.Value\x12\x0c\n\x04type\x18\x04 \x01(\t\x12\x33\n\nproperties\x18\x05 \x03(\x0b\x32\x1f.pb.SchemaField.PropertiesEntry\x1a<\n\x0fPropertiesEntry\x12\x0b\n\x03key\x18\x01 \x01(\t\x12\x18\n\x05value\x18\x02 \x01(\x0b\x32\t.pb.Value:\x02\x38\x01\"6\n\tSchemaKey\x12\x14\n\x0csharding_key\x18\x01 \x03(\t\x12\x13\n\x0bsorting_key\x18\x02 \x03(\t\"\x97\x01\n\x0bTableSchema\x12\x0c\n\x04type\x18\x01 \x01(\t\x12\x11\n\tnamespace\x18\x02 \x01(\t\x12\x0c\n\x04name\x18\x03 \x01(\t\x12\x0b\n\x03\x64oc\x18\x04 \x01(\t\x12\x0f\n\x07\x61liases\x18\x05 \x03(\t\x12\x1f\n\x06\x66ields\x18\x06 \x03(\x0b\x32\x0f.pb.SchemaField\x12\x1a\n\x03key\x18\x07 \x01(\x0b\x32\r.pb.SchemaKey\"\x0c\n\nJoinStruct\"f\n\x07Session\x12\x0b\n\x03url\x18\x01 \x01(\t\x12\x11\n\tcontainer\x18\x02 \x01(\t\x12\x0c\n\x04path\x18\x03 \x01(\t\x12\x0c\n\x04user\x18\x04 \x01(\t\x12\x10\n\x08password\x18\x05 \x01(\t\x12\r\n\x05token\x18\x06 \x01(\t\"\xb6\x04\n\x0bReadRequest\x12\x1c\n\x07session\x18\x01 \x01(\x0b\x32\x0b.pb.Session\x12\x0f\n\x07\x62\x61\x63kend\x18\x02 \x01(\t\x12\x1f\n\x06schema\x18\x03 \x01(\x0b\x32\x0f.pb.TableSchema\x12\x13\n\x0b\x64\x61ta_format\x18\x04 \x01(\t\x12\x12\n\nrow_layout\x18\x05 \x01(\x08\x12\x13\n\x0bmulti_index\x18\x06 \x01(\x08\x12\r\n\x05query\x18\x07 \x01(\t\x12\r\n\x05table\x18\x08 \x01(\t\x12\x0f\n\x07\x63olumns\x18\t \x03(\t\x12\x0e\n\x06\x66ilter\x18\n \x01(\t\x12\x10\n\x08group_by\x18\x0b \x01(\t\x12\x1c\n\x04join\x18\x0c \x03(\x0b\x32\x0e.pb.JoinStruct\x12\r\n\x05limit\x18\r \x01(\x03\x12\x15\n\rmessage_limit\x18\x0e \x01(\x03\x12\x0e\n\x06marker\x18\x0f \x01(\t\x12\x10\n\x08segments\x18\x10 \x03(\x03\x12\x17\n\x0ftotoal_segments\x18\x11 \x01(\x03\x12\x15\n\rsharding_keys\x18\x12 \x03(\t\x12\x1c\n\x14sort_key_range_start\x18\x13 \x01(\t\x12\x1a\n\x12sort_key_range_end\x18\x14 \x01(\t\x12\r\n\x05start\x18\x15 \x01(\t\x12\x0b\n\x03\x65nd\x18\x16 \x01(\t\x12\x15\n\rstep_duration\x18\x17 \x01(\t\x12\x13\n\x0b\x61ggragators\x18\x18 \x01(\t\x12\x0c\n\x04seek\x18\x19 \x01(\t\x12\x10\n\x08shard_id\x18\x1a \x01(\t\x12\x10\n\x08sequence\x18\x1b \x01(\x03\"\x96\x01\n\x13InitialWriteRequest\x12\x1c\n\x07session\x18\x01 \x01(\x0b\x32\x0b.pb.Session\x12\x0f\n\x07\x62\x61\x63kend\x18\x02 \x01(\t\x12\r\n\x05table\x18\x03 \x01(\t\x12\x1f\n\x0cinitial_data\x18\x04 \x01(\x0b\x32\t.pb.Frame\x12\x12\n\nexpression\x18\x05 \x01(\t\x12\x0c\n\x04more\x18\x06 \x01(\x08\"^\n\x0cWriteRequest\x12*\n\x07request\x18\x01 \x01(\x0b\x32\x17.pb.InitialWriteRequestH\x00\x12\x1a\n\x05\x66rame\x18\x02 \x01(\x0b\x32\t.pb.FrameH\x00\x42\x06\n\x04type\",\n\x0cWriteRespose\x12\x0e\n\x06\x66rames\x18\x01 \x01(\x03\x12\x0c\n\x04rows\x18\x02 \x01(\x03\"\xea\x01\n\rCreateRequest\x12\x1c\n\x07session\x18\x01 \x01(\x0b\x32\x0b.pb.Session\x12\x0f\n\x07\x62\x61\x63kend\x18\x02 \x01(\t\x12\r\n\x05table\x18\x03 \x01(\t\x12:\n\rattribute_map\x18\x04 \x03(\x0b\x32#.pb.CreateRequest.AttributeMapEntry\x12\x1f\n\x06schema\x18\x05 \x01(\x0b\x32\x0f.pb.TableSchema\x1a>\n\x11\x41ttributeMapEntry\x12\x0b\n\x03key\x18\x01 \x01(\t\x12\x18\n\x05value\x18\x02 \x01(\x0b\x32\t.pb.Value:\x02\x38\x01\"\x10\n\x0e\x43reateResponse\"\x88\x01\n\rDeleteRequest\x12\x1c\n\x07session\x18\x01 \x01(\x0b\x32\x0b.pb.Session\x12\x0f\n\x07\x62\x61\x63kend\x18\x02 \x01(\t\x12\r\n\x05table\x18\x03 \x01(\t\x12\x0e\n\x06\x66ilter\x18\x04 \x01(\t\x12\r\n\x05\x66orce\x18\x05 \x01(\x08\x12\r\n\x05start\x18\x06 \x01(\t\x12\x0b\n\x03\x65nd\x18\x07 \x01(\t\"\x10\n\x0e\x44\x65leteResponse*B\n\x05\x44Type\x12\x0b\n\x07INTEGER\x10\x00\x12\t\n\x05\x46LOAT\x10\x01\x12\n\n\x06STRING\x10\x02\x12\x08\n\x04TIME\x10\x03\x12\x0b\n\x07\x42OOLEAN\x10\x04\x32\xc7\x01\n\x06\x46rames\x12&\n\x04Read\x12\x0f.pb.ReadRequest\x1a\t.pb.Frame\"\x00\x30\x01\x12/\n\x05Write\x12\x10.pb.WriteRequest\x1a\x10.pb.WriteRespose\"\x00(\x01\x12\x31\n\x06\x43reate\x12\x11.pb.CreateRequest\x1a\x12.pb.CreateResponse\"\x00\x12\x31\n\x06\x44\x65lete\x12\x11.pb.DeleteRequest\x1a\x12.pb.DeleteResponse\"\x00\x62\x06proto3')
 )
 
 _DTYPE = _descriptor.EnumDescriptor(
@@ -52,8 +52,8 @@ _DTYPE = _descriptor.EnumDescriptor(
   ],
   containing_type=None,
   serialized_options=None,
-  serialized_start=2064,
-  serialized_end=2130,
+  serialized_start=2290,
+  serialized_end=2356,
 )
 _sym_db.RegisterEnumDescriptor(_DTYPE)
 
@@ -551,6 +551,72 @@ _JOINSTRUCT = _descriptor.Descriptor(
 )
 
 
+_SESSION = _descriptor.Descriptor(
+  name='Session',
+  full_name='pb.Session',
+  filename=None,
+  file=DESCRIPTOR,
+  containing_type=None,
+  fields=[
+    _descriptor.FieldDescriptor(
+      name='url', full_name='pb.Session.url', index=0,
+      number=1, type=9, cpp_type=9, label=1,
+      has_default_value=False, default_value=_b("").decode('utf-8'),
+      message_type=None, enum_type=None, containing_type=None,
+      is_extension=False, extension_scope=None,
+      serialized_options=None, file=DESCRIPTOR),
+    _descriptor.FieldDescriptor(
+      name='container', full_name='pb.Session.container', index=1,
+      number=2, type=9, cpp_type=9, label=1,
+      has_default_value=False, default_value=_b("").decode('utf-8'),
+      message_type=None, enum_type=None, containing_type=None,
+      is_extension=False, extension_scope=None,
+      serialized_options=None, file=DESCRIPTOR),
+    _descriptor.FieldDescriptor(
+      name='path', full_name='pb.Session.path', index=2,
+      number=3, type=9, cpp_type=9, label=1,
+      has_default_value=False, default_value=_b("").decode('utf-8'),
+      message_type=None, enum_type=None, containing_type=None,
+      is_extension=False, extension_scope=None,
+      serialized_options=None, file=DESCRIPTOR),
+    _descriptor.FieldDescriptor(
+      name='user', full_name='pb.Session.user', index=3,
+      number=4, type=9, cpp_type=9, label=1,
+      has_default_value=False, default_value=_b("").decode('utf-8'),
+      message_type=None, enum_type=None, containing_type=None,
+      is_extension=False, extension_scope=None,
+      serialized_options=None, file=DESCRIPTOR),
+    _descriptor.FieldDescriptor(
+      name='password', full_name='pb.Session.password', index=4,
+      number=5, type=9, cpp_type=9, label=1,
+      has_default_value=False, default_value=_b("").decode('utf-8'),
+      message_type=None, enum_type=None, containing_type=None,
+      is_extension=False, extension_scope=None,
+      serialized_options=None, file=DESCRIPTOR),
+    _descriptor.FieldDescriptor(
+      name='token', full_name='pb.Session.token', index=5,
+      number=6, type=9, cpp_type=9, label=1,
+      has_default_value=False, default_value=_b("").decode('utf-8'),
+      message_type=None, enum_type=None, containing_type=None,
+      is_extension=False, extension_scope=None,
+      serialized_options=None, file=DESCRIPTOR),
+  ],
+  extensions=[
+  ],
+  nested_types=[],
+  enum_types=[
+  ],
+  serialized_options=None,
+  is_extendable=False,
+  syntax='proto3',
+  extension_ranges=[],
+  oneofs=[
+  ],
+  serialized_start=910,
+  serialized_end=1012,
+)
+
+
 _READREQUEST = _descriptor.Descriptor(
   name='ReadRequest',
   full_name='pb.ReadRequest',
@@ -559,183 +625,190 @@ _READREQUEST = _descriptor.Descriptor(
   containing_type=None,
   fields=[
     _descriptor.FieldDescriptor(
-      name='backend', full_name='pb.ReadRequest.backend', index=0,
-      number=1, type=9, cpp_type=9, label=1,
-      has_default_value=False, default_value=_b("").decode('utf-8'),
-      message_type=None, enum_type=None, containing_type=None,
-      is_extension=False, extension_scope=None,
-      serialized_options=None, file=DESCRIPTOR),
-    _descriptor.FieldDescriptor(
-      name='schema', full_name='pb.ReadRequest.schema', index=1,
-      number=2, type=11, cpp_type=10, label=1,
+      name='session', full_name='pb.ReadRequest.session', index=0,
+      number=1, type=11, cpp_type=10, label=1,
       has_default_value=False, default_value=None,
       message_type=None, enum_type=None, containing_type=None,
       is_extension=False, extension_scope=None,
       serialized_options=None, file=DESCRIPTOR),
     _descriptor.FieldDescriptor(
-      name='data_format', full_name='pb.ReadRequest.data_format', index=2,
-      number=3, type=9, cpp_type=9, label=1,
+      name='backend', full_name='pb.ReadRequest.backend', index=1,
+      number=2, type=9, cpp_type=9, label=1,
       has_default_value=False, default_value=_b("").decode('utf-8'),
       message_type=None, enum_type=None, containing_type=None,
       is_extension=False, extension_scope=None,
       serialized_options=None, file=DESCRIPTOR),
     _descriptor.FieldDescriptor(
-      name='row_layout', full_name='pb.ReadRequest.row_layout', index=3,
-      number=4, type=8, cpp_type=7, label=1,
-      has_default_value=False, default_value=False,
+      name='schema', full_name='pb.ReadRequest.schema', index=2,
+      number=3, type=11, cpp_type=10, label=1,
+      has_default_value=False, default_value=None,
       message_type=None, enum_type=None, containing_type=None,
       is_extension=False, extension_scope=None,
       serialized_options=None, file=DESCRIPTOR),
     _descriptor.FieldDescriptor(
-      name='multi_index', full_name='pb.ReadRequest.multi_index', index=4,
+      name='data_format', full_name='pb.ReadRequest.data_format', index=3,
+      number=4, type=9, cpp_type=9, label=1,
+      has_default_value=False, default_value=_b("").decode('utf-8'),
+      message_type=None, enum_type=None, containing_type=None,
+      is_extension=False, extension_scope=None,
+      serialized_options=None, file=DESCRIPTOR),
+    _descriptor.FieldDescriptor(
+      name='row_layout', full_name='pb.ReadRequest.row_layout', index=4,
       number=5, type=8, cpp_type=7, label=1,
       has_default_value=False, default_value=False,
       message_type=None, enum_type=None, containing_type=None,
       is_extension=False, extension_scope=None,
       serialized_options=None, file=DESCRIPTOR),
     _descriptor.FieldDescriptor(
-      name='query', full_name='pb.ReadRequest.query', index=5,
-      number=6, type=9, cpp_type=9, label=1,
-      has_default_value=False, default_value=_b("").decode('utf-8'),
+      name='multi_index', full_name='pb.ReadRequest.multi_index', index=5,
+      number=6, type=8, cpp_type=7, label=1,
+      has_default_value=False, default_value=False,
       message_type=None, enum_type=None, containing_type=None,
       is_extension=False, extension_scope=None,
       serialized_options=None, file=DESCRIPTOR),
     _descriptor.FieldDescriptor(
-      name='table', full_name='pb.ReadRequest.table', index=6,
+      name='query', full_name='pb.ReadRequest.query', index=6,
       number=7, type=9, cpp_type=9, label=1,
       has_default_value=False, default_value=_b("").decode('utf-8'),
       message_type=None, enum_type=None, containing_type=None,
       is_extension=False, extension_scope=None,
       serialized_options=None, file=DESCRIPTOR),
     _descriptor.FieldDescriptor(
-      name='columns', full_name='pb.ReadRequest.columns', index=7,
-      number=8, type=9, cpp_type=9, label=3,
-      has_default_value=False, default_value=[],
-      message_type=None, enum_type=None, containing_type=None,
-      is_extension=False, extension_scope=None,
-      serialized_options=None, file=DESCRIPTOR),
-    _descriptor.FieldDescriptor(
-      name='filter', full_name='pb.ReadRequest.filter', index=8,
-      number=9, type=9, cpp_type=9, label=1,
+      name='table', full_name='pb.ReadRequest.table', index=7,
+      number=8, type=9, cpp_type=9, label=1,
       has_default_value=False, default_value=_b("").decode('utf-8'),
       message_type=None, enum_type=None, containing_type=None,
       is_extension=False, extension_scope=None,
       serialized_options=None, file=DESCRIPTOR),
     _descriptor.FieldDescriptor(
-      name='group_by', full_name='pb.ReadRequest.group_by', index=9,
+      name='columns', full_name='pb.ReadRequest.columns', index=8,
+      number=9, type=9, cpp_type=9, label=3,
+      has_default_value=False, default_value=[],
+      message_type=None, enum_type=None, containing_type=None,
+      is_extension=False, extension_scope=None,
+      serialized_options=None, file=DESCRIPTOR),
+    _descriptor.FieldDescriptor(
+      name='filter', full_name='pb.ReadRequest.filter', index=9,
       number=10, type=9, cpp_type=9, label=1,
       has_default_value=False, default_value=_b("").decode('utf-8'),
       message_type=None, enum_type=None, containing_type=None,
       is_extension=False, extension_scope=None,
       serialized_options=None, file=DESCRIPTOR),
     _descriptor.FieldDescriptor(
-      name='join', full_name='pb.ReadRequest.join', index=10,
-      number=11, type=11, cpp_type=10, label=3,
+      name='group_by', full_name='pb.ReadRequest.group_by', index=10,
+      number=11, type=9, cpp_type=9, label=1,
+      has_default_value=False, default_value=_b("").decode('utf-8'),
+      message_type=None, enum_type=None, containing_type=None,
+      is_extension=False, extension_scope=None,
+      serialized_options=None, file=DESCRIPTOR),
+    _descriptor.FieldDescriptor(
+      name='join', full_name='pb.ReadRequest.join', index=11,
+      number=12, type=11, cpp_type=10, label=3,
       has_default_value=False, default_value=[],
       message_type=None, enum_type=None, containing_type=None,
       is_extension=False, extension_scope=None,
       serialized_options=None, file=DESCRIPTOR),
     _descriptor.FieldDescriptor(
-      name='limit', full_name='pb.ReadRequest.limit', index=11,
-      number=12, type=3, cpp_type=2, label=1,
-      has_default_value=False, default_value=0,
-      message_type=None, enum_type=None, containing_type=None,
-      is_extension=False, extension_scope=None,
-      serialized_options=None, file=DESCRIPTOR),
-    _descriptor.FieldDescriptor(
-      name='message_limit', full_name='pb.ReadRequest.message_limit', index=12,
+      name='limit', full_name='pb.ReadRequest.limit', index=12,
       number=13, type=3, cpp_type=2, label=1,
       has_default_value=False, default_value=0,
       message_type=None, enum_type=None, containing_type=None,
       is_extension=False, extension_scope=None,
       serialized_options=None, file=DESCRIPTOR),
     _descriptor.FieldDescriptor(
-      name='marker', full_name='pb.ReadRequest.marker', index=13,
-      number=14, type=9, cpp_type=9, label=1,
-      has_default_value=False, default_value=_b("").decode('utf-8'),
-      message_type=None, enum_type=None, containing_type=None,
-      is_extension=False, extension_scope=None,
-      serialized_options=None, file=DESCRIPTOR),
-    _descriptor.FieldDescriptor(
-      name='segments', full_name='pb.ReadRequest.segments', index=14,
-      number=15, type=3, cpp_type=2, label=3,
-      has_default_value=False, default_value=[],
-      message_type=None, enum_type=None, containing_type=None,
-      is_extension=False, extension_scope=None,
-      serialized_options=None, file=DESCRIPTOR),
-    _descriptor.FieldDescriptor(
-      name='totoal_segments', full_name='pb.ReadRequest.totoal_segments', index=15,
-      number=16, type=3, cpp_type=2, label=1,
+      name='message_limit', full_name='pb.ReadRequest.message_limit', index=13,
+      number=14, type=3, cpp_type=2, label=1,
       has_default_value=False, default_value=0,
       message_type=None, enum_type=None, containing_type=None,
       is_extension=False, extension_scope=None,
       serialized_options=None, file=DESCRIPTOR),
     _descriptor.FieldDescriptor(
-      name='sharding_keys', full_name='pb.ReadRequest.sharding_keys', index=16,
-      number=17, type=9, cpp_type=9, label=3,
-      has_default_value=False, default_value=[],
-      message_type=None, enum_type=None, containing_type=None,
-      is_extension=False, extension_scope=None,
-      serialized_options=None, file=DESCRIPTOR),
-    _descriptor.FieldDescriptor(
-      name='sort_key_range_start', full_name='pb.ReadRequest.sort_key_range_start', index=17,
-      number=18, type=9, cpp_type=9, label=1,
+      name='marker', full_name='pb.ReadRequest.marker', index=14,
+      number=15, type=9, cpp_type=9, label=1,
       has_default_value=False, default_value=_b("").decode('utf-8'),
       message_type=None, enum_type=None, containing_type=None,
       is_extension=False, extension_scope=None,
       serialized_options=None, file=DESCRIPTOR),
     _descriptor.FieldDescriptor(
-      name='sort_key_range_end', full_name='pb.ReadRequest.sort_key_range_end', index=18,
+      name='segments', full_name='pb.ReadRequest.segments', index=15,
+      number=16, type=3, cpp_type=2, label=3,
+      has_default_value=False, default_value=[],
+      message_type=None, enum_type=None, containing_type=None,
+      is_extension=False, extension_scope=None,
+      serialized_options=None, file=DESCRIPTOR),
+    _descriptor.FieldDescriptor(
+      name='totoal_segments', full_name='pb.ReadRequest.totoal_segments', index=16,
+      number=17, type=3, cpp_type=2, label=1,
+      has_default_value=False, default_value=0,
+      message_type=None, enum_type=None, containing_type=None,
+      is_extension=False, extension_scope=None,
+      serialized_options=None, file=DESCRIPTOR),
+    _descriptor.FieldDescriptor(
+      name='sharding_keys', full_name='pb.ReadRequest.sharding_keys', index=17,
+      number=18, type=9, cpp_type=9, label=3,
+      has_default_value=False, default_value=[],
+      message_type=None, enum_type=None, containing_type=None,
+      is_extension=False, extension_scope=None,
+      serialized_options=None, file=DESCRIPTOR),
+    _descriptor.FieldDescriptor(
+      name='sort_key_range_start', full_name='pb.ReadRequest.sort_key_range_start', index=18,
       number=19, type=9, cpp_type=9, label=1,
       has_default_value=False, default_value=_b("").decode('utf-8'),
       message_type=None, enum_type=None, containing_type=None,
       is_extension=False, extension_scope=None,
       serialized_options=None, file=DESCRIPTOR),
     _descriptor.FieldDescriptor(
-      name='start', full_name='pb.ReadRequest.start', index=19,
+      name='sort_key_range_end', full_name='pb.ReadRequest.sort_key_range_end', index=19,
       number=20, type=9, cpp_type=9, label=1,
       has_default_value=False, default_value=_b("").decode('utf-8'),
       message_type=None, enum_type=None, containing_type=None,
       is_extension=False, extension_scope=None,
       serialized_options=None, file=DESCRIPTOR),
     _descriptor.FieldDescriptor(
-      name='end', full_name='pb.ReadRequest.end', index=20,
+      name='start', full_name='pb.ReadRequest.start', index=20,
       number=21, type=9, cpp_type=9, label=1,
       has_default_value=False, default_value=_b("").decode('utf-8'),
       message_type=None, enum_type=None, containing_type=None,
       is_extension=False, extension_scope=None,
       serialized_options=None, file=DESCRIPTOR),
     _descriptor.FieldDescriptor(
-      name='step_duration', full_name='pb.ReadRequest.step_duration', index=21,
+      name='end', full_name='pb.ReadRequest.end', index=21,
       number=22, type=9, cpp_type=9, label=1,
       has_default_value=False, default_value=_b("").decode('utf-8'),
       message_type=None, enum_type=None, containing_type=None,
       is_extension=False, extension_scope=None,
       serialized_options=None, file=DESCRIPTOR),
     _descriptor.FieldDescriptor(
-      name='aggragators', full_name='pb.ReadRequest.aggragators', index=22,
+      name='step_duration', full_name='pb.ReadRequest.step_duration', index=22,
       number=23, type=9, cpp_type=9, label=1,
       has_default_value=False, default_value=_b("").decode('utf-8'),
       message_type=None, enum_type=None, containing_type=None,
       is_extension=False, extension_scope=None,
       serialized_options=None, file=DESCRIPTOR),
     _descriptor.FieldDescriptor(
-      name='seek', full_name='pb.ReadRequest.seek', index=23,
+      name='aggragators', full_name='pb.ReadRequest.aggragators', index=23,
       number=24, type=9, cpp_type=9, label=1,
       has_default_value=False, default_value=_b("").decode('utf-8'),
       message_type=None, enum_type=None, containing_type=None,
       is_extension=False, extension_scope=None,
       serialized_options=None, file=DESCRIPTOR),
     _descriptor.FieldDescriptor(
-      name='shard_id', full_name='pb.ReadRequest.shard_id', index=24,
+      name='seek', full_name='pb.ReadRequest.seek', index=24,
       number=25, type=9, cpp_type=9, label=1,
       has_default_value=False, default_value=_b("").decode('utf-8'),
       message_type=None, enum_type=None, containing_type=None,
       is_extension=False, extension_scope=None,
       serialized_options=None, file=DESCRIPTOR),
     _descriptor.FieldDescriptor(
-      name='sequence', full_name='pb.ReadRequest.sequence', index=25,
-      number=26, type=3, cpp_type=2, label=1,
+      name='shard_id', full_name='pb.ReadRequest.shard_id', index=25,
+      number=26, type=9, cpp_type=9, label=1,
+      has_default_value=False, default_value=_b("").decode('utf-8'),
+      message_type=None, enum_type=None, containing_type=None,
+      is_extension=False, extension_scope=None,
+      serialized_options=None, file=DESCRIPTOR),
+    _descriptor.FieldDescriptor(
+      name='sequence', full_name='pb.ReadRequest.sequence', index=26,
+      number=27, type=3, cpp_type=2, label=1,
       has_default_value=False, default_value=0,
       message_type=None, enum_type=None, containing_type=None,
       is_extension=False, extension_scope=None,
@@ -752,8 +825,8 @@ _READREQUEST = _descriptor.Descriptor(
   extension_ranges=[],
   oneofs=[
   ],
-  serialized_start=911,
-  serialized_end=1447,
+  serialized_start=1015,
+  serialized_end=1581,
 )
 
 
@@ -765,36 +838,43 @@ _INITIALWRITEREQUEST = _descriptor.Descriptor(
   containing_type=None,
   fields=[
     _descriptor.FieldDescriptor(
-      name='backend', full_name='pb.InitialWriteRequest.backend', index=0,
-      number=1, type=9, cpp_type=9, label=1,
-      has_default_value=False, default_value=_b("").decode('utf-8'),
+      name='session', full_name='pb.InitialWriteRequest.session', index=0,
+      number=1, type=11, cpp_type=10, label=1,
+      has_default_value=False, default_value=None,
       message_type=None, enum_type=None, containing_type=None,
       is_extension=False, extension_scope=None,
       serialized_options=None, file=DESCRIPTOR),
     _descriptor.FieldDescriptor(
-      name='table', full_name='pb.InitialWriteRequest.table', index=1,
+      name='backend', full_name='pb.InitialWriteRequest.backend', index=1,
       number=2, type=9, cpp_type=9, label=1,
       has_default_value=False, default_value=_b("").decode('utf-8'),
       message_type=None, enum_type=None, containing_type=None,
       is_extension=False, extension_scope=None,
       serialized_options=None, file=DESCRIPTOR),
     _descriptor.FieldDescriptor(
-      name='initial_data', full_name='pb.InitialWriteRequest.initial_data', index=2,
-      number=3, type=11, cpp_type=10, label=1,
-      has_default_value=False, default_value=None,
-      message_type=None, enum_type=None, containing_type=None,
-      is_extension=False, extension_scope=None,
-      serialized_options=None, file=DESCRIPTOR),
-    _descriptor.FieldDescriptor(
-      name='expression', full_name='pb.InitialWriteRequest.expression', index=3,
-      number=4, type=9, cpp_type=9, label=1,
+      name='table', full_name='pb.InitialWriteRequest.table', index=2,
+      number=3, type=9, cpp_type=9, label=1,
       has_default_value=False, default_value=_b("").decode('utf-8'),
       message_type=None, enum_type=None, containing_type=None,
       is_extension=False, extension_scope=None,
       serialized_options=None, file=DESCRIPTOR),
     _descriptor.FieldDescriptor(
-      name='more', full_name='pb.InitialWriteRequest.more', index=4,
-      number=5, type=8, cpp_type=7, label=1,
+      name='initial_data', full_name='pb.InitialWriteRequest.initial_data', index=3,
+      number=4, type=11, cpp_type=10, label=1,
+      has_default_value=False, default_value=None,
+      message_type=None, enum_type=None, containing_type=None,
+      is_extension=False, extension_scope=None,
+      serialized_options=None, file=DESCRIPTOR),
+    _descriptor.FieldDescriptor(
+      name='expression', full_name='pb.InitialWriteRequest.expression', index=4,
+      number=5, type=9, cpp_type=9, label=1,
+      has_default_value=False, default_value=_b("").decode('utf-8'),
+      message_type=None, enum_type=None, containing_type=None,
+      is_extension=False, extension_scope=None,
+      serialized_options=None, file=DESCRIPTOR),
+    _descriptor.FieldDescriptor(
+      name='more', full_name='pb.InitialWriteRequest.more', index=5,
+      number=6, type=8, cpp_type=7, label=1,
       has_default_value=False, default_value=False,
       message_type=None, enum_type=None, containing_type=None,
       is_extension=False, extension_scope=None,
@@ -811,8 +891,8 @@ _INITIALWRITEREQUEST = _descriptor.Descriptor(
   extension_ranges=[],
   oneofs=[
   ],
-  serialized_start=1449,
-  serialized_end=1569,
+  serialized_start=1584,
+  serialized_end=1734,
 )
 
 
@@ -852,8 +932,8 @@ _WRITEREQUEST = _descriptor.Descriptor(
       name='type', full_name='pb.WriteRequest.type',
       index=0, containing_type=None, fields=[]),
   ],
-  serialized_start=1571,
-  serialized_end=1665,
+  serialized_start=1736,
+  serialized_end=1830,
 )
 
 
@@ -890,8 +970,8 @@ _WRITERESPOSE = _descriptor.Descriptor(
   extension_ranges=[],
   oneofs=[
   ],
-  serialized_start=1667,
-  serialized_end=1711,
+  serialized_start=1832,
+  serialized_end=1876,
 )
 
 
@@ -928,8 +1008,8 @@ _CREATEREQUEST_ATTRIBUTEMAPENTRY = _descriptor.Descriptor(
   extension_ranges=[],
   oneofs=[
   ],
-  serialized_start=1856,
-  serialized_end=1918,
+  serialized_start=2051,
+  serialized_end=2113,
 )
 
 _CREATEREQUEST = _descriptor.Descriptor(
@@ -940,29 +1020,36 @@ _CREATEREQUEST = _descriptor.Descriptor(
   containing_type=None,
   fields=[
     _descriptor.FieldDescriptor(
-      name='backend', full_name='pb.CreateRequest.backend', index=0,
-      number=1, type=9, cpp_type=9, label=1,
-      has_default_value=False, default_value=_b("").decode('utf-8'),
+      name='session', full_name='pb.CreateRequest.session', index=0,
+      number=1, type=11, cpp_type=10, label=1,
+      has_default_value=False, default_value=None,
       message_type=None, enum_type=None, containing_type=None,
       is_extension=False, extension_scope=None,
       serialized_options=None, file=DESCRIPTOR),
     _descriptor.FieldDescriptor(
-      name='table', full_name='pb.CreateRequest.table', index=1,
+      name='backend', full_name='pb.CreateRequest.backend', index=1,
       number=2, type=9, cpp_type=9, label=1,
       has_default_value=False, default_value=_b("").decode('utf-8'),
       message_type=None, enum_type=None, containing_type=None,
       is_extension=False, extension_scope=None,
       serialized_options=None, file=DESCRIPTOR),
     _descriptor.FieldDescriptor(
-      name='attribute_map', full_name='pb.CreateRequest.attribute_map', index=2,
-      number=3, type=11, cpp_type=10, label=3,
+      name='table', full_name='pb.CreateRequest.table', index=2,
+      number=3, type=9, cpp_type=9, label=1,
+      has_default_value=False, default_value=_b("").decode('utf-8'),
+      message_type=None, enum_type=None, containing_type=None,
+      is_extension=False, extension_scope=None,
+      serialized_options=None, file=DESCRIPTOR),
+    _descriptor.FieldDescriptor(
+      name='attribute_map', full_name='pb.CreateRequest.attribute_map', index=3,
+      number=4, type=11, cpp_type=10, label=3,
       has_default_value=False, default_value=[],
       message_type=None, enum_type=None, containing_type=None,
       is_extension=False, extension_scope=None,
       serialized_options=None, file=DESCRIPTOR),
     _descriptor.FieldDescriptor(
-      name='schema', full_name='pb.CreateRequest.schema', index=3,
-      number=4, type=11, cpp_type=10, label=1,
+      name='schema', full_name='pb.CreateRequest.schema', index=4,
+      number=5, type=11, cpp_type=10, label=1,
       has_default_value=False, default_value=None,
       message_type=None, enum_type=None, containing_type=None,
       is_extension=False, extension_scope=None,
@@ -979,8 +1066,8 @@ _CREATEREQUEST = _descriptor.Descriptor(
   extension_ranges=[],
   oneofs=[
   ],
-  serialized_start=1714,
-  serialized_end=1918,
+  serialized_start=1879,
+  serialized_end=2113,
 )
 
 
@@ -1003,8 +1090,8 @@ _CREATERESPONSE = _descriptor.Descriptor(
   extension_ranges=[],
   oneofs=[
   ],
-  serialized_start=1920,
-  serialized_end=1936,
+  serialized_start=2115,
+  serialized_end=2131,
 )
 
 
@@ -1016,43 +1103,50 @@ _DELETEREQUEST = _descriptor.Descriptor(
   containing_type=None,
   fields=[
     _descriptor.FieldDescriptor(
-      name='backend', full_name='pb.DeleteRequest.backend', index=0,
-      number=1, type=9, cpp_type=9, label=1,
-      has_default_value=False, default_value=_b("").decode('utf-8'),
+      name='session', full_name='pb.DeleteRequest.session', index=0,
+      number=1, type=11, cpp_type=10, label=1,
+      has_default_value=False, default_value=None,
       message_type=None, enum_type=None, containing_type=None,
       is_extension=False, extension_scope=None,
       serialized_options=None, file=DESCRIPTOR),
     _descriptor.FieldDescriptor(
-      name='table', full_name='pb.DeleteRequest.table', index=1,
+      name='backend', full_name='pb.DeleteRequest.backend', index=1,
       number=2, type=9, cpp_type=9, label=1,
       has_default_value=False, default_value=_b("").decode('utf-8'),
       message_type=None, enum_type=None, containing_type=None,
       is_extension=False, extension_scope=None,
       serialized_options=None, file=DESCRIPTOR),
     _descriptor.FieldDescriptor(
-      name='filter', full_name='pb.DeleteRequest.filter', index=2,
+      name='table', full_name='pb.DeleteRequest.table', index=2,
       number=3, type=9, cpp_type=9, label=1,
       has_default_value=False, default_value=_b("").decode('utf-8'),
       message_type=None, enum_type=None, containing_type=None,
       is_extension=False, extension_scope=None,
       serialized_options=None, file=DESCRIPTOR),
     _descriptor.FieldDescriptor(
-      name='force', full_name='pb.DeleteRequest.force', index=3,
-      number=4, type=8, cpp_type=7, label=1,
-      has_default_value=False, default_value=False,
-      message_type=None, enum_type=None, containing_type=None,
-      is_extension=False, extension_scope=None,
-      serialized_options=None, file=DESCRIPTOR),
-    _descriptor.FieldDescriptor(
-      name='start', full_name='pb.DeleteRequest.start', index=4,
-      number=5, type=9, cpp_type=9, label=1,
+      name='filter', full_name='pb.DeleteRequest.filter', index=3,
+      number=4, type=9, cpp_type=9, label=1,
       has_default_value=False, default_value=_b("").decode('utf-8'),
       message_type=None, enum_type=None, containing_type=None,
       is_extension=False, extension_scope=None,
       serialized_options=None, file=DESCRIPTOR),
     _descriptor.FieldDescriptor(
-      name='end', full_name='pb.DeleteRequest.end', index=5,
+      name='force', full_name='pb.DeleteRequest.force', index=4,
+      number=5, type=8, cpp_type=7, label=1,
+      has_default_value=False, default_value=False,
+      message_type=None, enum_type=None, containing_type=None,
+      is_extension=False, extension_scope=None,
+      serialized_options=None, file=DESCRIPTOR),
+    _descriptor.FieldDescriptor(
+      name='start', full_name='pb.DeleteRequest.start', index=5,
       number=6, type=9, cpp_type=9, label=1,
+      has_default_value=False, default_value=_b("").decode('utf-8'),
+      message_type=None, enum_type=None, containing_type=None,
+      is_extension=False, extension_scope=None,
+      serialized_options=None, file=DESCRIPTOR),
+    _descriptor.FieldDescriptor(
+      name='end', full_name='pb.DeleteRequest.end', index=6,
+      number=7, type=9, cpp_type=9, label=1,
       has_default_value=False, default_value=_b("").decode('utf-8'),
       message_type=None, enum_type=None, containing_type=None,
       is_extension=False, extension_scope=None,
@@ -1069,8 +1163,8 @@ _DELETEREQUEST = _descriptor.Descriptor(
   extension_ranges=[],
   oneofs=[
   ],
-  serialized_start=1938,
-  serialized_end=2044,
+  serialized_start=2134,
+  serialized_end=2270,
 )
 
 
@@ -1093,8 +1187,8 @@ _DELETERESPONSE = _descriptor.Descriptor(
   extension_ranges=[],
   oneofs=[
   ],
-  serialized_start=2046,
-  serialized_end=2062,
+  serialized_start=2272,
+  serialized_end=2288,
 )
 
 _COLUMN.fields_by_name['kind'].enum_type = _COLUMN_KIND
@@ -1126,8 +1220,10 @@ _SCHEMAFIELD.fields_by_name['default'].message_type = _VALUE
 _SCHEMAFIELD.fields_by_name['properties'].message_type = _SCHEMAFIELD_PROPERTIESENTRY
 _TABLESCHEMA.fields_by_name['fields'].message_type = _SCHEMAFIELD
 _TABLESCHEMA.fields_by_name['key'].message_type = _SCHEMAKEY
+_READREQUEST.fields_by_name['session'].message_type = _SESSION
 _READREQUEST.fields_by_name['schema'].message_type = _TABLESCHEMA
 _READREQUEST.fields_by_name['join'].message_type = _JOINSTRUCT
+_INITIALWRITEREQUEST.fields_by_name['session'].message_type = _SESSION
 _INITIALWRITEREQUEST.fields_by_name['initial_data'].message_type = _FRAME
 _WRITEREQUEST.fields_by_name['request'].message_type = _INITIALWRITEREQUEST
 _WRITEREQUEST.fields_by_name['frame'].message_type = _FRAME
@@ -1139,8 +1235,10 @@ _WRITEREQUEST.oneofs_by_name['type'].fields.append(
 _WRITEREQUEST.fields_by_name['frame'].containing_oneof = _WRITEREQUEST.oneofs_by_name['type']
 _CREATEREQUEST_ATTRIBUTEMAPENTRY.fields_by_name['value'].message_type = _VALUE
 _CREATEREQUEST_ATTRIBUTEMAPENTRY.containing_type = _CREATEREQUEST
+_CREATEREQUEST.fields_by_name['session'].message_type = _SESSION
 _CREATEREQUEST.fields_by_name['attribute_map'].message_type = _CREATEREQUEST_ATTRIBUTEMAPENTRY
 _CREATEREQUEST.fields_by_name['schema'].message_type = _TABLESCHEMA
+_DELETEREQUEST.fields_by_name['session'].message_type = _SESSION
 DESCRIPTOR.message_types_by_name['Column'] = _COLUMN
 DESCRIPTOR.message_types_by_name['Value'] = _VALUE
 DESCRIPTOR.message_types_by_name['Frame'] = _FRAME
@@ -1148,6 +1246,7 @@ DESCRIPTOR.message_types_by_name['SchemaField'] = _SCHEMAFIELD
 DESCRIPTOR.message_types_by_name['SchemaKey'] = _SCHEMAKEY
 DESCRIPTOR.message_types_by_name['TableSchema'] = _TABLESCHEMA
 DESCRIPTOR.message_types_by_name['JoinStruct'] = _JOINSTRUCT
+DESCRIPTOR.message_types_by_name['Session'] = _SESSION
 DESCRIPTOR.message_types_by_name['ReadRequest'] = _READREQUEST
 DESCRIPTOR.message_types_by_name['InitialWriteRequest'] = _INITIALWRITEREQUEST
 DESCRIPTOR.message_types_by_name['WriteRequest'] = _WRITEREQUEST
@@ -1224,6 +1323,13 @@ JoinStruct = _reflection.GeneratedProtocolMessageType('JoinStruct', (_message.Me
   ))
 _sym_db.RegisterMessage(JoinStruct)
 
+Session = _reflection.GeneratedProtocolMessageType('Session', (_message.Message,), dict(
+  DESCRIPTOR = _SESSION,
+  __module__ = 'frames_pb2'
+  # @@protoc_insertion_point(class_scope:pb.Session)
+  ))
+_sym_db.RegisterMessage(Session)
+
 ReadRequest = _reflection.GeneratedProtocolMessageType('ReadRequest', (_message.Message,), dict(
   DESCRIPTOR = _READREQUEST,
   __module__ = 'frames_pb2'
@@ -1299,8 +1405,8 @@ _FRAMES = _descriptor.ServiceDescriptor(
   file=DESCRIPTOR,
   index=0,
   serialized_options=None,
-  serialized_start=2133,
-  serialized_end=2332,
+  serialized_start=2359,
+  serialized_end=2558,
   methods=[
   _descriptor.MethodDescriptor(
     name='Read',
