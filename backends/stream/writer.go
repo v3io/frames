@@ -37,9 +37,14 @@ func (b *Backend) Write(request *frames.WriteRequest) (frames.FrameAppender, err
 		tablePath += "/"
 	}
 
+	container, err := b.newContainer(request.Session)
+	if err != nil {
+		return nil, err
+	}
+
 	appender := streamAppender{
 		request:      request,
-		container:    b.container,
+		container:    container,
 		tablePath:    tablePath,
 		responseChan: make(chan *v3io.Response, 1000),
 		commChan:     make(chan int, 2),

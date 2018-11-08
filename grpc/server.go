@@ -152,6 +152,7 @@ func (s *Server) Write(stream pb.Frames_WriteServer) error {
 	}
 
 	req := &frames.WriteRequest{
+		Session:       pbReq.Session,
 		Backend:       pbReq.Backend,
 		Expression:    pbReq.Expression,
 		HaveMore:      pbReq.More,

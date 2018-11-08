@@ -48,6 +48,8 @@ update-tsdb-dep:
 	GO111MODULE=on go mod vendor
 	@echo "Done. Don't forget to commit ☺"
 
+grpc: grpc-go grpc-py
+
 grpc-go:
 	protoc  frames.proto --go_out=plugins=grpc:pb
 

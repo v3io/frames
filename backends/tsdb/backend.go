@@ -21,7 +21,6 @@ such restriction.
 package tsdb
 
 import (
-	"fmt"
 	"github.com/nuclio/logger"
 
 	"github.com/v3io/frames"
@@ -29,7 +28,6 @@ import (
 
 	"github.com/pkg/errors"
 	"github.com/v3io/frames/v3ioutils"
-	"github.com/v3io/v3io-go-http"
 	"github.com/v3io/v3io-tsdb/pkg/config"
 	"github.com/v3io/v3io-tsdb/pkg/tsdb"
 	"github.com/v3io/v3io-tsdb/pkg/tsdb/schema"
@@ -41,9 +39,7 @@ type Backend struct {
 	adapters      map[string]*tsdb.V3ioAdapter
 	backendConfig *frames.BackendConfig
 	framesConfig  *frames.Config
-	tsdbConfig    *config.V3ioConfig
 	logger        logger.Logger
-	container     *v3io.Container
 }
 
 // NewBackend return a new tsdb backend
@@ -57,42 +53,42 @@ func NewBackend(logger logger.Logger, cfg *frames.BackendConfig, framesConfig *f
 		framesConfig:  framesConfig,
 	}
 
-	tsdbConfig := &config.V3ioConfig{
-		WebApiEndpoint: cfg.URL,
-		Container:      cfg.Container,
-		Username:       cfg.Username,
-		Password:       cfg.Password,
-		Workers:        cfg.Workers,
-		LogLevel:       framesConfig.Log.Level,
+	return &newBackend, nil
+}
+
+func (b *Backend) newConfig(session *frames.Session) *config.V3ioConfig {
+	return &config.V3ioConfig{
+		WebApiEndpoint: session.Url,
+		Container:      session.Container,
+		Username:       session.User,
+		Password:       session.Password,
+		Workers:        b.backendConfig.Workers,
+		LogLevel:       b.framesConfig.Log.Level,
+	}
+}
+
+func (b *Backend) newAdapter(session *frames.Session, path string) (*tsdb.V3ioAdapter, error) {
+
+	if path == "" {
+		path = session.Path
 	}
 
-	_, err := config.GetOrLoadFromStruct(tsdbConfig)
+	cfg := b.newConfig(session)
+	_, err := config.GetOrLoadFromStruct(cfg)
 	if err != nil {
 		// if we couldn't load the file and its not the default
 		return nil, err
 	}
 
-	newBackend.tsdbConfig = tsdbConfig
-
-	container, err := v3ioutils.CreateContainer(logger,
-		cfg.URL, cfg.Container, cfg.Username, cfg.Password, cfg.Workers)
+	container, err := v3ioutils.CreateContainer(b.logger,
+		session.Url, cfg.Container, cfg.Username, cfg.Password, cfg.Workers)
 	if err != nil {
 		return nil, errors.Wrap(err, "Failed to create V3IO data container")
 	}
-	newBackend.container = container
 
-	return &newBackend, nil
-}
-
-func (b *Backend) newAdapter(path string) (*tsdb.V3ioAdapter, error) {
-
-	if path == "" {
-		path = b.backendConfig.Path
-	}
-
-	b.tsdbConfig.TablePath = path
-	fmt.Println("conf:", b.tsdbConfig)
-	adapter, err := tsdb.NewV3ioAdapter(b.tsdbConfig, b.container, b.logger)
+	cfg.TablePath = path
+	b.logger.DebugWith("tsdb config", "config", cfg)
+	adapter, err := tsdb.NewV3ioAdapter(cfg, container, b.logger)
 	if err != nil {
 		return nil, err
 	}
@@ -101,14 +97,14 @@ func (b *Backend) newAdapter(path string) (*tsdb.V3ioAdapter, error) {
 }
 
 // GetAdapter returns an adapter
-func (b *Backend) GetAdapter(path string) (*tsdb.V3ioAdapter, error) {
+func (b *Backend) GetAdapter(session *frames.Session, path string) (*tsdb.V3ioAdapter, error) {
 	// TODO: maintain adapter cache, for now create new per read/write request
 	//adapter, ok := b.adapters[path]
 	//if !ok {
 	//	b.adapters[path] = adapter
 	//}
 
-	adapter, err := b.newAdapter(path)
+	adapter, err := b.newAdapter(session, path)
 	if err != nil {
 		return nil, err
 	}
@@ -150,18 +146,15 @@ func (b *Backend) Create(request *frames.CreateRequest) error {
 	}
 
 	// TODO: create unique tsdb cfg object, avoid conflict w other requests
-	b.tsdbConfig.TablePath = request.Table
-	dbSchema, err := schema.NewSchema(
-		b.tsdbConfig,
-		rate,
-		aggregationGranularity,
-		defaultRollups)
+	cfg := b.newConfig(request.Session)
+	cfg.TablePath = request.Table
+	dbSchema, err := schema.NewSchema(cfg, rate, aggregationGranularity, defaultRollups)
 
 	if err != nil {
 		return errors.Wrap(err, "Failed to create a TSDB schema.")
 	}
 
-	return tsdb.CreateTSDB(b.tsdbConfig, dbSchema)
+	return tsdb.CreateTSDB(cfg, dbSchema)
 }
 
 // Delete deletes a table or part of it
@@ -179,7 +172,7 @@ func (b *Backend) Delete(request *frames.DeleteRequest) error {
 
 	delAll := request.Start == "" && request.End == ""
 
-	adapter, err := b.GetAdapter(request.Table)
+	adapter, err := b.GetAdapter(request.Session, request.Table)
 	if err != nil {
 		return err
 	}

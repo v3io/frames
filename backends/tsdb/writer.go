@@ -32,8 +32,7 @@ import (
 )
 
 func (b *Backend) Write(request *frames.WriteRequest) (frames.FrameAppender, error) {
-
-	adapter, err := b.GetAdapter(request.Table)
+	adapter, err := b.GetAdapter(request.Session, request.Table)
 	if err != nil {
 		return nil, errors.Wrap(err, "failed to create adapter")
 	}

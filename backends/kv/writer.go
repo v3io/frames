@@ -54,9 +54,14 @@ func (kv *Backend) Write(request *frames.WriteRequest) (frames.FrameAppender, er
 		tablePath += "/"
 	}
 
+	container, err := kv.newContainer(request.Session)
+	if err != nil {
+		return nil, err
+	}
+
 	appender := Appender{
 		request:      request,
-		container:    kv.container,
+		container:    container,
 		tablePath:    tablePath,
 		responseChan: make(chan *v3io.Response, 1000),
 		commChan:     make(chan int, 2),

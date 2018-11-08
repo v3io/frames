@@ -53,8 +53,14 @@ func (kv *Backend) Read(request *frames.ReadRequest) (frames.FrameIterator, erro
 
 	input := v3io.GetItemsInput{Path: tablePath, Filter: request.Filter, AttributeNames: columns}
 	kv.logger.DebugWith("read input", "input", input, "request", request)
+
+	container, err := kv.newContainer(request.Session)
+	if err != nil {
+		return nil, err
+	}
+
 	iter, err := v3ioutils.NewAsyncItemsCursor(
-		kv.container, &input, kv.numWorkers, request.ShardingKeys, kv.logger, 0)
+		container, &input, kv.numWorkers, request.ShardingKeys, kv.logger, 0)
 	if err != nil {
 		return nil, err
 	}

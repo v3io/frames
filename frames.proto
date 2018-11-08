@@ -96,6 +96,7 @@ message Session {
     string path = 3;
     string user = 4;
     string password = 5;
+    string token = 6;
 }
 
 message ReadRequest {

@@ -63,7 +63,7 @@ func (b *Backend) Read(request *frames.ReadRequest) (frames.FrameIterator, error
 	b.logger.DebugWith("Query", "from", from, "to", to, "table", request.Table,
 		"filter", request.Filter, "functions", request.Aggragators, "step", step)
 
-	adapter, err := b.GetAdapter(request.Table)
+	adapter, err := b.GetAdapter(request.Session, request.Table)
 	if err != nil {
 		return nil, errors.Wrap(err, "failed to create adapter")
 	}

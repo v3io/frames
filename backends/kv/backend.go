@@ -32,7 +32,6 @@ import (
 
 // Backend is key/value backend
 type Backend struct {
-	container  *v3io.Container
 	logger     logger.Logger
 	numWorkers int
 }
@@ -41,15 +40,8 @@ type Backend struct {
 func NewBackend(logger logger.Logger, config *frames.BackendConfig, framesConfig *frames.Config) (frames.DataBackend, error) {
 
 	frames.InitBackendDefaults(config, framesConfig)
-	container, err := v3ioutils.CreateContainer(
-		logger, config.URL, config.Container, config.Username, config.Password, config.Workers)
-	if err != nil {
-		return nil, errors.Wrap(err, "failed to create data container")
-	}
-
 	newBackend := Backend{
 		logger:     logger.GetChild("kv"),
-		container:  container,
 		numWorkers: config.Workers,
 	}
 
@@ -68,6 +60,21 @@ func (b *Backend) Delete(request *frames.DeleteRequest) error {
 		request.Table += "/"
 	}
 
-	return v3ioutils.DeleteTable(b.logger, b.container, request.Table, request.Filter, b.numWorkers)
+	container, err := b.newContainer(request.Session)
+	if err != nil {
+		return err
+	}
+
+	return v3ioutils.DeleteTable(b.logger, container, request.Table, request.Filter, b.numWorkers)
 	// TODO: delete the table directory entry if filter == ""
+}
+
+func (b *Backend) newContainer(session *frames.Session) (*v3io.Container, error) {
+	container, err := v3ioutils.CreateContainer(
+		b.logger, session.Url, session.Container, session.User, session.Password, b.numWorkers)
+	if err != nil {
+		return nil, errors.Wrap(err, "failed to create data container")
+	}
+
+	return container, nil
 }
