@@ -57,7 +57,8 @@ def has_working_go():
 
 here = path.dirname(path.abspath(__file__))
 backend = 'weather'
-server_port = 8765
+http_port = 8765
+grpc_port = 8766
 server_timeout = 30  # seconds
 has_go = has_working_go()
 root_dir = '/tmp/test-integration-root'
@@ -77,7 +78,7 @@ def wait_for_server(port, timeout):
 
 
 @contextmanager
-def new_server(proto):
+def new_server():
     if path.exists(root_dir):
         rmtree(root_dir)
     makedirs(root_dir)
@@ -107,12 +108,12 @@ def new_server(proto):
 
     cmd = [
         server_exe,
-        '-addr', ':{}'.format(server_port),
+        '-httpAddr', ':{}'.format(http_port),
+        '-grpcAddr', ':{}'.format(grpc_port),
         '-config', cfg_file,
-        '-proto', proto,
     ]
     pipe = Popen(cmd)
-    assert wait_for_server(server_port, server_timeout), 'server did not start'
+    assert wait_for_server(http_port, server_timeout), 'server did not start'
 
     try:
         yield pipe
@@ -135,15 +136,15 @@ def random_df(size):
 
 
 integration_cases = [
-    (v3f.HTTPClient, 'http'),
-    (v3f.gRPCClient, 'grpc'),
+    (v3f.HTTPClient, f'http://localhost:{http_port}'),
+    (v3f.gRPCClient, f'localhost:{grpc_port}'),
 ]
 
 
 @pytest.mark.skipif(not has_go, reason='Go SDK not found')
-@pytest.mark.parametrize('client_cls,proto', integration_cases)
-def test_integration(client_cls, proto):
-    with new_server(proto):
+@pytest.mark.parametrize('client_cls,addr', integration_cases)
+def test_integration(client_cls, addr):
+    with new_server():
         size = 1932
         table = 'random.csv'
         df = random_df(size)
@@ -152,10 +153,6 @@ def test_integration(client_cls, proto):
             'lf': 3.22,
             'ls': 'hi',
         }
-
-        addr = 'localhost:{}'.format(server_port)
-        if proto == 'http':
-            addr = 'http://' + addr
 
         c = client_cls(addr, session=None)
         c.write(backend, table, [df], labels=lables)
@@ -181,9 +178,9 @@ def test_integration(client_cls, proto):
 
 @pytest.mark.skipif(not has_go, reason='Go SDK not found')
 def test_integration_http_error():
-    with new_server('http'):
+    with new_server():
         c = v3f.HTTPClient(
-            'http://localhost:{}'.format(server_port), session=None)
+            'http://localhost:{}'.format(http_port), session=None)
 
         with pytest.raises(v3f.ReadError):
             for df in c.read('no-such-backend', table='no such table'):

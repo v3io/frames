@@ -34,8 +34,12 @@ build:
 	GO111MODULE=on go build -v $(modflag) ./...
 
 test-python:
-	cd clients/py && pipenv run flake8 --exclude 'frames_pb2*.py' v3io_frames tests
-	cd clients/py && pipenv run python -m pytest -v
+	cd clients/py && \
+	   PIPENV_IGNORE_VIRTUALENVS=1 \
+	   pipenv run flake8 --exclude 'frames_pb2*.py' v3io_frames tests
+	cd clients/py && \
+	    PIPENV_IGNORE_VIRTUALENVS=1 \
+	    pipenv run python -m pytest -v
 
 build-docker:
 	docker build -f ./cmd/framesd/Dockerfile -t v3io/framesd .
