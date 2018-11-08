@@ -22,7 +22,6 @@ package frames
 
 import (
 	"fmt"
-	"os"
 )
 
 // Configuration environment variables
@@ -43,12 +42,6 @@ type Config struct {
 	Log            LogConfig `json:"log"`
 	DefaultLimit   int       `json:"limit,omitempty"`
 	DefaultTimeout int       `json:"timeout,omitempty"`
-
-	// default V3IO connection details
-	WebAPIEndpoint string `json:"webApiEndpoint"`
-	Container      string `json:"container"`
-	Username       string `json:"username,omitempty"`
-	Password       string `json:"password,omitempty"`
 	// Number of parallel V3IO worker routines
 	Workers int `json:"workers"`
 
@@ -60,38 +53,12 @@ func (c *Config) InitDefaults() error {
 	if c.DefaultTimeout == 0 {
 		c.DefaultTimeout = 30
 	}
-	if c.WebAPIEndpoint == "" {
-		c.WebAPIEndpoint = os.Getenv(WebAPIEndpointEnvironmentVariable)
-	}
-	if c.Container == "" {
-		c.Container = os.Getenv(WebAPIContainerEnvironmentVariable)
-	}
-	if c.Username == "" {
-		c.Username = os.Getenv(WebAPIUsernameEnvironmentVariable)
-	}
-	if c.Password == "" {
-		c.Password = os.Getenv(WebAPIPasswordEnvironmentVariable)
-	}
-	if c.Workers == 0 {
-		c.Workers = 8
-	}
+
 	return nil
 }
 
 // InitBackendDefaults initializes default configuration for backend
 func InitBackendDefaults(cfg *BackendConfig, framesConfig *Config) {
-	if cfg.URL == "" {
-		cfg.URL = framesConfig.WebAPIEndpoint
-	}
-	if cfg.Container == "" {
-		cfg.Container = framesConfig.Container
-	}
-	if cfg.Username == "" {
-		cfg.Username = framesConfig.Username
-	}
-	if cfg.Password == "" {
-		cfg.Password = framesConfig.Password
-	}
 	if cfg.Workers == 0 {
 		cfg.Workers = framesConfig.Workers
 	}
@@ -124,18 +91,12 @@ func (c *Config) Validate() error {
 	return nil
 }
 
-// BackendConfig is backend configuration
+// BackendConfig is default backend configuration
 type BackendConfig struct {
 	Type string `json:"type"` // v3io, csv, ...
 	Name string `json:"name"`
 
-	// Backend API URL and credential
-	URL       string `json:"url,omitempty"`
-	Container string `json:"container,omitempty"`
-	Path      string `json:"path,omitempty"`
-	Username  string `json:"username,omitempty"`
-	Password  string `json:"password,omitempty"`
-	Workers   int    `json:"workers"`
+	Workers int `json:"workers"`
 
 	// backend specific options
 	Options map[string]interface{} `json:"options"`

@@ -82,3 +82,6 @@ type SchemaField = pb.SchemaField
 
 // SchemaKey is a schema key
 type SchemaKey = pb.SchemaKey
+
+// Session information
+type Session = pb.Session

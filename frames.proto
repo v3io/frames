@@ -90,48 +90,58 @@ message TableSchema {
 message JoinStruct {
 }
 
-message ReadRequest {
-    string backend = 1;
-    TableSchema schema = 2;
-    string data_format = 3;
-    bool row_layout = 4;
-    bool multi_index = 5;
-    string query = 6; // SQL Query
-    string table = 7; // Table name
-    repeated string columns = 8;
-    string filter = 9;
-    string group_by = 10;
-    repeated JoinStruct join = 11;
+message Session {
+    string url = 1;
+    string container = 2;
+    string path = 3;
+    string user = 4;
+    string password = 5;
+}
 
-    int64 limit = 12;
-    int64 message_limit = 13;
-    string marker = 14;
+message ReadRequest {
+    Session session = 1;
+    string backend = 2;
+    TableSchema schema = 3;
+    string data_format = 4;
+    bool row_layout = 5;
+    bool multi_index = 6;
+    string query = 7; // SQL Query
+    string table = 8; // Table name
+    repeated string columns = 9;
+    string filter = 10;
+    string group_by = 11;
+    repeated JoinStruct join = 12;
+
+    int64 limit = 13;
+    int64 message_limit = 14;
+    string marker = 15;
 
     // NoSQL
-    repeated int64 segments = 15;
-    int64 totoal_segments = 16;
-    repeated string sharding_keys = 17;
-    string sort_key_range_start = 18;
-    string sort_key_range_end = 19;
+    repeated int64 segments = 16;
+    int64 totoal_segments = 17;
+    repeated string sharding_keys = 18;
+    string sort_key_range_start = 19;
+    string sort_key_range_end = 20;
 
     // TSDB
-    string start = 20;
-    string end = 21;
-    string step_duration = 22;
-    string aggragators = 23;
+    string start = 21;
+    string end = 22;
+    string step_duration = 23;
+    string aggragators = 24;
 
     // Stream
-    string seek = 24;
-    string shard_id = 25;
-    int64 sequence = 26;
+    string seek = 25;
+    string shard_id = 26;
+    int64 sequence = 27;
 }
 
 message InitialWriteRequest {
-    string backend = 1;
-    string table = 2;
-    Frame initial_data = 3;
-    string expression = 4;
-    bool more = 5;
+    Session session = 1;
+    string backend = 2;
+    string table = 3;
+    Frame initial_data = 4;
+    string expression = 5;
+    bool more = 6;
 }
 
 message WriteRequest {
@@ -148,23 +158,25 @@ message WriteRespose {
 
 // CreateRequest is a table creation request
 message CreateRequest {
-    string backend = 1; // name of the backend
-    string table = 2; // Table name (path)
-    map<string, Value> attribute_map = 3; // List of attributes used for creating the table
-    TableSchema schema = 4; // Schema (for describing unstructured/schemaless data)
+    Session session = 1;
+    string backend = 2; // name of the backend
+    string table = 3; // Table name (path)
+    map<string, Value> attribute_map = 4; // List of attributes used for creating the table
+    TableSchema schema = 5; // Schema (for describing unstructured/schemaless data)
 }
 
 message CreateResponse {}
 
 // DeleteRequest is a deletion request
 message DeleteRequest {
-    string backend = 1; // Name of the backend
-    string table = 2; // Table name (path)
-    string filter = 3; // Filter string for selective delete
-    bool force = 4; // Force delete
+    Session session = 1;
+    string backend = 2; // Name of the backend
+    string table = 3; // Table name (path)
+    string filter = 4; // Filter string for selective delete
+    bool force = 5; // Force delete
     // TSDB and Stream specific fields
-    string start = 5;
-    string end = 6;
+    string start = 6;
+    string end = 7;
 }
 
 message DeleteResponse {}
