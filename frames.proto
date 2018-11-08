@@ -64,6 +64,7 @@ message Frame {
     map<string, Value> labels = 3;
 }
 
+// TODO: Place these under TableSchema
 message SchemaField {
     string name = 1;
     string doc = 2;
@@ -77,6 +78,7 @@ message SchemaKey {
     repeated string sorting_key = 2;
 }
 
+// TODO: Rename to Schema?
 message TableSchema {
     string type = 1;
     string namespace = 2;
@@ -88,6 +90,7 @@ message TableSchema {
 }
 
 message JoinStruct {
+    // TBD
 }
 
 message Session {

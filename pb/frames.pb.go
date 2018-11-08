@@ -466,6 +466,7 @@ func (m *Frame) GetLabels() map[string]*Value {
 	return nil
 }
 
+// TODO: Place these under TableSchema
 type SchemaField struct {
 	Name                 string            `protobuf:"bytes,1,opt,name=name,proto3" json:"name,omitempty"`
 	Doc                  string            `protobuf:"bytes,2,opt,name=doc,proto3" json:"doc,omitempty"`
@@ -584,6 +585,7 @@ func (m *SchemaKey) GetSortingKey() []string {
 	return nil
 }
 
+// TODO: Rename to Schema?
 type TableSchema struct {
 	Type                 string         `protobuf:"bytes,1,opt,name=type,proto3" json:"type,omitempty"`
 	Namespace            string         `protobuf:"bytes,2,opt,name=namespace,proto3" json:"namespace,omitempty"`
