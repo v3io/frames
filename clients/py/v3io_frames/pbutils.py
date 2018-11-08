@@ -59,6 +59,8 @@ def pb_map(d):
 
 
 class SchemaField:
+    """A schema field"""
+    # We return a frames_pb2.SchemaField from Python types
     def __new__(cls, name=None, doc=None, default=None, type=None,
                 properties=None):
         return fpb.SchemaField(
