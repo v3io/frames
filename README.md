@@ -1,5 +1,9 @@
 # frames
 
+[![Build Status](https://travis-ci.com/v3io/frames.svg?branch=master)](https://travis-ci.com/v3io/frames)
+[![GoDoc](https://godoc.org/github.com/v3io/frames?status.svg)](https://godoc.org/github.com/v3io/frames)
+[![License](https://img.shields.io/badge/License-Apache%202.0-blue.svg)](https://opensource.org/licenses/Apache-2.0)
+
 Server and client library of streaming data from v3io
 
 ## Components
