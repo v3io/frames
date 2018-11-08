@@ -15,6 +15,8 @@
 __version__ = '0.1.2'
 
 
-from .http import Client as HTTPClient, Schema, SchemaField  # noqa
+from .http import Client as HTTPClient  # noqa
 from .grpc import Client as gRPCClient  # noqa
 from .errors import *  # noqa
+from .frames_pb2 import TableSchema as Schema, SchemaKey, Session  # noqa
+from .pbutils import SchemaField  # noqa 

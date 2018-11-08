@@ -134,13 +134,12 @@ func TestEnd2End(t *testing.T) {
 }
 
 func testGrafana(t *testing.T, baseURL string, backend string, table string) {
-	query := url.Values{}
-	query.Set("backend", backend)
-	query.Set("table", table)
+	query := url.Values{
+		"backend": {backend},
+		"table":   {table},
+	}
 
 	url := fmt.Sprintf("%s/grafana?%s", baseURL, query.Encode())
-	t.Logf("grafana URL - %s", url)
-
 	resp, err := nhttp.Get(url)
 	if err != nil {
 		t.Fatalf("can't call grafana API - %s", err)

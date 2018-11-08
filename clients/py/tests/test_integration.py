@@ -28,17 +28,15 @@ import v3io_frames as v3f
 
 
 schema = v3f.Schema(
-    'type',
-    'namesapce',
-    'name',
-    'doc',
-    [],  # aliases
-    [
+    type='type',
+    namespace='namesapce',
+    name='name',
+    doc='doc',
+    fields=[
         v3f.SchemaField('field1', '', '', 't1', None),
         v3f.SchemaField('field2', '', '', 't2', None),
         v3f.SchemaField('field3', '', '', 't3', None),
     ],
-    None,  # Key
 )
 
 
@@ -159,7 +157,7 @@ def test_integration(client_cls, proto):
         if proto == 'http':
             addr = 'http://' + addr
 
-        c = client_cls(addr)
+        c = client_cls(addr, session=None)
         c.write(backend, table, [df], labels=lables)
 
         sleep(1)  # Let disk flush
@@ -184,7 +182,8 @@ def test_integration(client_cls, proto):
 @pytest.mark.skipif(not has_go, reason='Go SDK not found')
 def test_integration_http_error():
     with new_server('http'):
-        c = v3f.HTTPClient('http://localhost:{}'.format(server_port))
+        c = v3f.HTTPClient(
+            'http://localhost:{}'.format(server_port), session=None)
 
         with pytest.raises(v3f.ReadError):
             for df in c.read('no-such-backend', table='no such table'):
