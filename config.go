@@ -24,14 +24,6 @@ import (
 	"fmt"
 )
 
-// Configuration environment variables
-const (
-	WebAPIEndpointEnvironmentVariable  = "V3IO_URL"
-	WebAPIContainerEnvironmentVariable = "V3IO_CONTAINER"
-	WebAPIUsernameEnvironmentVariable  = "V3IO_USERNAME"
-	WebAPIPasswordEnvironmentVariable  = "V3IO_PASSWORD"
-)
-
 // LogConfig is the logging configuration
 type LogConfig struct {
 	Level string `json:"level,omitempty"`
@@ -93,11 +85,9 @@ func (c *Config) Validate() error {
 
 // BackendConfig is default backend configuration
 type BackendConfig struct {
-	Type string `json:"type"` // v3io, csv, ...
-	Name string `json:"name"`
-
-	Workers int `json:"workers"`
-
+	Type    string `json:"type"` // v3io, csv, ...
+	Name    string `json:"name"`
+	Workers int    `json:"workers"`
 	// backend specific options
 	Options map[string]interface{} `json:"options"`
 

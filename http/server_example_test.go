@@ -24,33 +24,23 @@ import (
 	"fmt"
 	"time"
 
-	"github.com/BurntSushi/toml"
-
+	"github.com/ghodss/yaml"
 	"github.com/v3io/frames"
 )
 
-var configData = `
-[log]
-level = "info"
+var configData = []byte(`
+log:
+  level: "info"
 
-[[backends]]
-name = "v3io"
-type = "kv"
-v3ioURL = "http://v3.io"
-container = "a"
-path = "/data"
-username = "daffy"
-password = "duck"
-
-[[backends]]
-name = "weather"
-type = "csv"
-rootDir = "/tmp"
-`
+backends:
+  - type: "kv"
+  - type: "csv"
+    rootDir = "/tmp"
+`)
 
 func ExampleServer() {
 	cfg := &frames.Config{}
-	if _, err := toml.Decode(configData, cfg); err != nil {
+	if err := yaml.Unmarshal(configData, cfg); err != nil {
 		fmt.Printf("error: can't read config - %s", err)
 		return
 	}

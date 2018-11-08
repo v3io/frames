@@ -3,7 +3,6 @@ module github.com/v3io/frames
 require (
 	9fans.net/go v0.0.0-20180727211846-5d4fa602e1e8 // indirect
 	cloud.google.com/go v0.31.0 // indirect
-	github.com/BurntSushi/toml v0.3.1
 	github.com/alecthomas/gometalinter v2.0.11+incompatible // indirect
 	github.com/alecthomas/units v0.0.0-20151022065526-2efee857e7cf // indirect
 	github.com/cespare/xxhash v1.1.0 // indirect
@@ -23,7 +22,6 @@ require (
 	github.com/nuclio/logger v0.0.0-20180410162335-ccc5ab971395
 	github.com/nuclio/zap v0.0.0-20180228181516-4a2bd2f9ef28
 	github.com/pavius/zap v0.0.0-20180228181622-8d52692529b8 // indirect
-	github.com/pelletier/go-toml v1.2.0 // indirect
 	github.com/peterh/liner v1.1.0 // indirect
 	github.com/pkg/errors v0.8.0
 	github.com/rcrowley/go-metrics v0.0.0-20181016184325-3113b8401b8a // indirect

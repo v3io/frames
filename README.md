@@ -54,7 +54,7 @@ If you add dependencies please run
 
 #### Running
 
-     docker run -v /path/to/config.toml:/etc/framesd/framesd.toml v3io/framesd
+     docker run -v /path/to/config.yaml:/etc/framesd/framesd.yaml v3io/framesd
 
 ## LICENSE
 
