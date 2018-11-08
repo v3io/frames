@@ -18,12 +18,13 @@ import grpc
 import pandas as pd
 import numpy as np
 import pytz
+import warnings
 
 from . import frames_pb2 as fpb  # noqa
 from . import frames_pb2_grpc as fgrpc  # noqa
 from .errors import MessageError, WriteError
 from .http import format_go_time
-from .pbutils import pb_map
+from .pbutils import pb_map, pb2py
 
 _ts = pd.Series(pd.Timestamp(0))
 _time_dt = _ts.dtype
@@ -204,6 +205,9 @@ def frame2df(frame):
     elif len(indices) > 1:
         df.index = pd.MultiIndex.from_arrays(indices)
 
+    with warnings.catch_warnings():
+        warnings.simplefilter('ignore')
+        df.labels = pb2py(frame.labels)
     return df
 
 

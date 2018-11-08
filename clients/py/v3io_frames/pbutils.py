@@ -13,6 +13,7 @@
 # limitations under the License.
 
 from datetime import datetime
+from os import environ
 
 import numpy as np
 import pandas as pd
@@ -58,18 +59,32 @@ def pb_map(d):
     return None if d is None else {k: pb_value(v) for k, v in d.items()}
 
 
-class SchemaField:
+def SchemaField(name=None, doc=None, default=None, type=None, properties=None):
     """A schema field"""
     # We return a frames_pb2.SchemaField from Python types
-    def __new__(cls, name=None, doc=None, default=None, type=None,
-                properties=None):
-        return fpb.SchemaField(
+    return fpb.SchemaField(
             name=name,
             doc=doc,
             default=pb_value(default),
             type=type,
             properties=pb_map(properties),
         )
+
+
+def Session(url='', container='', path='', user='', password='', token=''):
+    """Return a new session.
+
+    Will populate missing values from environment. Environment variables have
+    V3IO_ prefix (e.g. V3IO_URL)
+    """
+    return fpb.Session(
+        url=url or environ.get('V3IO_URL', ''),
+        container=container or environ.get('V3IO_CONTAINER', ''),
+        path=path or environ.get('V3IO_PATH', ''),
+        user=user or environ.get('V3IO_USER', ''),
+        password=password or environ.get('V3IO_PASSWORD', ''),
+        token=token or environ.get('V3IO_TOKEN', ''),
+    )
 
 
 def pb2py(obj):
