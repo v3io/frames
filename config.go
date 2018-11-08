@@ -22,6 +22,7 @@ package frames
 
 import (
 	"fmt"
+	"os"
 )
 
 // LogConfig is the logging configuration
@@ -93,4 +94,41 @@ type BackendConfig struct {
 
 	// CSV backend
 	RootDir string `json:"rootdir,omitempty"`
+}
+
+// NewSession will create a new session. It will populate missing values from
+// the environment.  Environment variables have V3IO_ prefix (e.g. V3IO_USER)
+func NewSession(url, container, path, user, password, token string) *Session {
+	if url == "" {
+		url = os.Getenv("V3IO_URL")
+	}
+
+	if container == "" {
+		container = os.Getenv("V3IO_CONTAINER")
+	}
+
+	if path == "" {
+		path = os.Getenv("V3IO_PATH")
+	}
+
+	if user == "" {
+		user = os.Getenv("V3IO_USER")
+	}
+
+	if password == "" {
+		password = os.Getenv("V3IO_PASSWORD")
+	}
+
+	if token == "" {
+		token = os.Getenv("V3IO_TOKEN")
+	}
+
+	return &Session{
+		Url:       url,
+		Container: container,
+		Path:      path,
+		User:      user,
+		Password:  password,
+		Token:     token,
+	}
 }
