@@ -22,7 +22,6 @@ package http
 
 import (
 	"bufio"
-	"bytes"
 	"encoding/json"
 	"fmt"
 	"io"
@@ -41,13 +40,7 @@ const (
 )
 
 var (
-	statusPath = []byte("/_/status")
-	configPath = []byte("/_/config")
-	writePath  = []byte("/write")
-	readPath   = []byte("/read")
-	createPath = []byte("/create")
-	deletePath = []byte("/delete")
-	okBytes    = []byte("OK")
+	okBytes = []byte("OK")
 )
 
 // Server is HTTP server
@@ -56,6 +49,7 @@ type Server struct {
 
 	address string // listen address
 	server  *fasthttp.Server
+	routes  map[string]func(*fasthttp.RequestCtx)
 
 	config *frames.Config
 	api    *api.API
@@ -95,6 +89,8 @@ func NewServer(config *frames.Config, addr string, logger logger.Logger) (*Serve
 		api:     api,
 	}
 
+	srv.initRoutes()
+
 	return srv, nil
 }
 
@@ -127,22 +123,13 @@ func (s *Server) Start() error {
 func (s *Server) handler(ctx *fasthttp.RequestCtx) {
 	// TODO: Check API key
 
-	switch {
-	case bytes.Compare(ctx.Path(), statusPath) == 0:
-		s.handleStatus(ctx)
-	case bytes.Compare(ctx.Path(), configPath) == 0:
-		s.handleConfig(ctx)
-	case bytes.Compare(ctx.Path(), writePath) == 0:
-		s.handleWrite(ctx)
-	case bytes.Compare(ctx.Path(), readPath) == 0:
-		s.handleRead(ctx)
-	case bytes.Compare(ctx.Path(), createPath) == 0:
-		s.handleCreate(ctx)
-	case bytes.Compare(ctx.Path(), deletePath) == 0:
-		s.handleDelete(ctx)
-	default:
+	fn, ok := s.routes[string(ctx.Path())]
+	if !ok {
 		ctx.Error(fmt.Sprintf("unknown path - %q", string(ctx.Path())), http.StatusNotFound)
+		return
 	}
+
+	fn(ctx)
 }
 
 func (s *Server) handleStatus(ctx *fasthttp.RequestCtx) {
@@ -310,4 +297,65 @@ func (s *Server) replyJSON(ctx *fasthttp.RequestCtx, reply interface{}) error {
 func (s *Server) replyOK(ctx *fasthttp.RequestCtx) {
 	ctx.SetStatusCode(http.StatusOK)
 	ctx.Write(okBytes)
+}
+
+func (s *Server) handleGrafana(ctx *fasthttp.RequestCtx) {
+	args := ctx.QueryArgs()
+	request := &frames.ReadRequest{
+		Backend:      string(args.Peek("backend")),
+		Table:        string(args.Peek("table")),
+		Query:        string(args.Peek("query")),
+		Filter:       string(args.Peek("filter")),
+		GroupBy:      string(args.Peek("group_by")),
+		Limit:        int64(args.GetUintOrZero("limit")),
+		MessageLimit: int64(args.GetUintOrZero("messge_limit")),
+		Marker:       string(args.Peek("marker")),
+	}
+
+	// TODO: Validate request
+	s.logger.InfoWith("grafana request", "request", request)
+
+	ch := make(chan frames.Frame)
+	var apiError error
+	go func() {
+		defer close(ch)
+		apiError = s.api.Read(request, ch)
+		if apiError != nil {
+			s.logger.ErrorWith("error reading (grafana)", "error", apiError)
+		}
+	}()
+
+	var frames []*JSONFrame
+	for frame := range ch {
+		jframe, err := frameToJSON(frame)
+		if err != nil {
+			s.logger.ErrorWith("can't encode frame", "error", err)
+			msg := fmt.Sprintf("can't encode frame - %s", err)
+			ctx.Error(msg, http.StatusInternalServerError)
+			return
+		}
+		frames = append(frames, jframe)
+	}
+
+	if apiError != nil {
+		msg := fmt.Sprintf("API error - %s", apiError)
+		ctx.Error(msg, http.StatusInternalServerError)
+		return
+	}
+
+	if err := json.NewEncoder(ctx).Encode(frames); err != nil {
+		s.logger.ErrorWith("can't encode result", "error", err)
+	}
+}
+
+func (s *Server) initRoutes() {
+	s.routes = map[string]func(*fasthttp.RequestCtx){
+		"/_/config": s.handleConfig,
+		"/_/status": s.handleStatus,
+		"/create":   s.handleCreate,
+		"/delete":   s.handleDelete,
+		"/grafana":  s.handleGrafana,
+		"/read":     s.handleRead,
+		"/write":    s.handleWrite,
+	}
 }
