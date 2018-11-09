@@ -32,8 +32,9 @@ import (
 
 // Backend is key/value backend
 type Backend struct {
-	logger     logger.Logger
-	numWorkers int
+	logger       logger.Logger
+	numWorkers   int
+	framesConfig *frames.Config
 }
 
 // NewBackend return a new key/value backend
@@ -41,8 +42,9 @@ func NewBackend(logger logger.Logger, config *frames.BackendConfig, framesConfig
 
 	frames.InitBackendDefaults(config, framesConfig)
 	newBackend := Backend{
-		logger:     logger.GetChild("kv"),
-		numWorkers: config.Workers,
+		logger:       logger.GetChild("kv"),
+		numWorkers:   config.Workers,
+		framesConfig: framesConfig,
 	}
 
 	return &newBackend, nil
@@ -70,6 +72,8 @@ func (b *Backend) Delete(request *frames.DeleteRequest) error {
 }
 
 func (b *Backend) newContainer(session *frames.Session) (*v3io.Container, error) {
+
+	session = frames.InitSessionDefaults(session, b.framesConfig)
 	container, err := v3ioutils.CreateContainer(
 		b.logger, session.Url, session.Container, session.User, session.Password, b.numWorkers)
 	if err != nil {

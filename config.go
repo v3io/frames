@@ -35,6 +35,13 @@ type Config struct {
 	Log            LogConfig `json:"log"`
 	DefaultLimit   int       `json:"limit,omitempty"`
 	DefaultTimeout int       `json:"timeout,omitempty"`
+
+	// default V3IO connection details
+	WebAPIEndpoint string `json:"webApiEndpoint"`
+	Container      string `json:"container"`
+	Username       string `json:"username,omitempty"`
+	Password       string `json:"password,omitempty"`
+
 	// Number of parallel V3IO worker routines
 	Workers int `json:"workers"`
 
@@ -50,10 +57,35 @@ func (c *Config) InitDefaults() error {
 	return nil
 }
 
+func InitSessionDefaults(session *Session, framesConfig *Config) *Session {
+
+	if session == nil {
+		session = &Session{}
+	}
+
+	if session.Url == "" {
+		session.Url = framesConfig.WebAPIEndpoint
+	}
+	if session.Container == "" {
+		session.Container = framesConfig.Container
+	}
+	if session.User == "" {
+		session.User = framesConfig.Username
+	}
+	if session.Password == "" {
+		session.Password = framesConfig.Password
+	}
+
+	return session
+}
+
 // InitBackendDefaults initializes default configuration for backend
 func InitBackendDefaults(cfg *BackendConfig, framesConfig *Config) {
 	if cfg.Workers == 0 {
 		cfg.Workers = framesConfig.Workers
+		if cfg.Workers == 0 {
+			cfg.Workers = 8
+		}
 	}
 }
 

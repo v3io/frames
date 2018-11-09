@@ -98,7 +98,8 @@ func (a *tsdbAppender) Add(frame frames.Frame) error {
 		return fmt.Errorf("there is no index of type time/date")
 	}
 
-	times, err := frame.Indices()[timeColIndex].Times()
+	icol := frame.Indices()[timeColIndex]
+	times, err := icol.Times()
 
 	for i := 0; i < frame.Len(); i++ {
 		t := times[i].UnixNano() / 1000 / 1000

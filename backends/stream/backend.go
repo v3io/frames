@@ -115,6 +115,8 @@ func (b *Backend) Delete(request *frames.DeleteRequest) error {
 }
 
 func (b *Backend) newContainer(session *frames.Session) (*v3io.Container, error) {
+
+	session = frames.InitSessionDefaults(session, b.framesConfig)
 	container, err := v3ioutils.CreateContainer(
 		b.logger,
 		session.Url, session.Container,

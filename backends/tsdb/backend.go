@@ -57,7 +57,8 @@ func NewBackend(logger logger.Logger, cfg *frames.BackendConfig, framesConfig *f
 }
 
 func (b *Backend) newConfig(session *frames.Session) *config.V3ioConfig {
-	return &config.V3ioConfig{
+
+	cfg := &config.V3ioConfig{
 		WebApiEndpoint: session.Url,
 		Container:      session.Container,
 		Username:       session.User,
@@ -65,19 +66,16 @@ func (b *Backend) newConfig(session *frames.Session) *config.V3ioConfig {
 		Workers:        b.backendConfig.Workers,
 		LogLevel:       b.framesConfig.Log.Level,
 	}
+	return config.WithDefaults(cfg)
 }
 
 func (b *Backend) newAdapter(session *frames.Session, path string) (*tsdb.V3ioAdapter, error) {
 
+	session = frames.InitSessionDefaults(session, b.framesConfig)
+	cfg := b.newConfig(session)
+
 	if path == "" {
 		path = session.Path
-	}
-
-	cfg := b.newConfig(session)
-	_, err := config.GetOrLoadFromStruct(cfg)
-	if err != nil {
-		// if we couldn't load the file and its not the default
-		return nil, err
 	}
 
 	container, err := v3ioutils.CreateContainer(b.logger,
@@ -145,8 +143,8 @@ func (b *Backend) Create(request *frames.CreateRequest) error {
 		defaultRollups = val
 	}
 
-	// TODO: create unique tsdb cfg object, avoid conflict w other requests
-	cfg := b.newConfig(request.Session)
+	session := frames.InitSessionDefaults(request.Session, b.framesConfig)
+	cfg := b.newConfig(session)
 	cfg.TablePath = request.Table
 	dbSchema, err := schema.NewSchema(cfg, rate, aggregationGranularity, defaultRollups)
 
