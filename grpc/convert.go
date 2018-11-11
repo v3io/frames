@@ -205,7 +205,11 @@ func (c *colImpl) Times() ([]time.Time, error) {
 	if c.times == nil {
 		times := make([]time.Time, c.Len())
 		for i := 0; i < c.Len(); i++ {
-			c.times[i] = pb.NSToTime(c.msg.Times[i])
+			idx := i
+			if c.msg.Kind == pb.Column_LABEL {
+				idx = 0
+			}
+			c.times[i] = pb.NSToTime(c.msg.Times[idx])
 		}
 
 		c.times = times
@@ -217,6 +221,10 @@ func (c *colImpl) Times() ([]time.Time, error) {
 func (c *colImpl) TimeAt(i int) (time.Time, error) {
 	if err := c.validateAt(pb.DType_TIME, i); err != nil {
 		return time.Time{}, err
+	}
+
+	if c.msg.Kind == pb.Column_LABEL {
+		i = 0
 	}
 
 	ns := c.msg.Times[i]
@@ -236,6 +244,9 @@ func (c *colImpl) BoolAt(i int) (bool, error) {
 		return false, err
 	}
 
+	if c.msg.Kind == pb.Column_LABEL {
+		i = 0
+	}
 	return c.msg.Bools[i], nil
 }
 
