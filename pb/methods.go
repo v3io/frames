@@ -83,7 +83,7 @@ func (r *CreateRequest) SetAttribute(key string, value interface{}) error {
 
 // NSToTime returns time from epoch nanoseconds
 func NSToTime(ns int64) time.Time {
-	return time.Unix(ns/1000, ns%1000)
+	return time.Unix(ns/1e9, ns%1e9)
 }
 
 // AsGoMap returns map with interface{} values
