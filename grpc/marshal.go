@@ -187,3 +187,22 @@ func fillLabel(dtype pb.DType, msg *pb.Column, column frames.Column) error {
 
 	return nil
 }
+
+func asFrame(msg *pb.Frame) (frames.Frame, error) {
+	labels := pb.AsGoMap(msg.Labels)
+
+	columns := asCols(msg.Columns)
+	indices := asCols(msg.Indices)
+	return frames.NewFrame(columns, indices, labels)
+}
+
+func asCols(cols []*pb.Column) []frames.Column {
+	fcols := make([]frames.Column, len(cols))
+	for i, col := range cols {
+		fcols[i] = &colImpl{
+			msg: col,
+		}
+	}
+
+	return fcols
+}
