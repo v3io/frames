@@ -130,7 +130,7 @@ message ReadRequest {
     // TSDB
     string start = 21;
     string end = 22;
-    string step_duration = 23;
+    string step = 23;
     string aggragators = 24;
 
     // Stream
