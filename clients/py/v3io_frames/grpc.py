@@ -221,7 +221,7 @@ def col2series(col):
     elif col.dtype == fpb.STRING:
         data = pd.Series(col.strings)
     elif col.dtype == fpb.TIME:
-        data = pd.to_datetime(pd.Series(col.times, unit='ns'))
+        data = pd.Series(col.times).astype('datetime64[ns]')
     else:
         raise MessageError('unknown dtype - {}'.format(col.dtype))
 
