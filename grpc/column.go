@@ -209,7 +209,7 @@ func (c *colImpl) Times() ([]time.Time, error) {
 			if c.msg.Kind == pb.Column_LABEL {
 				idx = 0
 			}
-			c.times[i] = pb.NSToTime(c.msg.Times[idx])
+			times[i] = pb.NSToTime(c.msg.Times[idx])
 		}
 
 		c.times = times
