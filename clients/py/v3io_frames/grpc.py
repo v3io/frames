@@ -45,7 +45,7 @@ class Client:
         self.address = address
         self.session = session
 
-    def read(self, backend='', query='', table='', columns=None, filter='',
+    def read(self, backend='', table='', query='', columns=None, filter='',
              group_by='', limit=0, data_format='', row_layout=False,
              max_in_message=0, marker='', **kw):
         """Run a query in nuclio
@@ -54,10 +54,10 @@ class Client:
         ----------
         backend : str
             Backend name
-        query : str
-            Query in SQL format
         table : str
             Table to query (can't be used with query)
+        query : str
+            Query in SQL format
         columns : []str
             List of columns to pass (can't be used with query)
         filter : str
