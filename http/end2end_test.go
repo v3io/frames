@@ -72,7 +72,7 @@ func TestEnd2End(t *testing.T) {
 	time.Sleep(100 * time.Millisecond) // Let server start
 
 	url := fmt.Sprintf("http://localhost:%d", port)
-	client, err := http.NewClient(url, "", nil)
+	client, err := http.NewClient(url, nil)
 	if err != nil {
 		t.Fatal(err)
 	}

@@ -39,13 +39,12 @@ import (
 // Client is v3io streaming client
 type Client struct {
 	URL    string
-	apiKey string
 	logger logger.Logger
 	err    error // last error
 }
 
 // NewClient returns a new HTTP client
-func NewClient(url string, apiKey string, logger logger.Logger) (*Client, error) {
+func NewClient(url string, logger logger.Logger) (*Client, error) {
 	var err error
 	if logger == nil {
 		logger, err = frames.NewLogger("info")
@@ -62,13 +61,8 @@ func NewClient(url string, apiKey string, logger logger.Logger) (*Client, error)
 		return nil, fmt.Errorf("empty URL")
 	}
 
-	if apiKey == "" {
-		apiKey = os.Getenv("V3IO_API_KEY")
-	}
-
 	client := &Client{
 		URL:    url,
-		apiKey: apiKey,
 		logger: logger,
 	}
 
@@ -87,7 +81,6 @@ func (c *Client) Read(request *frames.ReadRequest) (frames.FrameIterator, error)
 		return nil, errors.Wrap(err, "can't create HTTP request")
 	}
 
-	c.addAuth(req)
 	resp, err := http.DefaultClient.Do(req)
 	if err != nil {
 		return nil, errors.Wrap(err, "can't call API")
@@ -127,7 +120,6 @@ func (c *Client) Write(request *frames.WriteRequest) (frames.FrameAppender, erro
 		return nil, errors.Wrap(err, "can't create HTTP request")
 	}
 
-	c.addAuth(req)
 	appender := &streamFrameAppender{
 		writer:  writer,
 		encoder: frames.NewEncoder(writer),
@@ -171,7 +163,6 @@ func (c *Client) jsonCall(path string, request interface{}) error {
 	}
 
 	req.Header.Set("Content-Type", "application/json")
-	c.addAuth(req)
 
 	resp, err := http.DefaultClient.Do(req)
 	if err != nil {
@@ -183,14 +174,6 @@ func (c *Client) jsonCall(path string, request interface{}) error {
 	}
 
 	return nil
-}
-
-func (c *Client) addAuth(req *http.Request) {
-	if c.apiKey == "" {
-		return
-	}
-
-	req.Header.Set("Authorization", c.apiKey)
 }
 
 // streamFrameIterator implements FrameIterator over io.Reader

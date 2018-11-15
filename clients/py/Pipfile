@@ -9,6 +9,7 @@ pandas = ">=0.23.3"
 requests = ">=2.19.1"
 grpcio-tools = ">=1.16.0"
 googleapis-common-protos = ">=1.5.3"
+notebook = "*"
 
 [dev-packages]
 pytest = "*"

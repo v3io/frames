@@ -87,7 +87,6 @@ class patch_requests:
 
 
 def test_read():
-    api_key = 'test api key'
     url = 'https://nuclio.io'
     query = 'SELECT 1'
     data = [
@@ -105,7 +104,7 @@ def test_read():
         },
     ]
 
-    client = new_test_client(url=url, api_key=api_key)
+    client = new_test_client(url=url)
     with patch_requests(data) as patch:
         dfs = client.read(query=query)
 
@@ -278,9 +277,8 @@ def test_bool_col():
     assert col.dtype == bool, 'bad dtype'
 
 
-def new_test_client(url='', session=None, api_key=''):
+def new_test_client(url='', session=None):
     return v3f.HTTPClient(
         url=url or 'http://example.com',
         session=session,
-        api_key=api_key,
     )
