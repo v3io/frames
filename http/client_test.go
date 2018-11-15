@@ -26,12 +26,12 @@ import (
 )
 
 func TestNewClient(t *testing.T) {
-	fn := func(url string, apiKey string) bool {
+	fn := func(url string) bool {
 		if url == "" {
 			return true
 		}
 
-		client, err := NewClient(url, apiKey, nil)
+		client, err := NewClient(url, nil)
 		if err != nil {
 			t.Logf("can't create client - %s", err)
 			return false
@@ -39,11 +39,6 @@ func TestNewClient(t *testing.T) {
 
 		if client.URL != url {
 			t.Logf("URL mismatch: %q != %q", client.URL, url)
-			return false
-		}
-
-		if client.apiKey != apiKey {
-			t.Logf("api key mismatch: %q != %q", client.apiKey, apiKey)
 			return false
 		}
 

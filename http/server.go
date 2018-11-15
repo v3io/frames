@@ -121,8 +121,6 @@ func (s *Server) Start() error {
 }
 
 func (s *Server) handler(ctx *fasthttp.RequestCtx) {
-	// TODO: Check API key
-
 	fn, ok := s.routes[string(ctx.Path())]
 	if !ok {
 		ctx.Error(fmt.Sprintf("unknown path - %q", string(ctx.Path())), http.StatusNotFound)

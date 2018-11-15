@@ -35,7 +35,7 @@ from .pbutils import pb2py
 class Client(object):
     """Client is a nuclio stream HTTP client"""
 
-    def __init__(self, url, session, api_key=''):
+    def __init__(self, url, session):
         """
         Parameters
         ----------
@@ -43,14 +43,11 @@ class Client(object):
             Server URL (if empty will use V3IO_URL environment variable)
         session : Session
             Session information
-        api_key : string
-            API key (if empty will use V3IO_API_KEY environment variable)
         """
         self.url = url or environ.get('FRAMESD_URL')
         if not self.url:
             raise ValueError('missing URL')
 
-        self.api_key = api_key or environ.get('V3IO_API_KEY')
         self.session = session
 
     def read(self, backend='', query='', table='', columns=None, filter='',
@@ -251,9 +248,6 @@ class Client(object):
         headers = {}
         if json:
             headers['Content-Type'] = 'application/json'
-
-        if self.api_key:
-            headers['Authorization'] = self.api_key
 
         return headers
 

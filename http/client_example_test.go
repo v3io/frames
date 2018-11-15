@@ -28,12 +28,10 @@ import (
 )
 
 func ExampleClient() {
-
 	tableName := "example_table"
 	url := "http://localhost:8080"
-	apiKey := "t0ps3cr3t"
 	fmt.Println(">>> connecting")
-	client, err := NewClient(url, apiKey, nil)
+	client, err := NewClient(url, nil)
 	if err != nil {
 		fmt.Printf("can't connect to %q - %s", url, err)
 		return

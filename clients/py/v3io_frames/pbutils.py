@@ -76,6 +76,24 @@ def Session(url='', container='', path='', user='', password='', token=''):
 
     Will populate missing values from environment. Environment variables have
     V3IO_ prefix (e.g. V3IO_URL)
+
+    Parameters
+    ----------
+    url : str
+        Backend URL
+    container : str
+        Container name
+    path : str
+        Path in container
+    user : str
+        Login user
+    password : str
+        Login password
+    token : str
+        Login token
+
+    Returns:
+        A session object
     """
     return fpb.Session(
         url=url or environ.get('V3IO_URL', ''),

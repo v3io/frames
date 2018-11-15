@@ -33,6 +33,15 @@ _time_tz_dt = _ts.dt.tz_localize(pytz.UTC).dtype
 
 class Client:
     def __init__(self, address, session):
+        """Create new client
+
+        Parameters
+        ----------
+        address : str
+            framesd server address
+        session : Session
+            Session object
+        """
         self.address = address
         self.session = session
 

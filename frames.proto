@@ -38,7 +38,7 @@ message Column {
     Kind kind = 1;
     string name = 2;
     DType dtype = 3;
-    int64 size = 4; // used only in SLICE
+    int64 size = 4; // used only in LABEL
     // In slice columns these arrays will be of length 1
     repeated int64 ints = 5;
     repeated double floats = 6;
