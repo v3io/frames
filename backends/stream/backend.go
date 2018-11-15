@@ -21,12 +21,14 @@ such restriction.
 package stream
 
 import (
+	"fmt"
 	"github.com/nuclio/logger"
 	"github.com/pkg/errors"
 	"github.com/v3io/frames"
 	"github.com/v3io/frames/backends"
 	"github.com/v3io/frames/v3ioutils"
 	"github.com/v3io/v3io-go-http"
+	"reflect"
 	"strings"
 )
 
@@ -57,21 +59,22 @@ func (b *Backend) Create(request *frames.CreateRequest) error {
 
 	var isInt bool
 	attrs := request.Attributes()
-	shards := 1
+	shards := int64(1)
 
 	shardsVar, ok := attrs["shards"]
 	if ok {
-		shards, isInt = shardsVar.(int)
+		shards, isInt = shardsVar.(int64)
+		fmt.Println(reflect.TypeOf(shardsVar))
 		if !isInt || shards < 1 {
 			return errors.Errorf("Shards attribute must be a positive integer (got %v)", shardsVar)
 		}
 	}
 
-	retention := 24
+	retention := int64(24)
 	retentionVar, ok := attrs["retention_hours"]
 	if ok {
-		retention, isInt = retentionVar.(int)
-		if !isInt || shards < 1 {
+		retention, isInt = retentionVar.(int64)
+		if !isInt || retention < 1 {
 			return errors.Errorf("retention_hours attribute must be a positive integer (got %v)", retentionVar)
 		}
 	}
@@ -86,7 +89,7 @@ func (b *Backend) Create(request *frames.CreateRequest) error {
 	}
 
 	err = container.Sync.CreateStream(&v3io.CreateStreamInput{
-		Path: request.Table, ShardCount: shards, RetentionPeriodHours: retention})
+		Path: request.Table, ShardCount: int(shards), RetentionPeriodHours: int(retention)})
 	if err != nil {
 		b.logger.ErrorWith("CreateStream failed", "path", request.Table, "err", err)
 	}
