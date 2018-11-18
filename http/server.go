@@ -246,6 +246,10 @@ func (s *Server) handleWrite(ctx *fasthttp.RequestCtx) {
 }
 
 func (s *Server) handleCreate(ctx *fasthttp.RequestCtx) {
+	if !ctx.IsPost() { // ctx.PostBody() blocks on GET
+		ctx.Error("unsupported method", http.StatusMethodNotAllowed)
+	}
+
 	request := &frames.CreateRequest{}
 	if err := json.Unmarshal(ctx.PostBody(), request); err != nil {
 		s.logger.ErrorWith("can't decode request", "error", err)
@@ -262,6 +266,10 @@ func (s *Server) handleCreate(ctx *fasthttp.RequestCtx) {
 }
 
 func (s *Server) handleDelete(ctx *fasthttp.RequestCtx) {
+	if !ctx.IsPost() { // ctx.PostBody() blocks on GET
+		ctx.Error("unsupported method", http.StatusMethodNotAllowed)
+	}
+
 	request := &frames.DeleteRequest{}
 	if err := json.Unmarshal(ctx.PostBody(), request); err != nil {
 		s.logger.ErrorWith("can't decode request", "error", err)
@@ -346,6 +354,26 @@ func (s *Server) handleGrafana(ctx *fasthttp.RequestCtx) {
 	}
 }
 
+func (s *Server) handleExec(ctx *fasthttp.RequestCtx) {
+	if !ctx.IsPost() { // ctx.PostBody() blocks on GET
+		ctx.Error("unsupported method", http.StatusMethodNotAllowed)
+	}
+
+	request := &frames.ExecRequest{}
+	if err := json.Unmarshal(ctx.PostBody(), request); err != nil {
+		s.logger.ErrorWith("can't decode request", "error", err)
+		ctx.Error(fmt.Sprintf("bad request - %s", err), http.StatusBadRequest)
+		return
+	}
+
+	if err := s.api.Exec(request); err != nil {
+		ctx.Error("can't exec", http.StatusInternalServerError)
+		return
+	}
+
+	s.replyOK(ctx)
+}
+
 func (s *Server) initRoutes() {
 	s.routes = map[string]func(*fasthttp.RequestCtx){
 		"/_/config": s.handleConfig,
@@ -355,5 +383,6 @@ func (s *Server) initRoutes() {
 		"/grafana":  s.handleGrafana,
 		"/read":     s.handleRead,
 		"/write":    s.handleWrite,
+		"/exec":     s.handleExec,
 	}
 }

@@ -34,6 +34,11 @@ class FramesStub(object):
         request_serializer=frames__pb2.DeleteRequest.SerializeToString,
         response_deserializer=frames__pb2.DeleteResponse.FromString,
         )
+    self.Exec = channel.unary_unary(
+        '/pb.Frames/Exec',
+        request_serializer=frames__pb2.ExecRequest.SerializeToString,
+        response_deserializer=frames__pb2.ExecResponse.FromString,
+        )
 
 
 class FramesServicer(object):
@@ -68,6 +73,13 @@ class FramesServicer(object):
     context.set_details('Method not implemented!')
     raise NotImplementedError('Method not implemented!')
 
+  def Exec(self, request, context):
+    # missing associated documentation comment in .proto file
+    pass
+    context.set_code(grpc.StatusCode.UNIMPLEMENTED)
+    context.set_details('Method not implemented!')
+    raise NotImplementedError('Method not implemented!')
+
 
 def add_FramesServicer_to_server(servicer, server):
   rpc_method_handlers = {
@@ -90,6 +102,11 @@ def add_FramesServicer_to_server(servicer, server):
           servicer.Delete,
           request_deserializer=frames__pb2.DeleteRequest.FromString,
           response_serializer=frames__pb2.DeleteResponse.SerializeToString,
+      ),
+      'Exec': grpc.unary_unary_rpc_method_handler(
+          servicer.Exec,
+          request_deserializer=frames__pb2.ExecRequest.FromString,
+          response_serializer=frames__pb2.ExecResponse.SerializeToString,
       ),
   }
   generic_handler = grpc.method_handlers_generic_handler(

@@ -21,6 +21,7 @@ such restriction.
 package tsdb
 
 import (
+	"fmt"
 	"strings"
 
 	"github.com/nuclio/logger"
@@ -191,6 +192,12 @@ func (b *Backend) Delete(request *frames.DeleteRequest) error {
 	}
 	return err
 
+}
+
+// Exec executes a command
+func (b *Backend) Exec(request *frames.ExecRequest) error {
+	// FIXME
+	return fmt.Errorf("KV backend does not support Exec")
 }
 
 func (b *Backend) ignoreCreateExists(request *frames.CreateRequest, err error) bool {

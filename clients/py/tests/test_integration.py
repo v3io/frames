@@ -174,6 +174,7 @@ def test_integration(client_cls, addr):
         new_table = 'test-table'
         c.create(backend, new_table, schema=schema)
         c.delete(backend, new_table)
+        c.execute(backend, table, 'ping', {'ival': 1, 'sval': 'two'})
 
 
 @pytest.mark.skipif(not has_go, reason='Go SDK not found')

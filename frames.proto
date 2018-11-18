@@ -192,9 +192,20 @@ message DeleteRequest {
 
 message DeleteResponse {}
 
+message ExecRequest {
+    Session session = 1;
+    string backend = 2; // Name of the backend
+    string table = 3; // Table name (path)
+    string command = 4; // Command to execute
+    map<string, Value> args = 5; // Command arguments
+}
+
+message ExecResponse {}
+
 service Frames {
     rpc Read(ReadRequest) returns (stream Frame) {}
     rpc Write(stream WriteRequest) returns (WriteRespose) {}
     rpc Create(CreateRequest) returns (CreateResponse) {}
     rpc Delete(DeleteRequest) returns (DeleteResponse) {}
+    rpc Exec(ExecRequest) returns (ExecResponse) {}
 }

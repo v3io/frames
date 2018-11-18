@@ -131,6 +131,17 @@ func TestEnd2End(t *testing.T) {
 	}
 
 	testGrafana(t, url, backendName, tableName)
+
+	// Exec
+	execReq := &frames.ExecRequest{
+		Backend: backendName,
+		Table:   tableName,
+		Command: "ping",
+	}
+
+	if err := client.Exec(execReq); err != nil {
+		t.Fatalf("can't exec - %s", err)
+	}
 }
 
 func testGrafana(t *testing.T, baseURL string, backend string, table string) {

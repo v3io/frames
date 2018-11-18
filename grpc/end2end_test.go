@@ -125,6 +125,17 @@ func TestEnd2End(t *testing.T) {
 	if nRows != frame.Len() {
 		t.Fatalf("# of rows mismatch - %d != %d", nRows, frame.Len())
 	}
+
+	// Exec
+	execReq := &frames.ExecRequest{
+		Backend: backendName,
+		Table:   tableName,
+		Command: "ping",
+	}
+
+	if err := client.Exec(execReq); err != nil {
+		t.Fatalf("can't exec - %s", err)
+	}
 }
 
 func makeFrame() (frames.Frame, error) {

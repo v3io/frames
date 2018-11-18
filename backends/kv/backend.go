@@ -71,6 +71,12 @@ func (b *Backend) Delete(request *frames.DeleteRequest) error {
 	// TODO: delete the table directory entry if filter == ""
 }
 
+// Exec executes a command
+func (b *Backend) Exec(request *frames.ExecRequest) error {
+	// FIXME
+	return fmt.Errorf("KV backend does not support Exec")
+}
+
 func (b *Backend) newContainer(session *frames.Session) (*v3io.Container, error) {
 
 	session = frames.InitSessionDefaults(session, b.framesConfig)
