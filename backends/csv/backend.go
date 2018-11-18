@@ -97,7 +97,7 @@ func (b *Backend) Create(request *frames.CreateRequest) error {
 // Delete will delete a table
 func (b *Backend) Delete(request *frames.DeleteRequest) error {
 	csvPath := b.csvPath(request.Table)
-	if !request.Force && !fileExists(csvPath) {
+	if request.IfMissing == frames.FailOnError && !fileExists(csvPath) {
 		return fmt.Errorf("table %q doesn't exist", request.Table)
 	}
 

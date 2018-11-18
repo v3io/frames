@@ -29,6 +29,7 @@ from .dtypes import dtypes, BoolDType
 from .errors import (
     BadRequest, CreateError, DeleteError, MessageError, Error, ReadError
 )
+from .frames_pb2 import FAIL
 from .pbutils import pb2py
 
 
@@ -156,7 +157,8 @@ class Client(object):
 
         return resp.json()
 
-    def create(self, backend, table, attrs=None, schema=None):
+    def create(self, backend, table, attrs=None, schema=None,
+               if_exists=FAIL):
         """Create a table
 
         Parameters
@@ -169,6 +171,8 @@ class Client(object):
             Table attributes
         schema: Schema or None
             Table schema
+        if_exists : int
+            One of FAIL or IGNORE
 
         Raises
         ------
@@ -187,6 +191,7 @@ class Client(object):
             'table': table,
             'attributes': attrs,
             'schema': pb2py(schema),
+            'if_exists': if_exists,
         }
 
         url = self.url + '/create'
@@ -195,7 +200,8 @@ class Client(object):
         if not resp.ok:
             raise CreateError(resp.text)
 
-    def delete(self, backend, table, filter='', force=False, start='', end=''):
+    def delete(self, backend, table, filter='', start='', end='',
+               if_missing=FAIL):
         """Delete a table
 
         Parameters
@@ -206,12 +212,12 @@ class Client(object):
             Table to create
         filter : str
             Filter for selective delete
-        force : bool
-            Force deletion
         start : string
             Delete since start (TSDB/Stream)
         end : string
             Delete up to end (TSDB/Stream)
+        if_missing : int
+            One of FAIL or IGNORE
 
         Raises
         ------
@@ -230,9 +236,9 @@ class Client(object):
             'backend': backend,
             'table': table,
             'filter': filter,
-            'force': force,
             'start': start,
             'end': end,
+            'if_missing': if_missing,
         }
 
         convert_go_times(request, ('start', 'end'))

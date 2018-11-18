@@ -181,7 +181,16 @@ func (b *Backend) Delete(request *frames.DeleteRequest) error {
 		return err
 	}
 
-	return adapter.DeleteDB(delAll, request.Force, start, end)
+	err = adapter.DeleteDB(delAll, false, start, end)
+	if err == nil {
+		return err
+	}
+
+	if tsdbutils.IsNotExistsError(err) && request.IfMissing == frames.IgnoreError {
+		return nil
+	}
+	return err
+
 }
 
 func (b *Backend) ignoreCreateExists(request *frames.CreateRequest, err error) bool {

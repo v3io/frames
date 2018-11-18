@@ -28,7 +28,7 @@ from .errors import (CreateError, DeleteError, MessageError, ReadError,
 from .http import format_go_time
 from .pbutils import pb2py, pb_map
 
-FAIL = fpb.FAIL
+IGNORE, FAIL = fpb.IGNORE, fpb.FAIL
 _ts = pd.Series(pd.Timestamp(0))
 _time_dt = _ts.dtype
 _time_tz_dt = _ts.dt.tz_localize(pytz.UTC).dtype
@@ -185,11 +185,13 @@ class Client:
                 table=table,
                 attribute_map=attrs,
                 schema=schema,
+                if_exists=if_exists,
             )
             stub.Create(request)
 
     @grpc_raise(DeleteError)
-    def delete(self, backend, table, filter='', force=False, start='', end=''):
+    def delete(self, backend, table, filter='', start='', end='',
+               if_missing=FAIL):
         """Delete a table
 
         Parameters
@@ -200,12 +202,12 @@ class Client:
             Table to create
         filter : str
             Filter for selective delete
-        force : bool
-            Force deletion
         start : string
             Delete since start (TSDB/Stream)
         end : string
             Delete up to end (TSDB/Stream)
+        if_missing : int
+            One of IGNORE or FAIL
 
         Raises
         ------
@@ -220,9 +222,9 @@ class Client:
                 backend=backend,
                 table=table,
                 filter=filter,
-                force=force,
                 start=start,
                 end=end,
+                if_missing=if_missing,
             )
             stub.Delete(request)
 
@@ -350,3 +352,7 @@ def time2str(ts):
         return ts
 
     return format_go_time(ts)
+
+
+def is_exists_error(err):
+    return 'A TSDB table already exists' in str(err)

@@ -184,7 +184,7 @@ message DeleteRequest {
     string backend = 2; // Name of the backend
     string table = 3; // Table name (path)
     string filter = 4; // Filter string for selective delete
-    bool force = 5; // Force delete
+    ErrorOptions if_missing = 5; // Ignore error on missing table
     // TSDB and Stream specific fields
     string start = 6;
     string end = 7;
