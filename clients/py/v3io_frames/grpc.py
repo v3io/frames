@@ -12,23 +12,41 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+import warnings
 from datetime import datetime
+from functools import wraps
 
 import grpc
-import pandas as pd
 import numpy as np
+import pandas as pd
 import pytz
-import warnings
 
 from . import frames_pb2 as fpb  # noqa
 from . import frames_pb2_grpc as fgrpc  # noqa
-from .errors import MessageError, WriteError
+from .errors import (CreateError, DeleteError, MessageError, ReadError,
+                     WriteError)
 from .http import format_go_time
-from .pbutils import pb_map, pb2py
+from .pbutils import pb2py, pb_map
 
+IGNORE, FAIL = fpb.IGNORE, fpb.FAIL
 _ts = pd.Series(pd.Timestamp(0))
 _time_dt = _ts.dtype
 _time_tz_dt = _ts.dt.tz_localize(pytz.UTC).dtype
+
+
+def grpc_raise(err_cls):
+    """Re-raise a different type of exception from grpc.RpcError"""
+    def decorator(fn):
+        @wraps(fn)
+        def wrapper(*args, **kw):
+            try:
+                return fn(*args, **kw)
+            except grpc.RpcError as gerr:
+                err = err_cls('error in {}: {}'.format(fn.__name__, gerr))
+                err.cause = gerr
+                raise err
+        return wrapper
+    return decorator
 
 
 class Client:
@@ -45,6 +63,7 @@ class Client:
         self.address = address
         self.session = session
 
+    @grpc_raise(ReadError)
     def read(self, backend='', table='', query='', columns=None, filter='',
              group_by='', limit=0, data_format='', row_layout=False,
              max_in_message=0, marker='', **kw):
@@ -101,6 +120,7 @@ class Client:
             for frame in stub.Read(request):
                 yield frame2df(frame)
 
+    @grpc_raise(WriteError)
     def write(self, backend, table, dfs, expression='', labels=None):
         """Write to table
 
@@ -134,7 +154,8 @@ class Client:
             )
             stub.Write(write_stream(request, dfs))
 
-    def create(self, backend, table, attrs=None, schema=None):
+    @grpc_raise(CreateError)
+    def create(self, backend, table, attrs=None, schema=None, if_exists=FAIL):
         """Create a table
 
         Parameters
@@ -147,6 +168,8 @@ class Client:
             Table attributes
         schema: Schema or None
             Table schema
+        if_exists : int
+            One of IGNORE or FAIL
 
         Raises
         ------
@@ -154,7 +177,6 @@ class Client:
             On request error or backend error
         """
         attrs = pb_map(attrs)
-
         with grpc.insecure_channel(self.address) as channel:
             stub = fgrpc.FramesStub(channel)
             request = fpb.CreateRequest(
@@ -163,10 +185,13 @@ class Client:
                 table=table,
                 attribute_map=attrs,
                 schema=schema,
+                if_exists=if_exists,
             )
             stub.Create(request)
 
-    def delete(self, backend, table, filter='', force=False, start='', end=''):
+    @grpc_raise(DeleteError)
+    def delete(self, backend, table, filter='', start='', end='',
+               if_missing=FAIL):
         """Delete a table
 
         Parameters
@@ -177,12 +202,12 @@ class Client:
             Table to create
         filter : str
             Filter for selective delete
-        force : bool
-            Force deletion
         start : string
             Delete since start (TSDB/Stream)
         end : string
             Delete up to end (TSDB/Stream)
+        if_missing : int
+            One of IGNORE or FAIL
 
         Raises
         ------
@@ -197,9 +222,9 @@ class Client:
                 backend=backend,
                 table=table,
                 filter=filter,
-                force=force,
                 start=start,
                 end=end,
+                if_missing=if_missing,
             )
             stub.Delete(request)
 
@@ -327,3 +352,7 @@ def time2str(ts):
         return ts
 
     return format_go_time(ts)
+
+
+def is_exists_error(err):
+    return 'A TSDB table already exists' in str(err)

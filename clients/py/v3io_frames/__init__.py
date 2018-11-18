@@ -20,8 +20,8 @@ import re
 from .http import Client as HTTPClient  # noqa
 from .grpc import Client as gRPCClient  # noqa
 from .errors import *  # noqa
-from .frames_pb2 import TableSchema as Schema, SchemaKey  # noqa
-from .pbutils import SchemaField, Session # noqa 
+from .frames_pb2 import TableSchema as Schema, SchemaKey, FAIL, IGNORE  # noqa
+from .pbutils import SchemaField, Session  # noqa 
 
 GRPC_PROTOCOL = 'grpc'
 HTTP_PROTOCOL = 'http'

@@ -86,3 +86,9 @@ type SchemaKey = pb.SchemaKey
 
 // Session information
 type Session = pb.Session
+
+// Shortcut for fail/ignore
+const (
+	IgnoreError = pb.ErrorOptions_IGNORE
+	FailOnError = pb.ErrorOptions_FAIL
+)
