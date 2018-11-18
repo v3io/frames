@@ -33,7 +33,7 @@ df = pd.read_csv(csv_file, parse_dates=['DATE'])
 # "as-is" to write
 dfs = [df[i*size:i*size+size] for i in range((len(df)//size)+1)]
 
-client = v3f.Client('grpc', 'localhost:8080')
+client = v3f.Client('localhost:8081')
 
 print('Writing')
 out = client.write('weather', table, dfs)
