@@ -27,7 +27,8 @@ import requests
 
 from .dtypes import dtypes, BoolDType
 from .errors import (
-    BadRequest, CreateError, DeleteError, MessageError, Error, ReadError
+    BadRequest, CreateError, DeleteError, MessageError, Error, ReadError,
+    ExecuteError
 )
 from .frames_pb2 import FAIL
 from .pbutils import pb2py
@@ -179,12 +180,7 @@ class Client(object):
         CreateError:
             On request error or backend error
         """
-        if not backend:
-            raise CreateError('empty backend')
-
-        if not table:
-            raise CreateError('empty table')
-
+        self._validate_request(backend, table, CreateError)
         request = {
             'session': pb2py(self.session),
             'backend': backend,
@@ -224,13 +220,7 @@ class Client(object):
         DeleteError
             On request error or backend error
         """
-
-        if not backend:
-            raise DeleteError('empty backend')
-
-        if not table:
-            raise DeleteError('empty table')
-
+        self._validate_request(backend, table, DeleteError)
         request = {
             'session': pb2py(self.session),
             'backend': backend,
@@ -249,6 +239,40 @@ class Client(object):
         resp = requests.post(url, headers=headers, json=request)
         if not resp.ok:
             raise CreateError(resp.text)
+
+    def execute(self, backend, table, command='', args=None):
+        """Execute a command on backend
+
+        Parameters
+        ----------
+        backend : str
+            Backend name
+        table : str
+            Table to create
+        command : str
+            Command to execute
+        args : dict
+            Command arguments
+
+        Raises
+        ------
+        ExecuteError
+            On request error or backend error
+        """
+        self._validate_request(backend, table, ExecuteError)
+        request = {
+            'session': pb2py(self.session),
+            'backend': backend,
+            'table': table,
+            'command': command,
+            'args': args or {},
+        }
+
+        url = self.url + '/exec'
+        headers = self._headers()
+        resp = requests.post(url, headers=headers, json=request)
+        if not resp.ok:
+            raise ExecuteError(resp.text)
 
     def _headers(self, json=False):
         headers = {}
@@ -392,6 +416,13 @@ class Client(object):
         while i < len(df):
             yield df[i:i+size]
             i += size
+
+    def _validate_request(self, backend, table, err_cls):
+        if not backend:
+            raise err_cls('empty backend')
+
+        if not table:
+            raise err_cls('empty table')
 
 
 def datetime_fromnsec(sec, nsec):

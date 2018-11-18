@@ -30,4 +30,6 @@ type Client interface {
 	Create(request *CreateRequest) error
 	// Delete deletes data or table
 	Delete(request *DeleteRequest) error
+	// Exec executes a command on the backend
+	Exec(request *ExecRequest) error
 }

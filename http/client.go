@@ -43,6 +43,11 @@ type Client struct {
 	err    error // last error
 }
 
+var (
+	// Make sure we're implementing frames.Client
+	_ frames.Client = &Client{}
+)
+
 // NewClient returns a new HTTP client
 func NewClient(url string, logger logger.Logger) (*Client, error) {
 	var err error
@@ -148,6 +153,11 @@ func (c *Client) Delete(request *frames.DeleteRequest) error {
 // Create creates a table
 func (c *Client) Create(request *frames.CreateRequest) error {
 	return c.jsonCall("/create", request)
+}
+
+// Exec executes a command
+func (c *Client) Exec(request *frames.ExecRequest) error {
+	return c.jsonCall("/exec", request)
 }
 
 func (c *Client) jsonCall(path string, request interface{}) error {

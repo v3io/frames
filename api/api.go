@@ -211,6 +211,29 @@ func (api *API) Delete(request *frames.DeleteRequest) error {
 	return nil
 }
 
+// Exec executes a command on the backend
+func (api *API) Exec(request *frames.ExecRequest) error {
+	if request.Backend == "" || request.Table == "" {
+		msg := "missing parameters"
+		api.logger.ErrorWith(msg, "request", request)
+		return fmt.Errorf(msg)
+	}
+
+	api.logger.DebugWith("exec", "request", request)
+	backend, ok := api.backends[request.Backend]
+	if !ok {
+		api.logger.ErrorWith("unkown backend", "name", request.Backend)
+		return fmt.Errorf("unknown backend - %s", request.Backend)
+	}
+
+	if err := backend.Exec(request); err != nil {
+		api.logger.ErrorWith("error deleting table", "error", err, "request", request)
+		return errors.Wrap(err, "can't delete")
+	}
+
+	return nil
+}
+
 func (api *API) populateQuery(request *frames.ReadRequest) error {
 	sqlQuery, err := frames.ParseSQL(request.Query)
 	if err != nil {

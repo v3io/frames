@@ -39,6 +39,11 @@ type Client struct {
 	session *frames.Session
 }
 
+var (
+	// Make sure we're implementing frames.Client
+	_ frames.Client = &Client{}
+)
+
 // NewClient returns a new gRPC client
 func NewClient(address string, session *frames.Session, logger logger.Logger) (*Client, error) {
 	conn, err := grpc.Dial(address, grpc.WithInsecure())
@@ -133,6 +138,16 @@ func (c *Client) Delete(request *frames.DeleteRequest) error {
 	}
 
 	_, err := c.client.Delete(context.Background(), request)
+	return err
+}
+
+// Exec executes a command on the backend
+func (c *Client) Exec(request *frames.ExecRequest) error {
+	if request.Session == nil {
+		request.Session = c.session
+	}
+
+	_, err := c.client.Exec(context.Background(), request)
 	return err
 }
 

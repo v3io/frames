@@ -23,8 +23,9 @@ import pytz
 
 from . import frames_pb2 as fpb  # noqa
 from . import frames_pb2_grpc as fgrpc  # noqa
-from .errors import (CreateError, DeleteError, MessageError, ReadError,
-                     WriteError)
+from .errors import (
+    CreateError, DeleteError, MessageError, ReadError, WriteError,
+    ExecuteError)
 from .http import format_go_time
 from .pbutils import pb2py, pb_map
 
@@ -227,6 +228,38 @@ class Client:
                 if_missing=if_missing,
             )
             stub.Delete(request)
+
+    @grpc_raise(ExecuteError)
+    def execute(self, backend, table, command='', args=None):
+        """Execute a command
+
+        Parameters
+        ----------
+        backend : str
+            Backend name
+        table : str
+            Table to create
+        command : str
+            Command to execute
+        args : dict
+            Command arguments
+
+        Raises
+        ------
+        ExecuteError
+            On request error or backend error
+        """
+        args = pb_map(args)
+        with grpc.insecure_channel(self.address) as channel:
+            stub = fgrpc.FramesStub(channel)
+            request = fpb.ExecRequest(
+                session=self.session,
+                backend=backend,
+                table=table,
+                command=command,
+                args=args,
+            )
+            stub.Exec(request)
 
 
 def frame2df(frame):

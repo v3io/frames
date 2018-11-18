@@ -233,3 +233,12 @@ func (s *Server) Delete(ctx context.Context, req *pb.DeleteRequest) (*pb.DeleteR
 
 	return &pb.DeleteResponse{}, nil
 }
+
+// Exec executes a command
+func (s *Server) Exec(ctx context.Context, req *pb.ExecRequest) (*pb.ExecResponse, error) {
+	if err := s.api.Exec(req); err != nil {
+		return nil, err
+	}
+
+	return &pb.ExecResponse{}, nil
+}

@@ -44,3 +44,7 @@ class CreateError(Error):
 
 class DeleteError(Error):
     """An error in table deletion"""
+
+
+class ExecuteError(Error):
+    """An error in executing command"""

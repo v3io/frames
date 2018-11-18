@@ -33,6 +33,7 @@ type DataBackend interface {
 	Write(request *WriteRequest) (FrameAppender, error) // TODO: use Appender for write streaming
 	Create(request *CreateRequest) error
 	Delete(request *DeleteRequest) error
+	Exec(request *ExecRequest) error
 }
 
 // FrameIterator iterates over frames
@@ -92,3 +93,6 @@ const (
 	IgnoreError = pb.ErrorOptions_IGNORE
 	FailOnError = pb.ErrorOptions_FAIL
 )
+
+// ExecRequest is execution request
+type ExecRequest = pb.ExecRequest

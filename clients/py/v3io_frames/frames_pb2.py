@@ -20,7 +20,7 @@ DESCRIPTOR = _descriptor.FileDescriptor(
   package='pb',
   syntax='proto3',
   serialized_options=None,
-  serialized_pb=_b('\n\x0c\x66rames.proto\x12\x02pb\"\xc8\x01\n\x06\x43olumn\x12\x1d\n\x04kind\x18\x01 \x01(\x0e\x32\x0f.pb.Column.Kind\x12\x0c\n\x04name\x18\x02 \x01(\t\x12\x18\n\x05\x64type\x18\x03 \x01(\x0e\x32\t.pb.DType\x12\x0c\n\x04size\x18\x04 \x01(\x03\x12\x0c\n\x04ints\x18\x05 \x03(\x03\x12\x0e\n\x06\x66loats\x18\x06 \x03(\x01\x12\x0f\n\x07strings\x18\x07 \x03(\t\x12\r\n\x05times\x18\x08 \x03(\x03\x12\r\n\x05\x62ools\x18\t \x03(\x08\"\x1c\n\x04Kind\x12\t\n\x05SLICE\x10\x00\x12\t\n\x05LABEL\x10\x01\"`\n\x05Value\x12\x0e\n\x04ival\x18\x01 \x01(\x03H\x00\x12\x0e\n\x04\x66val\x18\x02 \x01(\x01H\x00\x12\x0e\n\x04sval\x18\x03 \x01(\tH\x00\x12\x0e\n\x04tval\x18\x04 \x01(\x03H\x00\x12\x0e\n\x04\x62val\x18\x05 \x01(\x08H\x00\x42\x07\n\x05value\"\xa2\x01\n\x05\x46rame\x12\x1b\n\x07\x63olumns\x18\x01 \x03(\x0b\x32\n.pb.Column\x12\x1b\n\x07indices\x18\x02 \x03(\x0b\x32\n.pb.Column\x12%\n\x06labels\x18\x03 \x03(\x0b\x32\x15.pb.Frame.LabelsEntry\x1a\x38\n\x0bLabelsEntry\x12\x0b\n\x03key\x18\x01 \x01(\t\x12\x18\n\x05value\x18\x02 \x01(\x0b\x32\t.pb.Value:\x02\x38\x01\"\xc5\x01\n\x0bSchemaField\x12\x0c\n\x04name\x18\x01 \x01(\t\x12\x0b\n\x03\x64oc\x18\x02 \x01(\t\x12\x1a\n\x07\x64\x65\x66\x61ult\x18\x03 \x01(\x0b\x32\t.pb.Value\x12\x0c\n\x04type\x18\x04 \x01(\t\x12\x33\n\nproperties\x18\x05 \x03(\x0b\x32\x1f.pb.SchemaField.PropertiesEntry\x1a<\n\x0fPropertiesEntry\x12\x0b\n\x03key\x18\x01 \x01(\t\x12\x18\n\x05value\x18\x02 \x01(\x0b\x32\t.pb.Value:\x02\x38\x01\"6\n\tSchemaKey\x12\x14\n\x0csharding_key\x18\x01 \x03(\t\x12\x13\n\x0bsorting_key\x18\x02 \x03(\t\"\x97\x01\n\x0bTableSchema\x12\x0c\n\x04type\x18\x01 \x01(\t\x12\x11\n\tnamespace\x18\x02 \x01(\t\x12\x0c\n\x04name\x18\x03 \x01(\t\x12\x0b\n\x03\x64oc\x18\x04 \x01(\t\x12\x0f\n\x07\x61liases\x18\x05 \x03(\t\x12\x1f\n\x06\x66ields\x18\x06 \x03(\x0b\x32\x0f.pb.SchemaField\x12\x1a\n\x03key\x18\x07 \x01(\x0b\x32\r.pb.SchemaKey\"\x0c\n\nJoinStruct\"f\n\x07Session\x12\x0b\n\x03url\x18\x01 \x01(\t\x12\x11\n\tcontainer\x18\x02 \x01(\t\x12\x0c\n\x04path\x18\x03 \x01(\t\x12\x0c\n\x04user\x18\x04 \x01(\t\x12\x10\n\x08password\x18\x05 \x01(\t\x12\r\n\x05token\x18\x06 \x01(\t\"\xad\x04\n\x0bReadRequest\x12\x1c\n\x07session\x18\x01 \x01(\x0b\x32\x0b.pb.Session\x12\x0f\n\x07\x62\x61\x63kend\x18\x02 \x01(\t\x12\x1f\n\x06schema\x18\x03 \x01(\x0b\x32\x0f.pb.TableSchema\x12\x13\n\x0b\x64\x61ta_format\x18\x04 \x01(\t\x12\x12\n\nrow_layout\x18\x05 \x01(\x08\x12\x13\n\x0bmulti_index\x18\x06 \x01(\x08\x12\r\n\x05query\x18\x07 \x01(\t\x12\r\n\x05table\x18\x08 \x01(\t\x12\x0f\n\x07\x63olumns\x18\t \x03(\t\x12\x0e\n\x06\x66ilter\x18\n \x01(\t\x12\x10\n\x08group_by\x18\x0b \x01(\t\x12\x1c\n\x04join\x18\x0c \x03(\x0b\x32\x0e.pb.JoinStruct\x12\r\n\x05limit\x18\r \x01(\x03\x12\x15\n\rmessage_limit\x18\x0e \x01(\x03\x12\x0e\n\x06marker\x18\x0f \x01(\t\x12\x10\n\x08segments\x18\x10 \x03(\x03\x12\x17\n\x0ftotoal_segments\x18\x11 \x01(\x03\x12\x15\n\rsharding_keys\x18\x12 \x03(\t\x12\x1c\n\x14sort_key_range_start\x18\x13 \x01(\t\x12\x1a\n\x12sort_key_range_end\x18\x14 \x01(\t\x12\r\n\x05start\x18\x15 \x01(\t\x12\x0b\n\x03\x65nd\x18\x16 \x01(\t\x12\x0c\n\x04step\x18\x17 \x01(\t\x12\x13\n\x0b\x61ggragators\x18\x18 \x01(\t\x12\x0c\n\x04seek\x18\x19 \x01(\t\x12\x10\n\x08shard_id\x18\x1a \x01(\t\x12\x10\n\x08sequence\x18\x1b \x01(\x03\"\x96\x01\n\x13InitialWriteRequest\x12\x1c\n\x07session\x18\x01 \x01(\x0b\x32\x0b.pb.Session\x12\x0f\n\x07\x62\x61\x63kend\x18\x02 \x01(\t\x12\r\n\x05table\x18\x03 \x01(\t\x12\x1f\n\x0cinitial_data\x18\x04 \x01(\x0b\x32\t.pb.Frame\x12\x12\n\nexpression\x18\x05 \x01(\t\x12\x0c\n\x04more\x18\x06 \x01(\x08\"^\n\x0cWriteRequest\x12*\n\x07request\x18\x01 \x01(\x0b\x32\x17.pb.InitialWriteRequestH\x00\x12\x1a\n\x05\x66rame\x18\x02 \x01(\x0b\x32\t.pb.FrameH\x00\x42\x06\n\x04type\",\n\x0cWriteRespose\x12\x0e\n\x06\x66rames\x18\x01 \x01(\x03\x12\x0c\n\x04rows\x18\x02 \x01(\x03\"\x8f\x02\n\rCreateRequest\x12\x1c\n\x07session\x18\x01 \x01(\x0b\x32\x0b.pb.Session\x12\x0f\n\x07\x62\x61\x63kend\x18\x02 \x01(\t\x12\r\n\x05table\x18\x03 \x01(\t\x12:\n\rattribute_map\x18\x04 \x03(\x0b\x32#.pb.CreateRequest.AttributeMapEntry\x12\x1f\n\x06schema\x18\x05 \x01(\x0b\x32\x0f.pb.TableSchema\x12#\n\tif_exists\x18\x06 \x01(\x0e\x32\x10.pb.ErrorOptions\x1a>\n\x11\x41ttributeMapEntry\x12\x0b\n\x03key\x18\x01 \x01(\t\x12\x18\n\x05value\x18\x02 \x01(\x0b\x32\t.pb.Value:\x02\x38\x01\"\x10\n\x0e\x43reateResponse\"\x9f\x01\n\rDeleteRequest\x12\x1c\n\x07session\x18\x01 \x01(\x0b\x32\x0b.pb.Session\x12\x0f\n\x07\x62\x61\x63kend\x18\x02 \x01(\t\x12\r\n\x05table\x18\x03 \x01(\t\x12\x0e\n\x06\x66ilter\x18\x04 \x01(\t\x12$\n\nif_missing\x18\x05 \x01(\x0e\x32\x10.pb.ErrorOptions\x12\r\n\x05start\x18\x06 \x01(\t\x12\x0b\n\x03\x65nd\x18\x07 \x01(\t\"\x10\n\x0e\x44\x65leteResponse*B\n\x05\x44Type\x12\x0b\n\x07INTEGER\x10\x00\x12\t\n\x05\x46LOAT\x10\x01\x12\n\n\x06STRING\x10\x02\x12\x08\n\x04TIME\x10\x03\x12\x0b\n\x07\x42OOLEAN\x10\x04*$\n\x0c\x45rrorOptions\x12\x08\n\x04\x46\x41IL\x10\x00\x12\n\n\x06IGNORE\x10\x01\x32\xc7\x01\n\x06\x46rames\x12&\n\x04Read\x12\x0f.pb.ReadRequest\x1a\t.pb.Frame\"\x00\x30\x01\x12/\n\x05Write\x12\x10.pb.WriteRequest\x1a\x10.pb.WriteRespose\"\x00(\x01\x12\x31\n\x06\x43reate\x12\x11.pb.CreateRequest\x1a\x12.pb.CreateResponse\"\x00\x12\x31\n\x06\x44\x65lete\x12\x11.pb.DeleteRequest\x1a\x12.pb.DeleteResponse\"\x00\x62\x06proto3')
+  serialized_pb=_b('\n\x0c\x66rames.proto\x12\x02pb\"\xc8\x01\n\x06\x43olumn\x12\x1d\n\x04kind\x18\x01 \x01(\x0e\x32\x0f.pb.Column.Kind\x12\x0c\n\x04name\x18\x02 \x01(\t\x12\x18\n\x05\x64type\x18\x03 \x01(\x0e\x32\t.pb.DType\x12\x0c\n\x04size\x18\x04 \x01(\x03\x12\x0c\n\x04ints\x18\x05 \x03(\x03\x12\x0e\n\x06\x66loats\x18\x06 \x03(\x01\x12\x0f\n\x07strings\x18\x07 \x03(\t\x12\r\n\x05times\x18\x08 \x03(\x03\x12\r\n\x05\x62ools\x18\t \x03(\x08\"\x1c\n\x04Kind\x12\t\n\x05SLICE\x10\x00\x12\t\n\x05LABEL\x10\x01\"`\n\x05Value\x12\x0e\n\x04ival\x18\x01 \x01(\x03H\x00\x12\x0e\n\x04\x66val\x18\x02 \x01(\x01H\x00\x12\x0e\n\x04sval\x18\x03 \x01(\tH\x00\x12\x0e\n\x04tval\x18\x04 \x01(\x03H\x00\x12\x0e\n\x04\x62val\x18\x05 \x01(\x08H\x00\x42\x07\n\x05value\"\xa2\x01\n\x05\x46rame\x12\x1b\n\x07\x63olumns\x18\x01 \x03(\x0b\x32\n.pb.Column\x12\x1b\n\x07indices\x18\x02 \x03(\x0b\x32\n.pb.Column\x12%\n\x06labels\x18\x03 \x03(\x0b\x32\x15.pb.Frame.LabelsEntry\x1a\x38\n\x0bLabelsEntry\x12\x0b\n\x03key\x18\x01 \x01(\t\x12\x18\n\x05value\x18\x02 \x01(\x0b\x32\t.pb.Value:\x02\x38\x01\"\xc5\x01\n\x0bSchemaField\x12\x0c\n\x04name\x18\x01 \x01(\t\x12\x0b\n\x03\x64oc\x18\x02 \x01(\t\x12\x1a\n\x07\x64\x65\x66\x61ult\x18\x03 \x01(\x0b\x32\t.pb.Value\x12\x0c\n\x04type\x18\x04 \x01(\t\x12\x33\n\nproperties\x18\x05 \x03(\x0b\x32\x1f.pb.SchemaField.PropertiesEntry\x1a<\n\x0fPropertiesEntry\x12\x0b\n\x03key\x18\x01 \x01(\t\x12\x18\n\x05value\x18\x02 \x01(\x0b\x32\t.pb.Value:\x02\x38\x01\"6\n\tSchemaKey\x12\x14\n\x0csharding_key\x18\x01 \x03(\t\x12\x13\n\x0bsorting_key\x18\x02 \x03(\t\"\x97\x01\n\x0bTableSchema\x12\x0c\n\x04type\x18\x01 \x01(\t\x12\x11\n\tnamespace\x18\x02 \x01(\t\x12\x0c\n\x04name\x18\x03 \x01(\t\x12\x0b\n\x03\x64oc\x18\x04 \x01(\t\x12\x0f\n\x07\x61liases\x18\x05 \x03(\t\x12\x1f\n\x06\x66ields\x18\x06 \x03(\x0b\x32\x0f.pb.SchemaField\x12\x1a\n\x03key\x18\x07 \x01(\x0b\x32\r.pb.SchemaKey\"\x0c\n\nJoinStruct\"f\n\x07Session\x12\x0b\n\x03url\x18\x01 \x01(\t\x12\x11\n\tcontainer\x18\x02 \x01(\t\x12\x0c\n\x04path\x18\x03 \x01(\t\x12\x0c\n\x04user\x18\x04 \x01(\t\x12\x10\n\x08password\x18\x05 \x01(\t\x12\r\n\x05token\x18\x06 \x01(\t\"\xad\x04\n\x0bReadRequest\x12\x1c\n\x07session\x18\x01 \x01(\x0b\x32\x0b.pb.Session\x12\x0f\n\x07\x62\x61\x63kend\x18\x02 \x01(\t\x12\x1f\n\x06schema\x18\x03 \x01(\x0b\x32\x0f.pb.TableSchema\x12\x13\n\x0b\x64\x61ta_format\x18\x04 \x01(\t\x12\x12\n\nrow_layout\x18\x05 \x01(\x08\x12\x13\n\x0bmulti_index\x18\x06 \x01(\x08\x12\r\n\x05query\x18\x07 \x01(\t\x12\r\n\x05table\x18\x08 \x01(\t\x12\x0f\n\x07\x63olumns\x18\t \x03(\t\x12\x0e\n\x06\x66ilter\x18\n \x01(\t\x12\x10\n\x08group_by\x18\x0b \x01(\t\x12\x1c\n\x04join\x18\x0c \x03(\x0b\x32\x0e.pb.JoinStruct\x12\r\n\x05limit\x18\r \x01(\x03\x12\x15\n\rmessage_limit\x18\x0e \x01(\x03\x12\x0e\n\x06marker\x18\x0f \x01(\t\x12\x10\n\x08segments\x18\x10 \x03(\x03\x12\x17\n\x0ftotoal_segments\x18\x11 \x01(\x03\x12\x15\n\rsharding_keys\x18\x12 \x03(\t\x12\x1c\n\x14sort_key_range_start\x18\x13 \x01(\t\x12\x1a\n\x12sort_key_range_end\x18\x14 \x01(\t\x12\r\n\x05start\x18\x15 \x01(\t\x12\x0b\n\x03\x65nd\x18\x16 \x01(\t\x12\x0c\n\x04step\x18\x17 \x01(\t\x12\x13\n\x0b\x61ggragators\x18\x18 \x01(\t\x12\x0c\n\x04seek\x18\x19 \x01(\t\x12\x10\n\x08shard_id\x18\x1a \x01(\t\x12\x10\n\x08sequence\x18\x1b \x01(\x03\"\x96\x01\n\x13InitialWriteRequest\x12\x1c\n\x07session\x18\x01 \x01(\x0b\x32\x0b.pb.Session\x12\x0f\n\x07\x62\x61\x63kend\x18\x02 \x01(\t\x12\r\n\x05table\x18\x03 \x01(\t\x12\x1f\n\x0cinitial_data\x18\x04 \x01(\x0b\x32\t.pb.Frame\x12\x12\n\nexpression\x18\x05 \x01(\t\x12\x0c\n\x04more\x18\x06 \x01(\x08\"^\n\x0cWriteRequest\x12*\n\x07request\x18\x01 \x01(\x0b\x32\x17.pb.InitialWriteRequestH\x00\x12\x1a\n\x05\x66rame\x18\x02 \x01(\x0b\x32\t.pb.FrameH\x00\x42\x06\n\x04type\",\n\x0cWriteRespose\x12\x0e\n\x06\x66rames\x18\x01 \x01(\x03\x12\x0c\n\x04rows\x18\x02 \x01(\x03\"\x8f\x02\n\rCreateRequest\x12\x1c\n\x07session\x18\x01 \x01(\x0b\x32\x0b.pb.Session\x12\x0f\n\x07\x62\x61\x63kend\x18\x02 \x01(\t\x12\r\n\x05table\x18\x03 \x01(\t\x12:\n\rattribute_map\x18\x04 \x03(\x0b\x32#.pb.CreateRequest.AttributeMapEntry\x12\x1f\n\x06schema\x18\x05 \x01(\x0b\x32\x0f.pb.TableSchema\x12#\n\tif_exists\x18\x06 \x01(\x0e\x32\x10.pb.ErrorOptions\x1a>\n\x11\x41ttributeMapEntry\x12\x0b\n\x03key\x18\x01 \x01(\t\x12\x18\n\x05value\x18\x02 \x01(\x0b\x32\t.pb.Value:\x02\x38\x01\"\x10\n\x0e\x43reateResponse\"\x9f\x01\n\rDeleteRequest\x12\x1c\n\x07session\x18\x01 \x01(\x0b\x32\x0b.pb.Session\x12\x0f\n\x07\x62\x61\x63kend\x18\x02 \x01(\t\x12\r\n\x05table\x18\x03 \x01(\t\x12\x0e\n\x06\x66ilter\x18\x04 \x01(\t\x12$\n\nif_missing\x18\x05 \x01(\x0e\x32\x10.pb.ErrorOptions\x12\r\n\x05start\x18\x06 \x01(\t\x12\x0b\n\x03\x65nd\x18\x07 \x01(\t\"\x10\n\x0e\x44\x65leteResponse\"\xbd\x01\n\x0b\x45xecRequest\x12\x1c\n\x07session\x18\x01 \x01(\x0b\x32\x0b.pb.Session\x12\x0f\n\x07\x62\x61\x63kend\x18\x02 \x01(\t\x12\r\n\x05table\x18\x03 \x01(\t\x12\x0f\n\x07\x63ommand\x18\x04 \x01(\t\x12\'\n\x04\x61rgs\x18\x05 \x03(\x0b\x32\x19.pb.ExecRequest.ArgsEntry\x1a\x36\n\tArgsEntry\x12\x0b\n\x03key\x18\x01 \x01(\t\x12\x18\n\x05value\x18\x02 \x01(\x0b\x32\t.pb.Value:\x02\x38\x01\"\x0e\n\x0c\x45xecResponse*B\n\x05\x44Type\x12\x0b\n\x07INTEGER\x10\x00\x12\t\n\x05\x46LOAT\x10\x01\x12\n\n\x06STRING\x10\x02\x12\x08\n\x04TIME\x10\x03\x12\x0b\n\x07\x42OOLEAN\x10\x04*$\n\x0c\x45rrorOptions\x12\x08\n\x04\x46\x41IL\x10\x00\x12\n\n\x06IGNORE\x10\x01\x32\xf4\x01\n\x06\x46rames\x12&\n\x04Read\x12\x0f.pb.ReadRequest\x1a\t.pb.Frame\"\x00\x30\x01\x12/\n\x05Write\x12\x10.pb.WriteRequest\x1a\x10.pb.WriteRespose\"\x00(\x01\x12\x31\n\x06\x43reate\x12\x11.pb.CreateRequest\x1a\x12.pb.CreateResponse\"\x00\x12\x31\n\x06\x44\x65lete\x12\x11.pb.DeleteRequest\x1a\x12.pb.DeleteResponse\"\x00\x12+\n\x04\x45xec\x12\x0f.pb.ExecRequest\x1a\x10.pb.ExecResponse\"\x00\x62\x06proto3')
 )
 
 _DTYPE = _descriptor.EnumDescriptor(
@@ -52,8 +52,8 @@ _DTYPE = _descriptor.EnumDescriptor(
   ],
   containing_type=None,
   serialized_options=None,
-  serialized_start=2341,
-  serialized_end=2407,
+  serialized_start=2549,
+  serialized_end=2615,
 )
 _sym_db.RegisterEnumDescriptor(_DTYPE)
 
@@ -75,8 +75,8 @@ _ERROROPTIONS = _descriptor.EnumDescriptor(
   ],
   containing_type=None,
   serialized_options=None,
-  serialized_start=2409,
-  serialized_end=2445,
+  serialized_start=2617,
+  serialized_end=2653,
 )
 _sym_db.RegisterEnumDescriptor(_ERROROPTIONS)
 
@@ -1223,6 +1223,126 @@ _DELETERESPONSE = _descriptor.Descriptor(
   serialized_end=2339,
 )
 
+
+_EXECREQUEST_ARGSENTRY = _descriptor.Descriptor(
+  name='ArgsEntry',
+  full_name='pb.ExecRequest.ArgsEntry',
+  filename=None,
+  file=DESCRIPTOR,
+  containing_type=None,
+  fields=[
+    _descriptor.FieldDescriptor(
+      name='key', full_name='pb.ExecRequest.ArgsEntry.key', index=0,
+      number=1, type=9, cpp_type=9, label=1,
+      has_default_value=False, default_value=_b("").decode('utf-8'),
+      message_type=None, enum_type=None, containing_type=None,
+      is_extension=False, extension_scope=None,
+      serialized_options=None, file=DESCRIPTOR),
+    _descriptor.FieldDescriptor(
+      name='value', full_name='pb.ExecRequest.ArgsEntry.value', index=1,
+      number=2, type=11, cpp_type=10, label=1,
+      has_default_value=False, default_value=None,
+      message_type=None, enum_type=None, containing_type=None,
+      is_extension=False, extension_scope=None,
+      serialized_options=None, file=DESCRIPTOR),
+  ],
+  extensions=[
+  ],
+  nested_types=[],
+  enum_types=[
+  ],
+  serialized_options=_b('8\001'),
+  is_extendable=False,
+  syntax='proto3',
+  extension_ranges=[],
+  oneofs=[
+  ],
+  serialized_start=2477,
+  serialized_end=2531,
+)
+
+_EXECREQUEST = _descriptor.Descriptor(
+  name='ExecRequest',
+  full_name='pb.ExecRequest',
+  filename=None,
+  file=DESCRIPTOR,
+  containing_type=None,
+  fields=[
+    _descriptor.FieldDescriptor(
+      name='session', full_name='pb.ExecRequest.session', index=0,
+      number=1, type=11, cpp_type=10, label=1,
+      has_default_value=False, default_value=None,
+      message_type=None, enum_type=None, containing_type=None,
+      is_extension=False, extension_scope=None,
+      serialized_options=None, file=DESCRIPTOR),
+    _descriptor.FieldDescriptor(
+      name='backend', full_name='pb.ExecRequest.backend', index=1,
+      number=2, type=9, cpp_type=9, label=1,
+      has_default_value=False, default_value=_b("").decode('utf-8'),
+      message_type=None, enum_type=None, containing_type=None,
+      is_extension=False, extension_scope=None,
+      serialized_options=None, file=DESCRIPTOR),
+    _descriptor.FieldDescriptor(
+      name='table', full_name='pb.ExecRequest.table', index=2,
+      number=3, type=9, cpp_type=9, label=1,
+      has_default_value=False, default_value=_b("").decode('utf-8'),
+      message_type=None, enum_type=None, containing_type=None,
+      is_extension=False, extension_scope=None,
+      serialized_options=None, file=DESCRIPTOR),
+    _descriptor.FieldDescriptor(
+      name='command', full_name='pb.ExecRequest.command', index=3,
+      number=4, type=9, cpp_type=9, label=1,
+      has_default_value=False, default_value=_b("").decode('utf-8'),
+      message_type=None, enum_type=None, containing_type=None,
+      is_extension=False, extension_scope=None,
+      serialized_options=None, file=DESCRIPTOR),
+    _descriptor.FieldDescriptor(
+      name='args', full_name='pb.ExecRequest.args', index=4,
+      number=5, type=11, cpp_type=10, label=3,
+      has_default_value=False, default_value=[],
+      message_type=None, enum_type=None, containing_type=None,
+      is_extension=False, extension_scope=None,
+      serialized_options=None, file=DESCRIPTOR),
+  ],
+  extensions=[
+  ],
+  nested_types=[_EXECREQUEST_ARGSENTRY, ],
+  enum_types=[
+  ],
+  serialized_options=None,
+  is_extendable=False,
+  syntax='proto3',
+  extension_ranges=[],
+  oneofs=[
+  ],
+  serialized_start=2342,
+  serialized_end=2531,
+)
+
+
+_EXECRESPONSE = _descriptor.Descriptor(
+  name='ExecResponse',
+  full_name='pb.ExecResponse',
+  filename=None,
+  file=DESCRIPTOR,
+  containing_type=None,
+  fields=[
+  ],
+  extensions=[
+  ],
+  nested_types=[],
+  enum_types=[
+  ],
+  serialized_options=None,
+  is_extendable=False,
+  syntax='proto3',
+  extension_ranges=[],
+  oneofs=[
+  ],
+  serialized_start=2533,
+  serialized_end=2547,
+)
+
 _COLUMN.fields_by_name['kind'].enum_type = _COLUMN_KIND
 _COLUMN.fields_by_name['dtype'].enum_type = _DTYPE
 _COLUMN_KIND.containing_type = _COLUMN
@@ -1273,6 +1393,10 @@ _CREATEREQUEST.fields_by_name['schema'].message_type = _TABLESCHEMA
 _CREATEREQUEST.fields_by_name['if_exists'].enum_type = _ERROROPTIONS
 _DELETEREQUEST.fields_by_name['session'].message_type = _SESSION
 _DELETEREQUEST.fields_by_name['if_missing'].enum_type = _ERROROPTIONS
+_EXECREQUEST_ARGSENTRY.fields_by_name['value'].message_type = _VALUE
+_EXECREQUEST_ARGSENTRY.containing_type = _EXECREQUEST
+_EXECREQUEST.fields_by_name['session'].message_type = _SESSION
+_EXECREQUEST.fields_by_name['args'].message_type = _EXECREQUEST_ARGSENTRY
 DESCRIPTOR.message_types_by_name['Column'] = _COLUMN
 DESCRIPTOR.message_types_by_name['Value'] = _VALUE
 DESCRIPTOR.message_types_by_name['Frame'] = _FRAME
@@ -1289,6 +1413,8 @@ DESCRIPTOR.message_types_by_name['CreateRequest'] = _CREATEREQUEST
 DESCRIPTOR.message_types_by_name['CreateResponse'] = _CREATERESPONSE
 DESCRIPTOR.message_types_by_name['DeleteRequest'] = _DELETEREQUEST
 DESCRIPTOR.message_types_by_name['DeleteResponse'] = _DELETERESPONSE
+DESCRIPTOR.message_types_by_name['ExecRequest'] = _EXECREQUEST
+DESCRIPTOR.message_types_by_name['ExecResponse'] = _EXECRESPONSE
 DESCRIPTOR.enum_types_by_name['DType'] = _DTYPE
 DESCRIPTOR.enum_types_by_name['ErrorOptions'] = _ERROROPTIONS
 _sym_db.RegisterFileDescriptor(DESCRIPTOR)
@@ -1429,10 +1555,33 @@ DeleteResponse = _reflection.GeneratedProtocolMessageType('DeleteResponse', (_me
   ))
 _sym_db.RegisterMessage(DeleteResponse)
 
+ExecRequest = _reflection.GeneratedProtocolMessageType('ExecRequest', (_message.Message,), dict(
+
+  ArgsEntry = _reflection.GeneratedProtocolMessageType('ArgsEntry', (_message.Message,), dict(
+    DESCRIPTOR = _EXECREQUEST_ARGSENTRY,
+    __module__ = 'frames_pb2'
+    # @@protoc_insertion_point(class_scope:pb.ExecRequest.ArgsEntry)
+    ))
+  ,
+  DESCRIPTOR = _EXECREQUEST,
+  __module__ = 'frames_pb2'
+  # @@protoc_insertion_point(class_scope:pb.ExecRequest)
+  ))
+_sym_db.RegisterMessage(ExecRequest)
+_sym_db.RegisterMessage(ExecRequest.ArgsEntry)
+
+ExecResponse = _reflection.GeneratedProtocolMessageType('ExecResponse', (_message.Message,), dict(
+  DESCRIPTOR = _EXECRESPONSE,
+  __module__ = 'frames_pb2'
+  # @@protoc_insertion_point(class_scope:pb.ExecResponse)
+  ))
+_sym_db.RegisterMessage(ExecResponse)
+
 
 _FRAME_LABELSENTRY._options = None
 _SCHEMAFIELD_PROPERTIESENTRY._options = None
 _CREATEREQUEST_ATTRIBUTEMAPENTRY._options = None
+_EXECREQUEST_ARGSENTRY._options = None
 
 _FRAMES = _descriptor.ServiceDescriptor(
   name='Frames',
@@ -1440,8 +1589,8 @@ _FRAMES = _descriptor.ServiceDescriptor(
   file=DESCRIPTOR,
   index=0,
   serialized_options=None,
-  serialized_start=2448,
-  serialized_end=2647,
+  serialized_start=2656,
+  serialized_end=2900,
   methods=[
   _descriptor.MethodDescriptor(
     name='Read',
@@ -1477,6 +1626,15 @@ _FRAMES = _descriptor.ServiceDescriptor(
     containing_service=None,
     input_type=_DELETEREQUEST,
     output_type=_DELETERESPONSE,
+    serialized_options=None,
+  ),
+  _descriptor.MethodDescriptor(
+    name='Exec',
+    full_name='pb.Frames.Exec',
+    index=4,
+    containing_service=None,
+    input_type=_EXECREQUEST,
+    output_type=_EXECRESPONSE,
     serialized_options=None,
   ),
 ])
