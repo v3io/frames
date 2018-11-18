@@ -193,7 +193,7 @@ func (c *colImpl) StringAt(i int) (string, error) {
 		return s, nil
 	}
 
-	return "", fmt.Errorf("unknown dtype - %d (%s)", dtype, dtypeName(dtype))
+	return "", fmt.Errorf("unknown dtype - %d (%s)", dtype, dtype)
 }
 
 func (c *colImpl) Times() ([]time.Time, error) {
@@ -361,7 +361,7 @@ func (c *colImpl) appendSlice(value interface{}) error {
 		return nil
 	}
 
-	return fmt.Errorf("unknown dtype - %s", dtypeName(c.msg.Dtype))
+	return fmt.Errorf("unknown dtype - %s", c.msg.Dtype)
 }
 
 func (c *colImpl) appendLabel(value interface{}) error {
@@ -431,8 +431,4 @@ func (c *colImpl) checkDType(dtype pb.DType) error {
 	}
 
 	return nil
-}
-
-func dtypeName(dtype pb.DType) string {
-	return pb.DType_name[int32(dtype)]
 }
