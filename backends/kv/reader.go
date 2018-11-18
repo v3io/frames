@@ -106,7 +106,7 @@ func (ki *Iterator) Next() bool {
 				byName[name] = col
 			}
 
-			if err := col.Append(field); err != nil {
+			if err := utils.AppendColumn(col, field); err != nil {
 				ki.err = err
 				return false
 			}

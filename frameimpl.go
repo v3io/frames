@@ -90,7 +90,7 @@ func NewFrameFromRows(rows []map[string]interface{}, indices []string, labels ma
 			}
 
 			extendCol(col, rowNum)
-			if err := col.Append(value); err != nil {
+			if err := colAppend(col, value); err != nil {
 				return nil, err
 			}
 		}
@@ -338,7 +338,7 @@ func extendCol(col Column, size int) error {
 	}
 
 	for col.Len() < size {
-		if err := col.Append(value); err != nil {
+		if err := colAppend(col, value); err != nil {
 			return err
 		}
 	}
@@ -391,4 +391,17 @@ func mapToColumns(data map[string]interface{}) ([]Column, error) {
 	}
 
 	return columns, nil
+}
+
+type colAppender interface {
+	Append(value interface{}) error
+}
+
+func colAppend(col Column, value interface{}) error {
+	ca, ok := col.(colAppender)
+	if !ok {
+		return fmt.Errorf("column does not support appending")
+	}
+
+	return ca.Append(value)
 }
