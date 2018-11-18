@@ -160,6 +160,12 @@ message WriteRespose {
     int64 rows = 2;
 }
 
+
+enum ErrorOptions {
+    FAIL = 0;  // Default to fail on error
+    IGNORE = 1;
+}
+
 // CreateRequest is a table creation request
 message CreateRequest {
     Session session = 1;
@@ -167,6 +173,7 @@ message CreateRequest {
     string table = 3; // Table name (path)
     map<string, Value> attribute_map = 4; // List of attributes used for creating the table
     TableSchema schema = 5; // Schema (for describing unstructured/schemaless data)
+    ErrorOptions if_exists = 6;
 }
 
 message CreateResponse {}

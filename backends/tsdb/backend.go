@@ -21,6 +21,8 @@ such restriction.
 package tsdb
 
 import (
+	"strings"
+
 	"github.com/nuclio/logger"
 
 	"github.com/v3io/frames"
@@ -152,7 +154,11 @@ func (b *Backend) Create(request *frames.CreateRequest) error {
 		return errors.Wrap(err, "Failed to create a TSDB schema.")
 	}
 
-	return tsdb.CreateTSDB(cfg, dbSchema)
+	err = tsdb.CreateTSDB(cfg, dbSchema)
+	if b.ignoreCreateExists(request, err) {
+		return nil
+	}
+	return err
 }
 
 // Delete deletes a table or part of it
@@ -176,6 +182,15 @@ func (b *Backend) Delete(request *frames.DeleteRequest) error {
 	}
 
 	return adapter.DeleteDB(delAll, request.Force, start, end)
+}
+
+func (b *Backend) ignoreCreateExists(request *frames.CreateRequest, err error) bool {
+	if request.IfExists != frames.IgnoreError {
+		return false
+	}
+
+	// TODO: Ask tsdb to return specific error value, this is brittle
+	return strings.Contains(err.Error(), "A TSDB table already exists")
 }
 
 func init() {
