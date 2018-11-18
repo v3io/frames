@@ -26,6 +26,7 @@ import (
 )
 
 // DType is data type
+// TODO: Merge with protobuf DType
 type DType reflect.Type
 
 // Possible data types
@@ -53,7 +54,6 @@ type Column interface {
 	Bools() ([]bool, error)                   // Data as []bool
 	BoolAt(i int) (bool, error)               // bool value at index i
 	Slice(start int, end int) (Column, error) // Slice of data
-	Append(value interface{}) error           // Append a value
 }
 
 // Frame is a collection of columns

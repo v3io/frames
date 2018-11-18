@@ -93,20 +93,23 @@ func NewColumn(value interface{}, size int) (interface{}, error) {
 
 // AppendNil appends an empty value to data
 func AppendNil(col frames.Column) error {
+	var value interface{}
 	switch col.DType() {
 	case frames.IntType:
-		return col.Append(0)
+		value = int64(0)
 	case frames.FloatType:
-		return col.Append(math.NaN())
+		value = math.NaN()
 	case frames.StringType:
-		return col.Append("")
+		value = ""
 	case frames.TimeType:
-		return col.Append(time.Unix(0, 0))
+		value = time.Unix(0, 0)
 	case frames.BoolType:
-		return col.Append(false)
+		value = false
+	default:
+		return fmt.Errorf("unsupported data type - %s", col.DType())
 	}
 
-	return fmt.Errorf("unsupported data type - %s", col.DType())
+	return AppendColumn(col, value)
 }
 
 // ColAt return value at index i in column as interface{}
@@ -150,4 +153,19 @@ func RemoveColumn(name string, columns []frames.Column) []frames.Column {
 	}
 
 	return columns
+}
+
+// TODO: Unite with frameimpl.go
+type colAppender interface {
+	Append(value interface{}) error
+}
+
+// AppendColumn appends a value to a column
+func AppendColumn(col frames.Column, value interface{}) error {
+	ca, ok := col.(colAppender)
+	if !ok {
+		return fmt.Errorf("column does not support appending")
+	}
+
+	return ca.Append(value)
 }
