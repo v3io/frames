@@ -39,7 +39,7 @@ test-python:
 	   pipenv run flake8 --exclude 'frames_pb2*.py' v3io_frames tests
 	cd clients/py && \
 	    PIPENV_IGNORE_VIRTUALENVS=1 \
-	    pipenv run python -m pytest -v
+	    pipenv run python -m pytest -v --disable-warnings
 
 build-docker:
 	docker build -f ./cmd/framesd/Dockerfile -t v3io/framesd .
