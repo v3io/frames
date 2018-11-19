@@ -50,6 +50,9 @@ class Client(object):
         if not self.url:
             raise ValueError('missing URL')
 
+        if '://' not in self.url:
+            self.url = 'http://{}'.format(self.url)
+
         self.session = session
 
     def read(self, backend='', table='', query='', columns=None, filter='',

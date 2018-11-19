@@ -55,12 +55,8 @@ def Client(address, protocol=GRPC_PROTOCOL,
         raise ValueError('unknown protocol - {}'.format(protocol))
 
     # TODO: Remove schema ourselves? What about Python Zen #12?
-    match = re.match('^http(s)?://', address)
-    if protocol == GRPC_PROTOCOL and match:
+    if protocol == GRPC_PROTOCOL and re.match('^http(s)?://', address):
         raise ValueError('grpc address should not have http:// prefix')
-
-    if protocol == HTTP_PROTOCOL and not match:
-        address = 'http://' + address
 
     session = Session(
         url=data_url,

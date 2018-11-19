@@ -28,11 +28,13 @@ clean_pyc:
 
 .PHONY: flask8
 flake8:
-	pipenv run flake8 nuclio tests
+	PIPENV_IGNORE_VIRTUALENVS=1 \
+	    pipenv run flake8 nuclio tests
 
 .PHONY: test
 test: clean_pyc flake8
-	pipenv run python -m pytest -v tests
+	PIPENV_IGNORE_VIRTUALENVS=1 \
+	    pipenv run python -m pytest --disable-warnings -v tests
 
 README.html: README.md
 	kramdown -i GFM $< > $@
