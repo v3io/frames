@@ -22,14 +22,16 @@ package stream
 
 import (
 	"fmt"
+	"reflect"
+	"strings"
+
 	"github.com/nuclio/logger"
 	"github.com/pkg/errors"
+
 	"github.com/v3io/frames"
 	"github.com/v3io/frames/backends"
 	"github.com/v3io/frames/v3ioutils"
-	"github.com/v3io/v3io-go-http"
-	"reflect"
-	"strings"
+	v3io "github.com/v3io/v3io-go-http"
 )
 
 // Backend is a tsdb backend

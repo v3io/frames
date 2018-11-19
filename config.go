@@ -57,6 +57,7 @@ func (c *Config) InitDefaults() error {
 	return nil
 }
 
+// InitSessionDefaults initializes session defaults
 func InitSessionDefaults(session *Session, framesConfig *Config) *Session {
 
 	if session == nil {

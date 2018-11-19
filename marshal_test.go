@@ -105,6 +105,7 @@ func createFrame(t *testing.T) Frame {
 	if err != nil {
 		t.Fatal(err)
 	}
+	columns = append(columns, col)
 
 	col, err = NewLabelColumn("lcol", "srv", 3)
 	if err != nil {

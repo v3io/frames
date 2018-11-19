@@ -23,11 +23,13 @@ package stream
 import (
 	"encoding/json"
 	"fmt"
-	"github.com/v3io/frames"
-	"github.com/v3io/v3io-go-http"
-	"github.com/v3io/v3io-tsdb/pkg/utils"
 	"strings"
 	"time"
+
+	v3io "github.com/v3io/v3io-go-http"
+	"github.com/v3io/v3io-tsdb/pkg/utils"
+
+	"github.com/v3io/frames"
 )
 
 type streamIterator struct {

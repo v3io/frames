@@ -22,13 +22,14 @@ package v3ioutils
 
 import (
 	"encoding/binary"
+	"net/url"
 	"time"
 
 	"github.com/nuclio/logger"
 	"github.com/pkg/errors"
-	"github.com/v3io/v3io-go-http"
+
+	v3io "github.com/v3io/v3io-go-http"
 	"github.com/v3io/v3io-tsdb/pkg/utils"
-	"net/url"
 )
 
 // CreateContainer creates a new container

@@ -78,6 +78,10 @@ func TestAppendNil(t *testing.T) {
 	}
 
 	col, err := frames.NewSliceColumn("col1", data)
+	if err != nil {
+		t.Fatalf("can't create new slice column - %s", err)
+	}
+
 	if err := AppendNil(col); err != nil {
 		t.Fatalf("can't append nil - %s", err)
 	}

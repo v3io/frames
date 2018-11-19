@@ -124,7 +124,7 @@ const schemaTst = `
 `
 
 func TestNewSchema(t *testing.T) {
-	schema, err := SchemaFromJson([]byte(schemaTst))
+	schema, err := SchemaFromJSON([]byte(schemaTst))
 	if err != nil {
 		t.Fatal(err)
 	}
