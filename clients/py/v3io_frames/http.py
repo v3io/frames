@@ -240,7 +240,7 @@ class Client(object):
         if not resp.ok:
             raise CreateError(resp.text)
 
-    def execute(self, backend, table, command='', args=None):
+    def execute(self, backend, table, command='', args=None, expression=''):
         """Execute a command on backend
 
         Parameters
@@ -253,6 +253,8 @@ class Client(object):
             Command to execute
         args : dict
             Command arguments
+        expression : str
+            Command expression
 
         Raises
         ------
@@ -266,6 +268,7 @@ class Client(object):
             'table': table,
             'command': command,
             'args': args or {},
+            'expression': expression,
         }
 
         url = self.url + '/exec'

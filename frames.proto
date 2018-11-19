@@ -198,6 +198,7 @@ message ExecRequest {
     string table = 3; // Table name (path)
     string command = 4; // Command to execute
     map<string, Value> args = 5; // Command arguments
+    string expression = 6;
 }
 
 message ExecResponse {}

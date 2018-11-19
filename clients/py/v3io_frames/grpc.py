@@ -230,7 +230,7 @@ class Client:
             stub.Delete(request)
 
     @grpc_raise(ExecuteError)
-    def execute(self, backend, table, command='', args=None):
+    def execute(self, backend, table, command='', args=None, expression=''):
         """Execute a command
 
         Parameters
@@ -243,6 +243,8 @@ class Client:
             Command to execute
         args : dict
             Command arguments
+        expression : str
+            Command expression
 
         Raises
         ------
@@ -258,6 +260,7 @@ class Client:
                 table=table,
                 command=command,
                 args=args,
+                expression=expression,
             )
             stub.Exec(request)
 
