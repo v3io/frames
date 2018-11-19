@@ -12,6 +12,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+import json
 try:
     from setuptools import setup
 except ImportError:
@@ -26,38 +27,33 @@ def version():
                 return version.replace("'", '').strip()
 
 
-def parse_deps():
-    deps = []
-    in_deps = False
-    with open('Pipfile') as fp:
-        for line in fp:
-            if not line.strip():
-                continue
-            elif in_deps and '[' in line:
-                return deps
-            elif line.strip() == '[packages]':
-                in_deps = True
-                continue
-            elif not in_deps:
-                continue
-            else:
-                dep, version = [str.strip(val) for val in line.split('=', 1)]
-                version = version[1:-1]  # Trim ""
-                deps.append('{}{}'.format(dep, version))
+def load_deps(section):
+    with open('Pipfile.lock') as fp:
+        lock_data = json.load(fp)
+
+    deps = lock_data.get(section, {})
+    return [name + data['version'] for name, data in deps.items()]
+
+
+install_requires = load_deps('default')
+tests_require = load_deps('develop')
+
+with open('README.md') as fp:
+    long_desc = fp.read()
 
 
 setup(
     name='v3io_frames',
     version=version(),
     description='Client for v3io streaming data',
-    long_description=open('README.md').read(),
+    long_description=long_desc,
     long_description_content_type='text/markdown',
     author='Miki Tebeka',
     author_email='miki@353solutions.com',
     license='MIT',
     url='https://github.com/v3io/frames',
     py_modules=['v3io_frames'],
-    install_requires=parse_deps(),
+    install_requires=install_requires,
     classifiers=[
         'Development Status :: 4 - Beta',
         'Intended Audience :: Developers',
@@ -74,5 +70,5 @@ setup(
         'Topic :: Software Development :: Libraries :: Python Modules',
         'Topic :: Software Development :: Libraries',
     ],
-    tests_require=['pytest', 'flake8'],
+    tests_require=tests_require,
 )
