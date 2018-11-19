@@ -12,18 +12,22 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+import json
 import re
 from collections import namedtuple
-from os import makedirs, path
+from os import environ, makedirs, path
 from shutil import rmtree
 from socket import error as SocketError
 from socket import socket
 from subprocess import Popen, call, check_output
 from time import sleep, time
 from uuid import uuid4
-import yaml
 
 import pytest
+import yaml
+
+
+SESSION_ENV_KEY = 'V3IO_SESSION'
 
 
 def has_working_go():
@@ -85,6 +89,14 @@ def framesd():
         ]
     }
 
+    if SESSION_ENV_KEY in environ:
+        # We assume we have backends
+        config['backends'].extend([
+            {'type': 'kv'},
+            # {'type': 'stream'},
+            # {'type': 'tsdb', 'workers': 16},
+        ])
+
     cfg_file = '{}/config.yaml'.format(root_dir)
     with open(cfg_file, 'wt') as out:
         yaml.dump(config, out, default_flow_style=False)
@@ -113,3 +125,12 @@ def framesd():
         )
     finally:
         pipe.kill()
+
+
+@pytest.fixture(scope='module')
+def session():
+    session_info = environ.get('V3IO_SESSION', '')
+    session = json.loads(session_info) if session_info else {}
+    if 'url' in session:
+        session['data_url'] = session.pop('url')
+    return session

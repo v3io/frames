@@ -42,7 +42,6 @@ def random_df(size):
         'fcol': np.random.rand(size),
         'scol': ['val-{}'.format(i) for i in range(size)],
         'bcol': np.random.choice([True, False], size=size),
-        # FIXME
         'tcol': times,
     }
 
@@ -51,7 +50,7 @@ def random_df(size):
 
 @pytest.mark.skipif(not has_go, reason='Go SDK not found')
 @pytest.mark.parametrize('protocol', ['grpc', 'http'])
-def test_integration(framesd, protocol):
+def test_integration(framesd, session, protocol):
     size = 1932
     table = 'random.csv'
     df = random_df(size)
@@ -61,30 +60,32 @@ def test_integration(framesd, protocol):
         'ls': 'hi',
     }
 
-    backend = 'csv'
     port = getattr(framesd, '{}_port'.format(protocol))
     addr = 'localhost:{}'.format(port)
-    c = v3f.Client(addr, protocol=protocol)
-    c.write(backend, table, [df], labels=lables)
+    c = v3f.Client(addr, protocol=protocol, **session)
 
-    sleep(1)  # Let disk flush
+    for cfg in framesd.config['backends']:
+        backend = cfg['type']
+        c.write(backend, table, [df], labels=lables)
 
-    dfs = [df for df in c.read(backend, table=table)]
-    df2 = pd.concat(dfs)
+        sleep(1)  # Let disk flush
 
-    assert set(df2.columns) == set(df.columns), 'columns mismatch'
-    for name in df.columns:
-        if name == 'tcol':
-            # FIXME: Time zones
-            continue
-        col = df[name]
-        col2 = df2[name]
-        assert col2.equals(col), 'column {} mismatch'.format(name)
+        dfs = [df for df in c.read(backend, table=table)]
+        df2 = pd.concat(dfs)
 
-    new_table = 'test-table'
-    c.create(backend, new_table, schema=schema)
-    c.delete(backend, new_table)
-    c.execute(backend, table, 'ping', {'ival': 1, 'sval': 'two'})
+        assert set(df2.columns) == set(df.columns), 'columns mismatch'
+        for name in df.columns:
+            if name == 'tcol':
+                # FIXME: Time zones
+                continue
+            col = df[name]
+            col2 = df2[name]
+            assert col2.equals(col), 'column {} mismatch'.format(name)
+
+        new_table = 'test-table'
+        c.create(backend, new_table, schema=schema)
+        c.delete(backend, new_table)
+        c.execute(backend, table, 'ping', {'ival': 1, 'sval': 'two'})
 
 
 @pytest.mark.skipif(not has_go, reason='Go SDK not found')
