@@ -22,12 +22,14 @@ package kv
 
 import (
 	"fmt"
+	"strings"
+
 	"github.com/nuclio/logger"
 	"github.com/pkg/errors"
+	v3io "github.com/v3io/v3io-go-http"
+
 	"github.com/v3io/frames"
 	"github.com/v3io/frames/v3ioutils"
-	"github.com/v3io/v3io-go-http"
-	"strings"
 )
 
 // Backend is key/value backend

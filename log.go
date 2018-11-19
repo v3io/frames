@@ -22,7 +22,7 @@ package frames
 
 import (
 	"github.com/nuclio/logger"
-	"github.com/nuclio/zap"
+	nucliozap "github.com/nuclio/zap"
 )
 
 var (
@@ -37,10 +37,5 @@ func NewLogger(verbose string) (logger.Logger, error) {
 	}
 
 	logLevel := nucliozap.GetLevelByName(verbose)
-	log, err := nucliozap.NewNuclioZapCmd("v3io-frames", logLevel)
-	if err != nil {
-		return nil, err
-	}
-
-	return log, nil
+	return nucliozap.NewNuclioZapCmd("v3io-frames", logLevel)
 }

@@ -26,12 +26,12 @@ import (
 	"strings"
 	"time"
 
+	"github.com/nuclio/logger"
+	v3io "github.com/v3io/v3io-go-http"
+
 	"github.com/v3io/frames"
 	"github.com/v3io/frames/backends/utils"
-
-	"github.com/nuclio/logger"
 	"github.com/v3io/frames/v3ioutils"
-	"github.com/v3io/v3io-go-http"
 )
 
 // Appender is key/value appender

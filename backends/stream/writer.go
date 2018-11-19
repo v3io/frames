@@ -22,12 +22,14 @@ package stream
 
 import (
 	"encoding/json"
-	"github.com/nuclio/logger"
-	"github.com/pkg/errors"
-	"github.com/v3io/frames"
-	"github.com/v3io/v3io-go-http"
 	"strings"
 	"time"
+
+	"github.com/nuclio/logger"
+	"github.com/pkg/errors"
+	v3io "github.com/v3io/v3io-go-http"
+
+	"github.com/v3io/frames"
 )
 
 func (b *Backend) Write(request *frames.WriteRequest) (frames.FrameAppender, error) {
@@ -67,14 +69,11 @@ type streamAppender struct {
 	tablePath    string
 	responseChan chan *v3io.Response
 	commChan     chan int
-	doneChan     chan bool
-	sent         int
 	logger       logger.Logger
 }
 
 // TODO: make it async
 func (a *streamAppender) Add(frame frames.Frame) error {
-
 	records := make([]*v3io.StreamRecord, 0, frame.Len())
 	iter := frame.IterRows(true)
 	for iter.Next() {

@@ -36,11 +36,10 @@ import (
 	"github.com/v3io/frames"
 )
 
-// Client is v3io streaming client
+// Client is v3io HTTP streaming client
 type Client struct {
 	URL    string
 	logger logger.Logger
-	err    error // last error
 }
 
 var (

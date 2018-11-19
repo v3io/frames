@@ -50,6 +50,13 @@ func ExampleClient() {
 	}
 
 	appender, err := client.Write(writeReq)
+	if err != nil {
+		if err != nil {
+			fmt.Printf("can't write - %s", err)
+			return
+		}
+	}
+
 	if err := appender.Add(frame); err != nil {
 		fmt.Printf("can't write frame - %s", err)
 		return

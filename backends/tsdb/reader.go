@@ -115,8 +115,12 @@ func (i *tsdbIterator) Next() bool {
 
 		colname := "values"
 		valCol, err := frames.NewSliceColumn(colname, values)
-		columns := []frames.Column{valCol}
+		if err != nil {
+			i.err = err
+			return false
+		}
 
+		columns := []frames.Column{valCol}
 		indices := []frames.Column{timeCol}
 		for _, v := range series.Labels() {
 			name := v.Name
@@ -136,11 +140,6 @@ func (i *tsdbIterator) Next() bool {
 			} else {
 				columns = append(columns, icol)
 			}
-		}
-
-		if err != nil {
-			i.err = err
-			return false
 		}
 
 		i.currFrame, err = frames.NewFrame(columns, indices, labels)

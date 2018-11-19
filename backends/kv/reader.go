@@ -23,7 +23,7 @@ package kv
 import (
 	"strings"
 
-	"github.com/v3io/v3io-go-http"
+	v3io "github.com/v3io/v3io-go-http"
 
 	"github.com/v3io/frames"
 	"github.com/v3io/frames/backends"
@@ -102,6 +102,10 @@ func (ki *Iterator) Next() bool {
 				}
 
 				col, err = frames.NewSliceColumn(name, data)
+				if err != nil {
+					ki.err = err
+					return false
+				}
 				columns = append(columns, col)
 				byName[name] = col
 			}

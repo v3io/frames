@@ -39,6 +39,10 @@ import (
 	"github.com/pkg/errors"
 )
 
+const (
+	missingMsg = "missing parameters"
+)
+
 // API layer, implements common CRUD operations
 // TODO: Call it DAL? (data access layer)
 type API struct {
@@ -112,9 +116,8 @@ func (api *API) Read(request *frames.ReadRequest, out chan frames.Frame) error {
 // Write write data to backend, returns num_frames, num_rows, error
 func (api *API) Write(request *frames.WriteRequest, in chan frames.Frame) (int, int, error) {
 	if request.Backend == "" || request.Table == "" {
-		msg := "missing parameters"
-		api.logger.ErrorWith(msg, "request", request)
-		return -1, -1, fmt.Errorf(msg)
+		api.logger.ErrorWith(missingMsg, "request", request)
+		return -1, -1, fmt.Errorf(missingMsg)
 	}
 
 	api.logger.InfoWith("write request", "request", request)
@@ -168,9 +171,8 @@ func (api *API) Write(request *frames.WriteRequest, in chan frames.Frame) (int, 
 // Create will create a new table
 func (api *API) Create(request *frames.CreateRequest) error {
 	if request.Backend == "" || request.Table == "" {
-		msg := "missing parameters"
-		api.logger.ErrorWith(msg, "request", request)
-		return fmt.Errorf(msg)
+		api.logger.ErrorWith(missingMsg, "request", request)
+		return fmt.Errorf(missingMsg)
 	}
 
 	api.logger.DebugWith("create", "request", request)
@@ -191,9 +193,8 @@ func (api *API) Create(request *frames.CreateRequest) error {
 // Delete deletes a table or part of it
 func (api *API) Delete(request *frames.DeleteRequest) error {
 	if request.Backend == "" || request.Table == "" {
-		msg := "missing parameters"
-		api.logger.ErrorWith(msg, "request", request)
-		return fmt.Errorf(msg)
+		api.logger.ErrorWith(missingMsg, "request", request)
+		return fmt.Errorf(missingMsg)
 	}
 
 	api.logger.DebugWith("delete", "request", request)
@@ -214,9 +215,8 @@ func (api *API) Delete(request *frames.DeleteRequest) error {
 // Exec executes a command on the backend
 func (api *API) Exec(request *frames.ExecRequest) error {
 	if request.Backend == "" || request.Table == "" {
-		msg := "missing parameters"
-		api.logger.ErrorWith(msg, "request", request)
-		return fmt.Errorf(msg)
+		api.logger.ErrorWith(missingMsg, "request", request)
+		return fmt.Errorf(missingMsg)
 	}
 
 	api.logger.DebugWith("exec", "request", request)

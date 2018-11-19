@@ -100,6 +100,9 @@ func (a *tsdbAppender) Add(frame frames.Frame) error {
 
 	icol := frame.Indices()[timeColIndex]
 	times, err := icol.Times()
+	if err != nil {
+		return err
+	}
 
 	for i := 0; i < frame.Len(); i++ {
 		t := times[i].UnixNano() / 1000 / 1000

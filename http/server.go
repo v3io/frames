@@ -35,10 +35,6 @@ import (
 	"github.com/valyala/fasthttp"
 )
 
-const (
-	maxBatchSize = 10000
-)
-
 var (
 	okBytes = []byte("OK")
 )

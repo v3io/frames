@@ -44,14 +44,14 @@ func TestSchemaFieldProperty(t *testing.T) {
 		t.Fatalf("%q property mismatch: %v != %v", key, prop, value)
 	}
 
-	prop, ok = field.Property("no such property")
+	_, ok = field.Property("no such property")
 	if ok {
 		t.Fatal("found non existing property")
 	}
 
 	// Check with nil Properties
 	field = &SchemaField{}
-	prop, ok = field.Property(key)
+	_, ok = field.Property(key)
 	if ok {
 		t.Fatal("found non existing property (nil)")
 	}
