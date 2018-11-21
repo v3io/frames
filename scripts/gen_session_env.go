@@ -35,7 +35,7 @@ var session struct {
 	Password  string `json:"password"`
 	Path      string `json:"path"`
 	Token     string `json:"token"`
-	URL       string `json:"url"`
+	Host      string `json:"host"`
 	User      string `json:"user"`
 }
 
@@ -44,7 +44,7 @@ func main() {
 	flag.StringVar(&session.Password, "password", "", "password")
 	flag.StringVar(&session.Path, "path", "", "path in container")
 	flag.StringVar(&session.Token, "token", "", "authentication token")
-	flag.StringVar(&session.URL, "url", "", "web API URL")
+	flag.StringVar(&session.Host, "host", "", "web API host")
 	flag.StringVar(&session.User, "user", "", "login user")
 	flag.Parse()
 

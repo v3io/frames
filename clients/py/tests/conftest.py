@@ -28,6 +28,17 @@ import yaml
 
 
 SESSION_ENV_KEY = 'V3IO_SESSION'
+has_session = SESSION_ENV_KEY in environ
+
+extra_backends = [
+    {'type': 'kv'},
+    {'type': 'stream'},
+    {'type': 'tsdb', 'workers': 16},
+]
+
+test_backends = ['csv']
+if has_session:
+    test_backends.extend(backend['type'] for backend in extra_backends)
 
 
 def has_working_go():
@@ -79,7 +90,7 @@ def framesd():
 
     config = {
         'log': {
-            'level': 'debug',
+            'level': 'error',
         },
         'backends': [
             {
@@ -89,13 +100,9 @@ def framesd():
         ]
     }
 
-    if SESSION_ENV_KEY in environ:
+    if has_session:
         # We assume we have backends
-        config['backends'].extend([
-            {'type': 'kv'},
-            # {'type': 'stream'},
-            # {'type': 'tsdb', 'workers': 16},
-        ])
+        config['backends'].extend(extra_backends)
 
     cfg_file = '{}/config.yaml'.format(root_dir)
     with open(cfg_file, 'wt') as out:
@@ -129,8 +136,8 @@ def framesd():
 
 @pytest.fixture(scope='module')
 def session():
-    session_info = environ.get('V3IO_SESSION', '')
+    session_info = environ.get(SESSION_ENV_KEY, '')
     session = json.loads(session_info) if session_info else {}
-    if 'url' in session:
-        session['data_url'] = session.pop('url')
+    if 'host' in session:
+        session['data_url'] = session.pop('host')
     return session

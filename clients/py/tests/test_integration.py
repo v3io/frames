@@ -13,14 +13,75 @@
 # limitations under the License.
 
 from time import sleep
+from uuid import uuid4
 
 import numpy as np
 import pandas as pd
 import pytest
 
 import v3io_frames as v3f
+from conftest import has_go, test_backends
 
-from conftest import has_go
+
+tsdb_span = 5  # hours
+
+
+def kv_df(df):
+    df = df[['fcol']]
+    df.index = ['idx-{}'.format(i) for i in df.index]
+    return df
+
+
+def stream_df(df):
+    df = df[['fcol', 'icol']]
+    df.index = pd.date_range('2016', '2018', periods=len(df))
+    return df
+
+
+def tsdb_df(df):
+    df = df[['fcol', 'icol']]
+    end = pd.Timestamp.now()
+    start = end - pd.Timedelta(hours=tsdb_span)
+    df.index = pd.date_range(start, end, periods=len(df))
+    return df
+
+
+# Backend specific configuration. None means don't run this step
+test_config = {
+    'kv': {
+        'df_fn': kv_df,
+        'create': None,
+        'execute': None,
+    },
+    'stream': {
+        'df_fn': stream_df,
+        'create': {
+            'attrs': {
+                'retention_hours': 48,
+                'shards': 1,
+            },
+        },
+        'read': {
+            'seek': 'earliest',
+            'shard': '0',
+        },
+        'execute': None,
+    },
+    'tsdb': {
+        'df_fn': tsdb_df,
+        'create': {
+            'attrs': {
+                'rate': '1/m',
+            },
+        },
+        'read': {
+            'step': '10m',
+            'aggragators': 'avg,max,count',
+            'start': 'now-{}h'.format(tsdb_span),
+            'end': 'now',
+        },
+    },
+}
 
 schema = v3f.Schema(
     type='type',
@@ -36,25 +97,30 @@ schema = v3f.Schema(
 
 
 def random_df(size):
-    times = pd.date_range('2018-01-01', '2018-10-10', periods=size)
     data = {
         'icol': np.random.randint(-17, 99, size),
         'fcol': np.random.rand(size),
         'scol': ['val-{}'.format(i) for i in range(size)],
         'bcol': np.random.choice([True, False], size=size),
-        'tcol': times,
+        'tcol': pd.date_range('2018-01-01', '2018-10-10', periods=size),
     }
 
     return pd.DataFrame(data)
 
 
+integ_params = [(p, b) for p in ['grpc', 'http'] for b in test_backends]
+
+
 @pytest.mark.skipif(not has_go, reason='Go SDK not found')
-@pytest.mark.parametrize('protocol', ['grpc', 'http'])
-def test_integration(framesd, session, protocol):
-    size = 1932
-    table = 'random.csv'
+@pytest.mark.parametrize('protocol,backend', integ_params)
+def test_integration(framesd, session, protocol, backend):
+    if backend != 'stream':
+        return
+    test_id = uuid4().hex
+    size = 293
+    table = 'integtest{}'.format(test_id)
     df = random_df(size)
-    lables = {
+    labels = {
         'li': 17,
         'lf': 3.22,
         'ls': 'hi',
@@ -63,29 +129,54 @@ def test_integration(framesd, session, protocol):
     port = getattr(framesd, '{}_port'.format(protocol))
     addr = 'localhost:{}'.format(port)
     c = v3f.Client(addr, protocol=protocol, **session)
+    cfg = test_config.get(backend, {})
+    df_fn = cfg.get('df_fn')
+    if df_fn:
+        df = df_fn(df)
 
-    for cfg in framesd.config['backends']:
-        backend = cfg['type']
-        c.write(backend, table, [df], labels=lables)
+    create_kw = cfg.get('create', {})
+    if create_kw is not None:
+        c.create(backend, table, **create_kw)
 
-        sleep(1)  # Let disk flush
+    write_kw = cfg.get('write', {})
+    c.write(backend, table, [df], **write_kw, labels=labels)
 
-        dfs = [df for df in c.read(backend, table=table)]
-        df2 = pd.concat(dfs)
+    sleep(1)  # Let db flush
 
-        assert set(df2.columns) == set(df.columns), 'columns mismatch'
-        for name in df.columns:
-            if name == 'tcol':
-                # FIXME: Time zones
-                continue
-            col = df[name]
-            col2 = df2[name]
-            assert col2.equals(col), 'column {} mismatch'.format(name)
+    read_kw = cfg.get('read', {})
+    dfs = [df for df in c.read(backend, table=table, **read_kw)]
+    df2 = pd.concat(dfs)
 
-        new_table = 'test-table'
-        c.create(backend, new_table, schema=schema)
-        c.delete(backend, new_table)
-        c.execute(backend, table, 'ping', {'ival': 1, 'sval': 'two'})
+    if backend != 'tsdb':
+        compare_dfs(df, df2, backend)
+    else:
+        compare_dfs_tsdb(df, df2, backend)
+
+    c.delete(backend, table)
+    exec_kw = cfg.get('execute', {})
+    if exec_kw is not None:
+        c.execute(backend, table, **exec_kw)
+
+
+def compare_dfs(df1, df2, backend):
+    assert set(df2.columns) == set(df1.columns), \
+        '{}: columns mismatch'.format(backend)
+    for name in df1.columns:
+        if name == 'tcol':
+            # FIXME: Time zones
+            continue
+        col1 = df1[name].sort_index()
+        col2 = df2[name].sort_index()
+        if col1.dtype == np.float:
+            ok = np.allclose(col1.values, col2.values)
+        else:
+            ok = col1.equals(col2)
+        assert ok, '{}: column {} mismatch'.format(backend, name)
+
+
+def compare_dfs_tsdb(df1, df2, backend):
+    # TODO
+    pass
 
 
 @pytest.mark.skipif(not has_go, reason='Go SDK not found')
