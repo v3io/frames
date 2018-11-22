@@ -166,6 +166,9 @@ class Client(object):
             'more': True,
         })
 
+        with open('/tmp/w.mp', 'wb') as out:
+            out.write(request)
+
         url = self.url + '/write'
         headers = self._headers()
         headers['Content-Encoding'] = 'chunked'
@@ -205,7 +208,7 @@ class Client(object):
             'session': pb2py(self.session),
             'backend': backend,
             'table': table,
-            'attributes': attrs,
+            'attribute_map': attrs,
             'schema': pb2py(schema),
             'if_exists': if_exists,
         }

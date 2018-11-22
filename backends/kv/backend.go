@@ -80,7 +80,6 @@ func (b *Backend) Exec(request *frames.ExecRequest) error {
 }
 
 func (b *Backend) newContainer(session *frames.Session) (*v3io.Container, error) {
-
 	session = frames.InitSessionDefaults(session, b.framesConfig)
 	container, err := v3ioutils.CreateContainer(
 		b.logger, session.Url, session.Container, session.User, session.Password, b.numWorkers)

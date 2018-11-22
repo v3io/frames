@@ -26,28 +26,45 @@ from conftest import has_go, test_backends, protocols
 tsdb_span = 5  # hours
 
 
-def kv_df(df):
-    df = df[['fcol']]
-    df.index = ['idx-{}'.format(i) for i in df.index]
-    return df
+def csv_df(size):
+    data = {
+        'icol': np.random.randint(-17, 99, size),
+        'fcol': np.random.rand(size),
+        'scol': ['val-{}'.format(i) for i in range(size)],
+        'bcol': np.random.choice([True, False], size=size),
+        'tcol': pd.date_range('2018-01-01', '2018-10-10', periods=size),
+    }
+
+    return pd.DataFrame(data)
 
 
-def stream_df(df):
-    df = df[['fcol', 'icol']]
-    df.index = pd.date_range('2016', '2018', periods=len(df))
-    return df
+def kv_df(size):
+    index = ['mike', 'joe', 'jim', 'rose', 'emily', 'dan']
+    columns = ['n1', 'n2', 'n3']
+    data = np.random.randn(len(index), len(columns))
+    return pd.DataFrame(data, index=index, columns=columns)
 
 
-def tsdb_df(df):
-    df = df[['fcol', 'icol']]
-    end = pd.Timestamp.now()
-    start = end - pd.Timedelta(hours=tsdb_span)
-    df.index = pd.date_range(start, end, periods=len(df))
-    return df
+def stream_df(size):
+    end = pd.Timestamp.now().replace(minute=0, second=0, microsecond=0)
+    index = pd.date_range(end=end, periods=60, freq='300s', tz='Israel')
+    columns = ['cpu', 'mem', 'disk']
+    data = np.random.randn(len(index), len(columns))
+    return pd.DataFrame(data, index=index, columns=columns)
+
+
+def tsdb_df(size):
+    return stream_df(size)
 
 
 # Backend specific configuration. None means don't run this step
 test_config = {
+    'csv': {
+        'df_fn': csv_df,
+        'execute': {
+            'command': 'ping',
+        },
+    },
     'kv': {
         'df_fn': kv_df,
         'create': None,
@@ -63,7 +80,7 @@ test_config = {
         },
         'read': {
             'seek': 'earliest',
-            'shard': '0',
+            'shard_id': '0',
         },
         'execute': None,
     },
@@ -80,6 +97,7 @@ test_config = {
             'start': 'now-{}h'.format(tsdb_span),
             'end': 'now',
         },
+        'execute': None,
     },
 }
 
@@ -96,65 +114,51 @@ schema = v3f.Schema(
 )
 
 
-def random_df(size):
-    data = {
-        'icol': np.random.randint(-17, 99, size),
-        'fcol': np.random.rand(size),
-        'scol': ['val-{}'.format(i) for i in range(size)],
-        'bcol': np.random.choice([True, False], size=size),
-        'tcol': pd.date_range('2018-01-01', '2018-10-10', periods=size),
-    }
-
-    return pd.DataFrame(data)
-
-
 integ_params = [(p, b) for p in protocols for b in test_backends]
 
 
 @pytest.mark.skipif(not has_go, reason='Go SDK not found')
 @pytest.mark.parametrize('protocol,backend', integ_params)
 def test_integration(framesd, session, protocol, backend):
-    if backend != 'stream':
-        return
     test_id = uuid4().hex
     size = 293
     table = 'integtest{}'.format(test_id)
-    df = random_df(size)
-    labels = {
-        'li': 17,
-        'lf': 3.22,
-        'ls': 'hi',
-    }
 
     addr = getattr(framesd, '{}_addr'.format(protocol))
-    c = v3f.Client(addr, protocol=protocol, **session)
+    client = v3f.Client(addr, protocol=protocol, **session)
     cfg = test_config.get(backend, {})
-    df_fn = cfg.get('df_fn')
-    if df_fn:
-        df = df_fn(df)
+    df = cfg['df_fn'](size)
+
+    labels = {
+       'li': 17,
+       'lf': 3.22,
+       'ls': 'hi',
+    }
 
     create_kw = cfg.get('create', {})
     if create_kw is not None:
-        c.create(backend, table, **create_kw)
+        client.create(backend, table, **create_kw)
 
     write_kw = cfg.get('write', {})
-    c.write(backend, table, [df], **write_kw, labels=labels)
+    client.write(backend, table, [df], **write_kw, labels=labels)
 
     sleep(1)  # Let db flush
 
     read_kw = cfg.get('read', {})
-    dfs = [df for df in c.read(backend, table=table, **read_kw)]
+    dfs = [df for df in client.read(backend, table=table, **read_kw)]
     df2 = pd.concat(dfs)
 
-    if backend != 'tsdb':
-        compare_dfs(df, df2, backend)
-    else:
+    if backend == 'tsdb':
         compare_dfs_tsdb(df, df2, backend)
+    elif backend == 'stream':
+        compare_dfs_stream(df, df2, backend)
+    else:
+        compare_dfs(df, df2, backend)
 
-    c.delete(backend, table)
+    client.delete(backend, table)
     exec_kw = cfg.get('execute', {})
     if exec_kw is not None:
-        c.execute(backend, table, **exec_kw)
+        client.execute(backend, table, **exec_kw)
 
 
 def compare_dfs(df1, df2, backend):
@@ -173,6 +177,10 @@ def compare_dfs(df1, df2, backend):
         assert ok, '{}: column {} mismatch'.format(backend, name)
 
 
+def compare_dfs_stream(df1, df2, backend):
+    assert set(df1.columns) < set(df2.columns), 'bad columns'
+
+
 def compare_dfs_tsdb(df1, df2, backend):
     # TODO
     pass
@@ -180,8 +188,7 @@ def compare_dfs_tsdb(df1, df2, backend):
 
 @pytest.mark.skipif(not has_go, reason='Go SDK not found')
 def test_integration_http_error(framesd):
-    addr = 'http://localhost:{}'.format(framesd.http_port)
-    c = v3f.HTTPClient(addr, session=None)
+    c = v3f.HTTPClient(framesd.http_addr, session=None)
 
     with pytest.raises(v3f.ReadError):
         for df in c.read('no-such-backend', table='no such table'):

@@ -253,6 +253,7 @@ func (s *Server) handleCreate(ctx *fasthttp.RequestCtx) {
 		return
 	}
 
+	s.logger.InfoWith("create", "request", request)
 	if err := s.api.Create(request); err != nil {
 		ctx.Error(err.Error(), http.StatusInternalServerError)
 		return

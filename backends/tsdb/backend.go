@@ -197,7 +197,7 @@ func (b *Backend) Delete(request *frames.DeleteRequest) error {
 // Exec executes a command
 func (b *Backend) Exec(request *frames.ExecRequest) error {
 	// FIXME
-	return fmt.Errorf("KV backend does not support Exec")
+	return fmt.Errorf("TSDB backend does not support Exec")
 }
 
 func (b *Backend) ignoreCreateExists(request *frames.CreateRequest, err error) bool {

@@ -99,7 +99,7 @@ def framesd():
 
     config = {
         'log': {
-            'level': 'error',
+            'level': 'debug',
         },
         'backends': [
             {
@@ -125,13 +125,14 @@ def framesd():
     ]
     assert call(cmd) == 0, 'cannot build server'
 
+    log_file = open('/tmp/framesd-integration.log', 'at')
     cmd = [
         server_exe,
         '-httpAddr', ':{}'.format(http_port),
         '-grpcAddr', ':{}'.format(grpc_port),
         '-config', cfg_file,
     ]
-    pipe = Popen(cmd)
+    pipe = Popen(cmd, stdout=log_file, stderr=log_file)
     assert wait_for_server(http_port, server_timeout), 'server did not start'
     try:
         yield Framesd(
@@ -141,12 +142,13 @@ def framesd():
         )
     finally:
         pipe.kill()
+        log_file.close()
 
 
 @pytest.fixture(scope='module')
 def session():
     session_info = environ.get(SESSION_ENV_KEY, '')
     session = json.loads(session_info) if session_info else {}
-    if 'host' in session:
-        session['data_url'] = session.pop('host')
+    if 'address' in session:
+        session['data_url'] = session.pop('address')
     return session
