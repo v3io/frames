@@ -34,12 +34,7 @@ build:
 	GO111MODULE=on go build -v $(modflag) ./...
 
 test-python:
-	cd clients/py && \
-	   PIPENV_IGNORE_VIRTUALENVS=1 \
-	   pipenv run flake8 --exclude 'frames_pb2*.py' v3io_frames tests
-	cd clients/py && \
-	    PIPENV_IGNORE_VIRTUALENVS=1 \
-	    pipenv run python -m pytest -v --disable-warnings
+	cd clients/py && $(MAKE) test
 
 build-docker:
 	docker build -f ./cmd/framesd/Dockerfile -t v3io/framesd .
@@ -65,11 +60,3 @@ grpc-py:
 		../../frames.proto
 	python scripts/fix_pb_import.py \
 	    clients/py/v3io_frames/frames_pb2_grpc.py
-
-travis-py:
-	curl -LO https://dl.google.com/go/go1.11.1.linux-amd64.tar.gz
-	tar xzf go1.11.1.linux-amd64.tar.gz -C /opt
-	pip install pipenv
-	cd clients/py && pipenv sync --dev
-	cd clients/py && \
-	    PATH=/opt/go:$(PATH) pipenv run python -m pytest -v

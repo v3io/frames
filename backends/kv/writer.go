@@ -89,7 +89,7 @@ func (a *Appender) Add(frame frames.Frame) error {
 
 	columns := make(map[string]frames.Column)
 	indexName := ""
-	if indices := frame.Indices(); indices != nil {
+	if indices := frame.Indices(); len(indices) > 0 {
 		indexName = indices[0].Name()
 	}
 	newSchema := v3ioutils.NewSchema(indexName)
@@ -173,7 +173,7 @@ func (a *Appender) WaitForComplete(timeout time.Duration) error {
 func (a *Appender) indexValFunc(frame frames.Frame) (func(int) string, error) {
 	var indexCol frames.Column
 
-	if indices := frame.Indices(); indices != nil {
+	if indices := frame.Indices(); len(indices) > 0 {
 		if len(indices) != 1 {
 			return nil, fmt.Errorf("can't set key from multi-index frame")
 		}

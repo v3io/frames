@@ -40,7 +40,7 @@ github.com/pkg/errors
 github.com/rcrowley/go-metrics
 # github.com/v3io/v3io-go-http v0.0.0-20181023145150-3c8ba0ce5ac8
 github.com/v3io/v3io-go-http
-# github.com/v3io/v3io-tsdb v0.8.2-dep
+# github.com/v3io/v3io-tsdb v0.8.2
 github.com/v3io/v3io-tsdb/pkg/utils
 github.com/v3io/v3io-tsdb/pkg/config
 github.com/v3io/v3io-tsdb/pkg/querier

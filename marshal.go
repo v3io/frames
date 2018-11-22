@@ -92,8 +92,10 @@ type Decoder struct {
 
 // NewDecoder returns a new decoder
 func NewDecoder(reader io.Reader) *Decoder {
+	dec := msgpack.NewDecoder(reader)
+	dec.UseJSONTag(true)
 	return &Decoder{
-		decoder: msgpack.NewDecoder(reader),
+		decoder: dec,
 	}
 }
 

@@ -20,7 +20,7 @@ such restriction.
 
 package frames
 
-// Client interface (just as reference for now)
+// Client interface
 type Client interface {
 	// Read reads data from server
 	Read(request *ReadRequest) (FrameIterator, error)

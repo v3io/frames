@@ -17,6 +17,7 @@
 import struct
 import warnings
 from datetime import datetime
+from functools import wraps
 from itertools import chain, count
 from os import environ
 
@@ -24,14 +25,27 @@ import msgpack
 import numpy as np
 import pandas as pd
 import requests
+from requests.exceptions import RequestException
+from urllib3.exceptions import HTTPError
 
-from .dtypes import dtypes, BoolDType
-from .errors import (
-    BadRequest, CreateError, DeleteError, MessageError, Error, ReadError,
-    ExecuteError
-)
+from .dtypes import BoolDType, dtypes
+from .errors import (BadRequest, CreateError, DeleteError, Error, ExecuteError,
+                     MessageError, ReadError, WriteError)
 from .frames_pb2 import FAIL
 from .pbutils import pb2py
+
+
+def connection_error(error_cls):
+    """Re-raise v3f Exceptions from connection errors"""
+    def decorator(fn):
+        @wraps(fn)
+        def wrapper(*args, **kw):
+            try:
+                return fn(*args, **kw)
+            except (RequestException, HTTPError) as err:
+                raise error_cls(str(err))
+        return wrapper
+    return decorator
 
 
 class Client(object):
@@ -50,8 +64,12 @@ class Client(object):
         if not self.url:
             raise ValueError('missing URL')
 
+        if '://' not in self.url:
+            self.url = 'http://{}'.format(self.url)
+
         self.session = session
 
+    @connection_error(ReadError)
     def read(self, backend='', table='', query='', columns=None, filter='',
              group_by='', limit=0, data_format='', row_layout=False,
              max_in_message=0, marker='', **kw):
@@ -116,6 +134,7 @@ class Client(object):
 
         return self._iter_dfs(resp.raw)
 
+    @connection_error(WriteError)
     def write(self, backend, table, dfs, labels=None, max_in_message=0):
         """Write to table
 
@@ -147,6 +166,9 @@ class Client(object):
             'more': True,
         })
 
+        with open('/tmp/w.mp', 'wb') as out:
+            out.write(request)
+
         url = self.url + '/write'
         headers = self._headers()
         headers['Content-Encoding'] = 'chunked'
@@ -158,6 +180,7 @@ class Client(object):
 
         return resp.json()
 
+    @connection_error(CreateError)
     def create(self, backend, table, attrs=None, schema=None,
                if_exists=FAIL):
         """Create a table
@@ -185,7 +208,7 @@ class Client(object):
             'session': pb2py(self.session),
             'backend': backend,
             'table': table,
-            'attributes': attrs,
+            'attribute_map': attrs,
             'schema': pb2py(schema),
             'if_exists': if_exists,
         }
@@ -196,6 +219,7 @@ class Client(object):
         if not resp.ok:
             raise CreateError(resp.text)
 
+    @connection_error(DeleteError)
     def delete(self, backend, table, filter='', start='', end='',
                if_missing=FAIL):
         """Delete a table
@@ -240,6 +264,7 @@ class Client(object):
         if not resp.ok:
             raise CreateError(resp.text)
 
+    @connection_error(ExecuteError)
     def execute(self, backend, table, command='', args=None, expression=''):
         """Execute a command on backend
 
