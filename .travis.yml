@@ -1,30 +1,24 @@
 language: go
 
+services:
+  - docker
+
 matrix:
   include:
   - go: "1.10.x"
     script:  make test
   - go: "1.11.x"
     script: make test
+  - go: "1.11.x"
+    script: make build-docker
   - language: python
     python: "3.6"
     script:
-      - pip install pipenv
-      - cd clients/py
-      - pipenv sync --dev
-      - pipenv run python -m pytest -v
+      - make travis-py
   - language: python
     python: "3.7-dev"
-    env:
-        - PATH=/opt/go:${PATH}
-    before_install:
-        - curl -LO https://dl.google.com/go/go1.11.1.linux-amd64.tar.gz
-        - tar xzf go1.11.1.linux-amd64.tar.gz -C /opt
     script:
-      - pip install pipenv
-      - cd clients/py
-      - pipenv sync --dev
-      - pipenv run python -m pytest -v
+      - make travis-py
 
 env:
   - GO111MODULE=on

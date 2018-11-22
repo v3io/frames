@@ -13,12 +13,18 @@
 # limitations under the License.
 
 
-FROM golang:1.11-stretch
+FROM golang:1.11-stretch as build
 
-WORKDIR /go/src/github.com/v3io/frames
+WORKDIR /frames
 COPY . .
 RUN go build ./cmd/framesd
 RUN cp framesd /usr/local/bin
 
+FROM debian:jessie-slim
+COPY --from=build /usr/local/bin/framesd /usr/local/bin
+
 VOLUME /etc/framesd
-CMD framesd -addr :8080 -config /etc/framesd/framesd.yaml
+ENV V3IO_GRPC_PORT 8081
+ENV V3IO_HTTP_PORT 8080
+
+CMD framesd -grpcAddr :${V3IO_GRPC_PORT} --httpAddr :${V3IO_HTTP_PORT} -config /etc/framesd.yaml
