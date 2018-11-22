@@ -66,5 +66,4 @@ travis-py:
 	tar xzf go1.11.1.linux-amd64.tar.gz -C /opt
 	pip install pipenv
 	cd clients/py && pipenv sync --dev
-	cd clients/py && \
-	    PATH=/opt/go/bin:$(PATH) pipenv run python -m pytest -v
+	GOROOT=/opt/go PATH=/opt/go/bin:$(PATH) $(MAKE) test-python
