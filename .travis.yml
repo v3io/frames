@@ -1,11 +1,16 @@
 language: go
 
+services:
+  - docker
+
 matrix:
   include:
   - go: "1.10.x"
     script:  make test
   - go: "1.11.x"
     script: make test
+  - go: "1.11.x"
+    script: make build-docker
   - language: python
     python: "3.6"
     script:
