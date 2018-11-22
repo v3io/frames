@@ -65,3 +65,11 @@ grpc-py:
 		../../frames.proto
 	python scripts/fix_pb_import.py \
 	    clients/py/v3io_frames/frames_pb2_grpc.py
+
+travis-py:
+	curl -LO https://dl.google.com/go/go1.11.1.linux-amd64.tar.gz
+	tar xzf go1.11.1.linux-amd64.tar.gz -C /opt
+	pip install pipenv
+	cd clients/py
+	pipenv sync --dev
+	PATH=/opt/go:$(PATH) pipenv run python -m pytest -v
