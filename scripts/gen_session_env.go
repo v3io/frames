@@ -19,6 +19,11 @@ such restriction.
 */
 
 // Generate session information environment variable
+// $ export V3IO_SESSION=$(go run scripts/gen_session_env.go \
+//		-user iguazio \
+//		-password t0ps3cr3t \
+//		-address backend353.iguazio.com:8081 \
+//		-container bigdata)
 
 package main
 
@@ -40,11 +45,11 @@ var session struct {
 }
 
 func main() {
+	flag.StringVar(&session.Address, "address", "", "web API address")
 	flag.StringVar(&session.Container, "container", "", "container name")
 	flag.StringVar(&session.Password, "password", "", "password")
 	flag.StringVar(&session.Path, "path", "", "path in container")
 	flag.StringVar(&session.Token, "token", "", "authentication token")
-	flag.StringVar(&session.Address, "host", "", "web API address")
 	flag.StringVar(&session.User, "user", "", "login user")
 	flag.Parse()
 
