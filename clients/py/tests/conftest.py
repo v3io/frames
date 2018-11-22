@@ -33,6 +33,7 @@ test_id = uuid4().hex
 here = path.dirname(path.abspath(__file__))
 
 csv_file = '{}/weather.csv'.format(here)
+git_root = path.abspath('{}/../../..'.format(here))
 grpc_port = 8766
 http_port = 8765
 protocols = ['grpc', 'http']
@@ -117,11 +118,14 @@ def framesd():
     with open(cfg_file, 'wt') as out:
         yaml.dump(config, out, default_flow_style=False)
 
+    cmd = ['go', 'install', '-mod=vendor']
+    assert call(cmd, cwd=git_root) == 0, 'cannot install server'
+
     server_exe = '/tmp/test-framesd-{}'.format(test_id)
     cmd = [
         'go', 'build',
         '-o', server_exe,
-        '{}/../../../cmd/framesd/framesd.go'.format(here),
+        '{}/cmd/framesd/framesd.go'.format(git_root),
     ]
     assert call(cmd) == 0, 'cannot build server'
 
