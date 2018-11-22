@@ -67,4 +67,4 @@ travis-py:
 	pip install pipenv
 	cd clients/py && pipenv sync --dev
 	cd clients/py && \
-	    PATH=/opt/go:$(PATH) pipenv run python -m pytest -v
+	    PATH=/opt/go/bin:$(PATH) pipenv run python -m pytest -v

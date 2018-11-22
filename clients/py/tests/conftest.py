@@ -118,9 +118,6 @@ def framesd():
     with open(cfg_file, 'wt') as out:
         yaml.dump(config, out, default_flow_style=False)
 
-    cmd = ['go', 'install', '-mod=vendor']
-    assert call(cmd, cwd=git_root) == 0, 'cannot install server'
-
     server_exe = '/tmp/test-framesd-{}'.format(test_id)
     cmd = [
         'go', 'build',
