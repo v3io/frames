@@ -27,7 +27,7 @@ GRPC_PROTOCOL = 'grpc'
 HTTP_PROTOCOL = 'http'
 
 
-def Client(address, protocol=GRPC_PROTOCOL,
+def Client(address='localhost:8081', protocol=GRPC_PROTOCOL,
            data_url='', container='', path='', user='', password='', token=''):
     """Return a new client.
 

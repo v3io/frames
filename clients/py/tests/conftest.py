@@ -16,7 +16,7 @@ import json
 import re
 from collections import namedtuple
 from os import environ, makedirs, path
-from shutil import rmtree
+from shutil import rmtree, copyfile
 from socket import error as SocketError
 from socket import socket
 from subprocess import Popen, call, check_output
@@ -29,6 +29,15 @@ import yaml
 
 SESSION_ENV_KEY = 'V3IO_SESSION'
 has_session = SESSION_ENV_KEY in environ
+test_id = uuid4().hex
+here = path.dirname(path.abspath(__file__))
+
+csv_file = '{}/weather.csv'.format(here)
+grpc_port = 8766
+http_port = 8765
+protocols = ['grpc', 'http']
+root_dir = '/tmp/test-integration-root-{}'.format(test_id)
+server_timeout = 30  # seconds
 
 extra_backends = [
     {'type': 'kv'},
@@ -56,14 +65,7 @@ def has_working_go():
         return False
 
 
-here = path.dirname(path.abspath(__file__))
-backend = 'weather'
-http_port = 8765
-grpc_port = 8766
-server_timeout = 30  # seconds
 has_go = has_working_go()
-test_id = uuid4().hex
-root_dir = '/tmp/test-integration-root-{}'.format(test_id)
 
 
 def wait_for_server(port, timeout):
@@ -79,14 +81,21 @@ def wait_for_server(port, timeout):
     return False
 
 
-Framesd = namedtuple('Framesd', 'grpc_port http_port config')
+Framesd = namedtuple('Framesd', 'grpc_addr http_addr config')
+
+
+def initialize_csv_root():
+    if path.exists(root_dir):
+        rmtree(root_dir)
+    makedirs(root_dir)
+
+    dest = '{}/{}'.format(root_dir, path.basename(csv_file))
+    copyfile(csv_file, dest)
 
 
 @pytest.fixture(scope='module')
 def framesd():
-    if path.exists(root_dir):
-        rmtree(root_dir)
-    makedirs(root_dir)
+    initialize_csv_root()
 
     config = {
         'log': {
@@ -126,8 +135,8 @@ def framesd():
     assert wait_for_server(http_port, server_timeout), 'server did not start'
     try:
         yield Framesd(
-            grpc_port=grpc_port,
-            http_port=http_port,
+            grpc_addr='localhost:{}'.format(grpc_port),
+            http_addr='localhost:{}'.format(http_port),
             config=config,
         )
     finally:

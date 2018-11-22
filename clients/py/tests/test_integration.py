@@ -20,7 +20,7 @@ import pandas as pd
 import pytest
 
 import v3io_frames as v3f
-from conftest import has_go, test_backends
+from conftest import has_go, test_backends, protocols
 
 
 tsdb_span = 5  # hours
@@ -108,7 +108,7 @@ def random_df(size):
     return pd.DataFrame(data)
 
 
-integ_params = [(p, b) for p in ['grpc', 'http'] for b in test_backends]
+integ_params = [(p, b) for p in protocols for b in test_backends]
 
 
 @pytest.mark.skipif(not has_go, reason='Go SDK not found')
@@ -126,8 +126,7 @@ def test_integration(framesd, session, protocol, backend):
         'ls': 'hi',
     }
 
-    port = getattr(framesd, '{}_port'.format(protocol))
-    addr = 'localhost:{}'.format(port)
+    addr = getattr(framesd, '{}_addr'.format(protocol))
     c = v3f.Client(addr, protocol=protocol, **session)
     cfg = test_config.get(backend, {})
     df_fn = cfg.get('df_fn')
