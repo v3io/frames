@@ -18,7 +18,7 @@ import pandas as pd
 import pytest
 
 import v3io_frames as v3f
-from conftest import protocols, csv_file
+from conftest import protocols, csv_file, has_go
 from time import sleep, monotonic
 from random import random
 
@@ -41,6 +41,7 @@ def reader(id, n, c):
         sleep(random() / 10)
 
 
+@pytest.mark.skipif(not has_go, reason='Go SDK not found')
 @pytest.mark.parametrize('protocol', protocols)
 def test_concurrent(framesd, protocol):
     c = v3f.Client()
