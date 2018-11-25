@@ -52,7 +52,7 @@ setup(
     author_email='miki@353solutions.com',
     license='MIT',
     url='https://github.com/v3io/frames',
-    py_modules=['v3io_frames'],
+    packages=['v3io_frames'],
     install_requires=install_requires,
     classifiers=[
         'Development Status :: 4 - Beta',
