@@ -60,3 +60,7 @@ grpc-py:
 		../../frames.proto
 	python scripts/fix_pb_import.py \
 	    clients/py/v3io_frames/frames_pb2_grpc.py
+
+pypi:
+	cd clients/py && \
+	    pipenv run make upload
