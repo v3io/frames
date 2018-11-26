@@ -31,7 +31,8 @@ func ExampleClient() {
 	tableName := "example_table"
 	url := "http://localhost:8080"
 	fmt.Println(">>> connecting")
-	client, err := NewClient(url, nil)
+	// nil, nil are session and logger
+	client, err := NewClient(url, nil, nil)
 	if err != nil {
 		fmt.Printf("can't connect to %q - %s", url, err)
 		return
