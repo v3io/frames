@@ -18,7 +18,7 @@ require (
 	github.com/rcrowley/go-metrics v0.0.0-20181016184325-3113b8401b8a // indirect
 	github.com/stretchr/testify v1.2.2 // indirect
 	github.com/v3io/v3io-go-http v0.0.0-20181023145150-3c8ba0ce5ac8
-	github.com/v3io/v3io-tsdb v0.8.2
+	github.com/v3io/v3io-tsdb v0.0.4-0.20181126115443-3822bae80c58
 	github.com/valyala/fasthttp v1.0.0
 	github.com/vmihailenco/msgpack v4.0.0+incompatible
 	github.com/xwb1989/sqlparser v0.0.0-20180606152119-120387863bf2
