@@ -137,8 +137,8 @@ def framesd():
     assert wait_for_server(http_port, server_timeout), 'server did not start'
     try:
         yield Framesd(
-            grpc_addr='localhost:{}'.format(grpc_port),
-            http_addr='localhost:{}'.format(http_port),
+            grpc_addr='grpc://localhost:{}'.format(grpc_port),
+            http_addr='http://localhost:{}'.format(http_port),
             config=config,
         )
     finally:

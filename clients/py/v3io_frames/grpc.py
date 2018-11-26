@@ -33,6 +33,7 @@ IGNORE, FAIL = fpb.IGNORE, fpb.FAIL
 _ts = pd.Series(pd.Timestamp(0))
 _time_dt = _ts.dtype
 _time_tz_dt = _ts.dt.tz_localize(pytz.UTC).dtype
+_scheme_prefix = 'grpc://'
 
 
 def grpc_raise(err_cls):
@@ -61,6 +62,8 @@ class Client:
         session : Session
             Session object
         """
+        if address.startswith(_scheme_prefix):
+            address = address[len(_scheme_prefix):]
         self.address = address
         self.session = session
 
