@@ -133,6 +133,11 @@ func (a *Appender) Add(frame frames.Frame) error {
 				return err
 			}
 
+			switch val.(type) {
+			case int64:
+				val = int(val.(int64))
+			}
+
 			row[name] = val
 		}
 
