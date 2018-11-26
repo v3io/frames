@@ -200,6 +200,20 @@ func runServer(t *testing.T, root string, grpcPort int, httpPort int) *exec.Cmd 
 	return cmd
 }
 
+func floatCol(t *testing.T, name string, size int) frames.Column {
+	floats := make([]float64, size)
+	for i := range floats {
+		floats[i] = random.Float64()
+	}
+
+	col, err := frames.NewSliceColumn(name, floats)
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	return col
+}
+
 func csvFrame(t *testing.T, size int) frames.Frame {
 	var (
 		columns []frames.Column
@@ -219,14 +233,7 @@ func csvFrame(t *testing.T, size int) frames.Frame {
 	}
 	columns = append(columns, col)
 
-	floats := make([]float64, size)
-	for i := range floats {
-		floats[i] = random.Float64()
-	}
-	col, err = frames.NewSliceColumn("floats", floats)
-	if err != nil {
-		t.Fatal(err)
-	}
+	col = floatCol(t, "floats", size)
 	columns = append(columns, col)
 
 	ints := make([]int64, size)
@@ -260,6 +267,56 @@ func csvFrame(t *testing.T, size int) frames.Frame {
 	columns = append(columns, col)
 
 	frame, err := frames.NewFrame(columns, nil, nil)
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	return frame
+}
+
+func kvFrame(t *testing.T, size int) frames.Frame {
+	var icol frames.Column
+
+	index := []string{"mike", "joe", "jim", "rose", "emily", "dan"}
+	icol, err := frames.NewSliceColumn("idx", index)
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	columns := []frames.Column{
+		floatCol(t, "n1", len(index)),
+		floatCol(t, "n2", len(index)),
+		floatCol(t, "n3", len(index)),
+	}
+
+	frame, err := frames.NewFrame(columns, []frames.Column{icol}, nil)
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	return frame
+}
+
+func streamFrame(t *testing.T, size int) frames.Frame {
+	size = 60 // TODO
+	times := make([]time.Time, size)
+	end := time.Now().Truncate(time.Hour)
+	for i := range times {
+		times[i] = end.Add(-time.Duration(size-i) * time.Second * 300)
+	}
+
+	index, err := frames.NewSliceColumn("idx", times)
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	columns := []frames.Column{
+		floatCol(t, "cpu", index.Len()),
+		floatCol(t, "mem", index.Len()),
+		floatCol(t, "disk", index.Len()),
+	}
+
+	frame, err := frames.NewFrame(columns, []frames.Column{index}, nil)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -415,6 +472,32 @@ func init() {
 			frameFn: csvFrame,
 			exec: func(req *frames.ExecRequest) {
 				req.Command = "ping"
+			},
+		},
+		"kv": &testConfig{
+			frameFn: kvFrame,
+		},
+		"stream": &testConfig{
+			frameFn: streamFrame,
+			create: func(req *frames.CreateRequest) {
+				req.SetAttribute("retention_hours", 48)
+				req.SetAttribute("shards", 1)
+			},
+			read: func(req *frames.ReadRequest) {
+				req.Seek = "earliest"
+				req.ShardId = "0"
+			},
+		},
+		"tsdb": &testConfig{
+			frameFn: streamFrame, // We use the same frame as stream
+			create: func(req *frames.CreateRequest) {
+				req.SetAttribute("rate", "1/m")
+			},
+			read: func(req *frames.ReadRequest) {
+				req.Step = "10m"
+				req.Aggragators = "avg,max,count"
+				req.Start = "now-5h"
+				req.End = "now"
 			},
 		},
 	}
