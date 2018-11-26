@@ -125,7 +125,7 @@ def test_integration(framesd, session, protocol, backend):
     table = 'integtest{}'.format(test_id)
 
     addr = getattr(framesd, '{}_addr'.format(protocol))
-    client = v3f.Client(addr, protocol=protocol, **session)
+    client = v3f.Client(addr, **session)
     cfg = test_config.get(backend, {})
     df = cfg['df_fn'](size)
 

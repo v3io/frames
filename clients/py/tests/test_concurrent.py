@@ -44,7 +44,8 @@ def reader(id, n, c):
 @pytest.mark.skipif(not has_go, reason='Go SDK not found')
 @pytest.mark.parametrize('protocol', protocols)
 def test_concurrent(framesd, protocol):
-    c = v3f.Client()
+    addr = getattr(framesd, '{}_addr'.format(protocol))
+    c = v3f.Client(addr)
     start = monotonic()
     with ThreadPoolExecutor() as pool:
         for i in range(7):

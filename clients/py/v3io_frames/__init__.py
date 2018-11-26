@@ -14,7 +14,7 @@
 
 __version__ = '0.2.2'
 
-import re
+from urllib.parse import urlparse
 
 
 from .http import Client as HTTPClient  # noqa
@@ -23,20 +23,19 @@ from .errors import *  # noqa
 from .frames_pb2 import TableSchema as Schema, SchemaKey, FAIL, IGNORE  # noqa
 from .pbutils import SchemaField, Session  # noqa 
 
-GRPC_PROTOCOL = 'grpc'
-HTTP_PROTOCOL = 'http'
+
+_known_protocols = {'grpc', 'http', 'https'}
 
 
-def Client(address='localhost:8081', protocol=GRPC_PROTOCOL,
+def Client(address='localhost:8081',
            data_url='', container='', path='', user='', password='', token=''):
     """Return a new client.
 
     Parameters
     ----------
     address : str
-        framesd backend address
-    protocol : str
-        Client protocol (GRPC_PROTOCOL or HTTP_PROTOCOL)
+        framesd backend address. Use grpc:// or http:// prefix to specify
+        protocol (default is gRPC)
     data_url : str
         Backend URL (session info)
     container : str
@@ -51,12 +50,9 @@ def Client(address='localhost:8081', protocol=GRPC_PROTOCOL,
         Login token (session info)
     """
 
-    if protocol not in (GRPC_PROTOCOL, HTTP_PROTOCOL):
+    protocol = urlparse(address).scheme or 'grpc'
+    if protocol not in _known_protocols:
         raise ValueError('unknown protocol - {}'.format(protocol))
-
-    # TODO: Remove schema ourselves? What about Python Zen #12?
-    if protocol == GRPC_PROTOCOL and re.match('^http(s)?://', address):
-        raise ValueError('grpc address should not have http:// prefix')
 
     session = Session(
         url=data_url,
@@ -67,7 +63,5 @@ def Client(address='localhost:8081', protocol=GRPC_PROTOCOL,
         token=token,
     )
 
-    if protocol == HTTP_PROTOCOL:
-        return HTTPClient(address, session)
-
-    return gRPCClient(address, session)
+    cls = gRPCClient if protocol == 'grpc' else HTTPClient
+    return cls(address, session)

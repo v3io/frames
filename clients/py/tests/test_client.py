@@ -17,14 +17,14 @@ import v3io_frames as v3f
 
 
 test_client_params = [
-    (v3f.GRPC_PROTOCOL, v3f.gRPCClient),
-    (v3f.HTTP_PROTOCOL, v3f.HTTPClient),
+    ('grpc', v3f.gRPCClient),
+    ('http', v3f.HTTPClient),
 ]
 
 
 @pytest.mark.parametrize('proto,cls', test_client_params)
 def test_client(proto, cls):
-    address = 'localhost:8080'
+    address = '{}://localhost:8080'.format(proto)
     session_params = {
         'data_url': 'http://iguazio.com',
         'container': 'large one',
@@ -34,7 +34,7 @@ def test_client(proto, cls):
         'token': 'a quarter',
     }
 
-    client = v3f.Client(address, proto, **session_params)
+    client = v3f.Client(address, **session_params)
     assert client.__class__ is cls, 'wrong class'
     for key, value in session_params.items():
         key = 'url' if key == 'data_url' else key
