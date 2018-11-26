@@ -22,10 +22,9 @@ package aggregate
 
 import (
 	"fmt"
+	"github.com/v3io/v3io-tsdb/pkg/utils"
 	"math"
 	"strings"
-
-	"github.com/v3io/v3io-tsdb/pkg/utils"
 )
 
 // Local cache of init arrays per aggregate type. Used to mimic memcopy and initialize data arrays with specific values

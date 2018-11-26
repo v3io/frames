@@ -54,10 +54,9 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 package chunkenc
 
 import (
+	"github.com/nuclio/logger"
 	"math"
 	"math/bits"
-
-	"github.com/nuclio/logger"
 )
 
 // XORChunk holds XOR encoded sample data.

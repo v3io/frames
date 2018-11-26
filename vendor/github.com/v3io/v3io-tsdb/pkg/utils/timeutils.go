@@ -21,11 +21,10 @@ such restriction.
 package utils
 
 import (
+	"github.com/pkg/errors"
 	"strconv"
 	"strings"
 	"time"
-
-	"github.com/pkg/errors"
 )
 
 const (

@@ -22,9 +22,8 @@ package aggregate
 
 import (
 	"fmt"
-	"math"
-
 	"github.com/v3io/v3io-tsdb/pkg/utils"
+	"math"
 )
 
 type Aggregate interface {

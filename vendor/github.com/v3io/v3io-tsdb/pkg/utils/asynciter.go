@@ -21,11 +21,10 @@ such restriction.
 package utils
 
 import (
-	"net/http"
-
 	"github.com/nuclio/logger"
 	"github.com/pkg/errors"
 	"github.com/v3io/v3io-go-http"
+	"net/http"
 )
 
 type ItemsCursor interface {

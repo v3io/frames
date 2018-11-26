@@ -2,11 +2,10 @@ package utils
 
 import (
 	"fmt"
+	"github.com/v3io/v3io-go-http"
 	"math"
 	"net/http"
 	"strings"
-
-	"github.com/v3io/v3io-go-http"
 )
 
 func IsUndefined(value float64) bool {

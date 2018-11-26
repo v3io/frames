@@ -2,6 +2,9 @@ package performance
 
 import (
 	"fmt"
+	"github.com/pkg/errors"
+	"github.com/rcrowley/go-metrics"
+	"github.com/v3io/v3io-tsdb/pkg/config"
 	"io"
 	"log"
 	"os"
@@ -9,10 +12,6 @@ import (
 	"sync"
 	"syscall"
 	"time"
-
-	"github.com/pkg/errors"
-	"github.com/rcrowley/go-metrics"
-	"github.com/v3io/v3io-tsdb/pkg/config"
 )
 
 const (

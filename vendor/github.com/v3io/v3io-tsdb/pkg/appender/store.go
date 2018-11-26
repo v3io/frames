@@ -23,9 +23,6 @@ package appender
 import (
 	"encoding/base64"
 	"fmt"
-	"sort"
-	"time"
-
 	"github.com/nuclio/logger"
 	"github.com/v3io/v3io-go-http"
 	"github.com/v3io/v3io-tsdb/internal/pkg/performance"
@@ -33,6 +30,8 @@ import (
 	"github.com/v3io/v3io-tsdb/pkg/chunkenc"
 	"github.com/v3io/v3io-tsdb/pkg/partmgr"
 	"github.com/v3io/v3io-tsdb/pkg/utils"
+	"sort"
+	"time"
 )
 
 // TODO: make it configurable
