@@ -12,6 +12,12 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+# Docker container for framesd, to run
+#   docker run -p8080:8080 -p8081:8081 -v /path/to/config.yaml:/etc/framesd.yaml
+# 
+# You can also use -e V3IO_GRPC_PORT=9999 and -e V3IO_HTTP_PORT=9998 to set ports
+# (don't forget to update the -p accordingly)
+
 
 FROM golang:1.11-stretch as build
 
@@ -27,4 +33,4 @@ VOLUME /etc/framesd
 ENV V3IO_GRPC_PORT 8081
 ENV V3IO_HTTP_PORT 8080
 
-CMD framesd -grpcAddr :${V3IO_GRPC_PORT} --httpAddr :${V3IO_HTTP_PORT} -config /etc/framesd.yaml
+CMD framesd -grpcAddr :${V3IO_GRPC_PORT} -httpAddr :${V3IO_HTTP_PORT} -config /etc/framesd.yaml
