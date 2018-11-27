@@ -23,12 +23,19 @@ package pb
 import (
 	"encoding/json"
 	"fmt"
+	"reflect"
 	"regexp"
+	"sort"
+	"strings"
 	"time"
 )
 
 var (
-	intRe = regexp.MustCompile("^[0-9]+$")
+	intRe          = regexp.MustCompile("^[0-9]+$")
+	passwdRe       = regexp.MustCompile("password:\"[^\"]*\"")
+	passwdMask     = "*****"
+	passwdMaskFull = fmt.Sprintf("password:\"%s\"", passwdMask)
+	sessionFields  []string
 )
 
 // GoValue return value as interface{}
@@ -150,4 +157,52 @@ func (s *SchemaField) Property(key string) (interface{}, bool) {
 	}
 
 	return v, true
+}
+
+// Format implements fmt.Formatter
+// We're doing this to hide passwords from prints
+func (s *Session) Format(state fmt.State, verb rune) {
+	switch verb {
+	case 's', 'q':
+		val := passwdRe.ReplaceAllString(s.String(), passwdMaskFull)
+		if verb == 'q' {
+			val = fmt.Sprintf("%q", val)
+		}
+		fmt.Fprint(state, val)
+	case 'v':
+		if state.Flag('#') {
+			fmt.Fprintf(state, "%T", s)
+		}
+		fmt.Fprint(state, "{")
+		val := reflect.ValueOf(*s)
+		for i, name := range sessionFields {
+			if state.Flag('#') || state.Flag('+') {
+				fmt.Fprintf(state, "%s:", name)
+			}
+			if name == "Password" {
+				fmt.Fprint(state, passwdMask)
+			} else {
+				fmt.Fprintf(state, "%v", val.FieldByName(name))
+			}
+
+			if i > 0 && i < len(sessionFields)-1 {
+				fmt.Fprint(state, " ")
+			}
+		}
+		fmt.Fprint(state, "}")
+	}
+}
+
+func init() {
+	typ := reflect.TypeOf(Session{})
+	sessionFields = make([]string, 0, typ.NumField())
+	for i := 0; i < typ.NumField(); i++ {
+		field := typ.Field(i)
+		// Ignore protobuf internal fields
+		if strings.HasPrefix(field.Name, "XXX_") {
+			continue
+		}
+		sessionFields = append(sessionFields, field.Name)
+	}
+	sort.Strings(sessionFields)
 }
