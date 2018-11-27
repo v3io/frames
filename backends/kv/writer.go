@@ -133,9 +133,8 @@ func (a *Appender) Add(frame frames.Frame) error {
 				return err
 			}
 
-			switch val.(type) {
-			case int64:
-				val = int(val.(int64))
+			if val64, ok := val.(int64); ok {
+				val = val64
 			}
 
 			row[name] = val
