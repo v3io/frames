@@ -1,0 +1,15 @@
+log:
+  level: "info"
+limit: 1000
+webApiEndpoint: "127.0.0.1:888"
+container: "bigdata"
+username: "iguazio"
+password: "t0ps3cr3t"
+
+backends:
+- type: "kv"
+- type: "stream"
+- type: "tsdb"
+  workers: 16
+- type: "csv"
+  rootdir: "/mnt/csvroot"
