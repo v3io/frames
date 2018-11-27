@@ -134,7 +134,9 @@ func (c *Client) Write(request *frames.WriteRequest) (frames.FrameAppender, erro
 	}
 
 	var buf bytes.Buffer
-	if err := msgpack.NewEncoder(&buf).Encode(request); err != nil {
+	enc := msgpack.NewEncoder(&buf)
+	enc.UseJSONTag(true)
+	if err := enc.Encode(request); err != nil {
 		return nil, errors.Wrap(err, "Can't encode request")
 	}
 
