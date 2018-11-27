@@ -47,6 +47,7 @@ deploy:
       - framesd-windows-amd64.exe.bz2
     on:
       repo: v3io/frames
+      branch: master
       tags: true
   - provider: pypi
     user: ${V3IO_PYPI_USER}
@@ -54,4 +55,5 @@ deploy:
     distributions: "sdist bdist_wheel"
     on:
       repo: v3io/frames
+      branch: master
       tags: true
