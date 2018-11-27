@@ -72,7 +72,7 @@ class Client(object):
     @connection_error(ReadError)
     def read(self, backend='', table='', query='', columns=None, filter='',
              group_by='', limit=0, data_format='', row_layout=False,
-             max_in_message=0, marker='', **kw):
+             max_in_message=0, marker='', iterator=True, **kw):
         """Run a query in nuclio
 
         Parameters
@@ -99,12 +99,15 @@ class Client(object):
             Maximal number of rows per message
         marker : str
             Query marker (can't be used with query)
+        iterator : bool
+            Return iterator of DataFrames or (if False) just one DataFrame
+
         **kw
             Extra parameter for specific backends
 
         Returns:
             A pandas DataFrame iterator. Each DataFrame will have "labels"
-            attribute.
+            attribute. If `iterator` is False will return a single DataFrame.
         """
         request = {
             'session': pb2py(self.session),
@@ -132,7 +135,11 @@ class Client(object):
         if not resp.ok:
             raise Error('cannot call API - {}'.format(resp.text))
 
-        return self._iter_dfs(resp.raw)
+        dfs = self._iter_dfs(resp.raw)
+
+        if not iterator:
+            return pd.concat(dfs)
+        return dfs
 
     @connection_error(WriteError)
     def write(self, backend, table, dfs, labels=None, max_in_message=0):

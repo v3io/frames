@@ -29,7 +29,9 @@ clean_pyc:
 .PHONY: flask8
 flake8:
 	PIPENV_IGNORE_VIRTUALENVS=1 \
-	    pipenv run flake8 nuclio tests
+	    pipenv run flake8 \
+	    	--exclude 'frames_pb2*.py' \
+	    	v3io_frames tests
 
 .PHONY: test
 test: clean_pyc flake8
