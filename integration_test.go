@@ -29,6 +29,7 @@ import (
 	"net"
 	"os"
 	"os/exec"
+	"strings"
 	"testing"
 	"time"
 
@@ -385,11 +386,17 @@ func integrationTest(t *testing.T, client frames.Client, backend string) {
 	}
 
 	for it.Next() {
-		fr := it.At()
-		if fr.Len() != frame.Len() {
-			t.Fatalf("wrong length: %d != %d", fr.Len(), frame.Len())
-		}
 		// TODO: More checks
+		fr := it.At()
+		if strings.Contains(t.Name(), "tsdb") {
+			if fr.Len() == 0 {
+				t.Fatalf("empty frame")
+			}
+		} else {
+			if fr.Len() != frame.Len() {
+				t.Fatalf("wrong length: %d != %d", fr.Len(), frame.Len())
+			}
+		}
 	}
 
 	if err := it.Err(); err != nil {
