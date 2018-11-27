@@ -133,6 +133,10 @@ func (a *Appender) Add(frame frames.Frame) error {
 				return err
 			}
 
+			if val64, ok := val.(int64); ok {
+				val = val64
+			}
+
 			row[name] = val
 		}
 
