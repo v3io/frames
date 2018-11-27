@@ -24,6 +24,8 @@ import (
 	"flag"
 	"fmt"
 	"log"
+	"os"
+	"path"
 	"time"
 
 	"github.com/ghodss/yaml"
@@ -33,19 +35,31 @@ import (
 	"io/ioutil"
 )
 
+var (
+	// Version is framesd version (populated by the build process)
+	Version = "unknown"
+)
+
 func main() {
 	var config struct {
-		file     string
-		httpAddr string
-		grpcAddr string
+		file        string
+		httpAddr    string
+		grpcAddr    string
+		showVersion bool
 	}
 
 	flag.StringVar(&config.file, "config", "", "path to configuration file (YAML)")
 	flag.StringVar(&config.httpAddr, "httpAddr", ":8080", "address to listen on HTTP")
 	flag.StringVar(&config.grpcAddr, "grpcAddr", ":8081", "address to listen on gRPC")
+	flag.BoolVar(&config.showVersion, "version", false, "show version and exit")
 	flag.Parse()
 
 	log.SetFlags(0) // Show only messages
+
+	if config.showVersion {
+		fmt.Printf("%s version %s\n", path.Base(os.Args[0]), Version)
+		return
+	}
 
 	if config.file == "" {
 		log.Fatal("error: no config file given")
