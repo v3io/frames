@@ -114,6 +114,7 @@ func genConfig(root string, session *frames.Session) *frames.Config {
 			RootDir: root,
 		},
 	}
+
 	if session != nil {
 		backends = append(backends, &frames.BackendConfig{
 			Type: "kv",
@@ -367,7 +368,7 @@ func integrationTest(t *testing.T, client frames.Client, backend string) {
 		t.Fatal(err)
 	}
 
-	time.Sleep(time.Second) // Let DB sync
+	time.Sleep(3 * time.Second) // Let DB sync
 
 	t.Log("read")
 	rreq := &frames.ReadRequest{
