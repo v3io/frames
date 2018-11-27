@@ -1,4 +1,3 @@
-#!/bin/bash
 # Copyright 2018 Iguazio
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
@@ -13,18 +12,22 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-
 set -x
 set -e
 
 version=$(./scripts/build-version.sh)
-tag_base='v3io/framesd'
-tag="${tag_base}/${version}"
 
-docker build \
-    --build-arg FRAMES_VERSION=${version} \
-    --tag ${tag} \
-    --file cmd/framesd/Dockerfile \
-    .
+function build() {
+    GOOS=$1 GOARCH=$2 suffix=$3
+    exe=framesd-${GOOS}-${GOARCH}${suffix}
+    GOOS=${GOOS} GOARCH=${GOARCH} \
+	go build \
+	    -o ${exe} \
+	    -ldflags="-X main.Version=${version}" \
+	    ./cmd/framesd
+    bzip2 ${exe}
+}
 
-docker tag ${tag} "${tag_base}:latest"
+build linux amd64
+build darwin amd64
+build windows amd64 .exe

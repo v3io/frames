@@ -13,18 +13,9 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+version=${TRAVIS_VERSION:unknown}
+if [ -z "${version}" ]; then
+    version=$(git rev-parse --short HEAD)
+fi
 
-set -x
-set -e
-
-version=$(./scripts/build-version.sh)
-tag_base='v3io/framesd'
-tag="${tag_base}/${version}"
-
-docker build \
-    --build-arg FRAMES_VERSION=${version} \
-    --tag ${tag} \
-    --file cmd/framesd/Dockerfile \
-    .
-
-docker tag ${tag} "${tag_base}:latest"
+echo ${version}
