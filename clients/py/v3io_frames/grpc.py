@@ -68,9 +68,9 @@ class Client:
         self.session = session
 
     @grpc_raise(ReadError)
-    def read(self, backend='', table='', query='', columns=None, filter='',
-             group_by='', limit=0, data_format='', row_layout=False,
-             max_in_message=0, marker='', **kw):
+    def _read(self, backend='', table='', query='', columns=None, filter='',
+              group_by='', limit=0, data_format='', row_layout=False,
+              max_in_message=0, marker='', iterator=True, **kw):
         """Run a query in nuclio
 
         Parameters
@@ -97,12 +97,14 @@ class Client:
             Maximal number of rows per message
         marker : str
             Query marker (can't be used with query)
+        iterator : bool
+            Return iterator of DataFrames or (if False) just one DataFrame
         **kw
             Extra parameter for specific backends
 
         Returns:
             A pandas DataFrame iterator. Each DataFrame will have "labels"
-            attribute.
+            attribute. If `iterator` is False will return a single DataFrame.
         """
         # TODO: Create channel once?
         with grpc.insecure_channel(self.address) as channel:
@@ -123,6 +125,16 @@ class Client:
             )
             for frame in stub.Read(request):
                 yield frame2df(frame)
+
+    # We need to write "read" since once you have a yield in a function
+    # (_read) it'll always return a generator
+    @wraps(_read)
+    def read(self, *args, **kw):
+        iterator = kw.pop('iterator', True)
+        dfs = self._read(*args, **kw)
+        if not iterator:
+            return pd.concat(dfs)
+        return dfs
 
     @grpc_raise(WriteError)
     def write(self, backend, table, dfs, expression='', labels=None):

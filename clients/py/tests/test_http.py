@@ -117,6 +117,10 @@ def test_read():
     assert len(df) == 6
     assert list(df.columns) == ['x', 'y']
 
+    with patch_requests(data) as patch:
+        df = client.read(query=query, iterator=False)
+    assert isinstance(df, pd.DataFrame), 'iterator=False return'
+
 
 def test_encode_df():
     c = new_test_client()
