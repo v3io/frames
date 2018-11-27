@@ -155,6 +155,9 @@ def test_integration(framesd, session, protocol, backend):
     else:
         compare_dfs(df, df2, backend)
 
+    df = client.read(backend, table=table, iterator=False, **read_kw)
+    assert isinstance(df, pd.DataFrame), 'iterator=False returned generator'
+
     client.delete(backend, table)
     exec_kw = cfg.get('execute', {})
     if exec_kw is not None:
