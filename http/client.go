@@ -26,6 +26,7 @@ import (
 	"fmt"
 	"io"
 	"net/http"
+	neturl "net/url"
 	"os"
 	"time"
 
@@ -38,8 +39,9 @@ import (
 
 // Client is v3io HTTP streaming client
 type Client struct {
-	URL    string
-	logger logger.Logger
+	URL     string
+	logger  logger.Logger
+	session *frames.Session
 }
 
 var (
@@ -48,7 +50,7 @@ var (
 )
 
 // NewClient returns a new HTTP client
-func NewClient(url string, logger logger.Logger) (*Client, error) {
+func NewClient(url string, session *frames.Session, logger logger.Logger) (*Client, error) {
 	var err error
 	if logger == nil {
 		logger, err = frames.NewLogger("info")
@@ -65,9 +67,19 @@ func NewClient(url string, logger logger.Logger) (*Client, error) {
 		return nil, fmt.Errorf("empty URL")
 	}
 
+	u, err := neturl.Parse(url)
+	if err != nil {
+		return nil, fmt.Errorf("bad URL - %s", err)
+	}
+
+	if u.Scheme == "" {
+		url = fmt.Sprintf("http://%s", url)
+	}
+
 	client := &Client{
-		URL:    url,
-		logger: logger,
+		URL:     url,
+		session: session,
+		logger:  logger,
 	}
 
 	return client, nil
@@ -75,6 +87,10 @@ func NewClient(url string, logger logger.Logger) (*Client, error) {
 
 // Read runs a query on the client
 func (c *Client) Read(request *frames.ReadRequest) (frames.FrameIterator, error) {
+	if request.Session == nil {
+		request.Session = c.session
+	}
+
 	var buf bytes.Buffer
 	if err := json.NewEncoder(&buf).Encode(request); err != nil {
 		return nil, errors.Wrap(err, "can't encode query")
@@ -113,8 +129,14 @@ func (c *Client) Write(request *frames.WriteRequest) (frames.FrameAppender, erro
 		return nil, fmt.Errorf("missing request parameters")
 	}
 
+	if request.Session == nil {
+		request.Session = c.session
+	}
+
 	var buf bytes.Buffer
-	if err := msgpack.NewEncoder(&buf).Encode(request); err != nil {
+	enc := msgpack.NewEncoder(&buf)
+	enc.UseJSONTag(true)
+	if err := enc.Encode(request); err != nil {
 		return nil, errors.Wrap(err, "Can't encode request")
 	}
 
@@ -146,16 +168,28 @@ func (c *Client) Write(request *frames.WriteRequest) (frames.FrameAppender, erro
 
 // Delete deletes data
 func (c *Client) Delete(request *frames.DeleteRequest) error {
+	if request.Session == nil {
+		request.Session = c.session
+	}
+
 	return c.jsonCall("/delete", request)
 }
 
 // Create creates a table
 func (c *Client) Create(request *frames.CreateRequest) error {
+	if request.Session == nil {
+		request.Session = c.session
+	}
+
 	return c.jsonCall("/create", request)
 }
 
 // Exec executes a command
 func (c *Client) Exec(request *frames.ExecRequest) error {
+	if request.Session == nil {
+		request.Session = c.session
+	}
+
 	return c.jsonCall("/exec", request)
 }
 

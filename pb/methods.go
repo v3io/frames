@@ -78,6 +78,16 @@ func (r *CreateRequest) Attributes() map[string]interface{} {
 
 // SetAttribute sets an attribute
 func (r *CreateRequest) SetAttribute(key string, value interface{}) error {
+	if r.AttributeMap == nil {
+		r.AttributeMap = make(map[string]*Value)
+	}
+
+	pbVal := &Value{}
+	if err := pbVal.SetValue(value); err != nil {
+		return err
+	}
+
+	r.AttributeMap[key] = pbVal
 	return nil
 }
 

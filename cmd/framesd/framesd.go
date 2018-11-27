@@ -23,14 +23,15 @@ package main
 import (
 	"flag"
 	"fmt"
+	"io/ioutil"
 	"log"
 	"time"
 
 	"github.com/ghodss/yaml"
+
 	"github.com/v3io/frames"
 	"github.com/v3io/frames/grpc"
 	"github.com/v3io/frames/http"
-	"io/ioutil"
 )
 
 func main() {

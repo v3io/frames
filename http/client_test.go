@@ -21,6 +21,7 @@ such restriction.
 package http
 
 import (
+	"fmt"
 	"testing"
 	"testing/quick"
 )
@@ -31,13 +32,13 @@ func TestNewClient(t *testing.T) {
 			return true
 		}
 
-		client, err := NewClient(url, nil)
+		client, err := NewClient(url, nil, nil)
 		if err != nil {
 			t.Logf("can't create client - %s", err)
 			return false
 		}
 
-		if client.URL != url {
+		if client.URL != fmt.Sprintf("http://%s", url) {
 			t.Logf("URL mismatch: %q != %q", client.URL, url)
 			return false
 		}
