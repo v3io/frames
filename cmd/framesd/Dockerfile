@@ -23,7 +23,8 @@ FROM golang:1.11-stretch as build
 
 WORKDIR /frames
 COPY . .
-RUN go build ./cmd/framesd
+ARG FRAMES_VERSION=unknown
+RUN go build -ldflags="-X main.Version=${FRAMES_VERSION}" ./cmd/framesd
 RUN cp framesd /usr/local/bin
 
 FROM debian:jessie-slim

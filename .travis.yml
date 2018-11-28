@@ -3,19 +3,12 @@ services:
 - docker
 matrix:
   include:
-  - go: 1.10.x
-    script: make test
   - go: 1.11.x
-    script: make test
-  - go: 1.11.x
-    script: make build-docker
-  - language: python
-    python: '3.6'
     script:
-    - pip install pipenv
-    - cd clients/py
-    - pipenv sync --dev
-    - pipenv run python -m pytest -v
+    - make test
+    - ./scripts/build-docker.sh
+    - ./scripts/push-docker.sh $(./scripts/build-version.sh) latest
+    - ./scripts/build-binaries.sh
   - language: python
     python: 3.7-dev
     env:
@@ -33,5 +26,25 @@ env:
   matrix:
   - GO111MODULE=on
   global:
-    secure: NwON2F5YhpSHt326DNkLA4lTtb+BFS2XXaH1XyofBRHwuI2xY6WO+6tEn15Kp9Ccm/EoBy2bScy2WBmYD/DsP4KIJOuL2XtRf2ld81FsFsbaUD0uBJJY4gDP5iYyq3fqvssf8oVLUdVerJpyG+98ZlU6ae2o0KAbfUTr6hr7DgjJ8azZMVx8j2IWFcy1S9Db4KmAI0zni+d4v3BGV0VWsDfzOa3CiFb4hVQvBxMuw5Nwtn2PpVkvoYnDM2o0oQFk38ggngvc0Ox4qNxmND0hnxveb9YZ8c69ieHuvaYSLb+3BpI99fonVhLd5LetyuTL/qaQjnnkeC87I6f9QLdCiQwBT56FJShxsPgGtmDdNAel9IbKGrEUi5RR4NQKbQvd8U4LElor0wxK9PryXpRWbNb15WG9db/jjFjylgvTlcVs6Evz3EWReDtAa/dDSIr0Swn3nNV0sQps/9zqWMkFTPOiYlId1DNqw6x31YRIKrJKzWbDCj6C8ukWjPrCjGPMiZTt5srZUCoV07Gzw71/b8JaeqQMhPC4OlQuR+nIhvDZNdM1ADJ/5MCowdGhYwQf45npo+XHeTwHMJqydpXkJi3i5pbhE7iE02Z89mgsB114B4RDzOOOOwuKGPSsgOTBlFA2dZLHCKClTXWOEAm+OT3dXl0PMtR9Upz8mr59+EU=
-install: true
+  - secure: YfT6gkLekcu75sUau9eO0sHOVUGXahChzoF8nA5+fy6PxaZoDC2M9KuFIn6VIBPibUn5gTuVmJ1i1LW/+1DCGx40hKcAvObMkwR+hLcOjQ67LCPL9AGVs3aAox4KiM1h7u91qrQQpIA8Powr7GQ9GNDklZ0i6NCsRZ/sM1gxUiSQiZeycZjL4ywKqBkL6P41Yo+/JDFI/NV9eAFjqo2ucFrKUv4N1ouJgC/z7GMrRWS/s4qZTTuV3F1Kn6xwPrlMwHMOEgWlC8smO7P8u/0XlnpJivhBY7JpZdSvrSQ1nd35STmVeVy3H84goESjJ4bnLhyJ4DP0ghjiD1IQ4Hm6CZIGgENnUdz3BqteQvC4qQbpEXvrsfeQDStnIcKeC0Z0djsNKJmsnOLr8mRn7oSLrnklb9RddOPNmkIQCs0HhwTrGJRgHcK+bbG9JAUYt56+QI38JyCFIMVmsFDzQTpDxWkiLxOrhk0xe12Ke3vZBow8j5vGd+SaOHwbGyVo8OVdmSRkepzWAoFFCNc3YWWuKz7vbRtPytis0pOqKVw/e5baWIP+jGZtjANxB6fE4vDhiEd3ymu1x0nZmCk8kRJLeu9DW29MLmc62NCCjUxjfXfyl4XVcVyuGzd16Wpfa0ORnyf6Nm8B5OC6PYy1+Pc5yBTCkchDAlH7rLvfbd2gKjI=
+  - secure: RynPPFE9bkOxWv1FcCv952Av/I0xLcI+v+1ppOyEf/PWTFJY4WwkTRr0OWbOTq2ZZJsXU2a5lTQEVdItNnxfhDM4y/zl+TXLuxaQ5S7N0vLM7dPb5bNWHOEgNKAuRvuyDV06qrNizkYxrQ+8DEILVzJXlIR3lIzNvDtblAkBUNrXfbBxjdVcFmCckXeNOrWnxvT2+2rF/gG/mQ/6NbmCPqVsioRa75ibOiWY5ymU1zJpd8eyNQ2FG4CNw6y11g1hwm+2bjidkcvjCL7M8vqWnb63Tdu5spSgJfHrglDSp/vS1jQYPmJo3f1f+MC2qITxjrlHh6e6s4PRco1X8xWMODXUw/GLR/YE7aX88Iut9s+FZ7HvPkB4hhXdvpdLTSb/eBoi0UByzDei6SK2sMGucpYFKHjNaNFqG/B5wjSq8s6Zz0PlO7MUgqatBotc8L5F5XoPubAPXGH+zyq/X0JU4JYurp5qpGNdg4doIFS9P3sa9MFSm8dhzkY176/eSCe9j9IT/TDt1UM7FssW7RYqyNgzOrjDjbOaFo0vnnE7KxAbwy4ZptKOKcDnEnFbMFzJVeAyRDiTAc7DRAGOWX2eUo29oIIKc8wA+h/ZC13fjVp7KaRfuhifbif6uEfSHQRKu6TU60k7eUfVGIJIZ7e2Eh82Ebl2YDI7kMD2XMUeSxQ=
+deploy:
+  - provider: releases
+    api_key:
+      secure: ZzxPkLeLSgWQXUB7lldUJ/VTcUMfkoTTN4wdOqVhAktIrV0ssMBl5CJ7pCfnqCG709drgQbLCXbMprSv05x4/bBvCerkjkBuH5+RDorbmkb0OdtyPsf5MkPJVZjksUZ2MShcgICdyiy7FsGRLj5EUK7aWzmsw5YjKAVc6Prj9bzO8eksM8/iv0xMM0fRW8DUoCZ2f8VOGdPCD4ukCJcz/gV50y+N8BYiCMkF04Sy7P0b/wK/0EQM48FqHP1VMip97jyont8NoBmvSrngP/ycas4BBSAHNINkbgXTiVHFWx4C7GHuYeCnp6Q39CLxra81KCUZa96FE1Y5CzwT69qHxBefNLq8CQA0Wy0D9qnSDW5XjBw+qpzrpUu1S4vdSlUq3vtXgTgWdRC/NPfX5UiTOj262VCGlLiRVh1uhGVHJMHEtdKNi7mdhHA2zqzSEFarRqhMzG0NnBQwLpmt37xdG279r0L/7cnxwE1T8olXO8VRlBOhjUjaKo7AJ+veYZbElvBShFnmq61lsTNSJHbNluqAYxUvDCGXM7N4KonY2OQaa8xzOQcIcOA/1V40oabjGKK40o+DaaWIPmfbI10/t7abQrJY3Dg3MKfMQs/KBr4knzfov2+/UyOO76sUHePLbl0AvoV8Zuzspfi/xocYpj5E7NZFbNWCec5k7Ff5y2o=
+    file:
+      - framesd-linux-amd64.bz2
+      - framesd-darwin-amd64.bz2
+      - framesd-windows-amd64.exe.bz2
+    on:
+      repo: v3io/frames
+      branch: master
+      tags: true
+  - provider: pypi
+    user: ${V3IO_PYPI_USER}
+    password: ${V3IO_PYPI_PASSWORD}
+    distributions: "sdist bdist_wheel"
+    on:
+      repo: v3io/frames
+      branch: master
+      tags: true
