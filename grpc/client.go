@@ -95,6 +95,7 @@ func (c *Client) Write(request *frames.WriteRequest) (frames.FrameAppender, erro
 	}
 
 	ireq := &pb.InitialWriteRequest{
+		Session:     request.Session,
 		Backend:     request.Backend,
 		Table:       request.Table,
 		InitialData: frame,
