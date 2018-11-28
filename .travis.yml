@@ -9,7 +9,7 @@ matrix:
     script:
     - make test
     - ./scripts/build-docker.sh
-    - ./scripts/push-docker.sh
+    - ./scripts/push-docker.sh $(./scripts/build-version.sh) latest
     - ./scripts/build-binaries.sh
   - language: python
     python: '3.6'
