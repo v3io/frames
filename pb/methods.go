@@ -185,8 +185,10 @@ func (s *Session) Format(state fmt.State, verb rune) {
 				fmt.Fprintf(state, "%v", val.FieldByName(name))
 			}
 
-			if i > 0 && i < len(sessionFields)-1 {
-				fmt.Fprint(state, " ")
+			if i < len(sessionFields)-1 {
+				if state.Flag('#') || i > 0 {
+					fmt.Fprint(state, " ")
+				}
 			}
 		}
 		fmt.Fprint(state, "}")
