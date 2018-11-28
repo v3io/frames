@@ -3,21 +3,12 @@ services:
 - docker
 matrix:
   include:
-  - go: 1.10.x
-    script: make test
   - go: 1.11.x
     script:
     - make test
     - ./scripts/build-docker.sh
     - ./scripts/push-docker.sh $(./scripts/build-version.sh) latest
     - ./scripts/build-binaries.sh
-  - language: python
-    python: '3.6'
-    script:
-    - pip install pipenv
-    - cd clients/py
-    - pipenv sync --dev
-    - pipenv run python -m pytest -v
   - language: python
     python: 3.7-dev
     env:
