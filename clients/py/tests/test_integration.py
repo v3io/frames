@@ -194,6 +194,5 @@ def test_integration_http_error(framesd):
     c = v3f.HTTPClient(framesd.http_addr, session=None)
 
     with pytest.raises(v3f.ReadError):
-        breakpoint()
         for df in c.read('no-such-backend', table='no such table'):
             pass

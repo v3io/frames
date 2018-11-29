@@ -166,24 +166,31 @@ func (s *Server) handleRead(ctx *fasthttp.RequestCtx) {
 			iface, ok := frame.(pb.Framed)
 			if !ok {
 				s.logger.Error("unknown frame type")
-				//enc.EncodeError(err) TODO
+				s.writeError(enc, fmt.Errorf("unknown frame type"))
 			}
 
 			if err := enc.Encode(iface.Proto()); err != nil {
 				s.logger.ErrorWith("can't encode result", "error", err)
-				//enc.EncodeError(err) TODO
+				s.writeError(enc, err)
 			}
 
 			if err := w.Flush(); err != nil {
 				s.logger.ErrorWith("can't flush", "error", err)
-				//enc.EncodeError(err) TODO
+				s.writeError(enc, err)
 			}
 		}
 
 		if apiError != nil {
-			//enc.EncodeError(err) TODO
+			s.writeError(enc, apiError)
 		}
 	})
+}
+
+func (s *Server) writeError(enc *frames.Encoder, err error) {
+	msg := &pb.Frame{
+		Error: err.Error(),
+	}
+	enc.Encode(msg)
 }
 
 func (s *Server) handleWrite(ctx *fasthttp.RequestCtx) {

@@ -16,7 +16,7 @@
 
 import struct
 from datetime import datetime
-from functools import wraps
+from functools import wraps, partial
 from itertools import chain
 
 import pandas as pd
@@ -29,6 +29,9 @@ from .client import ClientBase
 from .errors import (CreateError, DeleteError, Error, ExecuteError,
                      ReadError, WriteError)
 from .pbutils import pb2py, msg2df, df2msg
+
+header_fmt = '<l'
+header_fmt_size = struct.calcsize(header_fmt)
 
 
 def connection_error(error_cls):
@@ -87,19 +90,12 @@ class Client(ClientBase):
         return dfs
 
     @connection_error(WriteError)
-    def _write(self, backend, table, dfs, labels, max_in_message):
-        request = fpb.InitialWriteRequest(
-            session=pb2py(self.session),
-            backend=backend,
-            table=table,
-            labels=labels,
-            more=True,
-        ).SerializeToString()
-
+    def _write(self, request, dfs):
+        request = request.SerializeToString()
         url = self._url_for('write')
         headers = self._headers()
         headers['Content-Encoding'] = 'chunked'
-        data = chain([request], self._iter_chunks(dfs, labels, max_in_message))
+        data = chain([request], dfs)
         resp = requests.post(url, headers=headers, data=data)
 
         if not resp.ok:
@@ -173,37 +169,23 @@ class Client(ClientBase):
         return headers
 
     def _iter_dfs(self, resp):
-        fmt = '<l'
-        fmt_size = struct.calcsize(fmt)
-
-        while True:
-            data = resp.read(fmt_size)
-            if not data:
-                return
-
-            if len(data) != fmt_size:
-                raise ReadError('chopped header')
-
-            size = struct.unpack(fmt, data)[0]
-            data = resp.read(size)
-            if len(data) != fmt_size:
-                raise ReadError('chopped frame body')
-
-            msg = fpb.Frame.FromString(data)
+        for msg in iter(partial(self._read_msg, resp), None):
             yield msg2df(msg)
 
-    def _iter_chunks(self, dfs, labels, max_in_message):
-        for df in dfs:
-            for cdf in self._chunk_df(df, max_in_message):
-                yield df2msg(df, labels)
+    def _read_msg(self, resp):
+        data = resp.read(header_fmt_size)
+        if not data:
+            return None
 
-    def _chunk_df(self, df, size):
-        size = size if size else len(df)
+        if len(data) != header_fmt_size:
+            raise ReadError('chopped header')
 
-        i = 0
-        while i < len(df):
-            yield df[i:i+size]
-            i += size
+        size = struct.unpack(header_fmt, data)[0]
+        data = resp.read(size)
+        if len(data) != size:
+            raise ReadError('chopped frame body')
+
+        return fpb.Frame.FromString(data)
 
 
 def format_go_time(dt):

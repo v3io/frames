@@ -14,19 +14,21 @@
 
 import re
 from datetime import datetime
-from functools import partial
 from io import BytesIO
 from os.path import abspath, dirname
 
-import msgpack
 import numpy as np
 import pandas as pd
 import pytz
+import struct
 
 import v3io_frames as v3f
+from v3io_frames.pbutils import pb2py, df2msg
+from v3io_frames import http
+from v3io_frames import frames_pb2 as fpb
+
 
 here = dirname(abspath(__file__))
-unpack = partial(msgpack.unpackb, raw=False)
 
 
 class patch_requests:
@@ -54,8 +56,10 @@ class patch_requests:
 
     def _read(self, *args, **kw):
         io = BytesIO()
-        for chunk in self.data:
-            msgpack.dump(chunk, io)
+        for df in self.data:
+            data = df2msg(df, None).SerializeToString()
+            io.write(struct.pack(http.header_fmt, len(data)))
+            io.write(data)
 
         io.seek(0, 0)
 
@@ -68,9 +72,12 @@ class patch_requests:
     def _write(self, *args, **kw):
         it = iter(kw.get('data', []))
         data = next(it)
-        self.write_request = unpack(data)
+        self.write_request = fpb.InitialWriteRequest.FromString(data)
+        c = http.Client('http://example.com', None)
         for chunk in it:
-            self.write_frames.append(unpack(data))
+            io = BytesIO(it)
+            msg = c._read_msg(io)
+            self.write_frames.append(msg)
 
         class Response:
             ok = True
@@ -90,18 +97,14 @@ def test_read():
     address = 'https://nuclio.io'
     query = 'SELECT 1'
     data = [
-        {
-            'columns': [
-                {'slice': {'name': 'x', 'ints': [1, 2, 3]}},
-                {'slice': {'name': 'y', 'floats': [4., 5., 6.]}},
-            ],
-        },
-        {
-            'columns': [
-                {'slice': {'name': 'x', 'ints': [10, 20, 30]}},
-                {'slice': {'name': 'y', 'floats': [40., 50., 60.]}},
-            ],
-        },
+        pd.DataFrame({
+            'x': [1, 2, 3],
+            'y': [4., 5., 6.],
+        }),
+        pd.DataFrame({
+            'x': [10, 20, 30],
+            'y': [40., 50., 60.],
+        }),
     ]
 
     client = new_test_client(address=address)
@@ -118,62 +121,13 @@ def test_read():
     assert list(df.columns) == ['x', 'y']
 
     with patch_requests(data) as patch:
-        df = client.read(query=query, iterator=False)
+        df = client.read(backend='backend', query=query, iterator=False)
     assert isinstance(df, pd.DataFrame), 'iterator=False return'
-
-
-def test_encode_df():
-    c = new_test_client()
-    labels = {
-        'int': 7,
-        'str': 'wassup?',
-    }
-
-    df = pd.read_csv('{}/weather.csv'.format(here))
-    data = c._encode_df(df, labels)
-    msg = unpack(data)
-
-    names = [col_name(col) for col in msg['columns']]
-    assert set(names) == set(df.columns), 'columns mismatch'
-    assert not msg.get('indices'), 'has index'
-    assert msg['labels'] == labels, 'lables mismatch'
-
-    # Now with index
-    index_name = 'DATE'
-    df.index = df.pop(index_name)
-    data = c._encode_df(df, None)
-    msg = unpack(data)
-
-    names = [col_name(col) for col in msg['columns']]
-    assert set(names) == set(df.columns), 'columns mismatch'
-    idx = msg.get('indices')
-    assert idx, 'no index'
-    assert col_name(idx[0]) == index_name, 'bad index name'
 
 
 def col_name(msg):
     val = msg.get('slice') or msg.get('label')
     return val['name']
-
-
-def test_decode():
-    df = pd.DataFrame({
-        'x': [1, 2, 3],
-        'y': ['a', 'b', 'c'],
-    })
-
-    labels = {
-        'l1': 1,
-        'l2': 'two',
-    }
-
-    c = new_test_client()
-    data = c._encode_df(df, labels)
-    dfs = list(c._iter_dfs(BytesIO(data)))
-
-    assert len(dfs) == 1, 'wrong number of dfs'
-    assert dfs[0].to_dict() == df.to_dict(), 'bad encoding'
-    assert getattr(dfs[0], 'labels') == labels, 'bad labels'
 
 
 def test_format_go_time():
@@ -213,72 +167,6 @@ def test_encode_labels():
 
     for frame in frames:
         assert frame['labels'] == labels, 'no lables'
-
-
-def test_multi_index():
-    tuples = [
-        ('bar', 'one'),
-        ('bar', 'two'),
-        ('baz', 'one'),
-        ('baz', 'two'),
-        ('foo', 'one'),
-        ('foo', 'two'),
-        ('qux', 'one'),
-        ('qux', 'two')]
-    index = pd.MultiIndex.from_tuples(tuples, names=['first', 'second'])
-    df = pd.DataFrame(index=index)
-    df['x'] = range(len(df))
-
-    client = new_test_client()
-    data = client._encode_df(df)
-    msg = msgpack.unpackb(data, raw=False)
-
-    for col in msg['indices']:
-        values = col['slice']['strings']
-        assert len(values) == len(df), 'bad index length'
-
-
-def test_labelcol_name():
-    msg = {
-        'name': 'col9',
-        'value': 'v',
-        'size': 17,
-    }
-
-    c = new_test_client()
-    col = c._handle_label_col(msg)
-    assert col.name == msg['name'], 'bad name'
-    assert len(col) == msg['size'], 'bad size'
-    assert set(col) == {msg['value']}, 'bad values'
-
-
-def test_empty_col():
-    msg = {
-        'slice': {
-            'dtype': '[]float64',
-            'name': 'fcol',
-        }
-    }
-    c = new_test_client()
-
-    col = c._handle_col_msg(0, msg)
-    assert col.name == msg['slice']['name'], 'bad name'
-    assert len(col) == 0, 'col not empty'
-    assert col.dtype == np.float64, 'bad dtype'
-
-
-def test_bool_col():
-    msg = {
-        'slice': {
-            'dtype': '[]bool',
-            'name': 'bcol',
-            'values': [True, False, True, False],
-        },
-    }
-
-    c = new_test_client()
-    col = c._handle_col_msg(0, msg)
-    assert col.dtype == bool, 'bad dtype'
 
 
 def new_test_client(address='', session=None):

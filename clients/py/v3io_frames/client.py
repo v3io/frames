@@ -89,7 +89,8 @@ class ClientBase:
             group_by, limit, data_format, row_layout,
             max_in_message, marker, iterator, **kw)
 
-    def write(self, backend, table, dfs, expression='', labels=None):
+    def write(self, backend, table, dfs, expression='', labels=None,
+              max_in_message=0):
         """Write to table
 
         Parameters
@@ -104,6 +105,8 @@ class ClientBase:
             Write expression
         labels : dict
             Set of lables
+        max_in_message : int
+            Maximal number of rows to send per message
 
         Returns:
             Write result
@@ -111,6 +114,8 @@ class ClientBase:
         self._validate_request(backend, table, WriteError)
         if isinstance(dfs, pd.DataFrame):
             dfs = [dfs]
+        if max_in_message:
+            dfs = self._split_dfs(dfs, max_in_message)
         request = self._encode_write(backend, table, expression, labels)
         return self._write(request, dfs)
 
@@ -210,3 +215,16 @@ class ClientBase:
 
         if not table:
             raise err_cls('empty table')
+
+    def _iter_chunks(self, dfs, labels, max_in_message):
+        for df in dfs:
+            for cdf in self._chunk_df(df, max_in_message):
+                yield df2msg(df, labels)
+
+    def _chunk_df(self, df, size):
+        size = size if size else len(df)
+
+        i = 0
+        while i < len(df):
+            yield df[i:i+size]
+            i += size

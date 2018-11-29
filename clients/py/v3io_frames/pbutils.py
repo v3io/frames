@@ -150,7 +150,7 @@ def col2series(col):
     return series
 
 
-def df2msg(df, labels):
+def df2msg(df, labels=None):
     indices = None
     if should_encode_index(df):
         if hasattr(df.index, 'levels'):
