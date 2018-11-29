@@ -21,57 +21,387 @@ such restriction.
 package frames
 
 import (
-	"reflect"
+	"fmt"
+	"math"
 	"time"
+
+	"github.com/pkg/errors"
 )
 
-// DType is data type
-// TODO: Merge with protobuf DType
-type DType reflect.Type
+// frameImpl is a frame implementation
+type frameImpl struct {
+	labels  map[string]interface{}
+	columns []Column
+	indices []Column
 
-// Possible data types
-var (
-	IntType    DType = reflect.TypeOf([]int64{})
-	FloatType  DType = reflect.TypeOf([]float64{})
-	StringType DType = reflect.TypeOf([]string{})
-	TimeType   DType = reflect.TypeOf([]time.Time{})
-	BoolType   DType = reflect.TypeOf([]bool{})
-)
-
-// Column is a data column
-type Column interface {
-	Len() int                                 // Number of elements
-	Name() string                             // Column name
-	DType() DType                             // Data type (e.g. IntType, FloatType ...)
-	Ints() ([]int64, error)                   // Data as []int64
-	IntAt(i int) (int64, error)               // Int value at index i
-	Floats() ([]float64, error)               // Data as []float64
-	FloatAt(i int) (float64, error)           // Float value at index i
-	Strings() []string                        // Data as []string
-	StringAt(i int) (string, error)           // String value at index i
-	Times() ([]time.Time, error)              // Data as []time.Time
-	TimeAt(i int) (time.Time, error)          // time.Time value at index i
-	Bools() ([]bool, error)                   // Data as []bool
-	BoolAt(i int) (bool, error)               // bool value at index i
-	Slice(start int, end int) (Column, error) // Slice of data
+	byName map[string]int // name -> index in columns
 }
 
-// Frame is a collection of columns
-type Frame interface {
-	Labels() map[string]interface{}          // Label set
-	Names() []string                         // Column names
-	Indices() []Column                       // Index columns
-	Len() int                                // Number of rows
-	Column(name string) (Column, error)      // Column by name
-	Slice(start int, end int) (Frame, error) // Slice of Frame
-	IterRows(includeIndex bool) RowIterator  // Iterate over rows
+// NewFrame returns a new MapFrame
+func NewFrame(columns []Column, indices []Column, labels map[string]interface{}) (Frame, error) {
+	if err := checkEqualLen(columns, indices); err != nil {
+		return nil, err
+	}
+
+	byName := make(map[string]int)
+	for i, col := range columns {
+		byName[col.Name()] = i
+	}
+
+	frame := &frameImpl{
+		labels:  labels,
+		columns: columns,
+		byName:  byName,
+		indices: indices,
+	}
+
+	return frame, nil
 }
 
-// RowIterator is an iterator over frame rows
-type RowIterator interface {
-	Next() bool                      // Advance to next row
-	Row() map[string]interface{}     // Row as map of name->value
-	RowNum() int                     // Current row number
-	Indices() map[string]interface{} // MultiIndex as name->value
-	Err() error                      // Iteration error
+// NewFrameFromMap returns a new MapFrame from a map
+func NewFrameFromMap(columns map[string]interface{}, indices map[string]interface{}) (Frame, error) {
+	cols, err := mapToColumns(columns)
+	if err != nil {
+		return nil, err
+	}
+
+	idx, err := mapToColumns(indices)
+	if err != nil {
+		return nil, err
+	}
+
+	return NewFrame(cols, idx, nil)
+}
+
+// NewFrameFromRows creates a new frame from rows
+func NewFrameFromRows(rows []map[string]interface{}, indices []string, labels map[string]interface{}) (Frame, error) {
+	frameCols := make(map[string]Column)
+	for rowNum, row := range rows {
+		for name, value := range row {
+			col, ok := frameCols[name]
+
+			if !ok {
+				var err error
+				col, err = newColumn(name, value)
+				if err != nil {
+					return nil, err
+				}
+				frameCols[name] = col
+			}
+
+			extendCol(col, rowNum)
+			if err := colAppend(col, value); err != nil {
+				return nil, err
+			}
+		}
+
+		// Extend columns not in row
+		for name, col := range frameCols {
+			if _, ok := row[name]; !ok {
+				extendCol(col, rowNum+1)
+			}
+		}
+	}
+
+	var dataCols, indexCols []Column
+	for name, col := range frameCols {
+		if inSlice(name, indices) {
+			indexCols = append(indexCols, col)
+		} else {
+			dataCols = append(dataCols, col)
+		}
+	}
+
+	return NewFrame(dataCols, indexCols, labels)
+}
+
+// Names returns the column names
+func (mf *frameImpl) Names() []string {
+	names := make([]string, len(mf.columns))
+
+	for i := 0; i < len(mf.columns); i++ {
+		names[i] = mf.columns[i].Name() // TODO: Check if exists?
+	}
+
+	return names
+}
+
+// Indices returns the index columns
+func (mf *frameImpl) Indices() []Column {
+	return mf.indices
+}
+
+// Labels returns the Label set, nil if there's none
+func (mf *frameImpl) Labels() map[string]interface{} {
+	return mf.labels
+}
+
+// Len is the number of rows
+func (mf *frameImpl) Len() int {
+	if len(mf.columns) > 0 {
+		return mf.columns[0].Len()
+	}
+
+	return 0
+}
+
+// Column gets a column by name
+func (mf *frameImpl) Column(name string) (Column, error) {
+	// TODO: We can speed it up by calculating once, but then we'll use more memory
+	i, ok := mf.byName[name]
+	if !ok {
+		return nil, fmt.Errorf("column %q not found", name)
+	}
+
+	return mf.columns[i], nil
+}
+
+// Slice return a new Frame with is slice of the original
+func (mf *frameImpl) Slice(start int, end int) (Frame, error) {
+	if err := validateSlice(start, end, mf.Len()); err != nil {
+		return nil, err
+	}
+
+	colSlices, err := sliceCols(mf.columns, start, end)
+	if err != nil {
+		return nil, err
+	}
+
+	indexSlices, err := sliceCols(mf.indices, start, end)
+	if err != nil {
+		return nil, err
+	}
+
+	return NewFrame(colSlices, indexSlices, mf.labels)
+}
+
+// FrameRowIterator returns iterator over rows
+func (mf *frameImpl) IterRows(includeIndex bool) RowIterator {
+	return newRowIterator(mf, includeIndex)
+}
+
+// ColumnMessage is a for encoding a column
+type ColumnMessage struct {
+	Slice *SliceColumnMessage `msgpack:"slice,omitempty"`
+	Label *LabelColumnMessage `msgpack:"label,omitempty"`
+}
+
+// FrameMessage is over-the-wire frame data
+type FrameMessage struct {
+	Columns []ColumnMessage        `msgpack:"columns,omitempty"`
+	Indices []ColumnMessage        `msgpack:"indices,omitempty"`
+	Labels  map[string]interface{} `msgpack:"labels,omitempty"`
+	Error   string                 `msgpack:"error,omitempty"`
+}
+
+// Marshal marshals to native type
+func (mf *frameImpl) Marshal() (interface{}, error) {
+	msg := &FrameMessage{
+		Labels: mf.Labels(),
+	}
+	var err error
+
+	msg.Columns, err = mf.marshalColumns(mf.columns)
+	if err != nil {
+		return nil, err
+	}
+
+	msg.Indices, err = mf.marshalColumns(mf.Indices())
+	if err != nil {
+		return nil, err
+	}
+
+	return msg, nil
+}
+
+func (mf *frameImpl) marshalColumns(columns []Column) ([]ColumnMessage, error) {
+	if columns == nil {
+		return nil, nil
+	}
+
+	messages := make([]ColumnMessage, len(columns))
+	for i, col := range columns {
+		colMsg, err := mf.marshalColumn(col)
+		if err != nil {
+			return nil, err
+		}
+
+		switch colMsg.(type) {
+		case *SliceColumnMessage:
+			messages[i].Slice = colMsg.(*SliceColumnMessage)
+		case *LabelColumnMessage:
+			messages[i].Label = colMsg.(*LabelColumnMessage)
+		default:
+			return nil, fmt.Errorf("unknown marshaled message type - %T", colMsg)
+		}
+	}
+
+	return messages, nil
+}
+
+func (mf *frameImpl) marshalColumn(col Column) (interface{}, error) {
+	marshaler, ok := col.(Marshaler)
+	if !ok {
+		return nil, fmt.Errorf("column %q is not Marshaler", col.Name())
+	}
+
+	msg, err := marshaler.Marshal()
+	if err != nil {
+		return nil, errors.Wrapf(err, "can't marshal %q", col.Name())
+	}
+
+	return msg, nil
+}
+
+func validateSlice(start int, end int, size int) error {
+	if start < 0 || end < 0 {
+		return fmt.Errorf("negative indexing not supported")
+	}
+
+	if end < start {
+		return fmt.Errorf("end < start")
+	}
+
+	if start >= size {
+		return fmt.Errorf("start out of bounds")
+	}
+
+	if end >= size {
+		return fmt.Errorf("end out of bounds")
+	}
+
+	return nil
+}
+
+func checkEqualLen(columns []Column, indices []Column) error {
+	size := -1
+	for _, col := range columns {
+		if size == -1 { // first column
+			size = col.Len()
+			continue
+		}
+
+		if colSize := col.Len(); colSize != size {
+			return fmt.Errorf("%q column size mismatch (%d != %d)", col.Name(), colSize, size)
+		}
+	}
+
+	for i, col := range indices {
+		if colSize := col.Len(); colSize != size {
+			return fmt.Errorf("index column %d size mismatch (%d != %d)", i, colSize, size)
+		}
+	}
+
+	return nil
+}
+
+func sliceCols(columns []Column, start int, end int) ([]Column, error) {
+	slices := make([]Column, len(columns))
+	for i, col := range columns {
+		slice, err := col.Slice(start, end)
+		if err != nil {
+			return nil, errors.Wrapf(err, "can't get slice from %q", col.Name())
+		}
+
+		slices[i] = slice
+	}
+
+	return slices, nil
+}
+
+func zeroValue(dtype DType) (interface{}, error) {
+	switch dtype {
+	case IntType:
+		return int64(0), nil
+	case FloatType:
+		return math.NaN(), nil
+	case StringType:
+		return "", nil
+	case TimeType:
+		return time.Unix(0, 0), nil
+	case BoolType:
+		return false, nil
+	}
+
+	return nil, fmt.Errorf("unsupported data type - %s", dtype)
+}
+
+// TODO: Unite with backend/utils.AppendNil
+func extendCol(col Column, size int) error {
+	if col.Len() >= size {
+		return nil
+	}
+
+	value, err := zeroValue(col.DType())
+	if err != nil {
+		return err
+	}
+
+	for col.Len() < size {
+		if err := colAppend(col, value); err != nil {
+			return err
+		}
+	}
+
+	return nil
+}
+
+// TODO: Unite with backend/utils
+func newColumn(name string, value interface{}) (Column, error) {
+	var data interface{}
+	switch value.(type) {
+	case int64, int32, int16, int8, int:
+		data = []int64{}
+	case float64, float32:
+		data = []float64{}
+	case string:
+		data = []string{}
+	case time.Time:
+		data = []time.Time{}
+	case bool:
+		data = []bool{}
+	default:
+		return nil, fmt.Errorf("unsupported type %T", value)
+	}
+
+	return NewSliceColumn(name, data)
+}
+
+func inSlice(name string, names []string) bool {
+	for _, n := range names {
+		if name == n {
+			return true
+		}
+	}
+
+	return false
+}
+
+func mapToColumns(data map[string]interface{}) ([]Column, error) {
+	columns := make([]Column, len(data))
+	i := 0
+
+	for name, values := range data {
+		column, err := NewSliceColumn(name, values)
+		if err != nil {
+			return nil, errors.Wrapf(err, "can't create column %q", name)
+		}
+		columns[i] = column
+		i++
+	}
+
+	return columns, nil
+}
+
+type colAppender interface {
+	Append(value interface{}) error
+}
+
+func colAppend(col Column, value interface{}) error {
+	ca, ok := col.(colAppender)
+	if !ok {
+		return fmt.Errorf("column does not support appending")
+	}
+
+	return ca.Append(value)
 }
