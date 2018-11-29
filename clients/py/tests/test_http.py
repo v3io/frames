@@ -87,7 +87,7 @@ class patch_requests:
 
 
 def test_read():
-    url = 'https://nuclio.io'
+    address = 'https://nuclio.io'
     query = 'SELECT 1'
     data = [
         {
@@ -104,14 +104,14 @@ def test_read():
         },
     ]
 
-    client = new_test_client(url=url)
+    client = new_test_client(address=address)
     with patch_requests(data) as patch:
-        dfs = client.read(query=query)
+        dfs = client.read(backend='backend', table='table', query=query)
 
     assert len(patch.requests) == 1
 
     args, kw = patch.requests[0]
-    assert args == (url + '/read',)
+    assert args == (address + '/read',)
 
     df = pd.concat(dfs)
     assert len(df) == 6
@@ -281,8 +281,8 @@ def test_bool_col():
     assert col.dtype == bool, 'bad dtype'
 
 
-def new_test_client(url='', session=None):
+def new_test_client(address='', session=None):
     return v3f.HTTPClient(
-        url=url or 'http://example.com',
+        address=address or 'http://example.com',
         session=session,
     )

@@ -15,24 +15,20 @@
 """Stream data from Nuclio into pandas DataFrame"""
 
 import struct
-import warnings
 from datetime import datetime
 from functools import wraps
-from itertools import chain, count
-from os import environ
+from itertools import chain
 
-import msgpack
-import numpy as np
 import pandas as pd
 import requests
 from requests.exceptions import RequestException
 from urllib3.exceptions import HTTPError
 
-from .dtypes import BoolDType, dtypes
-from .errors import (BadRequest, CreateError, DeleteError, Error, ExecuteError,
-                     MessageError, ReadError, WriteError)
-from .frames_pb2 import FAIL
-from .pbutils import pb2py
+from . import frames_pb2 as fpb
+from .client import ClientBase
+from .errors import (CreateError, DeleteError, Error, ExecuteError,
+                     ReadError, WriteError)
+from .pbutils import pb2py, msg2df, df2msg
 
 
 def connection_error(error_cls):
@@ -48,67 +44,17 @@ def connection_error(error_cls):
     return decorator
 
 
-class Client(object):
+class Client(ClientBase):
     """Client is a nuclio stream HTTP client"""
+    def _fix_address(self, address):
+        if '://' not in address:
+            return 'http://{}'.format(address)
 
-    def __init__(self, url, session):
-        """
-        Parameters
-        ----------
-        url : string
-            Server URL (if empty will use V3IO_URL environment variable)
-        session : Session
-            Session information
-        """
-        self.url = url or environ.get('FRAMESD_URL')
-        if not self.url:
-            raise ValueError('missing URL')
-
-        if '://' not in self.url:
-            self.url = 'http://{}'.format(self.url)
-
-        self.session = session
+        return address
 
     @connection_error(ReadError)
-    def read(self, backend='', table='', query='', columns=None, filter='',
-             group_by='', limit=0, data_format='', row_layout=False,
-             max_in_message=0, marker='', iterator=True, **kw):
-        """Run a query in nuclio
-
-        Parameters
-        ----------
-        backend : str
-            Backend name
-        table : str
-            Table to query (can't be used with query)
-        query : str
-            Query in SQL format
-        columns : []str
-            List of columns to pass (can't be used with query)
-        filter : str
-            Query filter (can't be used with query)
-        group_by : str
-            Query group by (can't be used with query)
-        limit: int
-            Maximal number of rows to return
-        data_format : str
-            Data format
-        row_layout : bool
-            Weather to use row layout (vs the default column layout)
-        max_in_message : int
-            Maximal number of rows per message
-        marker : str
-            Query marker (can't be used with query)
-        iterator : bool
-            Return iterator of DataFrames or (if False) just one DataFrame
-
-        **kw
-            Extra parameter for specific backends
-
-        Returns:
-            A pandas DataFrame iterator. Each DataFrame will have "labels"
-            attribute. If `iterator` is False will return a single DataFrame.
-        """
+    def _read(self, backend, table, query, columns, filter, group_by, limit,
+              data_format, row_layout, max_in_message, marker, iterator, **kw):
         request = {
             'session': pb2py(self.session),
             'backend': backend,
@@ -128,8 +74,7 @@ class Client(object):
         convert_go_times(kw, ('start', 'end'))
         request.update(kw)
 
-        self._validate_read_request(request)
-        url = self.url + '/read'
+        url = self._url_for('read')
         resp = requests.post(
             url, json=request, headers=self._headers(json=True), stream=True)
         if not resp.ok:
@@ -142,41 +87,16 @@ class Client(object):
         return dfs
 
     @connection_error(WriteError)
-    def write(self, backend, table, dfs, labels=None, max_in_message=0):
-        """Write to table
+    def _write(self, backend, table, dfs, labels, max_in_message):
+        request = fpb.InitialWriteRequest(
+            session=pb2py(self.session),
+            backend=backend,
+            table=table,
+            labels=labels,
+            more=True,
+        ).SerializeToString()
 
-        Parameters
-        ----------
-        backend : str
-            Backend name
-        table : str
-            Table to write to
-        dfs : iterable of DataFrame or a single data frame
-            Frames to write
-        labels : dict
-            Labels for current write
-        max_in_message : int
-            Maximal number of rows in a message
-
-        Returns:
-            Write result
-        """
-
-        if isinstance(dfs, pd.DataFrame):
-            dfs = [dfs]
-
-        request = msgpack.packb({
-            'session': pb2py(self.session),
-            'backend': backend,
-            'table': table,
-            'labels': labels,
-            'more': True,
-        })
-
-        with open('/tmp/w.mp', 'wb') as out:
-            out.write(request)
-
-        url = self.url + '/write'
+        url = self._url_for('write')
         headers = self._headers()
         headers['Content-Encoding'] = 'chunked'
         data = chain([request], self._iter_chunks(dfs, labels, max_in_message))
@@ -188,29 +108,7 @@ class Client(object):
         return resp.json()
 
     @connection_error(CreateError)
-    def create(self, backend, table, attrs=None, schema=None,
-               if_exists=FAIL):
-        """Create a table
-
-        Parameters
-        ----------
-        backend : str
-            Backend name
-        table : str
-            Table to create
-        attrs : dict
-            Table attributes
-        schema: Schema or None
-            Table schema
-        if_exists : int
-            One of FAIL or IGNORE
-
-        Raises
-        ------
-        CreateError:
-            On request error or backend error
-        """
-        self._validate_request(backend, table, CreateError)
+    def _create(self, backend, table, attrs, schema, if_exists):
         request = {
             'session': pb2py(self.session),
             'backend': backend,
@@ -220,38 +118,14 @@ class Client(object):
             'if_exists': if_exists,
         }
 
-        url = self.url + '/create'
+        url = self._url_for('create')
         headers = self._headers()
         resp = requests.post(url, headers=headers, json=request)
         if not resp.ok:
             raise CreateError(resp.text)
 
     @connection_error(DeleteError)
-    def delete(self, backend, table, filter='', start='', end='',
-               if_missing=FAIL):
-        """Delete a table
-
-        Parameters
-        ----------
-        backend : str
-            Backend name
-        table : str
-            Table to create
-        filter : str
-            Filter for selective delete
-        start : string
-            Delete since start (TSDB/Stream)
-        end : string
-            Delete up to end (TSDB/Stream)
-        if_missing : int
-            One of FAIL or IGNORE
-
-        Raises
-        ------
-        DeleteError
-            On request error or backend error
-        """
-        self._validate_request(backend, table, DeleteError)
+    def _delete(self, backend, table, filter, start, end, if_missing):
         request = {
             'session': pb2py(self.session),
             'backend': backend,
@@ -264,7 +138,7 @@ class Client(object):
 
         convert_go_times(request, ('start', 'end'))
 
-        url = self.url + '/delete'
+        url = self._url_for('delete')
         headers = self._headers()
         # TODO: Make it DELETE ?
         resp = requests.post(url, headers=headers, json=request)
@@ -272,28 +146,7 @@ class Client(object):
             raise CreateError(resp.text)
 
     @connection_error(ExecuteError)
-    def execute(self, backend, table, command='', args=None, expression=''):
-        """Execute a command on backend
-
-        Parameters
-        ----------
-        backend : str
-            Backend name
-        table : str
-            Table to create
-        command : str
-            Command to execute
-        args : dict
-            Command arguments
-        expression : str
-            Command expression
-
-        Raises
-        ------
-        ExecuteError
-            On request error or backend error
-        """
-        self._validate_request(backend, table, ExecuteError)
+    def _execute(self, backend, table, command, args, expression):
         request = {
             'session': pb2py(self.session),
             'backend': backend,
@@ -303,11 +156,14 @@ class Client(object):
             'expression': expression,
         }
 
-        url = self.url + '/exec'
+        url = self._url_for('exec')
         headers = self._headers()
         resp = requests.post(url, headers=headers, json=request)
         if not resp.ok:
             raise ExecuteError(resp.text)
+
+    def _url_for(self, action):
+        return self.address + '/' + action
 
     def _headers(self, json=False):
         headers = {}
@@ -316,133 +172,30 @@ class Client(object):
 
         return headers
 
-    def _validate_read_request(self, request):
-        if not (request.get('table') or request.get('query')):
-            raise BadRequest('missing data')
-
-        # TODO: More validation
-
     def _iter_dfs(self, resp):
-        unpacker = msgpack.Unpacker(resp, ext_hook=ext_hook, raw=False)
+        fmt = '<l'
+        fmt_size = struct.calcsize(fmt)
 
-        for msg in unpacker:
-            error = msg.get('error')
-            if error is not None:
-                raise ReadError(error)
-            yield self._msg2df(msg)
+        while True:
+            data = resp.read(fmt_size)
+            if not data:
+                return
 
-    def _msg2df(self, msg):
-        # message format:
-        #   columns: list of column message
-        #   indices: list of column message
-        #   labels: dict
-        icols = enumerate(msg['columns'])
-        columns = [self._handle_col_msg(i, col) for i, col in icols]
-        df = pd.concat(columns, axis=1)
+            if len(data) != fmt_size:
+                raise ReadError('chopped header')
 
-        idxs = enumerate(msg.get('indices', []))
-        indices = [self._handle_col_msg(i, col) for i, col in idxs]
+            size = struct.unpack(fmt, data)[0]
+            data = resp.read(size)
+            if len(data) != fmt_size:
+                raise ReadError('chopped frame body')
 
-        if len(indices) == 1:
-            df.index = indices[0]
-        elif len(indices) > 1:
-            df.index = pd.MultiIndex.from_arrays(indices)
-
-        with warnings.catch_warnings():
-            warnings.simplefilter('ignore')
-            df.labels = msg.get('labels', {})
-
-        return df
-
-    def _handle_col_msg(self, i, col):
-        val = col.get('slice')
-        if val:
-            return self._handle_slice_col(val)
-
-        val = col.get('label')
-        if val:
-            return self._handle_label_col(val)
-
-        raise MessageError('{}: empty column message'.format(i))
-
-    def _handle_slice_col(self, col):
-        for dtype in dtypes.values():
-            data = col.get(dtype.slice_key)
-            if data is not None:
-                return pd.Series(data, name=col['name'])
-
-        return self._new_empty_col(col['name'], col['dtype'])
-
-    def _handle_label_col(self, col):
-        size = col['size']
-        if size == 0:
-            return self._new_empty_col(col['name'], col['dtype'])
-
-        codes = np.zeros(size)
-        cat = pd.Categorical.from_codes(codes, categories=[col['value']])
-        return pd.Series(cat, name=col['name'])
-
-    def _new_empty_col(self, name, msg_dtype):
-        # Empty column
-        dtype = dtypes.get(msg_dtype)
-        if not dtype:
-            raise MessageError(
-                '{}: unknown data type: {}'.format(name, msg_dtype))
-        return pd.Series(name=name, dtype=dtype.pd_dtype)
-
-    def _encode_df(self, df, labels=None):
-        msg = {
-            'columns': [self._encode_col(df[name]) for name in df.columns],
-        }
-
-        if labels:
-            msg['labels'] = labels
-
-        if self._should_encode_index(df):
-            if hasattr(df.index, 'levels'):
-                by_name = df.index.get_level_values
-                names = df.index.names
-                serieses = (by_name(name).to_series() for name in names)
-                msg['indices'] = [self._encode_col(s) for s in serieses]
-            else:
-                msg['indices'] = [self._encode_col(df.index.to_series())]
-
-        return msgpack.packb(msg, strict_types=True)
-
-    def _encode_col(self, col, name='', can_label=True):
-        dtype = dtype_of(col.iloc[0])
-        data = {
-            'name': name or col.name,
-            'dtype': dtype.dtype,
-        }
-
-        key = dtype.write_slice_key or dtype.slice_key
-        data[key] = dtype.to_pylist(col)
-        return {'slice': data}
-
-    def _index_name(self, df):
-        """Find a name for index column that does not collide with column
-        names"""
-        candidates = chain(
-            [df.index.name, 'index'],
-            ('index_{}'.format(i) for i in count()),
-        )
-
-        names = set(df.columns)
-        for name in candidates:
-            if name not in names:
-                return name
-
-    def _should_encode_index(self, df):
-        if df.index.name:
-            return True
-
-        return not isinstance(df.index, pd.RangeIndex)
+            msg = fpb.Frame.FromString(data)
+            yield msg2df(msg)
 
     def _iter_chunks(self, dfs, labels, max_in_message):
         for df in dfs:
             for cdf in self._chunk_df(df, max_in_message):
-                yield self._encode_df(cdf, labels)
+                yield df2msg(df, labels)
 
     def _chunk_df(self, df, size):
         size = size if size else len(df)
@@ -451,58 +204,6 @@ class Client(object):
         while i < len(df):
             yield df[i:i+size]
             i += size
-
-    def _validate_request(self, backend, table, err_cls):
-        if not backend:
-            raise err_cls('empty backend')
-
-        if not table:
-            raise err_cls('empty table')
-
-
-def datetime_fromnsec(sec, nsec):
-    """Create datetime object from seconds and nanoseconds"""
-    return datetime.fromtimestamp(sec).replace(microsecond=nsec//1000)
-
-
-def unpack_time(value):
-    """Unpack time packed by Go"""
-    # See https://github.com/vmihailenco/msgpack/blob/master/time.go
-    if len(value) == 4:
-        sec, = struct.unpack('>L', value)
-        return datetime.fromtimestamp(sec)
-
-    if len(value) == 8:
-        sec, = struct.unpack('>Q', value)
-        nsec = sec >> 34
-        sec &= 0x00000003ffffffff
-        return datetime_fromnsec(sec, nsec)
-
-    if len(value) == 12:
-        nsec, = struct.unpack('>L', value[:4])
-        sec, = struct.unpack('>Q', value[4:])
-        return datetime_fromnsec(sec, nsec)
-
-    raise ValueError(f'unknown time message length: {len(value)}')
-
-
-def ext_hook(code, value):
-    if code == -1:
-        return unpack_time(value)
-
-    raise ValueError(f'unknown ext code - {code}')
-
-
-def dtype_of(val):
-    # bool is subclass of int
-    if type(val) in BoolDType.py_types:
-        return BoolDType
-
-    for dtype in dtypes.values():
-        if isinstance(val, dtype.py_types):
-            return dtype
-
-    raise TypeError(f'unknown type - {val!r}')
 
 
 def format_go_time(dt):
