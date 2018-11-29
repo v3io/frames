@@ -26,33 +26,55 @@ import (
 	"time"
 
 	"github.com/pkg/errors"
+
+	"github.com/v3io/frames/pb"
 )
 
 // frameImpl is a frame implementation
 type frameImpl struct {
 	labels  map[string]interface{}
+	byName  map[string]Column // name -> Column
 	columns []Column
 	indices []Column
-
-	byName map[string]int // name -> index in columns
+	msg     *pb.Frame
+	names   []string // Created on 1st call to Names
 }
 
-// NewFrame returns a new MapFrame
+// NewFrame returns a new Frame
 func NewFrame(columns []Column, indices []Column, labels map[string]interface{}) (Frame, error) {
 	if err := checkEqualLen(columns, indices); err != nil {
 		return nil, err
 	}
 
-	byName := make(map[string]int)
-	for i, col := range columns {
-		byName[col.Name()] = i
+	msg := &pb.Frame{}
+
+	var err error
+	msg.Columns, err = cols2PB(columns)
+	if err != nil {
+		return nil, err
+	}
+
+	msg.Indices, err = cols2PB(indices)
+	if err != nil {
+		return nil, err
+	}
+
+	msg.Labels, err = pb.FromGoMap(labels)
+	if err != nil {
+		return nil, err
+	}
+
+	byName := make(map[string]Column)
+	for _, col := range columns {
+		byName[col.Name()] = col
 	}
 
 	frame := &frameImpl{
-		labels:  labels,
-		columns: columns,
 		byName:  byName,
+		msg:     msg,
+		labels:  labels,
 		indices: indices,
+		columns: columns,
 	}
 
 	return frame, nil
@@ -116,141 +138,99 @@ func NewFrameFromRows(rows []map[string]interface{}, indices []string, labels ma
 }
 
 // Names returns the column names
-func (mf *frameImpl) Names() []string {
-	names := make([]string, len(mf.columns))
-
-	for i := 0; i < len(mf.columns); i++ {
-		names[i] = mf.columns[i].Name() // TODO: Check if exists?
+func (fr *frameImpl) Names() []string {
+	if fr.names == nil {
+		names := make([]string, len(fr.msg.Columns))
+		for i, col := range fr.columns {
+			names[i] = col.Name()
+		}
+		fr.names = names
 	}
-
-	return names
+	return fr.names
 }
 
 // Indices returns the index columns
-func (mf *frameImpl) Indices() []Column {
-	return mf.indices
+func (fr *frameImpl) Indices() []Column {
+	return fr.indices
 }
 
 // Labels returns the Label set, nil if there's none
-func (mf *frameImpl) Labels() map[string]interface{} {
-	return mf.labels
+func (fr *frameImpl) Labels() map[string]interface{} {
+	if fr.labels == nil {
+		fr.labels = pb.AsGoMap(fr.msg.Labels)
+	}
+	return fr.labels
 }
 
 // Len is the number of rows
-func (mf *frameImpl) Len() int {
-	if len(mf.columns) > 0 {
-		return mf.columns[0].Len()
+func (fr *frameImpl) Len() int {
+	if len(fr.columns) > 0 {
+		return fr.columns[0].Len()
 	}
 
 	return 0
 }
 
 // Column gets a column by name
-func (mf *frameImpl) Column(name string) (Column, error) {
+func (fr *frameImpl) Column(name string) (Column, error) {
 	// TODO: We can speed it up by calculating once, but then we'll use more memory
-	i, ok := mf.byName[name]
+	col, ok := fr.byName[name]
 	if !ok {
 		return nil, fmt.Errorf("column %q not found", name)
 	}
 
-	return mf.columns[i], nil
+	return col, nil
 }
 
 // Slice return a new Frame with is slice of the original
-func (mf *frameImpl) Slice(start int, end int) (Frame, error) {
-	if err := validateSlice(start, end, mf.Len()); err != nil {
+func (fr *frameImpl) Slice(start int, end int) (Frame, error) {
+	if err := validateSlice(start, end, fr.Len()); err != nil {
 		return nil, err
 	}
 
-	colSlices, err := sliceCols(mf.columns, start, end)
+	colSlices, err := sliceCols(fr.columns, start, end)
 	if err != nil {
 		return nil, err
 	}
 
-	indexSlices, err := sliceCols(mf.indices, start, end)
+	indexSlices, err := sliceCols(fr.indices, start, end)
 	if err != nil {
 		return nil, err
 	}
 
-	return NewFrame(colSlices, indexSlices, mf.labels)
+	return NewFrame(colSlices, indexSlices, fr.labels)
 }
 
 // FrameRowIterator returns iterator over rows
-func (mf *frameImpl) IterRows(includeIndex bool) RowIterator {
-	return newRowIterator(mf, includeIndex)
+func (fr *frameImpl) IterRows(includeIndex bool) RowIterator {
+	return newRowIterator(fr, includeIndex)
 }
 
-// ColumnMessage is a for encoding a column
-type ColumnMessage struct {
-	Slice *SliceColumnMessage `msgpack:"slice,omitempty"`
-	Label *LabelColumnMessage `msgpack:"label,omitempty"`
+// Proto returns the underlying protobuf message
+func (fr *frameImpl) Proto() *pb.Frame {
+	return fr.msg
 }
 
-// FrameMessage is over-the-wire frame data
-type FrameMessage struct {
-	Columns []ColumnMessage        `msgpack:"columns,omitempty"`
-	Indices []ColumnMessage        `msgpack:"indices,omitempty"`
-	Labels  map[string]interface{} `msgpack:"labels,omitempty"`
-	Error   string                 `msgpack:"error,omitempty"`
-}
-
-// Marshal marshals to native type
-func (mf *frameImpl) Marshal() (interface{}, error) {
-	msg := &FrameMessage{
-		Labels: mf.Labels(),
+// NewFrameFromProto return a new frame from protobuf message
+func NewFrameFromProto(msg *pb.Frame) Frame {
+	byName := make(map[string]Column)
+	columns := make([]Column, len(msg.Columns))
+	for i, colMsg := range msg.Columns {
+		col := &colImpl{msg: colMsg}
+		columns[i] = col
+		byName[colMsg.Name] = col
 	}
-	var err error
-
-	msg.Columns, err = mf.marshalColumns(mf.columns)
-	if err != nil {
-		return nil, err
+	indices := make([]Column, len(msg.Indices))
+	for i, colMsg := range msg.Indices {
+		indices[i] = &colImpl{msg: colMsg}
 	}
 
-	msg.Indices, err = mf.marshalColumns(mf.Indices())
-	if err != nil {
-		return nil, err
+	return &frameImpl{
+		msg:     msg,
+		columns: columns,
+		indices: indices,
+		byName:  byName,
 	}
-
-	return msg, nil
-}
-
-func (mf *frameImpl) marshalColumns(columns []Column) ([]ColumnMessage, error) {
-	if columns == nil {
-		return nil, nil
-	}
-
-	messages := make([]ColumnMessage, len(columns))
-	for i, col := range columns {
-		colMsg, err := mf.marshalColumn(col)
-		if err != nil {
-			return nil, err
-		}
-
-		switch colMsg.(type) {
-		case *SliceColumnMessage:
-			messages[i].Slice = colMsg.(*SliceColumnMessage)
-		case *LabelColumnMessage:
-			messages[i].Label = colMsg.(*LabelColumnMessage)
-		default:
-			return nil, fmt.Errorf("unknown marshaled message type - %T", colMsg)
-		}
-	}
-
-	return messages, nil
-}
-
-func (mf *frameImpl) marshalColumn(col Column) (interface{}, error) {
-	marshaler, ok := col.(Marshaler)
-	if !ok {
-		return nil, fmt.Errorf("column %q is not Marshaler", col.Name())
-	}
-
-	msg, err := marshaler.Marshal()
-	if err != nil {
-		return nil, errors.Wrapf(err, "can't marshal %q", col.Name())
-	}
-
-	return msg, nil
 }
 
 func validateSlice(start int, end int, size int) error {
@@ -323,7 +303,7 @@ func zeroValue(dtype DType) (interface{}, error) {
 		return false, nil
 	}
 
-	return nil, fmt.Errorf("unsupported data type - %s", dtype)
+	return nil, fmt.Errorf("unsupported data type - %d", dtype)
 }
 
 // TODO: Unite with backend/utils.AppendNil
@@ -404,4 +384,17 @@ func colAppend(col Column, value interface{}) error {
 	}
 
 	return ca.Append(value)
+}
+
+func cols2PB(columns []Column) ([]*pb.Column, error) {
+	pbCols := make([]*pb.Column, len(columns))
+	for i, col := range columns {
+		pbCol, ok := col.(*colImpl)
+		if !ok {
+			return nil, fmt.Errorf("%d: column %q is not protobuf", i, col.Name())
+		}
+		pbCols[i] = pbCol.msg
+	}
+
+	return pbCols, nil
 }

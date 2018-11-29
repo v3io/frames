@@ -82,11 +82,12 @@ func (c *Client) Write(request *frames.WriteRequest) (frames.FrameAppender, erro
 
 	var frame *pb.Frame
 	if request.ImmidiateData != nil {
-		var err error
-		frame, err = frameToPB(request.ImmidiateData)
-		if err != nil {
-			return nil, err
+		proto, ok := request.ImmidiateData.(pb.Framed)
+		if !ok {
+			return nil, errors.Errorf("unknown frame type")
 		}
+
+		frame = proto.Proto()
 	}
 
 	stream, err := c.client.Write(context.Background())
@@ -173,13 +174,7 @@ func (it *frameIterator) Next() bool {
 		return false
 	}
 
-	frame, err := asFrame(msg)
-	if err != nil {
-		it.err = err
-		return false
-	}
-	it.frame = frame
-
+	it.frame = frames.NewFrameFromProto(msg)
 	return true
 }
 
@@ -201,13 +196,12 @@ func (fa *frameAppender) Add(frame frames.Frame) error {
 		return fmt.Errorf("stream closed")
 	}
 
-	fMsg, err := frameToPB(frame)
-	if err != nil {
-		fa.stream.CloseAndRecv()
-		fa.closed = true
-		return err
+	pbf, ok := frame.(pb.Framed)
+	if !ok {
+		return errors.New("unknown frame type")
 	}
 
+	fMsg := pbf.Proto()
 	msg := &pb.WriteRequest{
 		Type: &pb.WriteRequest_Frame{
 			Frame: fMsg,

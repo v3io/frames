@@ -18,26 +18,19 @@ under the Apache 2.0 license is conditioned upon your compliance with
 such restriction.
 */
 
-package grpc
+package frames
 
 import (
 	"fmt"
 	"strconv"
 	"time"
+	"unsafe"
 
-	"github.com/v3io/frames"
 	"github.com/v3io/frames/pb"
 )
 
-// TODO: Find a way for frames to use the .proto
 var (
-	dtypes = map[pb.DType]frames.DType{
-		pb.DType_INTEGER: frames.IntType,
-		pb.DType_FLOAT:   frames.FloatType,
-		pb.DType_STRING:  frames.StringType,
-		pb.DType_TIME:    frames.TimeType,
-		pb.DType_BOOLEAN: frames.BoolType,
-	}
+	isInt64 = unsafe.Sizeof(int(0)) == 8
 )
 
 type colImpl struct {
@@ -74,8 +67,8 @@ func (c *colImpl) Name() string {
 	return c.msg.Name
 }
 
-func (c *colImpl) DType() frames.DType {
-	return dtypes[c.msg.Dtype]
+func (c *colImpl) DType() DType {
+	return DType(c.msg.Dtype)
 }
 
 func (c *colImpl) Ints() ([]int64, error) {
@@ -227,6 +220,10 @@ func (c *colImpl) TimeAt(i int) (time.Time, error) {
 		i = 0
 	}
 
+	if c.times != nil {
+		return c.times[i], nil
+	}
+
 	ns := c.msg.Times[i]
 	return pb.NSToTime(ns), nil
 }
@@ -250,7 +247,7 @@ func (c *colImpl) BoolAt(i int) (bool, error) {
 	return c.msg.Bools[i], nil
 }
 
-func (c *colImpl) Slice(start int, end int) (frames.Column, error) {
+func (c *colImpl) Slice(start int, end int) (Column, error) {
 	if start > end {
 		return nil, fmt.Errorf("start %d bigger than end %d", start, end)
 	}
@@ -320,6 +317,85 @@ func (c *colImpl) Append(value interface{}) error {
 	}
 
 	return c.appendSlice(value)
+}
+
+// NewSliceColumn returns a new slice column
+func NewSliceColumn(name string, data interface{}) (Column, error) {
+	msg := &pb.Column{
+		Kind: pb.Column_SLICE,
+		Name: name,
+	}
+
+	var times []time.Time
+	switch data.(type) {
+	case []bool:
+		msg.Dtype = pb.DType_BOOLEAN
+		msg.Bools = data.([]bool)
+	case []float64:
+		msg.Dtype = pb.DType_FLOAT
+		msg.Floats = data.([]float64)
+	case []int:
+		msg.Dtype = pb.DType_INTEGER
+		msg.Ints = intToInt64(data.([]int))
+	case []int64:
+		msg.Dtype = pb.DType_INTEGER
+		msg.Ints = data.([]int64)
+	case []string:
+		msg.Dtype = pb.DType_STRING
+		msg.Strings = data.([]string)
+	case []time.Time:
+		times := data.([]time.Time)
+		msg.Dtype = pb.DType_TIME
+		msg.Times = make([]int64, len(times))
+		for i, t := range times {
+			msg.Times[i] = t.UnixNano()
+		}
+	default:
+		return nil, fmt.Errorf("unknown data type %T", data)
+	}
+
+	col := &colImpl{
+		msg:   msg,
+		times: times,
+	}
+	return col, nil
+}
+
+// NewLabelColumn returns a new slabel column
+func NewLabelColumn(name string, value interface{}, size int) (Column, error) {
+	msg := &pb.Column{
+		Kind: pb.Column_LABEL,
+		Name: name,
+		Size: int64(size),
+	}
+
+	switch value.(type) {
+	case bool:
+		msg.Dtype = pb.DType_BOOLEAN
+		msg.Bools = []bool{value.(bool)}
+	case float64:
+		msg.Dtype = pb.DType_FLOAT
+		msg.Floats = []float64{value.(float64)}
+	case int:
+		msg.Dtype = pb.DType_INTEGER
+		msg.Ints = []int64{int64(value.(int))}
+	case int64:
+		msg.Dtype = pb.DType_INTEGER
+		msg.Ints = []int64{value.(int64)}
+	case []string:
+		msg.Dtype = pb.DType_STRING
+		msg.Strings = []string{value.(string)}
+	case []time.Time:
+		msg.Dtype = pb.DType_TIME
+		msg.Times = []int64{value.(time.Time).UnixNano()}
+	default:
+		return nil, fmt.Errorf("unknown data type %T", value)
+	}
+
+	col := &colImpl{
+		msg: msg,
+	}
+	return col, nil
 }
 
 func (c *colImpl) appendSlice(value interface{}) error {
@@ -431,4 +507,20 @@ func (c *colImpl) checkDType(dtype pb.DType) error {
 	}
 
 	return nil
+}
+
+func intToInt64(arr []int) []int64 {
+	if arr == nil {
+		return nil
+	}
+
+	if isInt64 {
+		return *(*[]int64)(unsafe.Pointer(&arr))
+	}
+
+	out := make([]int64, len(arr))
+	for i, val := range arr {
+		out[i] = int64(val)
+	}
+	return out
 }

@@ -18,7 +18,7 @@ under the Apache 2.0 license is conditioned upon your compliance with
 such restriction.
 */
 
-package grpc
+package frames
 
 import (
 	"testing"
@@ -46,5 +46,4 @@ func TestLabelColTimeAt(t *testing.T) {
 	if ts1.Round(time.Millisecond) != ts.Round(time.Millisecond) {
 		t.Fatalf("bad time %v != %v", ts1, ts)
 	}
-
 }

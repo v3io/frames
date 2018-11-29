@@ -32,9 +32,9 @@ import (
 
 	"github.com/nuclio/logger"
 	"github.com/pkg/errors"
-	"github.com/vmihailenco/msgpack"
 
 	"github.com/v3io/frames"
+	"github.com/v3io/frames/pb"
 )
 
 // Client is v3io HTTP streaming client
@@ -133,10 +133,14 @@ func (c *Client) Write(request *frames.WriteRequest) (frames.FrameAppender, erro
 		request.Session = c.session
 	}
 
+	msg, err := pbWriteReq(request)
+	if err != nil {
+		return nil, err
+	}
+
 	var buf bytes.Buffer
-	enc := msgpack.NewEncoder(&buf)
-	enc.UseJSONTag(true)
-	if err := enc.Encode(request); err != nil {
+	enc := frames.NewEncoder(&buf)
+	if err := enc.Encode(msg); err != nil {
 		return nil, errors.Wrap(err, "Can't encode request")
 	}
 
@@ -230,9 +234,11 @@ type streamFrameIterator struct {
 
 func (it *streamFrameIterator) Next() bool {
 	var err error
+	msg := &pb.Frame{}
 
-	it.frame, err = it.decoder.DecodeFrame()
+	err = it.decoder.Decode(msg)
 	if err == nil {
+		it.frame = frames.NewFrameFromProto(msg)
 		return true
 	}
 
@@ -273,7 +279,12 @@ type streamFrameAppender struct {
 }
 
 func (a *streamFrameAppender) Add(frame frames.Frame) error {
-	if err := a.encoder.Encode(frame); err != nil {
+	iface, ok := frame.(pb.Framed)
+	if !ok {
+		return errors.New("unknown frame type")
+	}
+
+	if err := a.encoder.Encode(iface.Proto()); err != nil {
 		return errors.Wrap(err, "can't encode frame")
 	}
 
@@ -304,4 +315,26 @@ func (a *streamFrameAppender) WaitForComplete(timeout time.Duration) error {
 	case <-time.After(timeout):
 		return fmt.Errorf("timeout after %s", timeout)
 	}
+}
+
+func pbWriteReq(req *frames.WriteRequest) (*pb.InitialWriteRequest, error) {
+	var frMsg *pb.Frame
+	if req.ImmidiateData != nil {
+		iface, ok := req.ImmidiateData.(pb.Framed)
+		if !ok {
+			return nil, errors.New("unknown frame type")
+		}
+		frMsg = iface.Proto()
+	}
+
+	msg := &pb.InitialWriteRequest{
+		Session:     req.Session,
+		Backend:     req.Backend,
+		Table:       req.Table,
+		InitialData: frMsg,
+		Expression:  req.Expression,
+		More:        req.HaveMore,
+	}
+
+	return msg, nil
 }

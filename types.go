@@ -26,6 +26,56 @@ import (
 	"github.com/v3io/frames/pb"
 )
 
+// DType is data type
+type DType pb.DType
+
+// Possible data types
+var (
+	BoolType   = DType(pb.DType_BOOLEAN)
+	FloatType  = DType(pb.DType_FLOAT)
+	IntType    = DType(pb.DType_INTEGER)
+	StringType = DType(pb.DType_STRING)
+	TimeType   = DType(pb.DType_TIME)
+)
+
+// Column is a data column
+type Column interface {
+	Len() int                                 // Number of elements
+	Name() string                             // Column name
+	DType() DType                             // Data type (e.g. IntType, FloatType ...)
+	Ints() ([]int64, error)                   // Data as []int64
+	IntAt(i int) (int64, error)               // Int value at index i
+	Floats() ([]float64, error)               // Data as []float64
+	FloatAt(i int) (float64, error)           // Float value at index i
+	Strings() []string                        // Data as []string
+	StringAt(i int) (string, error)           // String value at index i
+	Times() ([]time.Time, error)              // Data as []time.Time
+	TimeAt(i int) (time.Time, error)          // time.Time value at index i
+	Bools() ([]bool, error)                   // Data as []bool
+	BoolAt(i int) (bool, error)               // bool value at index i
+	Slice(start int, end int) (Column, error) // Slice of data
+}
+
+// Frame is a collection of columns
+type Frame interface {
+	Labels() map[string]interface{}          // Label set
+	Names() []string                         // Column names
+	Indices() []Column                       // Index columns
+	Len() int                                // Number of rows
+	Column(name string) (Column, error)      // Column by name
+	Slice(start int, end int) (Frame, error) // Slice of Frame
+	IterRows(includeIndex bool) RowIterator  // Iterate over rows
+}
+
+// RowIterator is an iterator over frame rows
+type RowIterator interface {
+	Next() bool                      // Advance to next row
+	Row() map[string]interface{}     // Row as map of name->value
+	RowNum() int                     // Current row number
+	Indices() map[string]interface{} // MultiIndex as name->value
+	Err() error                      // Iteration error
+}
+
 // DataBackend is an interface for read/write on backend
 type DataBackend interface {
 	// TODO: Expose name, type, config ... ?

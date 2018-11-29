@@ -153,7 +153,7 @@ func (it *rowIterator) getRow() (map[string]interface{}, error) {
 		case BoolType:
 			value, err = col.BoolAt(it.rowNum)
 		default:
-			err = fmt.Errorf("%s:%d - unknown dtype - %s", col.Name(), it.rowNum, col.DType())
+			err = fmt.Errorf("%s:%d - unknown dtype - %d", col.Name(), it.rowNum, col.DType())
 		}
 
 		if err != nil {

@@ -28,6 +28,8 @@ import (
 	"sort"
 	"strings"
 	"time"
+
+	"github.com/pkg/errors"
 )
 
 var (
@@ -37,6 +39,11 @@ var (
 	passwdMaskFull = fmt.Sprintf("password:\"%s\"", passwdMask)
 	sessionFields  []string
 )
+
+// Framed is a frame based on protobuf
+type Framed interface {
+	Proto() *Frame
+}
 
 // GoValue return value as interface{}
 func (v *Value) GoValue() (interface{}, error) {
@@ -113,6 +120,20 @@ func AsGoMap(mv map[string]*Value) map[string]interface{} {
 	return m
 }
 
+// FromGoMap return map[string]*Value
+func FromGoMap(m map[string]interface{}) (map[string]*Value, error) {
+	out := make(map[string]*Value)
+	for key, val := range m {
+		pbVal := &Value{}
+		if err := pbVal.SetValue(val); err != nil {
+			return nil, errors.Wrapf(err, "can't encode %s", key)
+		}
+		out[key] = pbVal
+	}
+
+	return out, nil
+}
+
 // MarshalJSON marshal Value as JSON object
 func (v *Value) MarshalJSON() ([]byte, error) {
 	val, err := v.GoValue()
@@ -179,10 +200,11 @@ func (s *Session) Format(state fmt.State, verb rune) {
 			if state.Flag('#') || state.Flag('+') {
 				fmt.Fprintf(state, "%s:", name)
 			}
-			if name == "Password" {
+			fld := val.FieldByName(name)
+			if name == "Password" && fld.Len() > 0 {
 				fmt.Fprint(state, passwdMask)
 			} else {
-				fmt.Fprintf(state, "%v", val.FieldByName(name))
+				fmt.Fprintf(state, "%v", fld)
 			}
 
 			if i < len(sessionFields)-1 {
