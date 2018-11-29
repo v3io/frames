@@ -85,6 +85,10 @@ func NewDecoder(r io.Reader) *Decoder {
 func (d *Decoder) Decode(msg proto.Message) error {
 	var size int64
 	if err := binary.Read(d.r, byteOrder, &size); err != nil {
+		if err == io.EOF {
+			// Propogate EOF to clients
+			return err
+		}
 		return errors.Wrap(err, "can't read header")
 	}
 

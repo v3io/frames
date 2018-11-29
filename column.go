@@ -269,7 +269,7 @@ func (c *colImpl) Slice(start int, end int) (Column, error) {
 	}
 
 	if c.msg.Kind == pb.Column_LABEL {
-		msg.Size = int64(start - end)
+		msg.Size = int64(end - start)
 	}
 
 	switch c.msg.Dtype {
@@ -382,10 +382,10 @@ func NewLabelColumn(name string, value interface{}, size int) (Column, error) {
 	case int64:
 		msg.Dtype = pb.DType_INTEGER
 		msg.Ints = []int64{value.(int64)}
-	case []string:
+	case string:
 		msg.Dtype = pb.DType_STRING
 		msg.Strings = []string{value.(string)}
-	case []time.Time:
+	case time.Time:
 		msg.Dtype = pb.DType_TIME
 		msg.Times = []int64{value.(time.Time).UnixNano()}
 	default:
@@ -401,7 +401,7 @@ func NewLabelColumn(name string, value interface{}, size int) (Column, error) {
 func (c *colImpl) appendSlice(value interface{}) error {
 	switch c.msg.Dtype {
 	case pb.DType_INTEGER:
-		v, ok := value.(int64)
+		v, ok := asInt64(value)
 		if !ok {
 			return fmt.Errorf("wrong type for int64 - %T", value)
 		}
@@ -452,7 +452,7 @@ func (c *colImpl) appendLabel(value interface{}) error {
 func (c *colImpl) sameLabelValue(value interface{}) bool {
 	switch c.msg.Dtype {
 	case pb.DType_INTEGER:
-		v, ok := value.(int64)
+		v, ok := asInt64(value)
 		if !ok {
 			return false
 		}
@@ -523,4 +523,21 @@ func intToInt64(arr []int) []int64 {
 		out[i] = int64(val)
 	}
 	return out
+}
+
+func asInt64(val interface{}) (int64, bool) {
+	switch val.(type) {
+	case int64:
+		return val.(int64), true
+	case int:
+		return int64(val.(int)), true
+	case int32:
+		return int64(val.(int32)), true
+	case int16:
+		return int64(val.(int16)), true
+	case int8:
+		return int64(val.(int8)), true
+	}
+
+	return 0, false
 }
