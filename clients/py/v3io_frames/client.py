@@ -114,10 +114,12 @@ class ClientBase:
         self._validate_request(backend, table, WriteError)
         if isinstance(dfs, pd.DataFrame):
             dfs = [dfs]
+
         if max_in_message:
-            dfs = self._split_dfs(dfs, max_in_message)
-        request = self._encode_write(backend, table, expression, labels)
-        return self._write(request, dfs)
+            dfs = self._iter_chunks(dfs, max_in_message)
+
+        request = self._encode_write(backend, table, expression)
+        return self._write(request, dfs, labels)
 
     def create(self, backend, table, attrs=None, schema=None, if_exists=FAIL):
         """Create a table
@@ -200,7 +202,7 @@ class ClientBase:
     def _encode_session(self, session):
         return session
 
-    def _encode_write(self, backend, table, expression, labels):
+    def _encode_write(self, backend, table, expression):
         # TODO: InitialData?
         return fpb.InitialWriteRequest(
             session=self.session,
@@ -216,15 +218,10 @@ class ClientBase:
         if not table:
             raise err_cls('empty table')
 
-    def _iter_chunks(self, dfs, labels, max_in_message):
+    def _iter_chunks(self, dfs, size):
         for df in dfs:
-            for cdf in self._chunk_df(df, max_in_message):
-                yield df2msg(df, labels)
-
-    def _chunk_df(self, df, size):
-        size = size if size else len(df)
-
-        i = 0
-        while i < len(df):
-            yield df[i:i+size]
-            i += size
+            size = size if size else len(df)
+            i = 0
+            while i < len(df):
+                yield df[i:i+size]
+                i += size

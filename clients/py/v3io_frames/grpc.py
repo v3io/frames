@@ -53,8 +53,7 @@ class Client(ClientBase):
 
     @grpc_raise(ReadError)
     def do_read(self, backend, table, query, columns, filter, group_by, limit,
-                data_format, row_layout, max_in_message, marker, iterator,
-                **kw):
+                data_format, row_layout, max_in_message, marker, **kw):
         # TODO: Create channel once?
         with grpc.insecure_channel(self.address) as channel:
             stub = fgrpc.FramesStub(channel)
@@ -87,10 +86,10 @@ class Client(ClientBase):
         return dfs
 
     @grpc_raise(WriteError)
-    def _write(self, request, dfs):
+    def _write(self, request, dfs, labels):
         with grpc.insecure_channel(self.address) as channel:
             stub = fgrpc.FramesStub(channel)
-            stub.Write(write_stream(request, dfs))
+            stub.Write(write_stream(request, dfs, labels))
 
     @grpc_raise(CreateError)
     def _create(self, backend, table, attrs, schema, if_exists):
@@ -139,10 +138,10 @@ class Client(ClientBase):
             stub.Exec(request)
 
 
-def write_stream(request, dfs):
+def write_stream(request, dfs, labels):
     yield fpb.WriteRequest(request=request)
     for df in dfs:
-        yield fpb.WriteRequest(frame=df2msg(df))
+        yield fpb.WriteRequest(frame=df2msg(df, labels))
 
 
 def time2str(ts):

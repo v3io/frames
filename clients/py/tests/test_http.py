@@ -13,6 +13,7 @@
 # limitations under the License.
 
 import re
+import struct
 from datetime import datetime
 from io import BytesIO
 from os.path import abspath, dirname
@@ -20,13 +21,11 @@ from os.path import abspath, dirname
 import numpy as np
 import pandas as pd
 import pytz
-import struct
 
 import v3io_frames as v3f
-from v3io_frames.pbutils import pb2py, df2msg
-from v3io_frames import http
 from v3io_frames import frames_pb2 as fpb
-
+from v3io_frames import http
+from v3io_frames.pbutils import df2msg, pb2py
 
 here = dirname(abspath(__file__))
 
@@ -73,10 +72,8 @@ class patch_requests:
         it = iter(kw.get('data', []))
         data = next(it)
         self.write_request = fpb.InitialWriteRequest.FromString(data)
-        c = http.Client('http://example.com', None)
         for chunk in it:
-            io = BytesIO(it)
-            msg = c._read_msg(io)
+            msg = fpb.Frame.FromString(chunk)
             self.write_frames.append(msg)
 
         class Response:
@@ -166,7 +163,8 @@ def test_encode_labels():
         frames = patch.write_frames
 
     for frame in frames:
-        assert frame['labels'] == labels, 'no lables'
+        req_labels = pb2py(frame.labels)
+        assert req_labels == labels, 'no lables'
 
 
 def new_test_client(address='', session=None):

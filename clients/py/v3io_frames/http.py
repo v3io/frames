@@ -12,8 +12,6 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-"""Stream data from Nuclio into pandas DataFrame"""
-
 import struct
 from datetime import datetime
 from functools import wraps, partial
@@ -30,7 +28,7 @@ from .errors import (CreateError, DeleteError, Error, ExecuteError,
                      ReadError, WriteError)
 from .pbutils import pb2py, msg2df, df2msg
 
-header_fmt = '<l'
+header_fmt = '<q'
 header_fmt_size = struct.calcsize(header_fmt)
 
 
@@ -90,12 +88,15 @@ class Client(ClientBase):
         return dfs
 
     @connection_error(WriteError)
-    def _write(self, request, dfs):
-        request = request.SerializeToString()
+    def _write(self, request, dfs, labels):
         url = self._url_for('write')
         headers = self._headers()
         headers['Content-Encoding'] = 'chunked'
-        data = chain([request], dfs)
+
+        request = self._encode_msg(request)
+        frames = (self._encode_msg(df2msg(df)) for df in dfs)
+        data = chain([request], frames)
+
         resp = requests.post(url, headers=headers, data=data)
 
         if not resp.ok:
@@ -186,6 +187,11 @@ class Client(ClientBase):
             raise ReadError('chopped frame body')
 
         return fpb.Frame.FromString(data)
+
+    def _encode_msg(self, msg):
+        data = msg.SerializeToString()
+        size = len(data)
+        return struct.pack(header_fmt, size) + data
 
 
 def format_go_time(dt):
