@@ -27,4 +27,10 @@ docker build \
     --file cmd/framesd/Dockerfile \
     .
 
-docker tag ${tag} "${tag_base}:latest"
+if [ "${TRAVIS_BRANCH}" == "master" ]; then
+    docker tag ${tag} "${tag_base}:latest"
+fi
+
+if [ "${TRAVIS_BRANCH}" == "development" ]; then
+    docker tag ${tag} "${tag_base}:unstable"
+fi
