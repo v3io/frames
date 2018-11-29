@@ -171,6 +171,8 @@ class Client(ClientBase):
 
     def _iter_dfs(self, resp):
         for msg in iter(partial(self._read_msg, resp), None):
+            if msg.error:
+                raise ReadError(msg.error)
             yield msg2df(msg)
 
     def _read_msg(self, resp):

@@ -77,10 +77,11 @@ class Client(ClientBase):
     # We need to write "read" since once you have a yield in a function
     # (do_read) it'll always return a generator
     @grpc_raise(WriteError)
-    @wraps(do_read)
-    def _read(self, *args, **kw):
-        iterator = kw.pop('iterator', True)
-        dfs = self.do_read(*args, **kw)
+    def _read(self, backend, table, query, columns, filter, group_by, limit,
+              data_format, row_layout, max_in_message, marker, iterator, **kw):
+        dfs = self.do_read(
+            backend, table, query, columns, filter, group_by, limit,
+            data_format, row_layout, max_in_message, marker, **kw)
         if not iterator:
             return pd.concat(dfs)
         return dfs

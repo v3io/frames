@@ -18,14 +18,13 @@ from datetime import datetime
 from io import BytesIO
 from os.path import abspath, dirname
 
-import numpy as np
 import pandas as pd
 import pytz
 
 import v3io_frames as v3f
 from v3io_frames import frames_pb2 as fpb
 from v3io_frames import http
-from v3io_frames.pbutils import df2msg, pb2py
+from v3io_frames.pbutils import df2msg
 
 here = dirname(abspath(__file__))
 
@@ -142,29 +141,6 @@ def test_format_go_time():
     hours, minutes = map(int, ts[ts.find('+')+1:].split(':'))
     offset = hours * 60 * 60 + minutes * 60
     assert offset == tz.utcoffset(now).total_seconds(), 'bad offset'
-
-
-def test_encode_labels():
-    size = 100
-    df = pd.DataFrame({
-        'x': np.random.rand(size),
-        'y': np.random.rand(size),
-    })
-
-    labels = {
-        'host': 'example.com',
-        'worker': 12,
-    }
-
-    client = new_test_client()
-    with patch_requests() as patch:
-        client.write(
-            'csv', 'weather', [df], max_in_message=size//7, labels=labels)
-        frames = patch.write_frames
-
-    for frame in frames:
-        req_labels = pb2py(frame.labels)
-        assert req_labels == labels, 'no lables'
 
 
 def new_test_client(address='', session=None):
