@@ -401,7 +401,7 @@ func NewLabelColumn(name string, value interface{}, size int) (Column, error) {
 func (c *colImpl) appendSlice(value interface{}) error {
 	switch c.msg.Dtype {
 	case pb.DType_INTEGER:
-		v, ok := asInt64(value)
+		v, ok := pb.AsInt64(value)
 		if !ok {
 			return fmt.Errorf("wrong type for int64 - %T", value)
 		}
@@ -452,7 +452,7 @@ func (c *colImpl) appendLabel(value interface{}) error {
 func (c *colImpl) sameLabelValue(value interface{}) bool {
 	switch c.msg.Dtype {
 	case pb.DType_INTEGER:
-		v, ok := asInt64(value)
+		v, ok := pb.AsInt64(value)
 		if !ok {
 			return false
 		}
@@ -523,21 +523,4 @@ func intToInt64(arr []int) []int64 {
 		out[i] = int64(val)
 	}
 	return out
-}
-
-func asInt64(val interface{}) (int64, bool) {
-	switch val.(type) {
-	case int64:
-		return val.(int64), true
-	case int:
-		return int64(val.(int)), true
-	case int32:
-		return int64(val.(int32)), true
-	case int16:
-		return int64(val.(int16)), true
-	case int8:
-		return int64(val.(int8)), true
-	}
-
-	return 0, false
 }

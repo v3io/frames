@@ -70,8 +70,12 @@ func (v *Value) SetValue(i interface{}) error {
 		v.Value = &Value_Bval{Bval: i.(bool)}
 	case float64: // JSON encodes numbers as floats
 		v.Value = &Value_Fval{Fval: i.(float64)}
-	case int64:
-		v.Value = &Value_Ival{Ival: i.(int64)}
+	case int, int64, int32, int16, int8:
+		ival, ok := AsInt64(i)
+		if !ok {
+			return fmt.Errorf("unsupported type for %T - %T", v, i)
+		}
+		v.Value = &Value_Ival{Ival: ival}
 	case string:
 		v.Value = &Value_Sval{Sval: i.(string)}
 	case time.Time:
@@ -229,4 +233,22 @@ func init() {
 		sessionFields = append(sessionFields, field.Name)
 	}
 	sort.Strings(sessionFields)
+}
+
+// AsInt64 convert val to int64, it'll return 0, false on failure
+func AsInt64(val interface{}) (int64, bool) {
+	switch val.(type) {
+	case int64:
+		return val.(int64), true
+	case int:
+		return int64(val.(int)), true
+	case int32:
+		return int64(val.(int32)), true
+	case int16:
+		return int64(val.(int16)), true
+	case int8:
+		return int64(val.(int8)), true
+	}
+
+	return 0, false
 }
