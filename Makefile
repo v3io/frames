@@ -64,3 +64,19 @@ grpc-py:
 pypi:
 	cd clients/py && \
 	    pipenv run make upload
+
+cloc:
+	cloc \
+	    --exclude-dir=vendor,_t,.ipynb_checkpoints,_examples,_build \
+	    .
+
+update-go-deps:
+	go mod tidy
+	go mod vendor
+	git add vendor go.mod go.sum
+	@echo "Don't forget to test & commit"
+
+update-py-deps:
+	cd clients/py && $(MAKE update-deps)
+	git add clients/py/Pipfile*
+	@echo "Don't forget to test & commit"

@@ -8,43 +8,23 @@ Server and client library of streaming data from v3io
 
 ## Components
 
-- Go server ([msgpack][msgpack] over chunked HTTP)
+- Go server, both gRPC and HTTP protocols are supported
 - Go client
 - Python client
 
-[msgpack]: https://msgpack.org/
-
-## Server API
-
-### POST /read
-
-Read from database. POST body is a JSON encoded `ReadRequest`
-Return value is chunked HTTP where each chunk is msgpack encoded `Frame`
-
-### POST /write?backend=BACKEND&table=TABLE
-
-Write to database, `backend` and `table` are fields in `WriteRequest`
-Body should be chunked msgpack encoded frames
-Response is JSON in the format
-
-    {
-	"num_frames": 10,
-	"num_rows": 1000
-    }
-
 ### Development
 
-Core is written in [Go](https://golang.org/).
+Core is written in [Go](https://golang.org/), we work on `development` branch
+and release to `master.
 
-To run the tests run `go test -v ./...`
+- To run the Go tests run `make test`.
+- To run the Python tests run `make test-python`
 
-#### Adding Dependencies
+#### Adding/Changing Dependencies
 
-If you add dependencies please run
-
-    go mod tidy
-    go mod vendor
-    git add vendor go.mod go.sum
+- If you add Go dependencies run `make update-go-deps`
+- If you add Python dependencies, updates `clients/py/Pipfile` and run `make
+  update-py-deps`
 
 ### Docker Image
 

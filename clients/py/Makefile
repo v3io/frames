@@ -40,3 +40,8 @@ test: clean_pyc flake8
 
 README.html: README.md
 	kramdown -i GFM $< > $@
+
+.PHONY: update-deps
+update-deps:
+	PIPENV_IGNORE_VIRTUALENVS=1 \
+	    pipenv update
