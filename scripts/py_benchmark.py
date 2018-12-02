@@ -48,4 +48,4 @@ for bench in data['benchmarks']:
     time_us = bench['stats']['mean'] * 1e6
     nrows = read_rows if op == 'read' else write_rows
     usl = time_us / nrows
-    print(f'{proto}:{op} {usl:.2f}µs/row')
+    print(f'{proto:<5} {op:<5} {usl:7.3f}µs/row')

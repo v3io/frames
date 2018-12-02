@@ -37,4 +37,4 @@ for line in out.stdout.decode('utf-8').splitlines():
     us = int(ns) / 1000
     nrows = read_rows if op == 'read' else write_rows
     usl = us/nrows
-    print(f'{proto}:{op} {usl:.2f}µs/row')
+    print(f'{proto:<5} {op:<5} {usl:7.3f}µs/row')
