@@ -80,3 +80,6 @@ update-py-deps:
 	cd clients/py && $(MAKE update-deps)
 	git add clients/py/Pipfile*
 	@echo "Don't forget to test & commit"
+
+bench-go:
+	./scripts/go_benchmark.py
