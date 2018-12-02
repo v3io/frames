@@ -14,26 +14,27 @@
 # limitations under the License.
 
 case $1 in
-    -h | --help ) echo "usage: $(basename $0) TAG [TAG ...]"; exit;;
+    -h | --help ) echo "usage: $(basename $0)"; exit;;
 esac
-
-if [ $# -lt 1 ]; then
-    2>&1 echo "error: wrong number of arguments"
-    exit 1
-fi
-
-set -x
-set -e
-
 
 if [ -z "${V3IO_DOCKER_USER}" ]; then
   echo "no login info - exiting"
   exit
 fi
 
+set -x
+set -e
+
+version=$(./scripts/build-version.sh)
+
 echo "${V3IO_DOCKER_PASSWD}" | \
     docker login -u="${V3IO_DOCKER_USER}" --password-stdin
-for tag in $@
-do
-    docker push ${tag}
-done
+docker push v3io/framesd:${version}
+
+if [ "${TRAVIS_BRANCH}" == "master" ]; then
+    docker push v3io/framesd:latest
+fi
+
+if [ "${TRAVIS_BRANCH}" == "development" ]; then
+    docker push v3io/framesd:unstable
+fi
