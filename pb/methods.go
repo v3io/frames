@@ -187,6 +187,11 @@ func (s *SchemaField) Property(key string) (interface{}, bool) {
 // Format implements fmt.Formatter
 // We're doing this to hide passwords from prints
 func (s *Session) Format(state fmt.State, verb rune) {
+	if s == nil {
+		state.Write([]byte("<nil>"))
+		return
+	}
+
 	switch verb {
 	case 's', 'q':
 		val := passwdRe.ReplaceAllString(s.String(), passwdMaskFull)

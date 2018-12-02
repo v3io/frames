@@ -1,3 +1,4 @@
+#!/usr/bin/env python
 # Copyright 2018 Iguazio
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
@@ -12,21 +13,23 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-set -x
-set -e
+from subprocess import run, PIPE
+import re
 
-version=$(./scripts/build-version.sh)
 
-function build() {
-    GOOS=$1 GOARCH=$2 suffix=$3
-    exe=framesd-${GOOS}-${GOARCH}${suffix}
-    GOOS=${GOOS} GOARCH=${GOARCH} \
-	go build \
-	    -o ${exe} \
-	    -ldflags="-X main.Version=${version}" \
-	    ./cmd/framesd
-}
+with open('testdata/weather.csv') as fp:
+    read_rows = sum(1 for _ in fp) - 1
 
-build linux amd64
-build darwin amd64
-build windows amd64 .exe
+
+out = run(['go', 'test', '-run', '^$', '-bench', '.'], stdout=PIPE)
+if out.returncode != 0:
+    raise SystemExit(1)
+
+for line in out.stdout.decode('utf-8').splitlines():
+    match = re.match(r'Benchmark(Read|Write)_([a-zA-Z]+).* (\d+) ns/op', line)
+    if not match:
+        continue
+    op, proto, ns = match.groups()
+    us = int(ns)
+    usl = us/read_rows
+    print(f'{proto}:{op} {usl:.2f}µs/row')

@@ -50,7 +50,7 @@ var (
 	testsConfig map[string]*testConfig
 )
 
-type frameFn func(t *testing.T, size int) frames.Frame
+type frameFn func(t testing.TB, size int) frames.Frame
 type testConfig struct {
 	frameFn frameFn
 	create  func(*frames.CreateRequest) // if not defined, create won't be called
@@ -60,14 +60,14 @@ type testConfig struct {
 	exec    func(*frames.ExecRequest)   // if not defined, exec won't be called
 }
 
-func setupRoot(t *testing.T) string {
+func setupRoot(t testing.TB) string {
 	root, err := ioutil.TempDir("", "frames-e2e")
 	if err != nil {
 		t.Fatal(err)
 	}
 
 	csvFile := "weather.csv"
-	src := fmt.Sprintf("./clients/py/tests/%s", csvFile)
+	src := fmt.Sprintf("./testdata/%s", csvFile)
 	dest := fmt.Sprintf("%s/%s", root, csvFile)
 
 	in, err := os.Open(src)
@@ -87,7 +87,7 @@ func setupRoot(t *testing.T) string {
 	return root
 }
 
-func sessionInfo(t *testing.T) *frames.Session {
+func sessionInfo(t testing.TB) *frames.Session {
 	data := os.Getenv("V3IO_SESSION")
 	if data == "" {
 		return nil
@@ -137,7 +137,7 @@ func genConfig(root string, session *frames.Session) *frames.Config {
 	}
 }
 
-func encodeConfig(t *testing.T, config *frames.Config, path string) {
+func encodeConfig(t testing.TB, config *frames.Config, path string) {
 	data, err := yaml.Marshal(config)
 	if err != nil {
 		t.Fatal(err)
@@ -148,7 +148,7 @@ func encodeConfig(t *testing.T, config *frames.Config, path string) {
 	}
 }
 
-func freePort(t *testing.T) int {
+func freePort(t testing.TB) int {
 	l, err := net.Listen("tcp", ":0")
 	if err != nil {
 		t.Fatal(err)
@@ -158,7 +158,7 @@ func freePort(t *testing.T) int {
 	return l.Addr().(*net.TCPAddr).Port
 }
 
-func waitForServer(t *testing.T, port int) {
+func waitForServer(t testing.TB, port int) {
 	address := fmt.Sprintf("localhost:%d", port)
 	timeout := 30 * time.Second
 
@@ -174,7 +174,7 @@ func waitForServer(t *testing.T, port int) {
 	t.Fatalf("server not up after %v", timeout)
 }
 
-func runServer(t *testing.T, root string, grpcPort int, httpPort int) *exec.Cmd {
+func runServer(t testing.TB, root string, grpcPort int, httpPort int) *exec.Cmd {
 	exePath := fmt.Sprintf("%s/framesd", root)
 	cmd := exec.Command("go", "build", "-o", exePath, "cmd/framesd/framesd.go")
 	if err := cmd.Run(); err != nil {
@@ -202,7 +202,7 @@ func runServer(t *testing.T, root string, grpcPort int, httpPort int) *exec.Cmd 
 	return cmd
 }
 
-func floatCol(t *testing.T, name string, size int) frames.Column {
+func floatCol(t testing.TB, name string, size int) frames.Column {
 	floats := make([]float64, size)
 	for i := range floats {
 		floats[i] = random.Float64()
@@ -216,7 +216,7 @@ func floatCol(t *testing.T, name string, size int) frames.Column {
 	return col
 }
 
-func csvFrame(t *testing.T, size int) frames.Frame {
+func csvFrame(t testing.TB, size int) frames.Frame {
 	var (
 		columns []frames.Column
 		col     frames.Column
@@ -276,7 +276,7 @@ func csvFrame(t *testing.T, size int) frames.Frame {
 	return frame
 }
 
-func kvFrame(t *testing.T, size int) frames.Frame {
+func kvFrame(t testing.TB, size int) frames.Frame {
 	var icol frames.Column
 
 	index := []string{"mike", "joe", "jim", "rose", "emily", "dan"}
@@ -299,7 +299,7 @@ func kvFrame(t *testing.T, size int) frames.Frame {
 	return frame
 }
 
-func streamFrame(t *testing.T, size int) frames.Frame {
+func streamFrame(t testing.TB, size int) frames.Frame {
 	size = 60 // TODO
 	times := make([]time.Time, size)
 	end := time.Now().Truncate(time.Hour)
@@ -430,35 +430,53 @@ func integrationTest(t *testing.T, client frames.Client, backend string) {
 
 }
 
+type testInfo struct {
+	config   *frames.Config
+	grpcAddr string
+	httpAddr string
+	process  *os.Process
+	root     string
+	session  *frames.Session
+}
+
+func setupTest(t testing.TB) *testInfo {
+	info := &testInfo{}
+	info.root = setupRoot(t)
+	t.Logf("root: %s", info.root)
+	info.session = sessionInfo(t)
+	t.Logf("session: %+v", info.session)
+	info.config = genConfig(info.root, info.session)
+	t.Logf("config: %+v", info.config)
+	configPath := fmt.Sprintf("%s/%s", info.root, configFile)
+	encodeConfig(t, info.config, configPath)
+
+	grpcPort, httpPort := freePort(t), freePort(t)
+	cmd := runServer(t, info.root, grpcPort, httpPort)
+	info.process = cmd.Process
+
+	info.grpcAddr = fmt.Sprintf("localhost:%d", grpcPort)
+	info.httpAddr = fmt.Sprintf("http://localhost:%d", httpPort)
+
+	return info
+}
+
 func TestIntegration(t *testing.T) {
-	root := setupRoot(t)
-	t.Logf("root: %s", root)
-	session := sessionInfo(t)
-	t.Logf("session: %+v", session)
-	config := genConfig(root, session)
-	t.Logf("config: %+v", config)
-	configPath := fmt.Sprintf("%s/%s", root, configFile)
-	encodeConfig(t, config, configPath)
+	info := setupTest(t)
+	defer info.process.Kill()
 
 	logger, err := frames.NewLogger("debug")
 	if err != nil {
 		t.Fatal(err)
 	}
 
-	grpcPort, httpPort := freePort(t), freePort(t)
-	cmd := runServer(t, root, grpcPort, httpPort)
-	defer cmd.Process.Kill()
-
-	grpcAddr := fmt.Sprintf("localhost:%d", grpcPort)
-	httpAddr := fmt.Sprintf("http://localhost:%d", httpPort)
 	for _, proto := range []string{"grpc", "http"} {
-		for _, backend := range config.Backends {
+		for _, backend := range info.config.Backends {
 			var client frames.Client
 			var err error
 			if proto == "grpc" {
-				client, err = grpc.NewClient(grpcAddr, session, logger)
+				client, err = grpc.NewClient(info.grpcAddr, info.session, logger)
 			} else {
-				client, err = http.NewClient(httpAddr, session, logger)
+				client, err = http.NewClient(info.httpAddr, info.session, logger)
 			}
 
 			if err != nil {
