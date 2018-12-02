@@ -106,7 +106,7 @@ func AppendNil(col frames.Column) error {
 	case frames.BoolType:
 		value = false
 	default:
-		return fmt.Errorf("unsupported data type - %s", col.DType())
+		return fmt.Errorf("unsupported data type - %d", col.DType())
 	}
 
 	return AppendColumn(col, value)
@@ -137,7 +137,7 @@ func ColAt(col frames.Column, i int) (interface{}, error) {
 	case frames.BoolType:
 		return col.BoolAt(i)
 	default:
-		return nil, fmt.Errorf("unknown column type - %s", col.DType())
+		return nil, fmt.Errorf("unknown column type - %d", col.DType())
 	}
 }
 

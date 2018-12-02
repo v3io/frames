@@ -62,6 +62,7 @@ message Frame {
     repeated Column columns = 1;
     repeated Column indices = 2;
     map<string, Value> labels = 3;
+    string error = 4; // Used in errors when reading over HTTP
 }
 
 // TODO: Place these under TableSchema

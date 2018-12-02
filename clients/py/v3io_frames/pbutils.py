@@ -12,17 +12,22 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-from datetime import datetime
 from os import environ
-
-import numpy as np
-import pandas as pd
+import warnings
 
 from google.protobuf.message import Message
 import google.protobuf.pyext._message as message
+import pandas as pd
+import numpy as np
+import pytz
 
 from . import frames_pb2 as fpb
+from .dtypes import dtype_of, dtypes
+from .errors import MessageError, WriteError
 
+_ts = pd.Series(pd.Timestamp(0))
+_time_dt = _ts.dtype
+_time_tz_dt = _ts.dt.tz_localize(pytz.UTC).dtype
 pb_list_types = (
     message.RepeatedCompositeContainer,
     message.RepeatedScalarContainer,
@@ -34,24 +39,9 @@ def pb_value(v):
     if v is None:
         return None
 
-    if isinstance(v, (bool, np.bool_)):
-        return fpb.Value(bval=v)
-
-    if isinstance(v, (np.inexact, float)):
-        return fpb.Value(fval=v)
-
-    if isinstance(v, (int, np.integer)):
-        return fpb.Value(ival=v)
-
-    if isinstance(v, str):
-        return fpb.Value(sval=v)
-
-    if isinstance(v, (datetime, pd.Timestamp)):
-        # Convert to epoch nano
-        v = pd.Timestamp(v).to_datetime64().astype(np.int64)
-        return fpb.Value(tval=v)
-
-    raise TypeError('unsupported Value type - {}'.format(type(v)))
+    dtype = dtype_of(v)
+    kw = {dtype.val_key: v}
+    return fpb.Value(**kw)
 
 
 def pb_map(d):
@@ -124,3 +114,114 @@ def pb2py(obj):
         }
 
     return obj
+
+
+def msg2df(frame):
+    cols = {col.name: col2series(col) for col in frame.columns}
+    df = pd.DataFrame(cols)
+
+    indices = [col2series(idx) for idx in frame.indices]
+    if len(indices) == 1:
+        df.index = indices[0]
+    elif len(indices) > 1:
+        df.index = pd.MultiIndex.from_arrays(indices)
+
+    with warnings.catch_warnings():
+        warnings.simplefilter('ignore')
+        df.labels = pb2py(frame.labels)
+    return df
+
+
+def col2series(col):
+    for dtype in dtypes:
+        if col.dtype == dtype.dtype:
+            data = getattr(col, dtype.col_key)
+            break
+    else:
+        raise MessageError('unknown dtype - {}'.format(col.dtype))
+
+    if col.dtype == fpb.TIME:
+        data = pd.to_datetime(data)
+
+    series = pd.Series(data, name=col.name)
+    if col.kind == col.LABEL:
+        series = series.reindex(pd.RangeIndex(col.size), method='pad')
+
+    return series
+
+
+def df2msg(df, labels=None):
+    indices = None
+    if should_encode_index(df):
+        if hasattr(df.index, 'levels'):
+            by_name = df.index.get_level_values
+            names = df.index.names
+            serieses = (by_name(name).to_series() for name in names)
+            indices = [series2col(s) for s in serieses]
+        else:
+            indices = [series2col(df.index.to_series())]
+
+    return fpb.Frame(
+        columns=[series2col(df[name]) for name in df.columns],
+        indices=indices,
+        labels=pb_map(labels),
+    )
+
+
+def series2col(s):
+    kw = {
+        'name': s.name or '',
+        'kind': fpb.Column.SLICE,
+    }
+
+    if is_int_dtype(s.dtype):
+        kw['dtype'] = fpb.INTEGER
+        kw['ints'] = s
+    elif is_float_dtype(s.dtype):
+        kw['dtype'] = fpb.FLOAT
+        kw['floats'] = s
+    elif s.dtype == np.object:  # Pandas dtype for str is object
+        kw['strings'] = s
+        kw['dtype'] = fpb.STRING
+    elif s.dtype == np.bool:
+        kw['bools'] = s
+        kw['dtype'] = fpb.BOOLEAN
+    elif is_time_dtype(s.dtype):
+        if s.dt.tz:
+            s = s.dt.tz_localize(pytz.UTC)
+        kw['times'] = s.astype(np.int64)
+        kw['dtype'] = fpb.TIME
+    else:
+        raise WriteError(
+            '{} - unsupported type - {}'.format(s.name, s.dtype))
+
+    return fpb.Column(**kw)
+
+
+def should_encode_index(df):
+    if df.index.name:
+        return True
+
+    return not isinstance(df.index, pd.RangeIndex)
+
+
+# We can't use a set since hash(np.int64) != hash(pd.Series([1]).dtype)
+def is_int_dtype(dtype):
+    return \
+        dtype == np.int64 or \
+        dtype == np.int32 or \
+        dtype == np.int16 or \
+        dtype == np.int8 or \
+        dtype == np.int
+
+
+def is_float_dtype(dtype):
+    return \
+        dtype == np.float64 or \
+        dtype == np.float32 or \
+        dtype == np.float16 or \
+        dtype == np.float
+
+
+def is_time_dtype(dtype):
+    return dtype == _time_dt or dtype == _time_tz_dt
