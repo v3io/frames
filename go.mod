@@ -20,7 +20,6 @@ require (
 	github.com/v3io/v3io-go-http v0.0.0-20181023145150-3c8ba0ce5ac8
 	github.com/v3io/v3io-tsdb v0.8.2
 	github.com/valyala/fasthttp v1.0.0
-	github.com/vmihailenco/msgpack v4.0.0+incompatible
 	github.com/xwb1989/sqlparser v0.0.0-20180606152119-120387863bf2
 	go.uber.org/atomic v1.3.2 // indirect
 	go.uber.org/multierr v1.1.0 // indirect

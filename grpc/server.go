@@ -117,12 +117,13 @@ func (s *Server) Read(request *pb.ReadRequest, stream pb.Frames_ReadServer) erro
 	}()
 
 	for frame := range ch {
-		pbFrame, err := frameToPB(frame)
-		if err != nil {
-			return err
+		fpb, ok := frame.(pb.Framed)
+		if !ok {
+			s.logger.Error("unknown frame type")
+			return errors.New("unknown frame type")
 		}
 
-		if err := stream.Send(pbFrame); err != nil {
+		if err := stream.Send(fpb.Proto()); err != nil {
 			return err
 		}
 	}
@@ -144,11 +145,7 @@ func (s *Server) Write(stream pb.Frames_WriteServer) error {
 
 	var frame frames.Frame
 	if pbReq.InitialData != nil {
-		var err error
-		frame, err = asFrame(pbReq.InitialData)
-		if err != nil {
-			return nil
-		}
+		frame = frames.NewFrameFromProto(pbReq.InitialData)
 	}
 
 	req := &frames.WriteRequest{
@@ -189,12 +186,7 @@ func (s *Server) Write(stream pb.Frames_WriteServer) error {
 			return fmt.Errorf("nil frame")
 		}
 
-		frame, err := asFrame(frameMessage)
-		if err != nil {
-			s.logger.ErrorWith("frame error", "error", err)
-			return err
-		}
-
+		frame := frames.NewFrameFromProto(frameMessage)
 		ch <- frame
 	}
 

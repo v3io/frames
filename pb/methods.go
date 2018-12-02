@@ -28,6 +28,8 @@ import (
 	"sort"
 	"strings"
 	"time"
+
+	"github.com/pkg/errors"
 )
 
 var (
@@ -37,6 +39,11 @@ var (
 	passwdMaskFull = fmt.Sprintf("password:\"%s\"", passwdMask)
 	sessionFields  []string
 )
+
+// Framed is a frame based on protobuf
+type Framed interface {
+	Proto() *Frame
+}
 
 // GoValue return value as interface{}
 func (v *Value) GoValue() (interface{}, error) {
@@ -63,8 +70,12 @@ func (v *Value) SetValue(i interface{}) error {
 		v.Value = &Value_Bval{Bval: i.(bool)}
 	case float64: // JSON encodes numbers as floats
 		v.Value = &Value_Fval{Fval: i.(float64)}
-	case int64:
-		v.Value = &Value_Ival{Ival: i.(int64)}
+	case int, int64, int32, int16, int8:
+		ival, ok := AsInt64(i)
+		if !ok {
+			return fmt.Errorf("unsupported type for %T - %T", v, i)
+		}
+		v.Value = &Value_Ival{Ival: ival}
 	case string:
 		v.Value = &Value_Sval{Sval: i.(string)}
 	case time.Time:
@@ -111,6 +122,20 @@ func AsGoMap(mv map[string]*Value) map[string]interface{} {
 	}
 
 	return m
+}
+
+// FromGoMap return map[string]*Value
+func FromGoMap(m map[string]interface{}) (map[string]*Value, error) {
+	out := make(map[string]*Value)
+	for key, val := range m {
+		pbVal := &Value{}
+		if err := pbVal.SetValue(val); err != nil {
+			return nil, errors.Wrapf(err, "can't encode %s", key)
+		}
+		out[key] = pbVal
+	}
+
+	return out, nil
 }
 
 // MarshalJSON marshal Value as JSON object
@@ -179,10 +204,11 @@ func (s *Session) Format(state fmt.State, verb rune) {
 			if state.Flag('#') || state.Flag('+') {
 				fmt.Fprintf(state, "%s:", name)
 			}
-			if name == "Password" {
+			fld := val.FieldByName(name)
+			if name == "Password" && fld.Len() > 0 {
 				fmt.Fprint(state, passwdMask)
 			} else {
-				fmt.Fprintf(state, "%v", val.FieldByName(name))
+				fmt.Fprintf(state, "%v", fld)
 			}
 
 			if i < len(sessionFields)-1 {
@@ -207,4 +233,22 @@ func init() {
 		sessionFields = append(sessionFields, field.Name)
 	}
 	sort.Strings(sessionFields)
+}
+
+// AsInt64 convert val to int64, it'll return 0, false on failure
+func AsInt64(val interface{}) (int64, bool) {
+	switch val.(type) {
+	case int64:
+		return val.(int64), true
+	case int:
+		return int64(val.(int)), true
+	case int32:
+		return int64(val.(int32)), true
+	case int16:
+		return int64(val.(int16)), true
+	case int8:
+		return int64(val.(int8)), true
+	}
+
+	return 0, false
 }

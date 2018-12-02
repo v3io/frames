@@ -29,6 +29,7 @@ import (
 
 	"github.com/v3io/frames"
 	"github.com/v3io/frames/api"
+	"github.com/v3io/frames/pb"
 
 	"github.com/nuclio/logger"
 	"github.com/pkg/errors"
@@ -162,21 +163,34 @@ func (s *Server) handleRead(ctx *fasthttp.RequestCtx) {
 	ctx.SetBodyStreamWriter(func(w *bufio.Writer) {
 		enc := frames.NewEncoder(w)
 		for frame := range ch {
-			if err := enc.Encode(frame); err != nil {
+			iface, ok := frame.(pb.Framed)
+			if !ok {
+				s.logger.Error("unknown frame type")
+				s.writeError(enc, fmt.Errorf("unknown frame type"))
+			}
+
+			if err := enc.Encode(iface.Proto()); err != nil {
 				s.logger.ErrorWith("can't encode result", "error", err)
-				enc.EncodeError(err)
+				s.writeError(enc, err)
 			}
 
 			if err := w.Flush(); err != nil {
 				s.logger.ErrorWith("can't flush", "error", err)
-				enc.EncodeError(err)
+				s.writeError(enc, err)
 			}
 		}
 
 		if apiError != nil {
-			enc.EncodeError(apiError)
+			s.writeError(enc, apiError)
 		}
 	})
+}
+
+func (s *Server) writeError(enc *frames.Encoder, err error) {
+	msg := &pb.Frame{
+		Error: err.Error(),
+	}
+	enc.Encode(msg)
 }
 
 func (s *Server) handleWrite(ctx *fasthttp.RequestCtx) {
@@ -193,12 +207,25 @@ func (s *Server) handleWrite(ctx *fasthttp.RequestCtx) {
 	dec := frames.NewDecoder(reader)
 
 	// First message is the write reqeust
-	request, err := dec.DecodeWriteRequest()
-	if err != nil {
+	req := &pb.InitialWriteRequest{}
+	if err := dec.Decode(req); err != nil {
 		msg := "bad write request"
 		s.logger.ErrorWith(msg, "error", err)
 		ctx.Error(msg, http.StatusBadRequest)
 		return
+	}
+
+	var frame frames.Frame
+	if req.InitialData != nil {
+		frame = frames.NewFrameFromProto(req.InitialData)
+	}
+	request := &frames.WriteRequest{
+		Session:       req.Session,
+		Backend:       req.Backend,
+		Table:         req.Table,
+		ImmidiateData: frame,
+		Expression:    req.Expression,
+		HaveMore:      req.More,
 	}
 
 	var nFrames, nRows int
@@ -212,7 +239,8 @@ func (s *Server) handleWrite(ctx *fasthttp.RequestCtx) {
 	}()
 
 	for writeError == nil {
-		frame, err := dec.DecodeFrame()
+		msg := &pb.Frame{}
+		err := dec.Decode(msg)
 		if err != nil {
 			if err != io.EOF {
 				s.logger.ErrorWith("decode error", "error", err)
@@ -221,7 +249,7 @@ func (s *Server) handleWrite(ctx *fasthttp.RequestCtx) {
 			break
 		}
 
-		ch <- frame
+		ch <- frames.NewFrameFromProto(msg)
 	}
 
 	close(ch)

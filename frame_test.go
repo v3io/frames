@@ -27,8 +27,16 @@ import (
 
 func TestFrameNew(t *testing.T) {
 	val0, val1, size := int64(7), "n", 10
-	col0, _ := NewLabelColumn("col0", val0, size)
-	col1, _ := NewLabelColumn("col1", val1, size)
+	col0, err := NewLabelColumn("col0", val0, size)
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	col1, err := NewLabelColumn("col1", val1, size)
+	if err != nil {
+		t.Fatal(err)
+	}
+
 	cols := []Column{col0, col1}
 
 	frame, err := NewFrame(cols, nil, nil)

@@ -76,7 +76,7 @@ func TestCSV(t *testing.T) {
 			}
 
 			if col.DType() != dtype {
-				t.Fatalf("dype mismatch %s != %s", dtype, col.DType())
+				t.Fatalf("dype mismatch %d != %d", dtype, col.DType())
 			}
 		}
 	}
