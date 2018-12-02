@@ -125,8 +125,8 @@ type BackendConfig struct {
 	// backend specific options
 	Options map[string]interface{} `json:"options"`
 
-	// CSV backend
-	RootDir string `json:"rootdir,omitempty"`
+	// FileSystem config
+	FileSystem FSConfig `fileSystem:"rootdir,omitempty"`
 }
 
 // NewSession will create a new session. It will populate missing values from
@@ -164,4 +164,10 @@ func NewSession(url, container, path, user, password, token string) *Session {
 		Password:  password,
 		Token:     token,
 	}
+}
+
+// FSConfig is FileSystem options
+type FSConfig struct {
+	Type    string `json:"type"`
+	RootDir string `json:"rootDir"`
 }

@@ -21,35 +21,61 @@ such restriction.
 package backends
 
 import (
+	"io"
 	"strings"
 
-	"github.com/nuclio/logger"
 	"github.com/v3io/frames"
 )
 
 var (
-	backendRegistry = NewRegistry(strings.ToLower)
+	fsRegistry = NewRegistry(strings.ToLower)
 )
 
-// Factory is a backend factory
-type Factory func(logger.Logger, *frames.BackendConfig, *frames.Config) (frames.DataBackend, error)
-
-// Register registers a backend factory for a type
-func Register(typ string, factory Factory) error {
-	return backendRegistry.Register(typ, factory)
+// Reader is file system reader
+type Reader interface {
+	io.Reader
+	io.Seeker
+	io.Closer
 }
 
-// GetFactory returns factory for a backend
-func GetFactory(typ string) Factory {
-	val := backendRegistry.Get(typ)
+// Writer is file system writer
+type Writer interface {
+	io.Writer
+	io.Closer
+	Sync() error
+}
+
+// FileSystem is a file system interface
+type FileSystem interface {
+	// Open opens a file for reading
+	Open(path string) (Reader, error)
+	// Create creates a new file
+	Create(path string) (Writer, error)
+	// Append opens a new file for appending
+	Append(path string) (Writer, error)
+	// Delete delets a path
+	Delete(path string) error
+}
+
+// FSFactory is a FileSystem factory
+type FSFactory func(*frames.FSConfig) (FileSystem, error)
+
+// RegisterFS registers a file system
+func RegisterFS(typ string, fs FSFactory) error {
+	return fsRegistry.Register(typ, fs)
+}
+
+// GetFS returns FSFactory for name (nil if not found)
+func GetFS(typ string) FSFactory {
+	val := fsRegistry.Get(typ)
 	if val == nil {
 		return nil
 	}
 
-	f, ok := val.(Factory)
+	fs, ok := val.(FSFactory)
 	if !ok {
 		// TODO: Log
 		return nil
 	}
-	return f
+	return fs
 }

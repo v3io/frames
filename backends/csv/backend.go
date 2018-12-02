@@ -24,7 +24,6 @@ import (
 	"encoding/csv"
 	"fmt"
 	"io"
-	"os"
 	"strconv"
 	"strings"
 	"time"
@@ -39,34 +38,39 @@ import (
 
 // Backend is CSV backend
 type Backend struct {
-	rootDir string
-	logger  logger.Logger
+	fs     backends.FileSystem
+	logger logger.Logger
 }
 
 // NewBackend returns a new CSV backend
 func NewBackend(logger logger.Logger, config *frames.BackendConfig, framesConfig *frames.Config) (frames.DataBackend, error) {
 	backend := &Backend{
-		rootDir: config.RootDir,
-		logger:  logger.GetChild("csv"),
+		logger: logger.GetChild("csv"),
 	}
 
+	fs, err := backend.createFS(&config.FileSystem)
+	if err != nil {
+		backend.logger.Error(err)
+		return nil, err
+	}
+
+	backend.fs = fs
 	return backend, nil
 }
 
 // Create will create a table
 func (b *Backend) Create(request *frames.CreateRequest) error {
-	csvPath := b.csvPath(request.Table)
 	// TODO: Overwrite?
-	if fileExists(csvPath) {
+	if b.tableExists(request.Table) {
 		return fmt.Errorf("table %q already exists", request.Table)
 	}
 
-	file, err := os.Create(csvPath)
+	file, err := b.fs.Create(request.Table)
 	if err != nil {
-		return errors.Wrapf(err, "can't create table file")
+		return err
 	}
-
 	defer file.Close()
+
 	if request.Schema == nil || len(request.Schema.Fields) == 0 {
 		return nil
 	}
@@ -96,12 +100,11 @@ func (b *Backend) Create(request *frames.CreateRequest) error {
 
 // Delete will delete a table
 func (b *Backend) Delete(request *frames.DeleteRequest) error {
-	csvPath := b.csvPath(request.Table)
-	if request.IfMissing == frames.FailOnError && !fileExists(csvPath) {
+	if request.IfMissing == frames.FailOnError && !b.tableExists(request.Table) {
 		return fmt.Errorf("table %q doesn't exist", request.Table)
 	}
 
-	if err := os.Remove(csvPath); err != nil {
+	if err := b.fs.Delete(request.Table); err != nil {
 		return errors.Wrapf(err, "can't delete %q", request.Table)
 	}
 
@@ -110,7 +113,7 @@ func (b *Backend) Delete(request *frames.DeleteRequest) error {
 
 // Read handles reading
 func (b *Backend) Read(request *frames.ReadRequest) (frames.FrameIterator, error) {
-	file, err := os.Open(b.csvPath(request.Table))
+	file, err := b.fs.Open(request.Table)
 	if err != nil {
 		return nil, err
 	}
@@ -136,7 +139,7 @@ func (b *Backend) Read(request *frames.ReadRequest) (frames.FrameIterator, error
 // Write handles writing
 func (b *Backend) Write(request *frames.WriteRequest) (frames.FrameAppender, error) {
 	// TODO: Append?
-	file, err := os.Create(b.csvPath(request.Table))
+	file, err := b.fs.Create(request.Table)
 	if err != nil {
 		return nil, err
 	}
@@ -167,8 +170,19 @@ func (b *Backend) Exec(request *frames.ExecRequest) error {
 	return fmt.Errorf("CSV backend does not support %q exec command", request.Command)
 }
 
-func (b *Backend) csvPath(table string) string {
-	return fmt.Sprintf("%s/%s", b.rootDir, table)
+func (b *Backend) createFS(cfg *frames.FSConfig) (backends.FileSystem, error) {
+	if cfg == nil {
+		b.logger.Error("no file system in configuration")
+		return nil, fmt.Errorf("no file system in configuration")
+	}
+
+	factory := backends.GetFS(cfg.Type)
+	if factory == nil {
+		b.logger.ErrorWith("unknown file system", "config", cfg)
+		return nil, fmt.Errorf("unknown file system - %q", cfg.Type)
+	}
+
+	return factory(cfg)
 }
 
 // FrameIterator iterates over CSV
@@ -443,8 +457,11 @@ func (ca *csvAppender) WaitForComplete(timeout time.Duration) error {
 	return nil
 }
 
-func fileExists(path string) bool {
-	_, err := os.Stat(path)
+func (b *Backend) tableExists(table string) bool {
+	file, err := b.fs.Open(table)
+	if err == nil {
+		file.Close()
+	}
 	return err == nil
 }
 

@@ -111,8 +111,11 @@ func sessionInfo(t testing.TB) *frames.Session {
 func genConfig(root string, session *frames.Session) *frames.Config {
 	backends := []*frames.BackendConfig{
 		{
-			Type:    "csv",
-			RootDir: root,
+			Type: "csv",
+			FileSystem: frames.FSConfig{
+				Type:    "file",
+				RootDir: root,
+			},
 		},
 	}
 

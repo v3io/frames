@@ -134,9 +134,12 @@ func loadTempCSV(t *testing.T, req *frames.ReadRequest) []frames.Frame {
 	}
 
 	cfg := &frames.BackendConfig{
-		Name:    "testCsv",
-		Type:    "csv",
-		RootDir: path.Dir(csvPath),
+		Name: "testCsv",
+		Type: "csv",
+		FileSystem: frames.FSConfig{
+			Type:    "file",
+			RootDir: path.Dir(csvPath),
+		},
 	}
 
 	backend, err := NewBackend(logger, cfg, nil)

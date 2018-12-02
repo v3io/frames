@@ -45,9 +45,12 @@ func TestEnd2End(t *testing.T) {
 		},
 		Backends: []*frames.BackendConfig{
 			&frames.BackendConfig{
-				Name:    backendName,
-				Type:    "csv",
-				RootDir: tmpDir,
+				Name: backendName,
+				Type: "csv",
+				FileSystem: frames.FSConfig{
+					Type:    "file",
+					RootDir: tmpDir,
+				},
 			},
 		},
 	}

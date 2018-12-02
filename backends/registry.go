@@ -18,34 +18,47 @@ under the Apache 2.0 license is conditioned upon your compliance with
 such restriction.
 */
 
-package http
+package backends
 
 import (
-	"testing"
-
-	"github.com/v3io/frames"
+	"fmt"
+	"sync"
 )
 
-func TestNew(t *testing.T) {
-	cfg := &frames.Config{
-		Backends: []*frames.BackendConfig{
-			&frames.BackendConfig{
-				Name: "weather",
-				Type: "csv",
-				FileSystem: frames.FSConfig{
-					Type:    "file",
-					RootDir: "/tmp",
-				},
-			},
-		},
+// Registry is a registry of things (by name)
+type Registry struct {
+	lock sync.RWMutex
+	m    map[string]interface{}
+	norm func(string) string
+}
+
+// NewRegistry returns a new Registry
+func NewRegistry(normalizeName func(string) string) *Registry {
+	return &Registry{
+		m:    make(map[string]interface{}),
+		norm: normalizeName,
 	}
-	address := ":8080"
-	srv, err := NewServer(cfg, address, nil)
-	if err != nil {
-		t.Fatal(err)
+}
+
+// Register registers a value
+func (r *Registry) Register(name string, value interface{}) error {
+	r.lock.Lock()
+	defer r.lock.Unlock()
+
+	name = r.norm(name)
+	if _, ok := r.m[name]; ok {
+		return fmt.Errorf("%q already registered", name)
 	}
 
-	if srv.State() != frames.ReadyState {
-		t.Fatalf("bad initial state - %q", srv.State())
-	}
+	r.m[name] = value
+	return nil
+}
+
+// Get returns the value associated with name, nil if not found
+func (r *Registry) Get(name string) interface{} {
+	r.lock.RLock()
+	defer r.lock.RUnlock()
+
+	name = r.norm(name)
+	return r.m[name]
 }
