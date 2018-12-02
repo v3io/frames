@@ -45,3 +45,11 @@ README.html: README.md
 update-deps:
 	PIPENV_IGNORE_VIRTUALENVS=1 \
 	    pipenv update
+
+.PHONY: bench
+bench:
+	PIPENV_IGNORE_VIRTUALENVS=1 \
+	    pipenv run python -m pytest \
+		--disable-warnings \
+		--benchmark-json /tmp/framesd-py-bench.json \
+		tests/test_benchmark.py

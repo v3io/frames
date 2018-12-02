@@ -14,27 +14,38 @@
 # limitations under the License.
 
 from subprocess import run, PIPE
+import json
+from os import remove, path
 import re
 
+# From clients/py/Makefile
+bench_json = '/tmp/framesd-py-bench.json'
 
 with open('testdata/weather.csv') as fp:
     read_rows = sum(1 for _ in fp) - 1
 
-# See benchmark_test.go
+# See clients/py/tests/test_benchmark.py
 write_rows = 1982
 
+if path.exists(bench_json):
+    remove(bench_json)
 
-out = run(['go', 'test', '-run', '^$', '-bench', '.'], stdout=PIPE)
+
+out = run(['make', 'bench'], cwd='clients/py', stdout=PIPE)
 if out.returncode != 0:
-    raise SystemExit(1)
+    raise SystemExit(out.stdout.decode('utf-8'))
 
-for line in out.stdout.decode('utf-8').splitlines():
-    match = re.match(r'Benchmark(Read|Write)_([a-zA-Z]+).* (\d+) ns/op', line)
+
+with open(bench_json) as fp:
+    data = json.load(fp)
+
+for bench in data['benchmarks']:
+    # test_read[http-csv]
+    match = re.match(r'test_(\w+)\[([a-z]+)', bench['name'])
     if not match:
-        continue
-    op, proto, ns = match.groups()
-    op, proto = op.lower(), proto.lower()
-    us = int(ns) / 1000
+        raise SystemExit('error: bad test name - {}'.format(bench['name']))
+    op, proto = match.groups()
+    time_us = bench['stats']['mean'] * 1e6
     nrows = read_rows if op == 'read' else write_rows
-    usl = us/nrows
+    usl = time_us / nrows
     print(f'{proto:<5} {op:<5} {usl:7.3f}µs/row')

@@ -24,6 +24,7 @@ from conftest import has_go, test_backends, protocols
 
 
 tsdb_span = 5  # hours
+integ_params = [(p, b) for p in protocols for b in test_backends]
 
 
 def csv_df(size):
@@ -112,9 +113,6 @@ schema = v3f.Schema(
         v3f.SchemaField('field3', '', '', 't3', None),
     ],
 )
-
-
-integ_params = [(p, b) for p in protocols for b in test_backends]
 
 
 @pytest.mark.skipif(not has_go, reason='Go SDK not found')

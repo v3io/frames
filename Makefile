@@ -83,3 +83,12 @@ update-py-deps:
 
 bench-go:
 	./scripts/go_benchmark.py
+
+bench-py:
+	./scripts/py_benchmark.py
+
+bench:
+	@echo Go
+	$(MAKE) bench-go
+	@echo Python
+	$(MAKE) bench-py
