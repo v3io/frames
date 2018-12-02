@@ -67,7 +67,7 @@ func setupRoot(t *testing.T) string {
 	}
 
 	csvFile := "weather.csv"
-	src := fmt.Sprintf("./clients/py/tests/%s", csvFile)
+	src := fmt.Sprintf("./testdata/%s", csvFile)
 	dest := fmt.Sprintf("%s/%s", root, csvFile)
 
 	in, err := os.Open(src)

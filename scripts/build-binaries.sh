@@ -25,7 +25,6 @@ function build() {
 	    -o ${exe} \
 	    -ldflags="-X main.Version=${version}" \
 	    ./cmd/framesd
-    bzip2 ${exe}
 }
 
 build linux amd64
