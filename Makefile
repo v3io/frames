@@ -92,3 +92,6 @@ bench:
 	$(MAKE) bench-go
 	@echo Python
 	$(MAKE) bench-py
+
+python-deps:
+	cd clients/py && pipenv sync --dev
