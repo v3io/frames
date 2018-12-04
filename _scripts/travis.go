@@ -155,11 +155,6 @@ func docker() {
 	}
 }
 
-type buildConfig struct {
-	GOOS   string
-	Suffix string
-}
-
 func binaries() {
 	defer func() {
 		os.Unsetenv("GOOS")
