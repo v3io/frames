@@ -6,9 +6,8 @@ matrix:
   - go: 1.11.x
     script:
     - make test
-    - ./scripts/build-docker.sh
-    - ./scripts/push-docker.sh
-    - ./scripts/build-binaries.sh
+    - go run ./scripts/travis.go docker
+    - go run ./scripts/travis.go binaries
   - language: python
     python: 3.7-dev
     env:

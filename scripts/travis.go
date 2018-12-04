@@ -22,10 +22,12 @@ package main
 
 import (
 	"bytes"
+	"flag"
 	"fmt"
 	"log"
 	"os"
 	"os/exec"
+	"path"
 	"strings"
 )
 
@@ -33,7 +35,19 @@ const (
 	tagBase = "v3io/framesd"
 )
 
+func printCmd(prog string, args []string) {
+	fmt.Print(prog)
+	for _, arg := range args {
+		if strings.Index(arg, " ") != -1 {
+			arg = fmt.Sprintf("%q", arg)
+		}
+		fmt.Printf(" %s", arg)
+	}
+	fmt.Println()
+}
+
 func runOutput(prog string, args ...string) (string, error) {
+	printCmd(prog, args)
 	var buf bytes.Buffer
 	cmd := exec.Command(prog, args...)
 	cmd.Stdout = &buf
@@ -45,6 +59,7 @@ func runOutput(prog string, args ...string) (string, error) {
 }
 
 func run(prog string, args ...string) error {
+	printCmd(prog, args)
 	cmd := exec.Command(prog, args...)
 	cmd.Stdout = os.Stdout
 	cmd.Stderr = os.Stderr
@@ -95,8 +110,7 @@ func dockerPush(tag string) error {
 	return run("docker", "push", tag)
 }
 
-func main() {
-	log.SetFlags(0) // Remove time prefix
+func docker() {
 	version := buildVersion()
 	tag := tagFor(version)
 	fmt.Printf("building version %s\n", version)
@@ -138,5 +152,61 @@ func main() {
 		if err := dockerPush(alias); err != nil {
 			log.Fatalf("error: can't push %s to docker", alias)
 		}
+	}
+}
+
+type buildConfig struct {
+	GOOS   string
+	Suffix string
+}
+
+func binaries() {
+	defer func() {
+		os.Unsetenv("GOOS")
+		os.Unsetenv("GOARCH")
+	}()
+
+	version := buildVersion()
+	os.Setenv("GOARCH", "amd64")
+	for _, goos := range []string{"linux", "darwin", "windows"} {
+		exe := fmt.Sprintf("framesd-%s-amd64", goos)
+		if goos == "windows" {
+			exe += ".exe"
+		}
+		ldFlags := fmt.Sprintf("-X main.Version=%s", version)
+
+		os.Setenv("GOOS", goos)
+		err := run(
+			"go", "build",
+			"-o", exe,
+			"-ldflags", ldFlags,
+			"./cmd/framesd",
+		)
+		if err != nil {
+			log.Fatalf("error: can't build for %s", goos)
+		}
+	}
+}
+
+func main() {
+	log.SetFlags(0) // Remove time prefix
+
+	flag.Usage = func() {
+		fmt.Fprintf(os.Stderr, "usage: %s docker|binaries\n", path.Base(os.Args[0]))
+		flag.PrintDefaults()
+	}
+	flag.Parse()
+
+	if flag.NArg() != 1 {
+		log.Fatal("error: wrong number of arguments")
+	}
+
+	switch action := flag.Arg(0); action {
+	case "docker":
+		docker()
+	case "binaries":
+		binaries()
+	default:
+		log.Fatalf("error: unknown action - %s", action)
 	}
 }
