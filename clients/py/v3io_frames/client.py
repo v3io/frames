@@ -84,8 +84,8 @@ class ClientBase:
             raise ReadError('missing data')
         # TODO: More validation
 
-        if max_in_message>0:
-            iterator=True
+        if max_in_message > 0:
+            iterator = True
 
         return self._read(
             backend, table, query, columns, filter,
