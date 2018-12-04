@@ -94,4 +94,4 @@ bench:
 	$(MAKE) bench-py
 
 python-deps:
-	cd clients/py && pipenv sync --dev
+	cd clients/py && $(MAKE sync-deps)

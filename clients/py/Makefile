@@ -49,6 +49,11 @@ update-deps:
 	PIPENV_IGNORE_VIRTUALENVS=1 \
 	    pipenv update
 
+.PHONY sync-deps
+sync-deps:
+	PIPENV_IGNORE_VIRTUALENVS=1 \
+	    pipenv sync --dev
+
 .PHONY: bench
 bench:
 	PIPENV_IGNORE_VIRTUALENVS=1 \
