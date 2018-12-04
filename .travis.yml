@@ -6,6 +6,7 @@ matrix:
   - go: 1.11.x
     script:
     - make test
+    after_success:
     - go run ./_scripts/travis.go docker
     - go run ./_scripts/travis.go binaries
   - language: python
@@ -16,11 +17,10 @@ matrix:
     install:
     - curl -LO https://dl.google.com/go/go1.11.1.linux-amd64.tar.gz
     - tar xzf go1.11.1.linux-amd64.tar.gz -C /opt
-    script:
     - pip install pipenv
-    - cd clients/py
-    - pipenv sync --dev
-    - pipenv run python -m pytest -v
+    - cd clients/py && pipenv sync --dev
+    script:
+    - cd clients/py && pipenv run python -m pytest -v
 env:
   matrix:
   - GO111MODULE=on
