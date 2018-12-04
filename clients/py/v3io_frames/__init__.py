@@ -29,8 +29,8 @@ from .pbutils import SchemaField, Session  # noqa
 _known_protocols = {'grpc', 'http', 'https'}
 
 
-def Client(address='localhost:8081',
-           data_url='', container='', path='', user='', password='', token=''):
+def Client(address='', data_url='', container='', path='', user='',
+           password='', token=''):
     """Return a new client.
 
     Parameters

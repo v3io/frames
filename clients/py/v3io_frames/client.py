@@ -42,7 +42,7 @@ class ClientBase:
 
     def read(self, backend='', table='', query='', columns=None, filter='',
              group_by='', limit=0, data_format='', row_layout=False,
-             max_in_message=0, marker='', iterator=True, **kw):
+             max_in_message=0, marker='', iterator=False, **kw):
         """Run a query in nuclio
 
         Parameters
@@ -83,6 +83,9 @@ class ClientBase:
         if not (table or query):
             raise ReadError('missing data')
         # TODO: More validation
+
+        if max_in_message > 0:
+            iterator = True
 
         return self._read(
             backend, table, query, columns, filter,
