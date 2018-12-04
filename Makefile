@@ -77,7 +77,7 @@ update-go-deps:
 	@echo "Don't forget to test & commit"
 
 update-py-deps:
-	cd clients/py && $(MAKE update-deps)
+	cd clients/py && $(MAKE) update-deps
 	git add clients/py/Pipfile*
 	@echo "Don't forget to test & commit"
 
@@ -94,4 +94,4 @@ bench:
 	$(MAKE) bench-py
 
 python-deps:
-	cd clients/py && $(MAKE sync-deps)
+	cd clients/py && $(MAKE) sync-deps
