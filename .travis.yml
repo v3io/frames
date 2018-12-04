@@ -8,7 +8,8 @@ matrix:
     - make test
     - go run ./_scripts/travis.go docker
     - go run ./_scripts/travis.go binaries
-  - python: 3.7-dev
+  - language: python
+    python: 3.7-dev
     env:
     - PATH=/opt/go/bin:${PATH}
     - GOROOT=/opt/go
