@@ -19,7 +19,7 @@ such restriction.
 */
 
 // Generate session information environment variable
-// $ export V3IO_SESSION=$(go run scripts/gen_session_env.go \
+// $ export V3IO_SESSION=$(go run _scripts/gen_session_env.go \
 //		-user iguazio \
 //		-password t0ps3cr3t \
 //		-address backend353.iguazio.com:8081 \
