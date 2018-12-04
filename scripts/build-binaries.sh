@@ -15,7 +15,10 @@
 set -x
 set -e
 
-version=$(./scripts/build-version.sh)
+version=${TRAVIS_TAG}
+if [ -z "${version}" ]; then
+    version=$(git rev-parse --short HEAD)
+fi
 
 function build() {
     GOOS=$1 GOARCH=$2 suffix=$3
