@@ -58,7 +58,7 @@ grpc-py:
 		-I../.. --python_out=v3io_frames\
 		--grpc_python_out=v3io_frames \
 		../../frames.proto
-	python scripts/fix_pb_import.py \
+	python _scripts/fix_pb_import.py \
 	    clients/py/v3io_frames/frames_pb2_grpc.py
 
 pypi:
@@ -82,10 +82,10 @@ update-py-deps:
 	@echo "Don't forget to test & commit"
 
 bench-go:
-	./scripts/go_benchmark.py
+	./_scripts/go_benchmark.py
 
 bench-py:
-	./scripts/py_benchmark.py
+	./_scripts/py_benchmark.py
 
 bench:
 	@echo Go

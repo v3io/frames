@@ -36,7 +36,10 @@ flake8:
 .PHONY: test
 test: clean_pyc flake8
 	PIPENV_IGNORE_VIRTUALENVS=1 \
-	    pipenv run python -m pytest --disable-warnings -v tests
+	    pipenv run python -m pytest -v \
+		--disable-warnings \
+		--benchmark-disable \
+		tests
 
 README.html: README.md
 	kramdown -i GFM $< > $@
