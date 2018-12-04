@@ -74,7 +74,7 @@ func buildVersion() string {
 
 	tag = os.Getenv("TRAVIS_COMMIT")
 	if tag != "" {
-		return tag
+		return tag[:7]
 	}
 
 	out, err := runOutput("git", "rev-parse", "--short", "HEAD")
