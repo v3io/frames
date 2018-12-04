@@ -105,7 +105,8 @@ def test_read():
 
     client = new_test_client(address=address)
     with patch_requests(data) as patch:
-        dfs = client.read(backend='backend', table='table', query=query)
+        dfs = client.read(
+            backend='backend', table='table', query=query, iterator=True)
 
     assert len(patch.requests) == 1
 
