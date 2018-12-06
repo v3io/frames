@@ -45,6 +45,7 @@ type Appender struct {
 	sent         int
 	logger       logger.Logger
 	schema       v3ioutils.V3ioSchema
+	asyncErr     error
 }
 
 // Write support writing to backend
@@ -85,6 +86,10 @@ func (a *Appender) Add(frame frames.Frame) error {
 	names := frame.Names()
 	if len(names) == 0 {
 		return fmt.Errorf("empty frame")
+	}
+
+	if a.request.Expression != "" {
+		return a.update(frame)
 	}
 
 	columns := make(map[string]frames.Column)
@@ -155,6 +160,77 @@ func (a *Appender) Add(frame frames.Frame) error {
 	return nil
 }
 
+// update updates rows from a frame
+func (a *Appender) update(frame frames.Frame) error {
+	names := frame.Names()
+	if len(names) == 0 {
+		return fmt.Errorf("empty frame")
+	}
+
+	indexVal, err := a.indexValFunc(frame)
+	if err != nil {
+		return err
+	}
+
+	for r := 0; r < frame.Len(); r++ {
+
+		expr, err := genExpr(a.request.Expression, frame, r)
+		if err != nil {
+			a.logger.ErrorWith("error generating expression", "error", err)
+			return err
+		}
+
+		key := indexVal(r)
+		input := v3io.UpdateItemInput{Path: a.tablePath + key, Expression: &expr}
+		a.logger.DebugWith("write update", "input", input)
+		_, err = a.container.UpdateItem(&input, r, a.responseChan)
+		if err != nil {
+			a.logger.ErrorWith("write update error", "error", err)
+			return err
+		}
+
+		a.sent++
+	}
+
+	return nil
+}
+
+// generate the update expression
+func genExpr(expr string, frame frames.Frame, index int) (string, error) {
+	args := make([]string, 0)
+
+	for _, name := range frame.Names() {
+		col, err := frame.Column(name)
+		if err != nil {
+			return "", err
+		}
+
+		val, err := utils.ColAt(col, index)
+		if err != nil {
+			return "", err
+		}
+
+		args = append(args, "{"+name+"}")
+		valString := ""
+
+		switch col.DType() {
+		case frames.IntType:
+			valString = fmt.Sprintf("%d", val)
+		case frames.FloatType:
+			valString = fmt.Sprintf("%f", val.(float64))
+		case frames.StringType, frames.TimeType:
+			valString = "'" + val.(string) + "'"
+		default:
+			valString = fmt.Sprintf("%v", val)
+		}
+
+		args = append(args, valString)
+	}
+
+	r := strings.NewReplacer(args...)
+	return r.Replace(expr), nil
+}
+
 // convert Col name to a v3io valid attr name
 // TODO: may want to also update the name in the Column object
 func validColName(name string) string {
@@ -171,7 +247,7 @@ func (a *Appender) WaitForComplete(timeout time.Duration) error {
 	a.logger.DebugWith("WaitForComplete", "sent", a.sent)
 	a.commChan <- a.sent
 	<-a.doneChan
-	return nil
+	return a.asyncErr
 }
 
 func (a *Appender) indexValFunc(frame frames.Frame) (func(int) string, error) {
@@ -254,6 +330,7 @@ func (a *Appender) respWaitLoop(timeout time.Duration) {
 
 			if resp.Error != nil {
 				a.logger.ErrorWith("failed write response", "error", resp.Error)
+				a.asyncErr = resp.Error
 			}
 
 			if requests == responses {
@@ -270,6 +347,7 @@ func (a *Appender) respWaitLoop(timeout time.Duration) {
 		case <-timer.C:
 			if !active {
 				a.logger.ErrorWith("Resp loop timed out! ", "requests", requests, "response", responses)
+				a.asyncErr = fmt.Errorf("Resp loop timed out!")
 				a.doneChan <- true
 				return
 			}
