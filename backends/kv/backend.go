@@ -76,6 +76,12 @@ func (b *Backend) Delete(request *frames.DeleteRequest) error {
 // Exec executes a command
 func (b *Backend) Exec(request *frames.ExecRequest) error {
 	// FIXME
+	cmd := strings.TrimSpace(strings.ToLower(request.Command))
+	switch cmd {
+	case "infer", "inferschema":
+		return b.inferSchema(request)
+
+	}
 	return fmt.Errorf("KV backend does not support Exec")
 }
 
