@@ -80,9 +80,27 @@ func (b *Backend) Exec(request *frames.ExecRequest) error {
 	switch cmd {
 	case "infer", "inferschema":
 		return b.inferSchema(request)
-
+	case "update":
+		return b.updateItem(request)
 	}
 	return fmt.Errorf("KV backend does not support Exec")
+}
+
+func (b *Backend) updateItem(request *frames.ExecRequest) error {
+	container, err := b.newContainer(request.Session)
+	if err != nil {
+		return err
+	}
+
+	// TODO: add condition, require updated v3io
+	//condition := ""
+	//if val, ok := request.Args["condition"]; ok {
+	//	condition = val.GetSval()
+	//}
+
+	b.logger.DebugWith("update item", "path", request.Table, "expr", request.Expression)
+	return container.Sync.UpdateItem(&v3io.UpdateItemInput{
+		Path: request.Table, Expression: &request.Expression})
 }
 
 func (b *Backend) newContainer(session *frames.Session) (*v3io.Container, error) {
