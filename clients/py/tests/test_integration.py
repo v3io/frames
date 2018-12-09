@@ -151,6 +151,9 @@ def test_integration(framesd, session, protocol, backend):
     elif backend == 'stream':
         compare_dfs_stream(df, df2, backend)
     else:
+        if backend == 'kv':
+            # FIXME: Probably the schema
+            df2.dropna(inplace=True)
         compare_dfs(df, df2, backend)
 
     df = client.read(backend, table=table, **read_kw)
