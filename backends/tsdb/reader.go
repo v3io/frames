@@ -21,16 +21,16 @@ such restriction.
 package tsdb
 
 import (
+	"time"
+
 	"github.com/pkg/errors"
 	"github.com/v3io/frames"
-	"github.com/v3io/v3io-tsdb/pkg/querier"
 	tsdbutils "github.com/v3io/v3io-tsdb/pkg/utils"
-	"time"
 )
 
 type tsdbIterator struct {
 	request     *frames.ReadRequest
-	set         querier.SeriesSet
+	set         tsdbutils.SeriesSet
 	err         error
 	withColumns bool
 	currFrame   frames.Frame
