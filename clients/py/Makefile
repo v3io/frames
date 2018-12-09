@@ -18,9 +18,7 @@ all:
 
 .PHONY: upload
 upload:
-	rm -r dist
-	python setup.py sdist bdist_wheel
-	pipenv run twine upload dist/*
+	pipenv run python pypi_upload.py
 
 .PHONY: clean_pyc
 clean_pyc:

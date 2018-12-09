@@ -37,11 +37,3 @@ deploy:
       repo: v3io/frames
       branch: master
       tags: true
-  - provider: pypi
-    user: ${V3IO_PYPI_USER}
-    password: ${V3IO_PYPI_PASSWORD}
-    distributions: "sdist bdist_wheel"
-    on:
-      repo: v3io/frames
-      branch: master
-      tags: true
