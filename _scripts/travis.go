@@ -32,7 +32,7 @@ import (
 )
 
 const (
-	tagBase = "v3io/framesd"
+	tagBase = "quay.io/v3io/framesd"
 )
 
 func printCmd(prog string, args []string) {
@@ -139,7 +139,7 @@ func docker() {
 		return
 	}
 
-	err := run("docker", "login", "--username", user, "--password", passwd)
+	err := run("docker", "login", "--username", user, "--password", passwd, "quay.io")
 	if err != nil {
 		log.Fatal("error: can't login to docker")
 	}

@@ -37,7 +37,7 @@ test-python:
 	cd clients/py && $(MAKE) test
 
 build-docker:
-	docker build -f ./cmd/framesd/Dockerfile -t v3io/framesd .
+	docker build -f ./cmd/framesd/Dockerfile -t quay.io/v3io/framesd .
 
 wheel:
 	cd clients/py && python setup.py bdist_wheel
