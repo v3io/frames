@@ -21,6 +21,8 @@ matrix:
     - make python-deps
     script:
     - make test-python
+    after_success:
+    - make pypi
 env:
   matrix:
   - GO111MODULE=on
