@@ -99,6 +99,11 @@ func tagFor(version string) string {
 }
 
 func gitBranch() string {
+	branch := os.Getenv("TRAVIS_BRANCH")
+	if branch != "" {
+		return branch
+	}
+
 	out, err := runOutput("git", "rev-parse", "--abbrev-ref", "HEAD")
 	if err != nil {
 		return ""
