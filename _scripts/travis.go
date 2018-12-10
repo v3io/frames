@@ -32,7 +32,9 @@ import (
 )
 
 const (
-	tagBase = "quay.io/v3io/frames"
+	tagBase    = "quay.io/v3io/frames"
+	framesRepo = "v3io/frames"
+	tagEnv     = "TRAVIS_TAG"
 )
 
 func printCmd(prog string, args []string) {
@@ -66,24 +68,6 @@ func run(prog string, args ...string) error {
 	return cmd.Run()
 }
 
-func buildVersion() string {
-	tag := os.Getenv("TRAVIS_TAG")
-	if tag != "" {
-		return tag
-	}
-
-	tag = os.Getenv("TRAVIS_COMMIT")
-	if tag != "" {
-		return tag[:7]
-	}
-
-	out, err := runOutput("git", "rev-parse", "--short", "HEAD")
-	if err != nil {
-		return "unknown"
-	}
-	return strings.TrimSpace(out)
-}
-
 func buildDocker(version, tag string) error {
 	return run(
 		"docker", "build",
@@ -98,43 +82,57 @@ func tagFor(version string) string {
 	return fmt.Sprintf("%s:%s", tagBase, version)
 }
 
-func gitBranch() string {
-	branch := os.Getenv("TRAVIS_BRANCH")
-	if branch != "" {
-		return branch
-	}
-
-	out, err := runOutput("git", "rev-parse", "--abbrev-ref", "HEAD")
-	if err != nil {
-		return ""
-	}
-	return strings.TrimSpace(out)
-}
-
 func dockerPush(tag string) error {
 	return run("docker", "push", tag)
 }
 
+func buildSha() string {
+	sha := os.Getenv("TRAVIS_COMMIT")
+	if sha == "" {
+		return "UNKNOWN"
+	}
+
+	size := 7
+	if len(sha) < size {
+		size = len(sha)
+	}
+	return sha[:size]
+}
+
 func docker() {
-	version := buildVersion()
-	tag := tagFor(version)
-	fmt.Printf("building version %s\n", version)
-	if err := buildDocker(version, tag); err != nil {
-		log.Fatalf("error: can't build docker - %s", err)
-	}
+	gitTag := os.Getenv(tagEnv)
+	gitBranch := os.Getenv("TRAVIS_BRANCH")
 
-	alias := ""
-	switch gitBranch() {
-	case "master":
-		alias = tagFor("latest")
+	var tagsToPush []string
+
+	switch gitBranch {
 	case "development":
-		alias = tagFor("unstable")
-	}
-
-	if alias != "" {
+		fmt.Println("building unstable")
+		version := buildSha()
+		tag := tagFor("unstable")
+		if err := buildDocker(version, tag); err != nil {
+			log.Fatalf("error: can't build docker - %s", err)
+		}
+		tagsToPush = append(tagsToPush, tag)
+	case "master":
+		if gitTag == "" {
+			fmt.Println("skipping non-tag build on master")
+			return
+		}
+		version := gitTag
+		tag := tagFor(version)
+		if err := buildDocker(version, tag); err != nil {
+			log.Fatalf("error: can't build docker - %s", err)
+		}
+		tagsToPush = append(tagsToPush, tag)
+		alias := tagFor("latest")
 		if err := run("docker", "tag", tag, alias); err != nil {
 			log.Fatal("error: can't tag")
 		}
+		tagsToPush = append(tagsToPush, alias)
+	default:
+		fmt.Printf("skipping build on branch %q\n", gitBranch)
+		return
 	}
 
 	user := os.Getenv("DOCKER_USERNAME")
@@ -149,13 +147,9 @@ func docker() {
 		log.Fatal("error: can't login to docker")
 	}
 
-	if err := dockerPush(tag); err != nil {
-		log.Fatalf("error: can't push %s to docker", tag)
-	}
-
-	if alias != "" {
-		if err := dockerPush(alias); err != nil {
-			log.Fatalf("error: can't push %s to docker", alias)
+	for _, tag := range tagsToPush {
+		if err := dockerPush(tag); err != nil {
+			log.Fatalf("error: can't push %s to docker", tag)
 		}
 	}
 }
@@ -166,7 +160,11 @@ func binaries() {
 		os.Unsetenv("GOARCH")
 	}()
 
-	version := buildVersion()
+	version := os.Getenv("TRAVIS_TAG")
+	if version == "" {
+		version = buildSha()
+	}
+
 	os.Setenv("GOARCH", "amd64")
 	for _, goos := range []string{"linux", "darwin", "windows"} {
 		exe := fmt.Sprintf("framesd-%s-amd64", goos)
@@ -199,6 +197,10 @@ func main() {
 
 	if flag.NArg() != 1 {
 		log.Fatal("error: wrong number of arguments")
+	}
+
+	if os.Getenv("TRAVIS_REPO_SLUG") != framesRepo {
+		log.Fatalf("error: wrong repo (should be %s)", framesRepo)
 	}
 
 	switch action := flag.Arg(0); action {
