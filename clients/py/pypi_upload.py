@@ -23,32 +23,15 @@ from subprocess import run
 from sys import executable
 
 
-def git_branch():
-    branch = environ.get('TRAVIS_BRANCH')
-    if branch:
-        return branch
-
-    cmd = ['git', 'rev-parse', '--abbrev-ref', 'HEAD']
-    out = run(cmd, capture_output=True)
-    if out.returncode != 0:
-        return ''
-
-    return out.stdout.decode('utf-8').strip()
-
-
 def should_upload():
     repo = environ.get('TRAVIS_REPO_SLUG')
-    if repo != 'v3io/frames':
-        return False
+    branch = environ.get('TRAVIS_BRANCH')
 
-    return git_branch() in ('development', 'master')
+    return repo == 'v3io/frames' and branch in ('master', 'development')
 
 
 def git_sha():
-    out = run(['git', 'rev-parse', '--short', 'HEAD'], capture_output=True)
-    if out.returncode != 0:
-        return ''
-    return out.stdout.decode('utf-8').strip()
+    return environ.get('TRAVIS_COMMIT', '')[:7]
 
 
 def set_dev_version():
@@ -78,7 +61,7 @@ if __name__ == '__main__':
     if not ok:
         raise SystemExit('error: wrong branch or repo (try with --force)')
 
-    if git_branch() == 'development':
+    if environ.get('TRAVIS_BRANCH') == 'development':
         set_dev_version()
 
     if path.exists('dist'):
