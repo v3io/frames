@@ -32,7 +32,7 @@ import (
 )
 
 const (
-	tagBase = "quay.io/v3io/framesd"
+	tagBase = "quay.io/v3io/frames"
 )
 
 func printCmd(prog string, args []string) {
