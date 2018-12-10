@@ -34,7 +34,9 @@ and release to `master.
 
 #### Running
 
-     docker run -v /path/to/config.yaml:/etc/framesd/framesd.yaml quay.io/v3io/framesd
+     docker run \
+	-v /path/to/config.yaml:/etc/framesd/framesd.yaml \
+	quay.io/v3io/frames
 
 ## LICENSE
 
