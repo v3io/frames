@@ -18,9 +18,7 @@ all:
 
 .PHONY: upload
 upload:
-	rm -r dist
-	python setup.py sdist bdist_wheel
-	pipenv run twine upload dist/*
+	pipenv run python pypi_upload.py
 
 .PHONY: clean_pyc
 clean_pyc:
@@ -36,7 +34,10 @@ flake8:
 .PHONY: test
 test: clean_pyc flake8
 	PIPENV_IGNORE_VIRTUALENVS=1 \
-	    pipenv run python -m pytest --disable-warnings -v tests
+	    pipenv run python -m pytest -v \
+		--disable-warnings \
+		--benchmark-disable \
+		tests
 
 README.html: README.md
 	kramdown -i GFM $< > $@
@@ -45,6 +46,11 @@ README.html: README.md
 update-deps:
 	PIPENV_IGNORE_VIRTUALENVS=1 \
 	    pipenv update
+
+.PHONY: sync-deps
+sync-deps:
+	PIPENV_IGNORE_VIRTUALENVS=1 \
+	    pipenv sync --dev
 
 .PHONY: bench
 bench:

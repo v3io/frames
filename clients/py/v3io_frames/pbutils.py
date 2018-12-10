@@ -86,9 +86,9 @@ def Session(url='', container='', path='', user='', password='', token=''):
         A session object
     """
     return fpb.Session(
-        url=url or environ.get('V3IO_URL', ''),
-        container=container or environ.get('V3IO_CONTAINER', ''),
-        path=path or environ.get('V3IO_PATH', ''),
+        url=url,
+        container=container,
+        path=path,
         user=user or environ.get('V3IO_USER', ''),
         password=password or environ.get('V3IO_PASSWORD', ''),
         token=token or environ.get('V3IO_TOKEN', ''),

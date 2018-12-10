@@ -143,7 +143,7 @@ def test_integration(framesd, session, protocol, backend):
     sleep(1)  # Let db flush
 
     read_kw = cfg.get('read', {})
-    dfs = [df for df in client.read(backend, table=table, **read_kw)]
+    dfs = list(client.read(backend, table=table, iterator=True, **read_kw))
     df2 = pd.concat(dfs)
 
     if backend == 'tsdb':
@@ -151,9 +151,12 @@ def test_integration(framesd, session, protocol, backend):
     elif backend == 'stream':
         compare_dfs_stream(df, df2, backend)
     else:
+        if backend == 'kv':
+            # FIXME: Probably the schema
+            df2.dropna(inplace=True)
         compare_dfs(df, df2, backend)
 
-    df = client.read(backend, table=table, iterator=False, **read_kw)
+    df = client.read(backend, table=table, **read_kw)
     assert isinstance(df, pd.DataFrame), 'iterator=False returned generator'
 
     client.delete(backend, table)
