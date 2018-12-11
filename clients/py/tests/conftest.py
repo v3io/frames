@@ -12,7 +12,6 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-import json
 import re
 from collections import namedtuple
 from os import environ, makedirs, path
@@ -26,9 +25,10 @@ from uuid import uuid4
 import pytest
 import yaml
 
+import v3io_frames as v3f
 
-SESSION_ENV_KEY = 'V3IO_SESSION'
-has_session = SESSION_ENV_KEY in environ
+
+has_session = v3f.SESSION_ENV_KEY in environ
 test_id = uuid4().hex
 here = path.dirname(path.abspath(__file__))
 
@@ -148,8 +148,9 @@ def framesd():
 
 @pytest.fixture(scope='module')
 def session():
-    session_info = environ.get(SESSION_ENV_KEY, '')
-    session = json.loads(session_info) if session_info else {}
-    if 'address' in session:
-        session['data_url'] = session.pop('address')
+    """Return session parameters fit for v3f.Client arguments"""
+    obj = v3f.session_from_env()
+    session = {desc.name: value for desc, value in obj.ListFields()}
+    if 'url' in session:
+        session['data_url'] = session.pop('url')
     return session

@@ -33,19 +33,14 @@ import (
 	"log"
 	"os"
 	"path"
+
+	"github.com/v3io/frames/pb"
 )
 
-var session struct {
-	Address   string `json:"address"`
-	Container string `json:"container"`
-	Password  string `json:"password"`
-	Path      string `json:"path"`
-	Token     string `json:"token"`
-	User      string `json:"user"`
-}
-
 func main() {
-	flag.StringVar(&session.Address, "address", "", "web API address")
+	var session pb.Session
+
+	flag.StringVar(&session.Url, "url", "", "web API url")
 	flag.StringVar(&session.Container, "container", "", "container name")
 	flag.StringVar(&session.Password, "password", "", "password")
 	flag.StringVar(&session.Path, "path", "", "path in container")
