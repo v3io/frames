@@ -76,6 +76,14 @@ func NewClient(url string, session *frames.Session, logger logger.Logger) (*Clie
 		url = fmt.Sprintf("http://%s", url)
 	}
 
+	if session == nil {
+		var err error
+		session, err = frames.SessionFromEnv()
+		if err != nil {
+			return nil, err
+		}
+	}
+
 	client := &Client{
 		URL:     url,
 		session: session,
