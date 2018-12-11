@@ -16,6 +16,8 @@
 
 __version__ = '0.3.1'
 
+from os import environ
+import json
 from urllib.parse import urlparse
 
 
@@ -25,6 +27,8 @@ from .errors import *  # noqa
 from .frames_pb2 import TableSchema as Schema, SchemaKey, FAIL, IGNORE  # noqa
 from .pbutils import SchemaField, Session  # noqa 
 
+
+SESSION_ENV_KEY = 'V3IO_SESSION'
 
 _known_protocols = {'grpc', 'http', 'https'}
 
@@ -56,14 +60,26 @@ def Client(address='', data_url='', container='', path='', user='',
     if protocol not in _known_protocols:
         raise ValueError('unknown protocol - {}'.format(protocol))
 
+    env = session_from_env()
+
     session = Session(
-        url=data_url,
-        container=container,
-        path=path,
-        user=user,
-        password=password,
-        token=token,
+        url=data_url or env.url,
+        container=container or env.container,
+        path=path or env.path,
+        user=user or env.user,
+        password=password or env.password,
+        token=token or env.token,
     )
 
     cls = gRPCClient if protocol == 'grpc' else HTTPClient
     return cls(address, session)
+
+
+def session_from_env():
+    """Load session from V3IO_SESSION environment variable (JSON encoded)"""
+    data = environ.get(SESSION_ENV_KEY)
+    if data is None:
+        return Session()
+
+    obj = json.loads(data)
+    return Session(**obj)

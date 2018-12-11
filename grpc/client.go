@@ -26,6 +26,7 @@ import (
 	"github.com/v3io/frames"
 	"github.com/v3io/frames/pb"
 	"io"
+	"os"
 	"time"
 
 	"github.com/nuclio/logger"
@@ -46,9 +47,25 @@ var (
 
 // NewClient returns a new gRPC client
 func NewClient(address string, session *frames.Session, logger logger.Logger) (*Client, error) {
+	if address == "" {
+		address = os.Getenv("V3IO_URL")
+	}
+
+	if address == "" {
+		return nil, fmt.Errorf("empty address")
+	}
+
 	conn, err := grpc.Dial(address, grpc.WithInsecure())
 	if err != nil {
 		return nil, errors.Wrap(err, "can't create gRPC connection")
+	}
+
+	if session == nil {
+		var err error
+		session, err = frames.SessionFromEnv()
+		if err != nil {
+			return nil, err
+		}
 	}
 
 	client := &Client{

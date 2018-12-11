@@ -20,6 +20,16 @@ such restriction.
 
 package frames
 
+import (
+	"encoding/json"
+	"os"
+	"strings"
+
+	"github.com/pkg/errors"
+
+	"github.com/v3io/frames/pb"
+)
+
 // Client interface
 type Client interface {
 	// Read reads data from server
@@ -32,4 +42,22 @@ type Client interface {
 	Delete(request *DeleteRequest) error
 	// Exec executes a command on the backend
 	Exec(request *ExecRequest) error
+}
+
+// SessionFromEnv return a session from V3IO_SESSION environment variable (JSON encoded)
+func SessionFromEnv() (*pb.Session, error) {
+	session := &pb.Session{}
+	envKey := "V3IO_SESSION"
+
+	data := os.Getenv(envKey)
+	if data == "" {
+		return session, nil
+	}
+
+	dec := json.NewDecoder(strings.NewReader(data))
+	if err := dec.Decode(session); err != nil {
+		return nil, errors.Wrapf(err, "can't read JSON from %s environment", envKey)
+	}
+
+	return session, nil
 }
