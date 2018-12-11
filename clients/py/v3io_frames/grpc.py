@@ -24,6 +24,7 @@ from .errors import (CreateError, DeleteError, ExecuteError, ReadError,
                      WriteError)
 from .http import format_go_time
 from .pbutils import msg2df, pb_map, df2msg
+from .pdutils import concat_dfs
 from .client import ClientBase
 
 IGNORE, FAIL = fpb.IGNORE, fpb.FAIL
@@ -83,7 +84,7 @@ class Client(ClientBase):
             backend, table, query, columns, filter, group_by, limit,
             data_format, row_layout, max_in_message, marker, **kw)
         if not iterator:
-            return pd.concat(dfs)
+            return concat_dfs(dfs)
         return dfs
 
     @grpc_raise(WriteError)

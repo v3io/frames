@@ -17,7 +17,6 @@ from datetime import datetime
 from functools import wraps, partial
 from itertools import chain
 
-import pandas as pd
 import requests
 from requests.exceptions import RequestException
 from urllib3.exceptions import HTTPError
@@ -27,6 +26,7 @@ from .client import ClientBase
 from .errors import (CreateError, DeleteError, Error, ExecuteError,
                      ReadError, WriteError)
 from .pbutils import pb2py, msg2df, df2msg
+from .pdutils import concat_dfs
 
 header_fmt = '<q'
 header_fmt_size = struct.calcsize(header_fmt)
@@ -84,7 +84,7 @@ class Client(ClientBase):
         dfs = self._iter_dfs(resp.raw)
 
         if not iterator:
-            return pd.concat(dfs)
+            return concat_dfs(dfs)
         return dfs
 
     @connection_error(WriteError)
