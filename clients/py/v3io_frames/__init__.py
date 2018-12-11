@@ -82,6 +82,4 @@ def session_from_env():
         return Session()
 
     obj = json.loads(data)
-    if 'address' in obj:
-        obj['url'] = obj.pop('address')
     return Session(**obj)

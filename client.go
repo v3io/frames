@@ -23,6 +23,7 @@ package frames
 import (
 	"encoding/json"
 	"os"
+	"strings"
 
 	"github.com/pkg/errors"
 
@@ -53,22 +54,10 @@ func SessionFromEnv() (*pb.Session, error) {
 		return session, nil
 	}
 
-	obj := make(map[string]string)
-	if err := json.Unmarshal([]byte(data), &obj); err != nil {
+	dec := json.NewDecoder(strings.NewReader(data))
+	if err := dec.Decode(session); err != nil {
 		return nil, errors.Wrapf(err, "can't read JSON from %s environment", envKey)
 	}
-
-	// "url" or "address" can be used
-	if val, ok := obj["address"]; ok {
-		session.Url = val
-	} else {
-		session.Url = obj["url"]
-	}
-	session.Container = obj["container"]
-	session.Path = obj["path"]
-	session.User = obj["user"]
-	session.Password = obj["password"]
-	session.Token = obj["token"]
 
 	return session, nil
 }
