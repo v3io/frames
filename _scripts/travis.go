@@ -116,7 +116,7 @@ func docker() {
 	case gitTag != "":
 		version := gitTag
 		if version[0] == 'v' {
-			version := version[1:] // Remove the leading v (in v0.3.3)
+			version = version[1:] // Remove the leading v (in v0.3.3)
 		}
 		tag := tagFor(version)
 		if err := buildDocker(version, tag); err != nil {
