@@ -14,7 +14,6 @@
 
 """Upload packages to PyPI"""
 
-import re
 from argparse import ArgumentParser
 from glob import glob
 from os import environ, path
@@ -25,25 +24,36 @@ from sys import executable
 
 def should_upload():
     repo = environ.get('TRAVIS_REPO_SLUG')
-    branch = environ.get('TRAVIS_BRANCH')
+    tag = environ.get('TRAVIS_TAG')
 
-    return repo == 'v3io/frames' and branch in ('master', 'development')
+    return repo == 'v3io/frames' and tag
 
 
 def git_sha():
     return environ.get('TRAVIS_COMMIT', '')[:7]
 
 
-def set_dev_version():
-    init = 'v3io_frames/__init__.py'
-    with open(init) as fp:
-        code = fp.read()
+def set_version():
+    version = environ.get('TRAVIS_TAG')
+    assert version, 'no tag'
 
-    # __version__ = '0.3.1' -> __version__ = '0.3.1.dev99d357b'
-    repl = r"__version__ = '\1.dev" + git_sha() + "'"
-    code = re.sub(r"__version__\s*=\s*'(.+)'", repl, code)
-    with open(init, 'w') as out:
-        out.write(code)
+    if version[0] == 'v':
+        version = version[1:]
+
+    if version.endswith('.py'):
+        version = version[:-3]
+
+    lines = []
+    init_py = 'v3io_frames/__init__.py'
+    with open(init_py) as fp:
+        for line in fp:
+            # __version__ = '0.3.1'
+            if '__version__' in line:
+                line = "__version__ = '{}'\n".format(version)
+            lines.append(line)
+
+    with open(init_py, 'w') as out:
+        out.write(''.join(lines))
 
 
 if __name__ == '__main__':
@@ -61,12 +71,10 @@ if __name__ == '__main__':
     if not ok:
         raise SystemExit('error: wrong branch or repo (try with --force)')
 
-    if environ.get('TRAVIS_BRANCH') == 'development':
-        set_dev_version()
-
     if path.exists('dist'):
         rmtree('dist')
 
+    set_version()
     for dist in ('sdist', 'bdist_wheel'):
         out = run([executable, 'setup.py', dist])
         if out.returncode != 0:
