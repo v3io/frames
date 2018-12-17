@@ -34,7 +34,6 @@ import (
 const (
 	tagBase    = "quay.io/v3io/frames"
 	framesRepo = "v3io/frames"
-	tagEnv     = "TRAVIS_TAG"
 )
 
 func printCmd(prog string, args []string) {
@@ -100,13 +99,13 @@ func buildSha() string {
 }
 
 func docker() {
-	gitTag := os.Getenv(tagEnv)
+	gitTag := os.Getenv("TRAVIS_TAG")
 	gitBranch := os.Getenv("TRAVIS_BRANCH")
 
 	var tagsToPush []string
 
-	switch gitBranch {
-	case "development":
+	switch {
+	case gitBranch == "development":
 		fmt.Println("building unstable")
 		version := buildSha()
 		tag := tagFor("unstable")
@@ -114,12 +113,11 @@ func docker() {
 			log.Fatalf("error: can't build docker - %s", err)
 		}
 		tagsToPush = append(tagsToPush, tag)
-	case "master":
-		if gitTag == "" {
-			fmt.Println("skipping non-tag build on master")
-			return
-		}
+	case gitTag != "":
 		version := gitTag
+		if version[0] == 'v' {
+			version := version[1:] // Remove the leading v (in v0.3.3)
+		}
 		tag := tagFor(version)
 		if err := buildDocker(version, tag); err != nil {
 			log.Fatalf("error: can't build docker - %s", err)
