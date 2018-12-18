@@ -14,7 +14,7 @@
 
 """Stream data from/to Nuclio into pandas DataFrame"""
 
-__version__ = '0.3.3'
+__version__ = '0.3.4'
 
 from os import environ
 import json
