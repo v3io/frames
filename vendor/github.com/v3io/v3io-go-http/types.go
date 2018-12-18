@@ -154,9 +154,9 @@ type PutItemInput struct {
 }
 
 type PutItemsInput struct {
-	Path      string
-	Condition string
-	Items     map[string]map[string]interface{}
+	Path       string
+	Condition  string
+	Items      map[string]map[string]interface{}
 }
 
 type PutItemsOutput struct {
@@ -204,10 +204,10 @@ type CreateStreamInput struct {
 }
 
 type StreamRecord struct {
-	ShardID      *int
-	Data         []byte
-	ClientInfo   []byte
-	PartitionKey string
+	ShardID       *int
+	Data          []byte
+	ClientInfo    []byte
+	PartitionKey  string
 }
 
 type PutRecordsInput struct {
