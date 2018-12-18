@@ -32,6 +32,6 @@ def concat_dfs(dfs):
         wdf.set_index(full_names, inplace=True)
         wdf.index.names = names
     elif names[0]:
-        wdf.index.name = names[0]
+        wdf.index = wdf.pop(names[0])
 
     return wdf
