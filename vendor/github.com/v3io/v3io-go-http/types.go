@@ -149,12 +149,14 @@ type SetObjectInput struct {
 
 type PutItemInput struct {
 	Path       string
+	Condition  string
 	Attributes map[string]interface{}
 }
 
 type PutItemsInput struct {
-	Path  string
-	Items map[string]map[string]interface{}
+	Path       string
+	Condition  string
+	Items      map[string]map[string]interface{}
 }
 
 type PutItemsOutput struct {
@@ -166,6 +168,7 @@ type UpdateItemInput struct {
 	Path       string
 	Attributes map[string]interface{}
 	Expression *string
+	Condition  string
 }
 
 type GetItemInput struct {
@@ -201,8 +204,10 @@ type CreateStreamInput struct {
 }
 
 type StreamRecord struct {
-	ShardID *int
-	Data    []byte
+	ShardID       *int
+	Data          []byte
+	ClientInfo    []byte
+	PartitionKey  string
 }
 
 type PutRecordsInput struct {
@@ -256,7 +261,7 @@ type GetRecordsResult struct {
 	ArrivalTimeSec  int
 	ArrivalTimeNSec int
 	SequenceNumber  int
-	ClientInfo      string
+	ClientInfo      []byte
 	PartitionKey    string
 	Data            []byte
 }
