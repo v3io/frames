@@ -13,6 +13,7 @@
 # limitations under the License.
 
 import pandas as pd
+import warnings
 
 
 def concat_dfs(dfs):
@@ -34,4 +35,7 @@ def concat_dfs(dfs):
     elif names[0]:
         wdf.index = wdf.pop(names[0])
 
+    with warnings.catch_warnings():
+        warnings.simplefilter('ignore')
+        wdf.labels = getattr(dfs[0], 'labels', {})
     return wdf
