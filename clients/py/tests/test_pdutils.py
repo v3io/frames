@@ -34,3 +34,8 @@ def test_concat_dfs():
     assert len(df) == sum(len(d) for d in dfs), 'bad number of rows'
     assert df.index.name == dfs[0].index.name, 'bad index name'
     assert set(df.columns) == set(dfs[0].columns), 'bad columns'
+
+
+def test_empty_result():
+    df = pdutils.concat_dfs([])
+    assert df.empty, 'non-empty df'
