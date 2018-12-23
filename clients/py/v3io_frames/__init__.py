@@ -24,8 +24,8 @@ from urllib.parse import urlparse
 from .http import Client as HTTPClient  # noqa
 from .grpc import Client as gRPCClient  # noqa
 from .errors import *  # noqa
-from .frames_pb2 import TableSchema as Schema, SchemaKey, FAIL, IGNORE  # noqa
-from .pbutils import SchemaField, Session  # noqa 
+from .frames_pb2 import TableSchema as Schema, SchemaKey, FAIL, IGNORE, Session  # noqa
+from .pbutils import SchemaField # noqa
 
 
 SESSION_ENV_KEY = 'V3IO_SESSION'
@@ -34,7 +34,7 @@ _known_protocols = {'grpc', 'http', 'https'}
 
 
 def Client(address='', data_url='', container='', path='', user='',
-           password='', token=''):
+           password='', token='', session_id=''):
     """Return a new client.
 
     Parameters
@@ -54,8 +54,9 @@ def Client(address='', data_url='', container='', path='', user='',
         Login password (session info)
     token : str
         Login token (session info)
+    session_id : str
+        Session ID (session info)
     """
-
     protocol = urlparse(address).scheme or 'grpc'
     if protocol not in _known_protocols:
         raise ValueError('unknown protocol - {}'.format(protocol))
@@ -69,6 +70,7 @@ def Client(address='', data_url='', container='', path='', user='',
         user=user or env.user,
         password=password or env.password,
         token=token or env.token,
+        id=session_id or env.id
     )
 
     cls = gRPCClient if protocol == 'grpc' else HTTPClient
