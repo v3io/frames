@@ -12,7 +12,6 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-from os import environ
 import warnings
 
 from google.protobuf.message import Message
@@ -59,40 +58,6 @@ def SchemaField(name=None, doc=None, default=None, type=None, properties=None):
             type=type,
             properties=pb_map(properties),
         )
-
-
-def Session(url='', container='', path='', user='', password='', token=''):
-    """Return a new session.
-
-    Will populate missing values from environment. Environment variables have
-    V3IO_ prefix (e.g. V3IO_URL)
-
-    Parameters
-    ----------
-    url : str
-        Backend URL
-    container : str
-        Container name
-    path : str
-        Path in container
-    user : str
-        Login user
-    password : str
-        Login password
-    token : str
-        Login token
-
-    Returns:
-        A session object
-    """
-    return fpb.Session(
-        url=url,
-        container=container,
-        path=path,
-        user=user or environ.get('V3IO_USER', ''),
-        password=password or environ.get('V3IO_PASSWORD', ''),
-        token=token or environ.get('V3IO_TOKEN', ''),
-    )
 
 
 def pb2py(obj):

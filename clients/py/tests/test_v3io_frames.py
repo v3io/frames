@@ -51,12 +51,13 @@ def test_client_env():
 
 
 def test_session_from_env():
-    url = 'localhost:8080'
-    data = json.dumps({'url': url})
+    obj = {field.name: field.name for field in v3f.Session.DESCRIPTOR.fields}
+    data = json.dumps(obj)
     with setenv(v3f.SESSION_ENV_KEY, data):
         s = v3f.session_from_env()
 
-    assert s.url == url, 'bad url'
+    env_obj = {field.name: value for field, value in s.ListFields()}
+    assert env_obj == obj, 'bad session from environment'
 
     with pytest.raises(ValueError):
         with setenv(v3f.SESSION_ENV_KEY, '"'):
