@@ -19,6 +19,9 @@ import warnings
 def concat_dfs(dfs):
     """Concat sequence of DataFrames, can handle MultiIndex frames."""
     dfs = list(dfs)
+    if not dfs:
+        return pd.DataFrame()
+
     names = list(dfs[0].index.names)
     wdf = pd.concat(
         [df.reset_index() for df in dfs],
