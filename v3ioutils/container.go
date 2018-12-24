@@ -28,12 +28,32 @@ import (
 	"github.com/nuclio/logger"
 	"github.com/pkg/errors"
 
+	"github.com/v3io/frames"
 	v3io "github.com/v3io/v3io-go-http"
 	"github.com/v3io/v3io-tsdb/pkg/utils"
 )
 
+func NewContainer(session *frames.Session, framesCfg *frames.Config, logger logger.Logger, workers int) (*v3io.Container, error) {
+	session = frames.InitSessionDefaults(session, framesCfg)
+
+	config := v3io.SessionConfig{
+		Username:   session.User,
+		Password:   session.Password,
+		Label:      "v3frames",
+		SessionKey: session.Token}
+
+	container, err := createContainer(
+		logger, session.Url, session.Container, &config, workers)
+	if err != nil {
+		return nil, errors.Wrap(err, "failed to create data container")
+	}
+
+	return container, nil
+
+}
+
 // CreateContainer creates a new container
-func CreateContainer(logger logger.Logger, addr, cont, username, password string, workers int) (*v3io.Container, error) {
+func createContainer(logger logger.Logger, addr, cont string, config *v3io.SessionConfig, workers int) (*v3io.Container, error) {
 	// create context
 	if workers == 0 {
 		workers = 8
@@ -45,7 +65,7 @@ func CreateContainer(logger logger.Logger, addr, cont, username, password string
 	}
 
 	// create session
-	session, err := context.NewSession(username, password, "v3test")
+	session, err := context.NewSessionFromConfig(config)
 	if err != nil {
 		return nil, errors.Wrap(err, "failed to create session")
 	}
