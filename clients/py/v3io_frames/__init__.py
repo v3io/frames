@@ -67,9 +67,9 @@ def Client(address='', data_url='', container='', path='', user='',
         url=data_url or env.url,
         container=container or env.container,
         path=path or env.path,
-        user=user or env.user,
-        password=password or env.password,
-        token=token or env.token,
+        user=user or env.user or environ.get('V3IO_USERNAME'),
+        password=password or env.password or environ.get('V3IO_PASSWORD'),
+        token=token or env.token or environ.get('V3IO_ACCESS_KEY'),
         id=session_id or env.id
     )
 

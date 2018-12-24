@@ -81,10 +81,15 @@ func (b *Backend) newAdapter(session *frames.Session, path string) (*tsdb.V3ioAd
 		path = session.Path
 	}
 
-	container, err := v3ioutils.CreateContainer(b.logger,
-		session.Url, cfg.Container, cfg.Username, cfg.Password, cfg.Workers)
+	container, err := v3ioutils.NewContainer(
+		session,
+		b.framesConfig,
+		b.logger,
+		cfg.Workers,
+	)
+
 	if err != nil {
-		return nil, errors.Wrap(err, "Failed to create V3IO data container")
+		return nil, err
 	}
 
 	cfg.TablePath = path

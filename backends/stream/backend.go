@@ -127,19 +127,14 @@ func (b *Backend) Exec(request *frames.ExecRequest) error {
 
 func (b *Backend) newContainer(session *frames.Session) (*v3io.Container, error) {
 
-	session = frames.InitSessionDefaults(session, b.framesConfig)
-	container, err := v3ioutils.CreateContainer(
+	container, err := v3ioutils.NewContainer(
+		session,
+		b.framesConfig,
 		b.logger,
-		session.Url, session.Container,
-		session.User, session.Password,
 		b.backendConfig.Workers,
 	)
 
-	if err != nil {
-		return nil, errors.Wrap(err, "Failed to create V3IO data container")
-	}
-
-	return container, nil
+	return container, err
 }
 
 func init() {
