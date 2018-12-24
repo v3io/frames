@@ -27,6 +27,9 @@ import (
 	"io"
 	"net/http"
 
+	"github.com/v3io/frames/backends"
+	"github.com/v3io/frames/simplejson"
+
 	"github.com/v3io/frames"
 	"github.com/v3io/frames/api"
 	"github.com/v3io/frames/pb"
@@ -330,53 +333,60 @@ func (s *Server) replyOK(ctx *fasthttp.RequestCtx) {
 	ctx.Write(okBytes)
 }
 
-func (s *Server) handleGrafana(ctx *fasthttp.RequestCtx) {
-	args := ctx.QueryArgs()
-	request := &frames.ReadRequest{
-		Backend:      string(args.Peek("backend")),
-		Table:        string(args.Peek("table")),
-		Query:        string(args.Peek("query")),
-		Filter:       string(args.Peek("filter")),
-		GroupBy:      string(args.Peek("group_by")),
-		Limit:        int64(args.GetUintOrZero("limit")),
-		MessageLimit: int64(args.GetUintOrZero("messge_limit")),
-		Marker:       string(args.Peek("marker")),
-	}
+func (s *Server) handleSimpleJsonACK(ctx *fasthttp.RequestCtx) {
+	// TODO: consider adding validation
+	s.replyOK(ctx)
+}
 
-	// TODO: Validate request
-	s.logger.InfoWith("grafana request", "request", request)
-
-	ch := make(chan frames.Frame)
-	var apiError error
-	go func() {
-		defer close(ch)
-		apiError = s.api.Read(request, ch)
-		if apiError != nil {
-			s.logger.ErrorWith("error reading (grafana)", "error", apiError)
-		}
-	}()
-
-	var frames []*JSONFrame
-	for frame := range ch {
-		jframe, err := frameToJSON(frame)
-		if err != nil {
-			s.logger.ErrorWith("can't encode frame", "error", err)
-			msg := fmt.Sprintf("can't encode frame - %s", err)
-			ctx.Error(msg, http.StatusInternalServerError)
-			return
-		}
-		frames = append(frames, jframe)
-	}
-
-	if apiError != nil {
-		msg := fmt.Sprintf("API error - %s", apiError)
-		ctx.Error(msg, http.StatusInternalServerError)
+func (s *Server) handleSimpleJsonQuery(ctx *fasthttp.RequestCtx) {
+	req, err := simplejson.SimpleJsonRequestFactory("query", ctx.PostBody())
+	if err != nil {
+		s.logger.ErrorWith("can't initialize simplejson query request", "error", err)
+		ctx.Error(fmt.Sprintf("bad request - %s", err), http.StatusBadRequest)
 		return
 	}
-
-	if err := json.NewEncoder(ctx).Encode(frames); err != nil {
-		s.logger.ErrorWith("can't encode result", "error", err)
+	readRequest := req.GetReadRequest()
+	factory := backends.GetFactory(readRequest.Backend)
+	var backendConfig *frames.BackendConfig
+	for _, b := range s.config.Backends {
+		if b.Name == readRequest.Backend {
+			backendConfig = b
+			break
+		}
 	}
+	backend, err := factory(s.logger, backendConfig, s.config)
+	if err != nil {
+		s.logger.ErrorWith("unknown backend", "name", readRequest.Backend)
+		return
+	}
+	iter, err := backend.Read(readRequest)
+	if err != nil {
+		s.logger.ErrorWith("error reading", "name", readRequest.Backend)
+		return
+	}
+	if resp, err := req.CreateResponse(iter); err != nil {
+		ctx.Error(fmt.Sprintf("Error creating response - %s", err), http.StatusInternalServerError)
+		return
+	} else {
+		s.replyJSON(ctx, resp)
+	}
+}
+
+func (s *Server) handleSimpleJsonSearch(ctx *fasthttp.RequestCtx) {
+	//Placeholder
+	req, err := simplejson.SimpleJsonRequestFactory("search", ctx.PostBody())
+	if err != nil {
+		s.logger.ErrorWith("can't initialize simplejson search request", "error", err)
+		ctx.Error(fmt.Sprintf("bad request - %s", err), http.StatusBadRequest)
+		return
+	}
+	// pass a valid iterator when the method is final
+	resp, err := req.CreateResponse(nil)
+	if err != nil {
+		ctx.Error(fmt.Sprintf("Error creating response - %s", err), http.StatusInternalServerError)
+		return
+	}
+	s.replyJSON(ctx, resp)
 }
 
 func (s *Server) handleExec(ctx *fasthttp.RequestCtx) {
@@ -401,13 +411,15 @@ func (s *Server) handleExec(ctx *fasthttp.RequestCtx) {
 
 func (s *Server) initRoutes() {
 	s.routes = map[string]func(*fasthttp.RequestCtx){
-		"/_/config": s.handleConfig,
-		"/_/status": s.handleStatus,
-		"/create":   s.handleCreate,
-		"/delete":   s.handleDelete,
-		"/grafana":  s.handleGrafana,
-		"/read":     s.handleRead,
-		"/write":    s.handleWrite,
-		"/exec":     s.handleExec,
+		"/_/config":          s.handleConfig,
+		"/_/status":          s.handleStatus,
+		"/create":            s.handleCreate,
+		"/delete":            s.handleDelete,
+		"/simplejson/":       s.handleSimpleJsonACK,
+		"/simplejson/query":  s.handleSimpleJsonQuery,
+		"/simplejson/search": s.handleSimpleJsonSearch,
+		"/read":              s.handleRead,
+		"/write":             s.handleWrite,
+		"/exec":              s.handleExec,
 	}
 }
