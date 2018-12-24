@@ -19,7 +19,9 @@ from subprocess import PIPE, run
 from sys import executable
 from tempfile import mkdtemp
 
-from conftest import here
+import pytest
+
+from conftest import here, is_travis
 
 config = '''
 log:
@@ -67,6 +69,7 @@ def docker(tmp, cfg_file):
         run(['docker', 'rm', '-f', cid])
 
 
+@pytest.mark.skipif(not is_travis, reason='integration test')
 def test_pip_docker():
     tmp = mkdtemp()
     run(['virtualenv', '-p', executable, tmp], check=True)
