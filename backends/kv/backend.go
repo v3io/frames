@@ -74,7 +74,6 @@ func (b *Backend) Delete(request *frames.DeleteRequest) error {
 
 // Exec executes a command
 func (b *Backend) Exec(request *frames.ExecRequest) error {
-	// FIXME
 	cmd := strings.TrimSpace(strings.ToLower(request.Command))
 	switch cmd {
 	case "infer", "inferschema":
@@ -82,7 +81,7 @@ func (b *Backend) Exec(request *frames.ExecRequest) error {
 	case "update":
 		return b.updateItem(request)
 	}
-	return fmt.Errorf("KV backend does not support Exec")
+	return fmt.Errorf("KV backend does not support commend - %s", cmd)
 }
 
 func (b *Backend) updateItem(request *frames.ExecRequest) error {
@@ -91,14 +90,27 @@ func (b *Backend) updateItem(request *frames.ExecRequest) error {
 		return err
 	}
 
+	varKey, hasKey := request.Args["key"]
+	varExpr, hasExpr := request.Args["expression"]
+	if !hasExpr || !hasKey || request.Table == "" {
+		return fmt.Errorf("table, key and expression parameters must be specified")
+	}
+
+	key := varKey.GetSval()
+	expr := varExpr.GetSval()
+
 	condition := ""
 	if val, ok := request.Args["condition"]; ok {
 		condition = val.GetSval()
 	}
 
-	b.logger.DebugWith("update item", "path", request.Table, "expr", request.Expression)
+	if !strings.HasSuffix(request.Table, "/") {
+		request.Table += "/"
+	}
+
+	b.logger.DebugWith("update item", "path", request.Table, "key", key, "expr", expr, "condition", condition)
 	return container.Sync.UpdateItem(&v3io.UpdateItemInput{
-		Path: request.Table, Expression: &request.Expression, Condition: condition})
+		Path: request.Table + key, Expression: &expr, Condition: condition})
 }
 
 func (b *Backend) newContainer(session *frames.Session) (*v3io.Container, error) {

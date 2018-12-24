@@ -121,8 +121,50 @@ func (b *Backend) Delete(request *frames.DeleteRequest) error {
 
 // Exec executes a command
 func (b *Backend) Exec(request *frames.ExecRequest) error {
-	// FIXME
-	return fmt.Errorf("KV backend does not support Exec")
+	cmd := strings.TrimSpace(strings.ToLower(request.Command))
+	switch cmd {
+	case "put":
+		return b.put(request)
+	}
+	return fmt.Errorf("Stream backend does not support commend - %s", cmd)
+}
+
+func (b *Backend) put(request *frames.ExecRequest) error {
+	container, err := b.newContainer(request.Session)
+	if err != nil {
+		return err
+	}
+
+	varData, hasData := request.Args["data"]
+	if !hasData || request.Table == "" {
+		return fmt.Errorf("table name and data parameter must be specified")
+	}
+	data := varData.GetSval()
+
+	clientInfo := ""
+	if val, ok := request.Args["clientinfo"]; ok {
+		clientInfo = val.GetSval()
+	}
+
+	partitionKey := ""
+	if val, ok := request.Args["partition"]; ok {
+		partitionKey = val.GetSval()
+	}
+
+	if !strings.HasSuffix(request.Table, "/") {
+		request.Table += "/"
+	}
+
+	b.logger.DebugWith("put record", "path", request.Table, "len", len(data), "client", clientInfo, "partition", partitionKey)
+	records := []*v3io.StreamRecord{{
+		Data: []byte(data), ClientInfo: []byte(clientInfo), PartitionKey: partitionKey,
+	}}
+	_, err = container.Sync.PutRecords(&v3io.PutRecordsInput{
+		Path:    request.Table,
+		Records: records,
+	})
+
+	return err
 }
 
 func (b *Backend) newContainer(session *frames.Session) (*v3io.Container, error) {
