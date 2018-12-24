@@ -42,6 +42,7 @@ type Config struct {
 	Container      string `json:"container"`
 	Username       string `json:"username,omitempty"`
 	Password       string `json:"password,omitempty"`
+	SessionKey     string `json:"sessionKey,omitempty"`
 
 	// Number of parallel V3IO worker routines
 	Workers int `json:"workers"`
@@ -76,6 +77,9 @@ func InitSessionDefaults(session *Session, framesConfig *Config) *Session {
 	}
 	if session.Password == "" {
 		session.Password = framesConfig.Password
+	}
+	if session.Token == "" {
+		session.Token = framesConfig.SessionKey
 	}
 
 	return session

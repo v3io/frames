@@ -34,7 +34,7 @@ class ClientBase:
         session : Session
             Session object
         """
-        address = address or environ.get('V3IO_FRAMES_ADDR')
+        address = address or environ.get('V3IO_FRAMESD')
         if not address:
             raise ValueError('empty address')
         self.address = self._fix_address(address)

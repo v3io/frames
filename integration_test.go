@@ -176,7 +176,12 @@ func waitForServer(t testing.TB, port int) {
 
 func runServer(t testing.TB, root string, grpcPort int, httpPort int) *exec.Cmd {
 	exePath := fmt.Sprintf("%s/framesd", root)
-	cmd := exec.Command("go", "build", "-o", exePath, "cmd/framesd/framesd.go")
+	cmd := exec.Command(
+		"go", "build",
+		"-mod=vendor",
+		"-o", exePath,
+		"cmd/framesd/framesd.go",
+	)
 	if err := cmd.Run(); err != nil {
 		t.Fatal(err)
 	}

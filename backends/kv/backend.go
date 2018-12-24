@@ -25,8 +25,7 @@ import (
 	"strings"
 
 	"github.com/nuclio/logger"
-	"github.com/pkg/errors"
-	v3io "github.com/v3io/v3io-go-http"
+	"github.com/v3io/v3io-go-http"
 
 	"github.com/v3io/frames"
 	"github.com/v3io/frames/v3ioutils"
@@ -103,12 +102,13 @@ func (b *Backend) updateItem(request *frames.ExecRequest) error {
 }
 
 func (b *Backend) newContainer(session *frames.Session) (*v3io.Container, error) {
-	session = frames.InitSessionDefaults(session, b.framesConfig)
-	container, err := v3ioutils.CreateContainer(
-		b.logger, session.Url, session.Container, session.User, session.Password, b.numWorkers)
-	if err != nil {
-		return nil, errors.Wrap(err, "failed to create data container")
-	}
 
-	return container, nil
+	container, err := v3ioutils.NewContainer(
+		session,
+		b.framesConfig,
+		b.logger,
+		b.numWorkers,
+	)
+
+	return container, err
 }
