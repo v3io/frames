@@ -416,15 +416,15 @@ func (s *Server) handleSimpleJsonSearch(ctx *fasthttp.RequestCtx) {
 
 func (s *Server) initRoutes() {
 	s.routes = map[string]func(*fasthttp.RequestCtx){
-		"/_/config":          s.handleConfig,
-		"/_/status":          s.handleStatus,
-		"/create":            s.handleCreate,
-		"/delete":            s.handleDelete,
-		"/read":              s.handleRead,
-		"/write":             s.handleWrite,
-		"/exec":              s.handleExec,
-		"/simplejson/":       s.handleSimpleJsonACK,
-		"/simplejson/query":  s.handleSimpleJsonQuery,
-		"/simplejson/search": s.handleSimpleJsonSearch,
+		"/_/config":                  s.handleConfig,
+		"/_/status":                  s.handleStatus,
+		"/create":                    s.handleCreate,
+		"/delete":                    s.handleDelete,
+		"/read":                      s.handleRead,
+		"/write":                     s.handleWrite,
+		"/exec":                      s.handleExec,
+		"/grafana/simplejson/":       s.handleSimpleJsonACK,
+		"/grafana/simplejson/query":  s.handleSimpleJsonQuery,
+		"/grafana/simplejson/search": s.handleSimpleJsonSearch,
 	}
 }
