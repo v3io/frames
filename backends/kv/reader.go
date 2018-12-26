@@ -88,7 +88,7 @@ func (ki *Iterator) Next() bool {
 
 		// Skip table schema object
 		rowIndex, ok := row[indexColKey]
-		if ok && rowIndex == ".#schema" {
+		if (ok && rowIndex == ".#schema") || len(row) == 0 {
 			continue
 		}
 
