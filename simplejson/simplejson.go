@@ -42,6 +42,9 @@ type SimpleJsonQueryRequest struct {
 	Backend   string
 	From      string
 	To        string
+	Container string
+	Username  string
+	Password  string
 }
 
 type SimpleJsonSearchRequest struct {
@@ -83,7 +86,9 @@ func SimpleJsonRequestFactory(method string, request []byte) (SimpleJsonRequestI
 }
 
 func (req *SimpleJsonQueryRequest) GetReadRequest() *frames.ReadRequest {
-	return &frames.ReadRequest{Backend: req.Backend, Table: req.TableName, Columns: req.Fields, Start: req.From, End: req.To, Step: "60m"}
+	return &frames.ReadRequest{Backend: req.Backend, Table: req.TableName, Columns: req.Fields, Start: req.From, End: req.To, Step: "60m",
+		Session: &pb.Session{Container: req.Container, User: req.Username, Password: req.Password},
+		Filter:  req.Filter}
 }
 
 func (req *SimpleJsonQueryRequest) formatKV(iter frames.FrameIterator) (interface{}, error) {
@@ -106,6 +111,9 @@ func (req *SimpleJsonQueryRequest) formatKV(iter frames.FrameIterator) (interfac
 				rows[rowIndex] = append(rows[rowIndex], value)
 			}
 		}
+	}
+	if iter.Err() != nil {
+		return nil, iter.Err()
 	}
 	return []TableOutput{TableOutput{columns, rows, req.Type}}, nil
 }
@@ -134,6 +142,9 @@ func (req *SimpleJsonQueryRequest) formatTSDB(iter frames.FrameIterator) (interf
 				retval = append(retval, TimeSeriesOutput{datapoints, target})
 			}
 		}
+	}
+	if iter.Err() != nil {
+		return nil, iter.Err()
 	}
 	return retval, nil
 }
@@ -207,7 +218,7 @@ func (req *SimpleJsonSearchRequest) ParseRequest(requestBody []byte) error {
 
 func (req *SimpleJsonQueryRequest) parseQueryLine(fieldInput string) error {
 	translate := map[string]string{"table_name": "TableName"}
-	re := regexp.MustCompile(`^\s*(filter|fields|table_name|backend)\s*=\s*(.*)\s*$`)
+	re := regexp.MustCompile(`^\s*(filter|fields|table_name|backend|container|username|password)\s*=\s*(.*)\s*$`)
 	for _, field := range strings.Split(fieldInput, QUERY_SEPARATOR) {
 		match := re.FindStringSubmatch(field)
 		var value interface{}

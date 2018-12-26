@@ -354,14 +354,20 @@ func (s *Server) handleSimpleJsonQuery(ctx *fasthttp.RequestCtx) {
 			break
 		}
 	}
+	if backendConfig == nil {
+		s.logger.ErrorWith("unknown backend", "name", readRequest.Backend)
+		ctx.Error(fmt.Sprintf("Unknown backend: %s", readRequest.Backend), http.StatusBadRequest)
+		return
+	}
 	backend, err := factory(s.logger, backendConfig, s.config)
 	if err != nil {
-		s.logger.ErrorWith("unknown backend", "name", readRequest.Backend)
+		ctx.Error(fmt.Sprintf("Unable to init backend: %s", readRequest.Backend), http.StatusInternalServerError)
 		return
 	}
 	iter, err := backend.Read(readRequest)
 	if err != nil {
 		s.logger.ErrorWith("error reading", "name", readRequest.Backend)
+		ctx.Error(fmt.Sprintf("Error reading - %s", err), http.StatusInternalServerError)
 		return
 	}
 	if resp, err := req.CreateResponse(iter); err != nil {
