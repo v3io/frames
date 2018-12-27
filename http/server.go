@@ -22,16 +22,17 @@ package http
 
 import (
 	"bufio"
+	"encoding/base64"
 	"encoding/json"
 	"fmt"
 	"io"
 	"net/http"
+	"strings"
 
 	"github.com/v3io/frames"
 	"github.com/v3io/frames/api"
 	"github.com/v3io/frames/backends"
 	"github.com/v3io/frames/pb"
-	"github.com/v3io/frames/simplejson"
 
 	"github.com/nuclio/logger"
 	"github.com/pkg/errors"
@@ -352,19 +353,16 @@ func (s *Server) handleExec(ctx *fasthttp.RequestCtx) {
 	s.replyOK(ctx)
 }
 
-func (s *Server) handleSimpleJsonACK(ctx *fasthttp.RequestCtx) {
-	// TODO: consider adding validation
-	s.replyOK(ctx)
-}
-
 func (s *Server) handleSimpleJsonQuery(ctx *fasthttp.RequestCtx) {
-	req, err := simplejson.SimpleJsonRequestFactory("query", ctx.PostBody())
+	username, password := s.extractBasicAuth(ctx)
+	req, err := SimpleJsonRequestFactory("query", ctx.PostBody())
 	if err != nil {
 		s.logger.ErrorWith("can't initialize simplejson query request", "error", err)
 		ctx.Error(fmt.Sprintf("bad request - %s", err), http.StatusBadRequest)
 		return
 	}
-	readRequest := req.GetReadRequest()
+	// passing session in order to easily pass token, when implemented
+	readRequest := req.GetReadRequest(&pb.Session{User: username, Password: password})
 	factory := backends.GetFactory(readRequest.Backend)
 	var backendConfig *frames.BackendConfig
 	for _, b := range s.config.Backends {
@@ -399,7 +397,7 @@ func (s *Server) handleSimpleJsonQuery(ctx *fasthttp.RequestCtx) {
 
 func (s *Server) handleSimpleJsonSearch(ctx *fasthttp.RequestCtx) {
 	//Placeholder
-	req, err := simplejson.SimpleJsonRequestFactory("search", ctx.PostBody())
+	req, err := SimpleJsonRequestFactory("search", ctx.PostBody())
 	if err != nil {
 		s.logger.ErrorWith("can't initialize simplejson search request", "error", err)
 		ctx.Error(fmt.Sprintf("bad request - %s", err), http.StatusBadRequest)
@@ -414,17 +412,42 @@ func (s *Server) handleSimpleJsonSearch(ctx *fasthttp.RequestCtx) {
 	s.replyJSON(ctx, resp)
 }
 
+func (s *Server) extractBasicAuth(ctx *fasthttp.RequestCtx) (username, password string) {
+	basicAuth := ctx.Request.Header.Peek("Authorization")
+	if basicAuth == nil {
+		return
+	}
+	return s.parseBasicAuth(string(basicAuth))
+}
+
+func (s *Server) parseBasicAuth(basicAuthStr string) (username, password string) {
+	const prefix = "Basic "
+	const separator = ":"
+	if !strings.HasPrefix(basicAuthStr, prefix) {
+		return
+	}
+	content, err := base64.StdEncoding.DecodeString(basicAuthStr[len(prefix):])
+	if err != nil {
+		return
+	}
+	contentParts := strings.Split(string(content), separator)
+	if len(contentParts) < 1 {
+		return
+	}
+	return contentParts[0], contentParts[1]
+}
+
 func (s *Server) initRoutes() {
 	s.routes = map[string]func(*fasthttp.RequestCtx){
-		"/_/config":                  s.handleConfig,
-		"/_/status":                  s.handleStatus,
-		"/create":                    s.handleCreate,
-		"/delete":                    s.handleDelete,
-		"/read":                      s.handleRead,
-		"/write":                     s.handleWrite,
-		"/exec":                      s.handleExec,
-		"/grafana/simplejson/":       s.handleSimpleJsonACK,
-		"/grafana/simplejson/query":  s.handleSimpleJsonQuery,
-		"/grafana/simplejson/search": s.handleSimpleJsonSearch,
+		"/_/config": s.handleConfig,
+		"/_/status": s.handleStatus,
+		"/create":   s.handleCreate,
+		"/delete":   s.handleDelete,
+		"/read":     s.handleRead,
+		"/write":    s.handleWrite,
+		"/exec":     s.handleExec,
+		"/":         s.handleStatus,
+		"/query":    s.handleSimpleJsonQuery,
+		"/search":   s.handleSimpleJsonSearch,
 	}
 }

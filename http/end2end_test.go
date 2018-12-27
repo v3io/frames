@@ -21,6 +21,7 @@ such restriction.
 package http_test
 
 import (
+	"encoding/json"
 	"fmt"
 	"io/ioutil"
 	"net"
@@ -144,21 +145,21 @@ func TestEnd2End(t *testing.T) {
 
 func testGrafana(t *testing.T, baseURL string, backend string, table string) {
 	// ack
-	ackUrl := fmt.Sprintf("%s/grafana/simplejson/", baseURL)
+	ackUrl := fmt.Sprintf("%s/", baseURL)
 	resp, err := nhttp.Get(ackUrl)
 	if err != nil {
-		t.Fatalf("can't call grafana simplejson API - %s", err)
+		t.Fatalf("can't call simplejson API - %s", err)
 	}
 
 	if resp.StatusCode != nhttp.StatusOK {
-		t.Fatalf("bad status from grafana simplejson API - %d %s", resp.StatusCode, resp.Status)
+		t.Fatalf("bad status from simplejson API - %d %s", resp.StatusCode, resp.Status)
 	}
-
-	if body, err := ioutil.ReadAll(resp.Body); err != nil {
-		t.Fatalf("can't decode grafana simplejson API ACK response - %s", err)
+	var responseContent map[string]interface{}
+	if err := json.NewDecoder(resp.Body).Decode(&responseContent); err != nil {
+		t.Fatalf("can't decode simplejson API ACK response - %s", err)
 	} else {
-		if string(body) != "OK" {
-			t.Fatalf("wrong grafana simplejson API ACK response content - %s", body)
+		if responseContent["state"].(string) != "running" {
+			t.Fatalf("wrong simplejson API response on status check: %s", responseContent["state"])
 		}
 	}
 }
