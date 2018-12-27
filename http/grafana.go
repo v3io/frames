@@ -44,8 +44,6 @@ type simpleJsonQueryRequest struct {
 	From      string
 	To        string
 	Container string
-	Username  string
-	Password  string
 }
 
 type simpleJsonSearchRequest struct {
@@ -58,7 +56,6 @@ type Column struct {
 }
 
 type TableOutput struct {
-	// Columns []map[string]string `json:"columns"`
 	Columns []Column        `json:"columns"`
 	Rows    [][]interface{} `json:"rows"`
 	Type    string          `json:"type"`
@@ -246,7 +243,7 @@ func (req *simpleJsonSearchRequest) ParseRequest(requestBody []byte) error {
 func (req *simpleJsonQueryRequest) parseQueryLine(fieldInput string) error {
 	translate := map[string]string{"table_name": "TableName"}
 	// example query: fields=sentiment;table_name=stock_metrics;backend=tsdb;filter=symbol=="AAPL";container=container_name;username=user_name;password=pass
-	re := regexp.MustCompile(`^\s*(filter|fields|table_name|backend|container|username|password)\s*=\s*(.*)\s*$`)
+	re := regexp.MustCompile(`^\s*(filter|fields|table_name|backend|container)\s*=\s*(.*)\s*$`)
 	for _, field := range strings.Split(fieldInput, querySeparator) {
 		match := re.FindStringSubmatch(field)
 		var value interface{}
