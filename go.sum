@@ -55,6 +55,8 @@ github.com/v3io/v3io-go-http v0.0.0-20181023145150-3c8ba0ce5ac8 h1:UCCL5naZZxBc3
 github.com/v3io/v3io-go-http v0.0.0-20181023145150-3c8ba0ce5ac8/go.mod h1:GXYcR9MxgfbE3BJdkXki5EclvtS8Nxu2RQNLA8hMMog=
 github.com/v3io/v3io-go-http v0.0.0-20181217205714-7be4ad9b25af h1:8p1oqxzExqrUeEFsnt+RBQtNxSA18/Mz5X92I826ayo=
 github.com/v3io/v3io-go-http v0.0.0-20181217205714-7be4ad9b25af/go.mod h1:GXYcR9MxgfbE3BJdkXki5EclvtS8Nxu2RQNLA8hMMog=
+github.com/v3io/v3io-go-http v0.0.0-20181224070828-ef32781cf2de h1:gprjHJFMshlpSq5lxhI8Y1Ln8yXUFz6oqpT45DcSXYM=
+github.com/v3io/v3io-go-http v0.0.0-20181224070828-ef32781cf2de/go.mod h1:GXYcR9MxgfbE3BJdkXki5EclvtS8Nxu2RQNLA8hMMog=
 github.com/v3io/v3io-tsdb v0.0.4-0.20181126115443-3822bae80c58 h1:RCv4Ic5hkpeUyoFjsy5Q6B7OyR+52nMynzu/evpdwtI=
 github.com/v3io/v3io-tsdb v0.0.4-0.20181126115443-3822bae80c58/go.mod h1:A+5yKC16QxLf+Fy5v7VvIxSw+jwsKHLhUS7dCYFDLAA=
 github.com/v3io/v3io-tsdb v0.8.2 h1:wYp7nLO0gu2RV7tDlTTdFbrlvRG9Ff6mX/IhrxZ7bIo=
