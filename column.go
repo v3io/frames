@@ -410,7 +410,12 @@ func (c *colImpl) appendSlice(value interface{}) error {
 	case pb.DType_FLOAT:
 		v, ok := value.(float64)
 		if !ok {
-			return fmt.Errorf("wrong type for float64 - %T", value)
+			v, ok := pb.AsInt64(value)
+			if !ok {
+				return fmt.Errorf("wrong type for float64 - %T", value)
+			}
+			c.msg.Floats = append(c.msg.Floats, float64(v))
+			return nil
 		}
 		c.msg.Floats = append(c.msg.Floats, v)
 		return nil

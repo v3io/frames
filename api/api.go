@@ -227,8 +227,8 @@ func (api *API) Exec(request *frames.ExecRequest) error {
 	}
 
 	if err := backend.Exec(request); err != nil {
-		api.logger.ErrorWith("error deleting table", "error", err, "request", request)
-		return errors.Wrap(err, "can't delete")
+		api.logger.ErrorWith("error in exec", "error", err, "request", request)
+		return errors.Wrap(err, "can't exec")
 	}
 
 	return nil
