@@ -17,7 +17,7 @@ require (
 	github.com/pmezard/go-difflib v1.0.0 // indirect
 	github.com/rcrowley/go-metrics v0.0.0-20181016184325-3113b8401b8a // indirect
 	github.com/stretchr/testify v1.2.2 // indirect
-	github.com/v3io/v3io-go-http v0.0.0-20181217205714-7be4ad9b25af
+	github.com/v3io/v3io-go-http v0.0.0-20181224070828-ef32781cf2de
 	github.com/v3io/v3io-tsdb v0.8.4-0.20181212133952-2b1d11668336
 	github.com/valyala/fasthttp v1.0.0
 	github.com/xwb1989/sqlparser v0.0.0-20180606152119-120387863bf2
