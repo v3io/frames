@@ -21,12 +21,20 @@ such restriction.
 package http
 
 import (
+	"fmt"
+	"net/http"
 	"testing"
+
+	"github.com/valyala/fasthttp"
 
 	"github.com/v3io/frames"
 )
 
-func TestNew(t *testing.T) {
+const (
+	authHeader = "Authorization"
+)
+
+func createServer() (*Server, error) {
 	cfg := &frames.Config{
 		Backends: []*frames.BackendConfig{
 			&frames.BackendConfig{
@@ -36,12 +44,58 @@ func TestNew(t *testing.T) {
 		},
 	}
 	address := ":8080"
-	srv, err := NewServer(cfg, address, nil)
+	return NewServer(cfg, address, nil)
+}
+
+func TestNew(t *testing.T) {
+	srv, err := createServer()
 	if err != nil {
 		t.Fatal(err)
 	}
 
 	if srv.State() != frames.ReadyState {
 		t.Fatalf("bad initial state - %q", srv.State())
+	}
+}
+
+func TestBasicAuth(t *testing.T) {
+	r, err := http.NewRequest("GET", "/", nil)
+	if err != nil {
+		t.Fatal(err)
+	}
+	user, password := "bugs", "duck season"
+	r.SetBasicAuth(user, password)
+
+	ctx := &fasthttp.RequestCtx{}
+	ctx.Request.Header.Add(authHeader, r.Header.Get(authHeader))
+
+	session := &frames.Session{}
+	srv, err := createServer()
+	if err != nil {
+		t.Fatal(err)
+	}
+	srv.httpAuth(ctx, session)
+	if session.User != user {
+		t.Fatalf("bad user: %q != %q", session.User, user)
+	}
+	if session.Password != password {
+		t.Fatalf("bad password: %q != %q", session.Password, password)
+	}
+}
+
+func TestBearerAuth(t *testing.T) {
+	ctx := &fasthttp.RequestCtx{}
+	token := "valid for 1 game"
+	headerValue := fmt.Sprintf("%s%s", bearerAuthPrefix, token)
+	ctx.Request.Header.Add(authHeader, headerValue)
+
+	session := &frames.Session{}
+	srv, err := createServer()
+	if err != nil {
+		t.Fatal(err)
+	}
+	srv.httpAuth(ctx, session)
+	if session.Token != token {
+		t.Fatalf("bad token: %q != %q", session.Token, token)
 	}
 }
