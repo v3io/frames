@@ -29,6 +29,11 @@ from .client import ClientBase
 
 IGNORE, FAIL = fpb.IGNORE, fpb.FAIL
 _scheme_prefix = 'grpc://'
+GRPC_MESSAGE_SIZE = 128 * (1 << 20)  # 128MB
+channel_options = [
+  ('grpc.max_send_message_length', GRPC_MESSAGE_SIZE),
+  ('grpc.max_receive_message_length', GRPC_MESSAGE_SIZE),
+]
 
 
 def grpc_raise(err_cls):
@@ -56,7 +61,7 @@ class Client(ClientBase):
     def do_read(self, backend, table, query, columns, filter, group_by, limit,
                 data_format, row_layout, max_in_message, marker, **kw):
         # TODO: Create channel once?
-        with grpc.insecure_channel(self.address) as channel:
+        with new_channel(self.address) as channel:
             stub = fgrpc.FramesStub(channel)
             request = fpb.ReadRequest(
                 session=self.session,
@@ -89,14 +94,14 @@ class Client(ClientBase):
 
     @grpc_raise(WriteError)
     def _write(self, request, dfs, labels):
-        with grpc.insecure_channel(self.address) as channel:
+        with new_channel(self.address) as channel:
             stub = fgrpc.FramesStub(channel)
             stub.Write(write_stream(request, dfs, labels))
 
     @grpc_raise(CreateError)
     def _create(self, backend, table, attrs, schema, if_exists):
         attrs = pb_map(attrs)
-        with grpc.insecure_channel(self.address) as channel:
+        with new_channel(self.address) as channel:
             stub = fgrpc.FramesStub(channel)
             request = fpb.CreateRequest(
                 session=self.session,
@@ -111,7 +116,7 @@ class Client(ClientBase):
     @grpc_raise(DeleteError)
     def _delete(self, backend, table, filter, start, end, if_missing):
         start, end = time2str(start), time2str(end)
-        with grpc.insecure_channel(self.address) as channel:
+        with new_channel(self.address) as channel:
             stub = fgrpc.FramesStub(channel)
             request = fpb.DeleteRequest(
                 session=self.session,
@@ -127,7 +132,7 @@ class Client(ClientBase):
     @grpc_raise(ExecuteError)
     def _execute(self, backend, table, command, args, expression):
         args = pb_map(args)
-        with grpc.insecure_channel(self.address) as channel:
+        with new_channel(self.address) as channel:
             stub = fgrpc.FramesStub(channel)
             request = fpb.ExecRequest(
                 session=self.session,
@@ -138,6 +143,10 @@ class Client(ClientBase):
                 expression=expression,
             )
             stub.Exec(request)
+
+
+def new_channel(address):
+    return grpc.insecure_channel(address, options=channel_options)
 
 
 def write_stream(request, dfs, labels):
