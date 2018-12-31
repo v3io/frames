@@ -14,11 +14,12 @@
 
 import warnings
 
-from google.protobuf.message import Message
 import google.protobuf.pyext._message as message
-import pandas as pd
 import numpy as np
+import pandas as pd
 import pytz
+from google.protobuf.message import Message
+from pandas.core.dtypes.dtypes import CategoricalDtype
 
 from . import frames_pb2 as fpb
 from .dtypes import dtype_of, dtypes
@@ -156,9 +157,12 @@ def series2col(s):
             s = s.dt.tz_localize(pytz.UTC)
         kw['times'] = s.astype(np.int64)
         kw['dtype'] = fpb.TIME
+    elif isinstance(s.dtype, CategoricalDtype):
+        # We assume catgorical data is strings
+        kw['strings'] = s.astype(str)
+        kw['dtype'] = fpb.STRING
     else:
-        raise WriteError(
-            '{} - unsupported type - {}'.format(s.name, s.dtype))
+        raise WriteError('{} - unsupported type - {}'.format(s.name, s.dtype))
 
     return fpb.Column(**kw)
 
