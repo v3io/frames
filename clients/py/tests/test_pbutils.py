@@ -12,11 +12,12 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+import numpy as np
 import pandas as pd
 
+import v3io_frames.frames_pb2 as fpb
 from conftest import here
 from v3io_frames import pbutils
-import v3io_frames.frames_pb2 as fpb
 
 
 def test_encode_df():
@@ -26,6 +27,8 @@ def test_encode_df():
     }
 
     df = pd.read_csv('{}/weather.csv'.format(here))
+    df['STATION_CAT'] = df['STATION'].astype('category')
+    df['WDF2_F'] = df['WDF2'].astype(np.float)
     msg = pbutils.df2msg(df, labels)
 
     names = [col.name for col in msg.columns]
@@ -64,3 +67,10 @@ def test_multi_index():
     for col in msg.indices:
         values = col.strings
         assert len(values) == len(df), 'bad index length'
+
+
+def test_categorical():
+    s = pd.Series(['a', 'b', 'c'] * 7, name='cat').astype('category')
+    col = pbutils.series2col(s)
+    assert col.name == s.name, 'bad name'
+    assert list(col.strings) == list(s), 'bad data'
