@@ -36,6 +36,10 @@ import (
 	"github.com/v3io/frames/pb"
 )
 
+const (
+	grpcMsgSize = 128 * (1 << 20) // 128MB
+)
+
 // Server is a frames gRPC server
 type Server struct {
 	frames.ServerBase
@@ -77,7 +81,10 @@ func NewServer(config *frames.Config, addr string, logger logger.Logger) (*Serve
 		api:     api,
 		config:  config,
 		logger:  logger,
-		server:  grpc.NewServer(),
+		server: grpc.NewServer(
+			grpc.MaxRecvMsgSize(grpcMsgSize),
+			grpc.MaxSendMsgSize(grpcMsgSize),
+		),
 	}
 
 	pb.RegisterFramesServer(server.server, server)

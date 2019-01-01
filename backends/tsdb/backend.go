@@ -201,7 +201,6 @@ func (b *Backend) Delete(request *frames.DeleteRequest) error {
 
 // Exec executes a command
 func (b *Backend) Exec(request *frames.ExecRequest) error {
-	// FIXME
 	return fmt.Errorf("TSDB backend does not support Exec")
 }
 

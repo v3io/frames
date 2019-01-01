@@ -92,6 +92,7 @@ func (a *tsdbAppender) Add(frame frames.Frame) error {
 	for i, col := range frame.Indices() {
 		if col.DType() == frames.TimeType {
 			timeColIndex = i
+			break
 		}
 	}
 
@@ -129,6 +130,20 @@ func (a *tsdbAppender) Add(frame frames.Frame) error {
 				data[i] = float64(asInt[i])
 			}
 			values[i] = data
+		case frames.BoolType:
+			asBool, _ := col.Bools()
+			data := make([]float64, frame.Len())
+			for i := 0; i < frame.Len(); i++ {
+				if asBool[i] {
+					data[i] = 0
+				} else {
+					data[i] = 1
+				}
+			}
+			values[i] = data
+
+		// TODO:  add case frames.StringType: , require values to be an interface (appender.Add accepts interface type)
+
 		default:
 			return fmt.Errorf("cannot write type %v as time series value", col.DType())
 		}

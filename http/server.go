@@ -22,12 +22,12 @@ package http
 
 import (
 	"bufio"
+	"bytes"
 	"encoding/base64"
 	"encoding/json"
 	"fmt"
 	"io"
 	"net/http"
-	"strings"
 
 	"github.com/v3io/frames"
 	"github.com/v3io/frames/api"
@@ -40,7 +40,9 @@ import (
 )
 
 var (
-	okBytes = []byte("OK")
+	okBytes          = []byte("OK")
+	basicAuthPrefix  = []byte("Basic ")
+	bearerAuthPrefix = []byte("Bearer ")
 )
 
 // Server is HTTP server
@@ -152,6 +154,7 @@ func (s *Server) handleRead(ctx *fasthttp.RequestCtx) {
 
 	// TODO: Validate request
 	s.logger.InfoWith("read request", "request", request)
+	s.httpAuth(ctx, request.Session)
 
 	ch := make(chan frames.Frame)
 	var apiError error
@@ -230,6 +233,7 @@ func (s *Server) handleWrite(ctx *fasthttp.RequestCtx) {
 		Expression:    req.Expression,
 		HaveMore:      req.More,
 	}
+	s.httpAuth(ctx, request.Session)
 
 	var nFrames, nRows int
 	var writeError error
@@ -283,6 +287,7 @@ func (s *Server) handleCreate(ctx *fasthttp.RequestCtx) {
 		ctx.Error(fmt.Sprintf("bad request - %s", err), http.StatusBadRequest)
 		return
 	}
+	s.httpAuth(ctx, request.Session)
 
 	s.logger.InfoWith("create", "request", request)
 	if err := s.api.Create(request); err != nil {
@@ -304,6 +309,7 @@ func (s *Server) handleDelete(ctx *fasthttp.RequestCtx) {
 		ctx.Error(fmt.Sprintf("bad request - %s", err), http.StatusBadRequest)
 		return
 	}
+	s.httpAuth(ctx, request.Session)
 
 	if err := s.api.Delete(request); err != nil {
 		ctx.Error("can't delete", http.StatusInternalServerError)
@@ -344,6 +350,7 @@ func (s *Server) handleExec(ctx *fasthttp.RequestCtx) {
 		ctx.Error(fmt.Sprintf("bad request - %s", err), http.StatusBadRequest)
 		return
 	}
+	s.httpAuth(ctx, request.Session)
 
 	if err := s.api.Exec(request); err != nil {
 		ctx.Error("can't exec", http.StatusInternalServerError)
@@ -354,7 +361,6 @@ func (s *Server) handleExec(ctx *fasthttp.RequestCtx) {
 }
 
 func (s *Server) handleSimpleJsonQuery(ctx *fasthttp.RequestCtx) {
-	username, password := s.extractBasicAuth(ctx)
 	req, err := SimpleJsonRequestFactory("query", ctx.PostBody())
 	if err != nil {
 		s.logger.ErrorWith("can't initialize simplejson query request", "error", err)
@@ -362,7 +368,8 @@ func (s *Server) handleSimpleJsonQuery(ctx *fasthttp.RequestCtx) {
 		return
 	}
 	// passing session in order to easily pass token, when implemented
-	readRequest := req.GetReadRequest(&pb.Session{User: username, Password: password})
+	readRequest := req.GetReadRequest(nil)
+	s.httpAuth(ctx, readRequest.Session)
 	factory := backends.GetFactory(readRequest.Backend)
 	var backendConfig *frames.BackendConfig
 	for _, b := range s.config.Backends {
@@ -412,29 +419,45 @@ func (s *Server) handleSimpleJsonSearch(ctx *fasthttp.RequestCtx) {
 	s.replyJSON(ctx, resp)
 }
 
-func (s *Server) extractBasicAuth(ctx *fasthttp.RequestCtx) (username, password string) {
-	basicAuth := ctx.Request.Header.Peek("Authorization")
-	if basicAuth == nil {
+// based on https://github.com/buaazp/fasthttprouter/tree/master/examples/auth
+func (s *Server) httpAuth(ctx *fasthttp.RequestCtx, session *frames.Session) {
+	auth := ctx.Request.Header.Peek("Authorization")
+	if auth == nil {
 		return
 	}
-	return s.parseBasicAuth(string(basicAuth))
+
+	switch {
+	case bytes.HasPrefix(auth, basicAuthPrefix):
+		s.parseBasicAuth(auth, session)
+	case bytes.HasPrefix(auth, bearerAuthPrefix):
+		s.parseBearerAuth(auth, session)
+	default:
+		s.logger.WarnWith("unknown auth scheme")
+	}
 }
 
-func (s *Server) parseBasicAuth(basicAuthStr string) (username, password string) {
-	const prefix = "Basic "
-	const separator = ":"
-	if !strings.HasPrefix(basicAuthStr, prefix) {
-		return
-	}
-	content, err := base64.StdEncoding.DecodeString(basicAuthStr[len(prefix):])
+func (s *Server) parseBasicAuth(auth []byte, session *frames.Session) {
+	encodedData := auth[len(basicAuthPrefix):]
+	data := make([]byte, base64.StdEncoding.DecodedLen(len(encodedData)))
+	n, err := base64.StdEncoding.Decode(data, encodedData)
 	if err != nil {
+		s.logger.WarnWith("error in basic auth, can't base64 decode", "error", err)
 		return
 	}
-	contentParts := strings.Split(string(content), separator)
-	if len(contentParts) < 1 {
+	data = data[:n]
+
+	i := bytes.IndexByte(data, ':')
+	if i < 0 {
+		s.logger.Warn("error in basic auth, can't find ':'")
 		return
 	}
-	return contentParts[0], contentParts[1]
+
+	session.User = string(data[:i])
+	session.Password = string(data[i+1:])
+}
+
+func (s *Server) parseBearerAuth(auth []byte, session *frames.Session) {
+	session.Token = string(auth[len(bearerAuthPrefix):])
 }
 
 func (s *Server) initRoutes() {
