@@ -1,3 +1,23 @@
+/*
+Copyright 2018 Iguazio Systems Ltd.
+
+Licensed under the Apache License, Version 2.0 (the "License") with
+an addition restriction as set forth herein. You may not use this
+file except in compliance with the License. You may obtain a copy of
+the License at http://www.apache.org/licenses/LICENSE-2.0.
+
+Unless required by applicable law or agreed to in writing, software
+distributed under the License is distributed on an "AS IS" BASIS,
+WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or
+implied. See the License for the specific language governing
+permissions and limitations under the License.
+
+In addition, you may not use the software for any purposes that are
+illegal under applicable law, and the grant of the foregoing license
+under the Apache 2.0 license is conditioned upon your compliance with
+such restriction.
+*/
+
 package http
 
 import (
@@ -6,24 +26,24 @@ import (
 	"fmt"
 	"reflect"
 	"regexp"
+	"sort"
 	"strings"
 	"time"
 
 	"github.com/v3io/frames"
-	"github.com/v3io/frames/pb"
 )
 
 const querySeparator = ";"
 const fieldsItemsSeperator = ","
 const defaultBackend = "tsdb"
 
-type simpleJsonRequestInterface interface {
-	CreateResponse(frames.FrameIterator) (interface{}, error)
+type simpleJSONRequestInterface interface {
+	CreateResponse(chan frames.Frame) (interface{}, error)
 	ParseRequest([]byte) error
-	GetReadRequest(*pb.Session) *frames.ReadRequest
+	GetReadRequest(*frames.Session) *frames.ReadRequest
 }
 
-type requestSimpleJsonBase struct {
+type requestSimpleJSONBase struct {
 	Range struct {
 		From string `json:"from"`
 		To   string `json:"to"`
@@ -31,11 +51,11 @@ type requestSimpleJsonBase struct {
 	Targets        []map[string]interface{} `json:"targets"`
 	Target         string                   `json:"target"`
 	MaxDataPoints  int                      `json:"maxDataPoints"`
-	responseCreate simpleJsonRequestInterface
+	responseCreate simpleJSONRequestInterface
 }
 
-type simpleJsonQueryRequest struct {
-	requestSimpleJsonBase
+type simpleJSONQueryRequest struct {
+	requestSimpleJSONBase
 	Filter    string
 	Fields    []string
 	TableName string
@@ -46,35 +66,33 @@ type simpleJsonQueryRequest struct {
 	Container string
 }
 
-type simpleJsonSearchRequest struct {
-	simpleJsonQueryRequest
+type simpleJSONSearchRequest struct {
+	simpleJSONQueryRequest
 }
 
-type Column struct {
+type tableColumn struct {
 	Text string `json:"text"`
 	Type string `json:"type"`
 }
 
-type TableOutput struct {
-	Columns []Column        `json:"columns"`
+type tableOutput struct {
+	Columns []tableColumn   `json:"columns"`
 	Rows    [][]interface{} `json:"rows"`
 	Type    string          `json:"type"`
 }
 
-type TimeSeriesOutput struct {
+type timeSeriesOutput struct {
 	Datapoints [][]interface{} `json:"datapoints"`
 	Target     string          `json:"target"`
 }
 
-func SimpleJsonRequestFactory(method string, request []byte) (simpleJsonRequestInterface, error) {
-	var retval simpleJsonRequestInterface
+func SimpleJSONRequestFactory(method string, request []byte) (simpleJSONRequestInterface, error) {
+	var retval simpleJSONRequestInterface
 	switch method {
 	case "query":
-		retval = &simpleJsonQueryRequest{Backend: defaultBackend}
-		break
+		retval = &simpleJSONQueryRequest{Backend: defaultBackend}
 	case "search":
-		retval = &simpleJsonSearchRequest{simpleJsonQueryRequest{Backend: defaultBackend}}
-		break
+		retval = &simpleJSONSearchRequest{simpleJSONQueryRequest{Backend: defaultBackend}}
 	default:
 		return nil, fmt.Errorf("Unknown method, %s", method)
 	}
@@ -85,9 +103,9 @@ func SimpleJsonRequestFactory(method string, request []byte) (simpleJsonRequestI
 	return retval, nil
 }
 
-func (req *simpleJsonQueryRequest) GetReadRequest(session *pb.Session) *frames.ReadRequest {
+func (req *simpleJSONQueryRequest) GetReadRequest(session *frames.Session) *frames.ReadRequest {
 	if session == nil {
-		session = &pb.Session{Container: req.Container}
+		session = &frames.Session{Container: req.Container}
 	} else {
 		// don't overide the container (if one is already set)
 		if session.Container == "" {
@@ -99,121 +117,72 @@ func (req *simpleJsonQueryRequest) GetReadRequest(session *pb.Session) *frames.R
 		Session: session, Filter: req.Filter}
 }
 
-func (req *simpleJsonQueryRequest) formatKV(iter frames.FrameIterator) (interface{}, error) {
-	retVal := TableOutput{Type: "table", Rows: [][]interface{}{}}
-	for iter.Next() {
-		frame := iter.At()
-		iface, ok := frame.(pb.Framed)
-		if !ok {
-			return nil, errors.New("unknown frame type")
+func (req *simpleJSONQueryRequest) formatKV(ch chan frames.Frame) (interface{}, error) {
+	retVal := []tableOutput{}
+	var err error
+	for frame := range ch {
+		simpleJSONData := tableOutput{Type: "table", Rows: [][]interface{}{}, Columns: []tableColumn{}}
+		fields := req.Fields
+		if len(fields) == 0 || fields[0] == "*" {
+			fields = frame.Names()
+			sort.Strings(fields)
 		}
-		for _, column := range iface.Proto().Columns {
-			values, colType := req.extractColumnValues(column)
-			retVal.Columns = append(retVal.Columns, Column{Text: column.Name, Type: colType})
-			for rowIndex := 0; rowIndex < values.Len(); rowIndex++ {
-				if len(retVal.Rows) <= rowIndex {
-					retVal.Rows = append(retVal.Rows, []interface{}{})
-				}
-				value := values.Index(rowIndex).Interface()
-				retVal.Rows[rowIndex] = append(retVal.Rows[rowIndex], value)
+		simpleJSONData.Columns, err = prepareKVColumns(frame, fields)
+		if err != nil {
+			return nil, err
+		}
+
+		iter := frame.IterRows(true)
+		for iter.Next() {
+			rowData := iter.Row()
+			simpleJSONRow := []interface{}{}
+			for _, field := range fields {
+				simpleJSONRow = append(simpleJSONRow, rowData[field])
 			}
+			simpleJSONData.Rows = append(simpleJSONData.Rows, simpleJSONRow)
 		}
+		if err := iter.Err(); err != nil {
+			return nil, err
+		}
+		retVal = append(retVal, simpleJSONData)
 	}
-	if iter.Err() != nil {
-		return nil, iter.Err()
-	}
-	return []TableOutput{retVal}, nil
+	return retVal, nil
 }
 
-func (req *simpleJsonQueryRequest) formatTSDB(iter frames.FrameIterator) (interface{}, error) {
-	retval := []TimeSeriesOutput{}
-	for iter.Next() {
-		frame := iter.At()
-		iface, ok := frame.(pb.Framed)
-		if !ok {
-			return nil, errors.New("unknown frame type")
+func (req *simpleJSONQueryRequest) formatTSDB(ch chan frames.Frame) (interface{}, error) {
+	retval := []timeSeriesOutput{}
+	for frame := range ch {
+		target := getTargetTSDB(frame)
+		datapoints := [][]interface{}{}
+		iter := frame.IterRows(true)
+		for iter.Next() {
+			rowData := iter.Row()
+			timestamp := formatTimeTSDB(rowData["Date"].(time.Time))
+			datapoints = append(datapoints, []interface{}{rowData["values"], timestamp})
 		}
-		target := req.getTargetTSDB(iface.Proto())
-		indices := frame.Indices()
-		for _, column := range iface.Proto().Columns {
-			if column.Name == "values" {
-				datapoints := [][]interface{}{}
-				values, _ := req.extractColumnValues(column)
-				times, err := indices[0].Times()
-				if err != nil {
-					return nil, err
-				}
-				for j := 0; j < values.Len(); j++ {
-					datapoints = append(datapoints, []interface{}{values.Index(j).Interface(), req.formatTimeTSDB(times[j])})
-				}
-				retval = append(retval, TimeSeriesOutput{datapoints, target})
-			}
+		if err := iter.Err(); err != nil {
+			return nil, err
 		}
+		retval = append(retval, timeSeriesOutput{datapoints, target})
 	}
-	if iter.Err() != nil {
-		return nil, iter.Err()
-	}
+
 	return retval, nil
 }
 
-func (req *simpleJsonQueryRequest) extractColumnValues(column *pb.Column) (reflect.Value, string) {
-	colTypeStr := strings.ToLower(column.Dtype.String())
-	var dataSlice interface{}
-	switch column.Dtype {
-	case pb.DType_INTEGER:
-		dataSlice = &column.Ints
-		break
-	case pb.DType_FLOAT:
-		dataSlice = &column.Floats
-		break
-	case pb.DType_STRING:
-		dataSlice = &column.Strings
-		break
-	case pb.DType_TIME:
-		dataSlice = &column.Times
-		break
-	case pb.DType_BOOLEAN:
-		dataSlice = &column.Bools
-		break
-	}
-	return reflect.ValueOf(dataSlice).Elem(), colTypeStr
-}
-
-func (req *simpleJsonQueryRequest) formatTimeTSDB(timestamp time.Time) interface{} {
-	return timestamp.UnixNano() / 1000000
-}
-
-func (req *simpleJsonQueryRequest) getTargetTSDB(frame *pb.Frame) string {
-	labels := ""
-	metricName := ""
-	for _, column := range frame.Columns {
-		if column.Name != "values" {
-			values, _ := req.extractColumnValues(column)
-			val := fmt.Sprintf("%s", values.Index(0).Interface())
-			if column.Name == "metric_name" {
-				metricName = val
-			} else {
-				labels += fmt.Sprintf("[%s=%s]", column.Name, val)
-			}
-		}
-	}
-	return metricName + labels
-}
-
-func (req *simpleJsonQueryRequest) CreateResponse(iter frames.FrameIterator) (interface{}, error) {
-	formatters := map[string]func(iter frames.FrameIterator) (interface{}, error){"kv": req.formatKV, "tsdb": req.formatTSDB}
+func (req *simpleJSONQueryRequest) CreateResponse(ch chan frames.Frame) (interface{}, error) {
+	formatters := map[string]func(chan frames.Frame) (interface{}, error){"kv": req.formatKV, "tsdb": req.formatTSDB}
 	if formatter, ok := formatters[req.Backend]; ok {
-		return formatter(iter)
+		return formatter(ch)
 	}
 	return nil, fmt.Errorf("Unknown format: %s", req.Backend)
 }
 
-func (req *simpleJsonSearchRequest) CreateResponse(iter frames.FrameIterator) (interface{}, error) {
+func (req *simpleJSONSearchRequest) CreateResponse(ch chan frames.Frame) (interface{}, error) {
 	// Placeholder for actual implementation
 	return []string{}, nil
 }
 
-func (req *simpleJsonQueryRequest) ParseRequest(requestBody []byte) error {
+func (req *simpleJSONQueryRequest) ParseRequest(requestBody []byte) error {
 	if err := json.Unmarshal(requestBody, req); err != nil {
 		return err
 	}
@@ -227,12 +196,11 @@ func (req *simpleJsonQueryRequest) ParseRequest(requestBody []byte) error {
 	return nil
 }
 
-func (req *simpleJsonSearchRequest) ParseRequest(requestBody []byte) error {
+func (req *simpleJSONSearchRequest) ParseRequest(requestBody []byte) error {
 	if err := json.Unmarshal(requestBody, req); err != nil {
 		return err
 	}
 	for _, target := range strings.Split(req.Target, querySeparator) {
-		fmt.Println(target)
 		if err := req.parseQueryLine(strings.TrimSpace(target)); err != nil {
 			return err
 		}
@@ -240,10 +208,13 @@ func (req *simpleJsonSearchRequest) ParseRequest(requestBody []byte) error {
 	return nil
 }
 
-func (req *simpleJsonQueryRequest) parseQueryLine(fieldInput string) error {
+func (req *simpleJSONQueryRequest) parseQueryLine(fieldInput string) error {
 	translate := map[string]string{"table_name": "TableName"}
-	// example query: fields=sentiment;table_name=stock_metrics;backend=tsdb;filter=symbol=="AAPL";container=container_name;username=user_name;password=pass
-	re := regexp.MustCompile(`^\s*(filter|fields|table_name|backend|container)\s*=\s*(.*)\s*$`)
+	// example query: fields=sentiment;table_name=stock_metrics;backend=tsdb;filter=symbol=="AAPL";container=container_name
+	re, err := regexp.Compile(`^\s*(filter|fields|table_name|backend|container)\s*=\s*(.*)\s*$`)
+	if err != nil {
+		return err
+	}
 	for _, field := range strings.Split(fieldInput, querySeparator) {
 		match := re.FindStringSubmatch(field)
 		var value interface{}
@@ -285,4 +256,46 @@ func setField(obj interface{}, name string, value interface{}) error {
 
 	structFieldValue.Set(val)
 	return nil
+}
+
+func formatTimeTSDB(timestamp time.Time) interface{} {
+	return timestamp.UnixNano() / 1000000
+}
+
+func getTargetTSDB(frame frames.Frame) string {
+	name := ""
+	lbls := []string{}
+	for key, lbl := range frame.Labels() {
+		if key == "metric_name" {
+			name = lbl.(string)
+		} else {
+			lbls = append(lbls, fmt.Sprintf("%s=%s", key, lbl))
+		}
+	}
+	return fmt.Sprintf("%s[%s]", name, strings.Join(lbls, ","))
+}
+
+func prepareKVColumns(frame frames.Frame, headers []string) ([]tableColumn, error) {
+	retVal := []tableColumn{}
+	for _, header := range headers {
+		if column, err := frame.Column(header); err != nil {
+			return nil, err
+		} else {
+			retVal = append(retVal, prepareKVColumnFormat(column, header))
+		}
+	}
+	return retVal, nil
+}
+
+func prepareKVColumnFormat(column frames.Column, field string) tableColumn {
+	columnTypeStr := "string"
+	switch column.DType() {
+	case frames.FloatType, frames.IntType:
+		columnTypeStr = "number"
+	case frames.TimeType:
+		columnTypeStr = "time"
+	case frames.BoolType:
+		columnTypeStr = "boolean"
+	}
+	return tableColumn{Text: field, Type: columnTypeStr}
 }

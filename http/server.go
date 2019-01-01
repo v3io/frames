@@ -31,7 +31,6 @@ import (
 
 	"github.com/v3io/frames"
 	"github.com/v3io/frames/api"
-	"github.com/v3io/frames/backends"
 	"github.com/v3io/frames/pb"
 
 	"github.com/nuclio/logger"
@@ -360,8 +359,8 @@ func (s *Server) handleExec(ctx *fasthttp.RequestCtx) {
 	s.replyOK(ctx)
 }
 
-func (s *Server) handleSimpleJsonQuery(ctx *fasthttp.RequestCtx) {
-	req, err := SimpleJsonRequestFactory("query", ctx.PostBody())
+func (s *Server) handleSimpleJSONQuery(ctx *fasthttp.RequestCtx) {
+	req, err := SimpleJSONRequestFactory("query", ctx.PostBody())
 	if err != nil {
 		s.logger.ErrorWith("can't initialize simplejson query request", "error", err)
 		ctx.Error(fmt.Sprintf("bad request - %s", err), http.StatusBadRequest)
@@ -370,41 +369,28 @@ func (s *Server) handleSimpleJsonQuery(ctx *fasthttp.RequestCtx) {
 	// passing session in order to easily pass token, when implemented
 	readRequest := req.GetReadRequest(nil)
 	s.httpAuth(ctx, readRequest.Session)
-	factory := backends.GetFactory(readRequest.Backend)
-	var backendConfig *frames.BackendConfig
-	for _, b := range s.config.Backends {
-		if b.Name == readRequest.Backend {
-			backendConfig = b
-			break
+	ch := make(chan frames.Frame)
+	var apiError error
+	go func() {
+		defer close(ch)
+		apiError = s.api.Read(readRequest, ch)
+		if apiError != nil {
+			s.logger.ErrorWith("error reading", "error", apiError)
 		}
+	}()
+	if apiError != nil {
+		ctx.Error(fmt.Sprintf("Error creating response - %s", apiError), http.StatusInternalServerError)
 	}
-	if backendConfig == nil {
-		s.logger.ErrorWith("unknown backend", "name", readRequest.Backend)
-		ctx.Error(fmt.Sprintf("Unknown backend: %s", readRequest.Backend), http.StatusBadRequest)
-		return
-	}
-	backend, err := factory(s.logger, backendConfig, s.config)
-	if err != nil {
-		ctx.Error(fmt.Sprintf("Unable to init backend: %s", readRequest.Backend), http.StatusInternalServerError)
-		return
-	}
-	iter, err := backend.Read(readRequest)
-	if err != nil {
-		s.logger.ErrorWith("error reading", "name", readRequest.Backend)
-		ctx.Error(fmt.Sprintf("Error reading - %s", err), http.StatusInternalServerError)
-		return
-	}
-	if resp, err := req.CreateResponse(iter); err != nil {
+	if resp, err := req.CreateResponse(ch); err != nil {
 		ctx.Error(fmt.Sprintf("Error creating response - %s", err), http.StatusInternalServerError)
-		return
 	} else {
 		s.replyJSON(ctx, resp)
 	}
 }
 
-func (s *Server) handleSimpleJsonSearch(ctx *fasthttp.RequestCtx) {
+func (s *Server) handleSimpleJSONSearch(ctx *fasthttp.RequestCtx) {
 	//Placeholder
-	req, err := SimpleJsonRequestFactory("search", ctx.PostBody())
+	req, err := SimpleJSONRequestFactory("search", ctx.PostBody())
 	if err != nil {
 		s.logger.ErrorWith("can't initialize simplejson search request", "error", err)
 		ctx.Error(fmt.Sprintf("bad request - %s", err), http.StatusBadRequest)
@@ -470,7 +456,7 @@ func (s *Server) initRoutes() {
 		"/write":    s.handleWrite,
 		"/exec":     s.handleExec,
 		"/":         s.handleStatus,
-		"/query":    s.handleSimpleJsonQuery,
-		"/search":   s.handleSimpleJsonSearch,
+		"/query":    s.handleSimpleJSONQuery,
+		"/search":   s.handleSimpleJSONSearch,
 	}
 }
