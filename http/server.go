@@ -360,9 +360,17 @@ func (s *Server) handleExec(ctx *fasthttp.RequestCtx) {
 }
 
 func (s *Server) handleSimpleJSONQuery(ctx *fasthttp.RequestCtx) {
-	req, err := SimpleJSONRequestFactory("query", ctx.PostBody())
+	s.handleSimpleJSON(ctx, "query")
+}
+
+func (s *Server) handleSimpleJSONSearch(ctx *fasthttp.RequestCtx) {
+	s.handleSimpleJSON(ctx, "search")
+}
+
+func (s *Server) handleSimpleJSON(ctx *fasthttp.RequestCtx, method string) {
+	req, err := SimpleJSONRequestFactory(method, ctx.PostBody())
 	if err != nil {
-		s.logger.ErrorWith("can't initialize simplejson query request", "error", err)
+		s.logger.ErrorWith("can't initialize simplejson request", "error", err)
 		ctx.Error(fmt.Sprintf("bad request - %s", err), http.StatusBadRequest)
 		return
 	}
@@ -381,28 +389,11 @@ func (s *Server) handleSimpleJSONQuery(ctx *fasthttp.RequestCtx) {
 	if apiError != nil {
 		ctx.Error(fmt.Sprintf("Error creating response - %s", apiError), http.StatusInternalServerError)
 	}
-	if resp, err := req.CreateResponse(ch); err != nil {
+	if resp, err := CreateResponse(req, ch); err != nil {
 		ctx.Error(fmt.Sprintf("Error creating response - %s", err), http.StatusInternalServerError)
 	} else {
 		s.replyJSON(ctx, resp)
 	}
-}
-
-func (s *Server) handleSimpleJSONSearch(ctx *fasthttp.RequestCtx) {
-	//Placeholder
-	req, err := SimpleJSONRequestFactory("search", ctx.PostBody())
-	if err != nil {
-		s.logger.ErrorWith("can't initialize simplejson search request", "error", err)
-		ctx.Error(fmt.Sprintf("bad request - %s", err), http.StatusBadRequest)
-		return
-	}
-	// pass a valid iterator when the method is final
-	resp, err := req.CreateResponse(nil)
-	if err != nil {
-		ctx.Error(fmt.Sprintf("Error creating response - %s", err), http.StatusInternalServerError)
-		return
-	}
-	s.replyJSON(ctx, resp)
 }
 
 // based on https://github.com/buaazp/fasthttprouter/tree/master/examples/auth

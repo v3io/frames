@@ -38,9 +38,11 @@ const fieldsItemsSeperator = ","
 const defaultBackend = "tsdb"
 
 type simpleJSONRequestInterface interface {
-	CreateResponse(chan frames.Frame) (interface{}, error)
 	ParseRequest([]byte) error
 	GetReadRequest(*frames.Session) *frames.ReadRequest
+	formatTSDB(ch chan frames.Frame) (interface{}, error)
+	formatKV(ch chan frames.Frame) (interface{}, error)
+	getBackend() string
 }
 
 type requestSimpleJSONBase struct {
@@ -103,6 +105,9 @@ func SimpleJSONRequestFactory(method string, request []byte) (simpleJSONRequestI
 	return retval, nil
 }
 
+func (req *simpleJSONQueryRequest) getBackend() string {
+	return req.Backend
+}
 func (req *simpleJSONQueryRequest) GetReadRequest(session *frames.Session) *frames.ReadRequest {
 	if session == nil {
 		session = &frames.Session{Container: req.Container}
@@ -169,17 +174,35 @@ func (req *simpleJSONQueryRequest) formatTSDB(ch chan frames.Frame) (interface{}
 	return retval, nil
 }
 
-func (req *simpleJSONQueryRequest) CreateResponse(ch chan frames.Frame) (interface{}, error) {
-	formatters := map[string]func(chan frames.Frame) (interface{}, error){"kv": req.formatKV, "tsdb": req.formatTSDB}
-	if formatter, ok := formatters[req.Backend]; ok {
-		return formatter(ch)
+func CreateResponse(req simpleJSONRequestInterface, ch chan frames.Frame) (interface{}, error) {
+	switch req.getBackend() {
+	case "kv":
+		return req.formatKV(ch)
+	case "tsdb":
+		return req.formatTSDB(ch)
 	}
-	return nil, fmt.Errorf("Unknown format: %s", req.Backend)
+	return nil, fmt.Errorf("Unknown format: %s", req.getBackend())
 }
 
-func (req *simpleJSONSearchRequest) CreateResponse(ch chan frames.Frame) (interface{}, error) {
-	// Placeholder for actual implementation
-	return []string{}, nil
+func (req *simpleJSONSearchRequest) formatKV(ch chan frames.Frame) (interface{}, error) {
+	retval := []interface{}{}
+	for frame := range ch {
+		iter := frame.IterRows(true)
+		for iter.Next() {
+			rowData := iter.Row()
+			for _, field := range req.Fields {
+				retval = append(retval, rowData[field])
+			}
+		}
+		if err := iter.Err(); err != nil {
+			return nil, err
+		}
+	}
+	return retval, nil
+}
+
+func (req *simpleJSONSearchRequest) formatTSDB(ch chan frames.Frame) (interface{}, error) {
+	return nil, errors.New("TSDB search not implemented yet")
 }
 
 func (req *simpleJSONQueryRequest) ParseRequest(requestBody []byte) error {
