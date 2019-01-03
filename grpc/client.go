@@ -55,7 +55,11 @@ func NewClient(address string, session *frames.Session, logger logger.Logger) (*
 		return nil, fmt.Errorf("empty address")
 	}
 
-	conn, err := grpc.Dial(address, grpc.WithInsecure())
+	conn, err := grpc.Dial(
+		address,
+		grpc.WithInsecure(),
+		grpc.WithMaxMsgSize(grpcMsgSize),
+	)
 	if err != nil {
 		return nil, errors.Wrap(err, "can't create gRPC connection")
 	}
