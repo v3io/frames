@@ -26,11 +26,13 @@ import (
 	"github.com/pkg/errors"
 	"github.com/v3io/frames"
 	tsdbutils "github.com/v3io/v3io-tsdb/pkg/utils"
+	"github.com/v3io/v3io-tsdb/pkg/pquerier"
+	"github.com/v3io/v3io-tsdb/pkg/config"
 )
 
 type tsdbIterator struct {
 	request     *frames.ReadRequest
-	set         tsdbutils.SeriesSet
+	set         pquerier.FrameSet
 	err         error
 	withColumns bool
 	currFrame   frames.Frame
@@ -68,7 +70,7 @@ func (b *Backend) Read(request *frames.ReadRequest) (frames.FrameIterator, error
 		return nil, errors.Wrap(err, "failed to create adapter")
 	}
 
-	qry, err := adapter.Querier(nil, from, to)
+	qry, err := adapter.QuerierV2()
 	if err != nil {
 		return nil, errors.Wrap(err, "Failed to initialize Querier")
 	}
@@ -80,7 +82,14 @@ func (b *Backend) Read(request *frames.ReadRequest) (frames.FrameIterator, error
 		iter.withColumns = true
 	}
 
-	iter.set, err = qry.Select(name, request.Aggragators, step, request.Filter)
+	params := &pquerier.SelectParams{Name: name,
+		From: from,
+		To: to,
+		Step: step,
+		Functions: request.Aggragators,
+		Filter: request.Filter,
+		GroupBy: request.GroupBy}
+	iter.set, err = qry.SelectDataFrame(params)
 	if err != nil {
 		return nil, errors.Wrap(err, "Failed on TSDB Select")
 	}
@@ -89,47 +98,28 @@ func (b *Backend) Read(request *frames.ReadRequest) (frames.FrameIterator, error
 }
 
 func (i *tsdbIterator) Next() bool {
-	if i.set.Next() {
-		series := i.set.At()
+	if i.set.NextFrame() {
+		frame, err := i.set.GetFrame()
+		if err != nil {
+			i.err = err
+			return false
+		}
 		labels := map[string]interface{}{}
-		values := []float64{}
-		times := []time.Time{}
 
-		iter := series.Iterator()
-		for iter.Next() {
-			t, v := iter.At()
-			values = append(values, v)
-			times = append(times, time.Unix(t/1000, (t%1000)*1000))
+		columns := make([]frames.Column, len(frame.Names()))
+		indices := frame.Indices()
+		for i, colName := range frame.Names() {
+			columns[i], _ = frame.Column(colName) // Because we are iterating over the Names() it is safe to discard the error
 		}
 
-		if iter.Err() != nil {
-			i.err = iter.Err()
-			return false
-		}
-
-		timeCol, err := frames.NewSliceColumn("Date", times)
-		if err != nil {
-			i.err = err
-			return false
-		}
-
-		colname := "values"
-		valCol, err := frames.NewSliceColumn(colname, values)
-		if err != nil {
-			i.err = err
-			return false
-		}
-
-		columns := []frames.Column{valCol}
-		indices := []frames.Column{timeCol}
-		for _, v := range series.Labels() {
-			name := v.Name
-			if v.Name == "__name__" {
+		for labelName, labelValue := range frame.Labels() {
+			name := labelName
+			if name == config.PrometheusMetricNameAttribute {
 				name = "metric_name"
 			}
 
-			labels[name] = v.Value
-			icol, err := frames.NewLabelColumn(name, v.Value, len(values))
+			labels[name] = labelValue
+			icol, err := frames.NewLabelColumn(name, labelValue, frame.Len())
 			if err != nil {
 				i.err = err
 				return false

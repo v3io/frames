@@ -25,8 +25,10 @@ import (
 	"encoding/json"
 	"fmt"
 	"math"
+	"os"
 	pathUtil "path"
 	"path/filepath"
+	"strconv"
 	"time"
 
 	"github.com/nuclio/logger"
@@ -106,6 +108,51 @@ func NewV3ioAdapter(cfg *config.V3ioConfig, container *v3io.Container, logger lo
 	err = newV3ioAdapter.connect()
 
 	return &newV3ioAdapter, err
+}
+
+func NewContainer(v3ioUrl string, numWorkers int, username string, password string, containerName string, logger logger.Logger) (*v3io.Container, error) {
+	ctx, err := v3io.NewContext(logger, v3ioUrl, numWorkers)
+	if err != nil {
+		return nil, err
+	}
+	session, err := ctx.NewSession(username, password, "")
+	if err != nil {
+		return nil, err
+	}
+	if containerName == "" {
+		containerName = "bigdata"
+	}
+	container, err := session.NewContainer(containerName)
+	if err != nil {
+		return nil, err
+	}
+	return container, nil
+}
+
+func NewContainerFromEnv(logger logger.Logger) (*v3io.Container, error) {
+	v3ioUrl := os.Getenv("V3IO_URL")
+	numWorkersStr := os.Getenv("V3IO_NUM_WORKERS")
+	var numWorkers int
+	var err error
+	if len(numWorkersStr) > 0 {
+		numWorkers, err = strconv.Atoi(numWorkersStr)
+		if err != nil {
+			return nil, err
+		}
+	} else {
+		numWorkers = 8
+	}
+	username := os.Getenv("V3IO_USERNAME")
+	password := os.Getenv("V3IO_PASSWORD")
+	containerName := os.Getenv("V3IO_CONTAINER")
+	if containerName == "" {
+		containerName = "bigdata"
+	}
+	container, err := NewContainer(v3ioUrl, numWorkers, username, password, containerName, logger)
+	if err != nil {
+		return nil, err
+	}
+	return container, nil
 }
 
 func (a *V3ioAdapter) GetSchema() *config.Schema {
@@ -196,7 +243,7 @@ func (a *V3ioAdapter) Querier(_ context.Context, mint, maxt int64) (*querier.V3i
 }
 
 // Create a Querier interface, used for time-series queries
-func (a *V3ioAdapter) QuerierV2(_ context.Context) (*pquerier.V3ioQuerier, error) {
+func (a *V3ioAdapter) QuerierV2() (*pquerier.V3ioQuerier, error) {
 	return pquerier.NewV3ioQuerier(a.container, a.logger, a.cfg, a.partitionMngr), nil
 }
 
@@ -220,7 +267,10 @@ func (a *V3ioAdapter) DeleteDB(deleteAll bool, ignoreErrors bool, fromTime int64
 			return errors.Wrapf(err, "Failed to delete partition object '%s'.", part.GetTablePath())
 		}
 	}
-	a.partitionMngr.DeletePartitionsFromSchema(partitions)
+	err := a.partitionMngr.DeletePartitionsFromSchema(partitions)
+	if err != nil {
+		return err
+	}
 
 	if len(a.partitionMngr.GetPartitionsPaths()) == 0 {
 		path := filepath.Join(a.cfg.TablePath, config.NamesDirectory) + "/" // Need a trailing slash
@@ -284,12 +334,12 @@ type v3ioAppender struct {
 }
 
 // Add a t/v value to a metric item and return refID (for AddFast)
-func (a v3ioAppender) Add(lset utils.Labels, t int64, v float64) (uint64, error) {
+func (a v3ioAppender) Add(lset utils.Labels, t int64, v interface{}) (uint64, error) {
 	return a.metricsCache.Add(lset, t, v)
 }
 
 // Faster Add using refID obtained from Add (avoid some hash/lookup overhead)
-func (a v3ioAppender) AddFast(lset utils.Labels, ref uint64, t int64, v float64) error {
+func (a v3ioAppender) AddFast(lset utils.Labels, ref uint64, t int64, v interface{}) error {
 	return a.metricsCache.AddFast(ref, t, v)
 }
 
@@ -304,8 +354,8 @@ func (a v3ioAppender) Rollback() error { return nil }
 
 // The Appender interface provides batched appends against a storage.
 type Appender interface {
-	Add(l utils.Labels, t int64, v float64) (uint64, error)
-	AddFast(l utils.Labels, ref uint64, t int64, v float64) error
+	Add(l utils.Labels, t int64, v interface{}) (uint64, error)
+	AddFast(l utils.Labels, ref uint64, t int64, v interface{}) error
 	WaitForCompletion(timeout time.Duration) (int, error)
 	Commit() error
 	Rollback() error

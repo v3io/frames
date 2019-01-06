@@ -2,8 +2,11 @@ package pquerier
 
 import (
 	"fmt"
+	"strings"
 
+	"github.com/v3io/frames"
 	"github.com/v3io/v3io-tsdb/pkg/aggregate"
+	"github.com/v3io/v3io-tsdb/pkg/chunkenc"
 )
 
 // data and metadata passed to the query processor workers via a channel
@@ -12,7 +15,7 @@ type qryResults struct {
 	query    *partQuery
 	name     string
 	fields   map[string]interface{}
-	encoding int16
+	encoding chunkenc.Encoding
 }
 
 func (q *qryResults) IsRawQuery() bool { return q.frame.isRawSeries }
@@ -37,6 +40,15 @@ type RequestedColumn struct {
 	Function               string
 	Interpolator           string
 	InterpolationTolerance int64 // tolerance in Millis
+}
+
+func (col *RequestedColumn) isCrossSeries() bool {
+	return strings.HasSuffix(col.Function, aggregate.CrossSeriesSuffix)
+}
+
+// If the function is cross series, remove the suffix otherwise leave it as is
+func (col *RequestedColumn) GetFunction() string {
+	return strings.TrimSuffix(col.Function, aggregate.CrossSeriesSuffix)
 }
 
 type columnMeta struct {
@@ -65,7 +77,7 @@ func (c columnMeta) getColumnName() string {
 // SeriesSet contains a set of series.
 type FrameSet interface {
 	NextFrame() bool
-	GetFrame() *dataFrame
+	GetFrame() (frames.Frame, error)
 	Err() error
 }
 
@@ -74,6 +86,6 @@ type nullFrameSet struct {
 	err error
 }
 
-func (s nullFrameSet) NextFrame() bool      { return false }
-func (s nullFrameSet) GetFrame() *dataFrame { return nil }
-func (s nullFrameSet) Err() error           { return s.err }
+func (s nullFrameSet) NextFrame() bool                 { return false }
+func (s nullFrameSet) GetFrame() (frames.Frame, error) { return nil, nil }
+func (s nullFrameSet) Err() error                      { return s.err }
