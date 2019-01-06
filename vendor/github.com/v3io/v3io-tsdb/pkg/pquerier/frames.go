@@ -460,8 +460,11 @@ func (d *dataFrame) shouldGenerateRawColumns() bool { return d.isRawSeries && !d
 
 func (d *dataFrame) GetFrame() (frames.Frame, error) {
 	var framesColumns []frames.Column
+	if d.shouldGenerateRawColumns() {
+		d.rawSeriesToColumns()
+	}
 	for _, col := range d.columns {
-		if !col.GetColumnSpec().isHidden{
+		if !col.GetColumnSpec().isHidden {
 			framesColumns = append(framesColumns, col.FramesColumn())
 		}
 	}
@@ -536,7 +539,7 @@ func (c *basicColumn) GetInterpolationFunction() (InterpolationFunction, int64) 
 
 func NewDataColumn(name string, colSpec columnMeta, size int, datatype frames.DType) *dataColumn {
 	dc := &dataColumn{basicColumn: basicColumn{name: name, spec: colSpec, size: size,
-		interpolationFunction:  GetInterpolateFunc(colSpec.interpolationType),
+		interpolationFunction: GetInterpolateFunc(colSpec.interpolationType),
 		interpolationTolerance: colSpec.interpolationTolerance, builder: frames.NewSliceColumnBuilder(name, datatype, size)}}
 	return dc
 

@@ -79,6 +79,9 @@ func (b *Backend) Read(request *frames.ReadRequest) (frames.FrameIterator, error
 	name := ""
 	if len(request.Columns) > 0 {
 		name = request.Columns[0]
+		for i := 1; i < len(request.Columns); i++ {
+			name = name + "," + request.Columns[i]
+		}
 		iter.withColumns = true
 	}
 
