@@ -396,17 +396,32 @@ func valueAt(msg *pb.Column, index int) (interface{}, error) {
 
 	switch msg.Dtype {
 	case pb.DType_INTEGER:
-		return msg.Ints[0], nil
+		if len(msg.Ints) < index+1 {
+			return nil, nil
+		}
+		return msg.Ints[index], nil
 	case pb.DType_FLOAT:
-		return msg.Floats[0], nil
+		if len(msg.Floats) < index+1 {
+			return nil, nil
+		}
+		return msg.Floats[index], nil
 	case pb.DType_STRING:
-		return msg.Strings[0], nil
+		if len(msg.Strings) < index+1 {
+			return nil, nil
+		}
+		return msg.Strings[index], nil
 	case pb.DType_TIME:
-		sec := msg.Times[0] / 1e9
-		nsec := msg.Times[0] % 1e9
+		if len(msg.Times) < index+1 {
+			return nil, nil
+		}
+		sec := msg.Times[index] / 1e9
+		nsec := msg.Times[index] % 1e9
 		return time.Unix(sec, nsec), nil
 	case pb.DType_BOOLEAN:
-		return msg.Bools[0], nil
+		if len(msg.Bools) < index+1 {
+			return nil, nil
+		}
+		return msg.Bools[index], nil
 	}
 
 	return nil, nil
