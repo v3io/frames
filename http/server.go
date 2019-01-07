@@ -338,55 +338,6 @@ func (s *Server) replyOK(ctx *fasthttp.RequestCtx) {
 	ctx.Write(okBytes)
 }
 
-func (s *Server) handleGrafana(ctx *fasthttp.RequestCtx) {
-	args := ctx.QueryArgs()
-	request := &frames.ReadRequest{
-		Backend:      string(args.Peek("backend")),
-		Table:        string(args.Peek("table")),
-		Query:        string(args.Peek("query")),
-		Filter:       string(args.Peek("filter")),
-		GroupBy:      string(args.Peek("group_by")),
-		Limit:        int64(args.GetUintOrZero("limit")),
-		MessageLimit: int64(args.GetUintOrZero("messge_limit")),
-		Marker:       string(args.Peek("marker")),
-	}
-
-	// TODO: Validate request
-	s.logger.InfoWith("grafana request", "request", request)
-
-	ch := make(chan frames.Frame)
-	var apiError error
-	go func() {
-		defer close(ch)
-		apiError = s.api.Read(request, ch)
-		if apiError != nil {
-			s.logger.ErrorWith("error reading (grafana)", "error", apiError)
-		}
-	}()
-
-	var frames []*JSONFrame
-	for frame := range ch {
-		jframe, err := frameToJSON(frame)
-		if err != nil {
-			s.logger.ErrorWith("can't encode frame", "error", err)
-			msg := fmt.Sprintf("can't encode frame - %s", err)
-			ctx.Error(msg, http.StatusInternalServerError)
-			return
-		}
-		frames = append(frames, jframe)
-	}
-
-	if apiError != nil {
-		msg := fmt.Sprintf("API error - %s", apiError)
-		ctx.Error(msg, http.StatusInternalServerError)
-		return
-	}
-
-	if err := json.NewEncoder(ctx).Encode(frames); err != nil {
-		s.logger.ErrorWith("can't encode result", "error", err)
-	}
-}
-
 func (s *Server) handleExec(ctx *fasthttp.RequestCtx) {
 	if !ctx.IsPost() { // ctx.PostBody() blocks on GET
 		ctx.Error("unsupported method", http.StatusMethodNotAllowed)
@@ -406,6 +357,43 @@ func (s *Server) handleExec(ctx *fasthttp.RequestCtx) {
 	}
 
 	s.replyOK(ctx)
+}
+
+func (s *Server) handleSimpleJSONQuery(ctx *fasthttp.RequestCtx) {
+	s.handleSimpleJSON(ctx, "query")
+}
+
+func (s *Server) handleSimpleJSONSearch(ctx *fasthttp.RequestCtx) {
+	s.handleSimpleJSON(ctx, "search")
+}
+
+func (s *Server) handleSimpleJSON(ctx *fasthttp.RequestCtx, method string) {
+	req, err := SimpleJSONRequestFactory(method, ctx.PostBody())
+	if err != nil {
+		s.logger.ErrorWith("can't initialize simplejson request", "error", err)
+		ctx.Error(fmt.Sprintf("bad request - %s", err), http.StatusBadRequest)
+		return
+	}
+	// passing session in order to easily pass token, when implemented
+	readRequest := req.GetReadRequest(nil)
+	s.httpAuth(ctx, readRequest.Session)
+	ch := make(chan frames.Frame)
+	var apiError error
+	go func() {
+		defer close(ch)
+		apiError = s.api.Read(readRequest, ch)
+		if apiError != nil {
+			s.logger.ErrorWith("error reading", "error", apiError)
+		}
+	}()
+	if apiError != nil {
+		ctx.Error(fmt.Sprintf("Error creating response - %s", apiError), http.StatusInternalServerError)
+	}
+	if resp, err := CreateResponse(req, ch); err != nil {
+		ctx.Error(fmt.Sprintf("Error creating response - %s", err), http.StatusInternalServerError)
+	} else {
+		s.replyJSON(ctx, resp)
+	}
 }
 
 // based on https://github.com/buaazp/fasthttprouter/tree/master/examples/auth
@@ -455,9 +443,11 @@ func (s *Server) initRoutes() {
 		"/_/status": s.handleStatus,
 		"/create":   s.handleCreate,
 		"/delete":   s.handleDelete,
-		"/grafana":  s.handleGrafana,
 		"/read":     s.handleRead,
 		"/write":    s.handleWrite,
 		"/exec":     s.handleExec,
+		"/":         s.handleStatus,
+		"/query":    s.handleSimpleJSONQuery,
+		"/search":   s.handleSimpleJSONSearch,
 	}
 }
