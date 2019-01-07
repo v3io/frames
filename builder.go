@@ -22,8 +22,8 @@ package frames
 
 import (
 	"fmt"
-	"github.com/v3io/frames/pb"
 	"time"
+	"github.com/v3io/frames/pb"
 )
 
 // ColumnBuilder is interface for building columns
@@ -42,6 +42,20 @@ func NewSliceColumnBuilder(name string, dtype DType, size int) ColumnBuilder {
 		Dtype: pb.DType(dtype),
 		Size:  int64(size),
 	}
+
+	switch msg.Dtype {
+	case pb.DType_INTEGER:
+		msg.Ints = make([]int64, size)
+	case pb.DType_FLOAT:
+		msg.Floats = make([]float64, size)
+	case pb.DType_STRING:
+		msg.Strings = make([]string, size)
+	case pb.DType_TIME:
+		msg.Times = make([]int64, size)
+	case pb.DType_BOOLEAN:
+		msg.Bools = make([]bool, size)
+	}
+
 	// TODO: pre alloate array. Note that for strings we probably don't want to
 	// do this since we'll allocate strings twice - zero value then real value
 	return &sliceColumBuilder{msg: msg}
@@ -150,6 +164,9 @@ func (b *sliceColumBuilder) Set(index int, value interface{}) error {
 }
 
 func (b *sliceColumBuilder) resize(size int) {
+	if int64(size) <= b.msg.Size{
+		return
+	}
 	b.msg.Size = int64(size)
 	switch b.msg.Dtype {
 	case pb.DType_INTEGER:

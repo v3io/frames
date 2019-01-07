@@ -2,13 +2,14 @@ package pquerier
 
 import (
 	"fmt"
+	"math"
+
 	"github.com/pkg/errors"
 	"github.com/v3io/frames"
 	"github.com/v3io/v3io-tsdb/pkg/aggregate"
 	"github.com/v3io/v3io-tsdb/pkg/chunkenc"
 	"github.com/v3io/v3io-tsdb/pkg/config"
 	"github.com/v3io/v3io-tsdb/pkg/utils"
-	"math"
 )
 
 type frameIterator struct {
@@ -229,12 +230,12 @@ func (d *dataFrame) addMetricIfNotExist(metricName string, columnSize int, useSe
 func (d *dataFrame) addMetricFromTemplate(metricName string, columnSize int, useServerAggregates bool) error {
 	newColumns := make([]Column, len(d.columnsTemplates))
 	for i, col := range d.columnsTemplates {
+		col.metric = metricName
 		newCol, err := createColumn(col, columnSize, useServerAggregates)
 		if err != nil {
 			return err
 		}
 
-		newCol.setMetricName(metricName)
 		newColumns[i] = newCol
 		if aggregate.IsCountAggregate(col.function) {
 			d.metricToCountColumn[metricName] = newCol
@@ -539,7 +540,7 @@ func (c *basicColumn) GetInterpolationFunction() (InterpolationFunction, int64) 
 
 func NewDataColumn(name string, colSpec columnMeta, size int, datatype frames.DType) *dataColumn {
 	dc := &dataColumn{basicColumn: basicColumn{name: name, spec: colSpec, size: size,
-		interpolationFunction: GetInterpolateFunc(colSpec.interpolationType),
+		interpolationFunction:  GetInterpolateFunc(colSpec.interpolationType),
 		interpolationTolerance: colSpec.interpolationTolerance, builder: frames.NewSliceColumnBuilder(name, datatype, size)}}
 	return dc
 

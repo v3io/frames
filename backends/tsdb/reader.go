@@ -28,7 +28,16 @@ import (
 	tsdbutils "github.com/v3io/v3io-tsdb/pkg/utils"
 	"github.com/v3io/v3io-tsdb/pkg/pquerier"
 	"github.com/v3io/v3io-tsdb/pkg/config"
+	"github.com/v3io/v3io-tsdb/pkg/tsdb"
 )
+
+type tsdbIteratorOld struct {
+	request     *frames.ReadRequest
+	set         tsdbutils.SeriesSet
+	err         error
+	withColumns bool
+	currFrame   frames.Frame
+}
 
 type tsdbIterator struct {
 	request     *frames.ReadRequest
@@ -65,7 +74,15 @@ func (b *Backend) Read(request *frames.ReadRequest) (frames.FrameIterator, error
 	b.logger.DebugWith("Query", "from", from, "to", to, "table", request.Table,
 		"filter", request.Filter, "functions", request.Aggragators, "step", step)
 
-	adapter, err := b.GetAdapter(request.Session, request.Table)
+	table := request.Table
+	var selectParams *pquerier.SelectParams
+	if request.Query != "" {
+		selectParams, table, err = pquerier.ParseQuery(request.Query)
+		if err != nil {
+			return nil, err
+		}
+	}
+	adapter, err := b.GetAdapter(request.Session, table)
 	if err != nil {
 		return nil, errors.Wrap(err, "failed to create adapter")
 	}
@@ -85,14 +102,42 @@ func (b *Backend) Read(request *frames.ReadRequest) (frames.FrameIterator, error
 		iter.withColumns = true
 	}
 
-	params := &pquerier.SelectParams{Name: name,
-		From: from,
-		To: to,
-		Step: step,
-		Functions: request.Aggragators,
-		Filter: request.Filter,
-		GroupBy: request.GroupBy}
-	iter.set, err = qry.SelectDataFrame(params)
+	if selectParams != nil {
+		selectParams.From = from
+		selectParams.To = to
+		selectParams.Step = step
+	} else {
+		selectParams = &pquerier.SelectParams{Name: name,
+			From: from,
+			To: to,
+			Step: step,
+			Functions: request.Aggragators,
+			Filter: request.Filter,
+			GroupBy: request.GroupBy}
+	}
+
+	iter.set, err = qry.SelectDataFrame(selectParams)
+	if err != nil {
+		return nil, errors.Wrap(err, "Failed on TSDB Select")
+	}
+
+	return &iter, nil
+}
+
+func oldQuery(adapter *tsdb.V3ioAdapter, request *frames.ReadRequest, from, to, step int64) (frames.FrameIterator, error) {
+	qry, err := adapter.Querier(nil, from, to)
+	if err != nil {
+		return nil, errors.Wrap(err, "Failed to initialize Querier")
+	}
+
+	iter := tsdbIteratorOld{request: request}
+	name := ""
+	if len(request.Columns) > 0 {
+		name = request.Columns[0]
+		iter.withColumns = true
+	}
+
+	iter.set, err = qry.Select(name, request.Aggragators, step, request.Filter)
 	if err != nil {
 		return nil, errors.Wrap(err, "Failed on TSDB Select")
 	}
@@ -156,5 +201,83 @@ func (i *tsdbIterator) Err() error {
 }
 
 func (i *tsdbIterator) At() frames.Frame {
+	return i.currFrame
+}
+
+func (i *tsdbIteratorOld) Next() bool {
+	if i.set.Next() {
+		series := i.set.At()
+		labels := map[string]interface{}{}
+		values := []float64{}
+		times := []time.Time{}
+
+		iter := series.Iterator()
+		for iter.Next() {
+			t, v := iter.At()
+			values = append(values, v)
+			times = append(times, time.Unix(t/1000, (t%1000)*1000))
+		}
+
+		if iter.Err() != nil {
+			i.err = iter.Err()
+			return false
+		}
+
+		timeCol, err := frames.NewSliceColumn("Date", times)
+		if err != nil {
+			i.err = err
+			return false
+		}
+
+		colname := "values"
+		valCol, err := frames.NewSliceColumn(colname, values)
+		if err != nil {
+			i.err = err
+			return false
+		}
+
+		columns := []frames.Column{valCol}
+		indices := []frames.Column{timeCol}
+		for _, v := range series.Labels() {
+			name := v.Name
+			if v.Name == "__name__" {
+				name = "metric_name"
+			}
+
+			labels[name] = v.Value
+			icol, err := frames.NewLabelColumn(name, v.Value, len(values))
+			if err != nil {
+				i.err = err
+				return false
+			}
+
+			if i.request.MultiIndex {
+				indices = append(indices, icol)
+			} else {
+				columns = append(columns, icol)
+			}
+		}
+
+		i.currFrame, err = frames.NewFrame(columns, indices, labels)
+		if err != nil {
+			i.err = err
+			return false
+		}
+
+		return true
+	}
+
+	if i.set.Err() != nil {
+		i.err = i.set.Err()
+	}
+
+	return false
+}
+
+func (i *tsdbIteratorOld) Err() error {
+	return i.err
+}
+
+func (i *tsdbIteratorOld) At() frames.Frame {
 	return i.currFrame
 }

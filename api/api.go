@@ -77,14 +77,6 @@ func New(logger logger.Logger, config *frames.Config) (*API, error) {
 
 // Read reads from database, emitting results to wf
 func (api *API) Read(request *frames.ReadRequest, out chan frames.Frame) error {
-	if request.Query != "" {
-		if err := api.populateQuery(request); err != nil {
-			msg := "can't populate query"
-			api.logger.ErrorWith(msg, "request", request, "error", err)
-			return errors.Wrap(err, msg)
-		}
-	}
-
 	api.logger.InfoWith("read request", "request", request)
 
 	backend, ok := api.backends[request.Backend]
