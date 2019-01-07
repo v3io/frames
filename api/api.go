@@ -219,7 +219,8 @@ func (api *API) Exec(request *frames.ExecRequest) error {
 		return fmt.Errorf(missingMsg)
 	}
 
-	api.logger.DebugWith("exec", "request", request)
+	// TODO: This print session in clear text
+	//	api.logger.DebugWith("exec", "request", request)
 	backend, ok := api.backends[request.Backend]
 	if !ok {
 		api.logger.ErrorWith("unkown backend", "name", request.Backend)
