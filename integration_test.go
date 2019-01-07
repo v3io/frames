@@ -221,6 +221,18 @@ func floatCol(t testing.TB, name string, size int) frames.Column {
 	return col
 }
 
+func stringCol(t testing.TB, name string, size int) frames.Column {
+	strings := make([]string, size)
+	for i := range strings {
+		strings[i] = fmt.Sprintf("val-%d", i)
+	}
+	col, err := frames.NewSliceColumn(name, strings)
+	if err != nil {
+		t.Fatal(err)
+	}
+	return col
+}
+
 func csvFrame(t testing.TB, size int) frames.Frame {
 	var (
 		columns []frames.Column
@@ -253,14 +265,7 @@ func csvFrame(t testing.TB, size int) frames.Frame {
 	}
 	columns = append(columns, col)
 
-	strings := make([]string, size)
-	for i := range strings {
-		strings[i] = fmt.Sprintf("val-%d", i)
-	}
-	col, err = frames.NewSliceColumn("strings", strings)
-	if err != nil {
-		t.Fatal(err)
-	}
+	col = stringCol(t, "strings", size)
 	columns = append(columns, col)
 
 	times := make([]time.Time, size)
@@ -321,6 +326,34 @@ func streamFrame(t testing.TB, size int) frames.Frame {
 		floatCol(t, "cpu", index.Len()),
 		floatCol(t, "mem", index.Len()),
 		floatCol(t, "disk", index.Len()),
+	}
+
+	frame, err := frames.NewFrame(columns, []frames.Column{index}, nil)
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	return frame
+}
+
+func tsdbFrame(t testing.TB, size int) frames.Frame {
+	size = 60 // TODO
+	times := make([]time.Time, size)
+	end := time.Now().Truncate(time.Hour)
+	for i := range times {
+		times[i] = end.Add(-time.Duration(size-i) * time.Second * 300)
+	}
+
+	index, err := frames.NewSliceColumn("idx", times)
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	columns := []frames.Column{
+		floatCol(t, "cpu", index.Len()),
+		floatCol(t, "mem", index.Len()),
+		floatCol(t, "disk", index.Len()),
+		stringCol(t, "host", index.Len()),
 	}
 
 	frame, err := frames.NewFrame(columns, []frames.Column{index}, nil)
@@ -526,7 +559,7 @@ func init() {
 			},
 		},
 		"tsdb": &testConfig{
-			frameFn: streamFrame, // We use the same frame as stream
+			frameFn: tsdbFrame,
 			create: func(req *frames.CreateRequest) {
 				req.SetAttribute("rate", "1/m")
 			},
