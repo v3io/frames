@@ -10,19 +10,17 @@
 // WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 // See the License for the specific language governing permissions and
 // limitations under the License.
-package utils
+
+package labels
 
 import (
 	"bytes"
 	"encoding/json"
-	"fmt"
 	"sort"
 	"strconv"
 	"strings"
 
 	"github.com/cespare/xxhash"
-	"github.com/pkg/errors"
-	"github.com/v3io/v3io-tsdb/pkg/config"
 )
 
 const sep = '\xff'
@@ -43,65 +41,6 @@ type Label struct {
 // Labels is a sorted set of labels. Order has to be guaranteed upon
 // instantiation.
 type Labels []Label
-
-type LabelsIfc interface {
-	GetKey() (string, string, uint64)
-	GetExpr() string
-	Filter([]string) LabelsIfc
-	LabelNames() []string
-}
-
-func (ls Labels) Filter(keep []string) LabelsIfc {
-	var res Labels
-	for _, l := range ls {
-		for _, keepLabel := range keep {
-			if l.Name == MetricName || l.Name == keepLabel {
-				res = append(res, l)
-			}
-		}
-	}
-	return res
-}
-
-// convert Label set to a string in the form key1=v1,key2=v2.. + name + hash
-func (ls Labels) GetKey() (string, string, uint64) {
-	key := ""
-	name := ""
-	for _, lbl := range ls {
-		if lbl.Name == "__name__" {
-			name = lbl.Value
-		} else {
-			key = key + lbl.Name + "=" + lbl.Value + ","
-		}
-	}
-	if len(key) == 0 {
-		return name, "", ls.Hash()
-	}
-	return name, key[:len(key)-1], ls.Hash()
-
-}
-
-// create update expression
-func (ls Labels) GetExpr() string {
-	lblexpr := ""
-	for _, lbl := range ls {
-		if lbl.Name != "__name__" {
-			lblexpr = lblexpr + fmt.Sprintf("%s='%s'; ", lbl.Name, lbl.Value)
-		} else {
-			lblexpr = lblexpr + fmt.Sprintf("_name='%s'; ", lbl.Value)
-		}
-	}
-
-	return lblexpr
-}
-
-func (ls Labels) LabelNames() []string {
-	var res []string
-	for _, l := range ls {
-		res = append(res, l.Name)
-	}
-	return res
-}
 
 func (ls Labels) Len() int           { return len(ls) }
 func (ls Labels) Swap(i, j int)      { ls[i], ls[j] = ls[j], ls[i] }
@@ -138,24 +77,8 @@ func (ls *Labels) UnmarshalJSON(b []byte) error {
 		return err
 	}
 
-	*ls = LabelsFromMap(m)
+	*ls = FromMap(m)
 	return nil
-}
-
-// Hash returns a hash value for the label set.
-func (ls Labels) HashWithMetricName() uint64 {
-	b := make([]byte, 0, 1024)
-
-	for _, v := range ls {
-		b = append(b, v.Name...)
-		b = append(b, sep)
-		b = append(b, v.Value...)
-		b = append(b, sep)
-	}
-
-	hash := xxhash.New()
-	hash.Write(b)
-	return hash.Sum64()
 }
 
 // Hash returns a hash value for the label set.
@@ -163,18 +86,53 @@ func (ls Labels) Hash() uint64 {
 	b := make([]byte, 0, 1024)
 
 	for _, v := range ls {
-		if v.Name == "__name__" {
+		b = append(b, v.Name...)
+		b = append(b, sep)
+		b = append(b, v.Value...)
+		b = append(b, sep)
+	}
+	return xxhash.Sum64(b)
+}
+
+// HashForLabels returns a hash value for the labels matching the provided names.
+func (ls Labels) HashForLabels(names ...string) uint64 {
+	b := make([]byte, 0, 1024)
+
+	for _, v := range ls {
+		for _, n := range names {
+			if v.Name == n {
+				b = append(b, v.Name...)
+				b = append(b, sep)
+				b = append(b, v.Value...)
+				b = append(b, sep)
+				break
+			}
+		}
+	}
+	return xxhash.Sum64(b)
+}
+
+// HashWithoutLabels returns a hash value for all labels except those matching
+// the provided names.
+func (ls Labels) HashWithoutLabels(names ...string) uint64 {
+	b := make([]byte, 0, 1024)
+
+Outer:
+	for _, v := range ls {
+		if v.Name == MetricName {
 			continue
+		}
+		for _, n := range names {
+			if v.Name == n {
+				continue Outer
+			}
 		}
 		b = append(b, v.Name...)
 		b = append(b, sep)
 		b = append(b, v.Value...)
 		b = append(b, sep)
 	}
-
-	hash := xxhash.New()
-	hash.Write(b)
-	return hash.Sum64()
+	return xxhash.Sum64(b)
 }
 
 // Copy returns a copy of the labels.
@@ -227,9 +185,9 @@ func (ls Labels) Map() map[string]string {
 	return m
 }
 
-// ToLabels returns a sorted Labels from the given labels.
+// New returns a sorted Labels from the given labels.
 // The caller has to guarantee that all label names are unique.
-func ToLabels(ls ...Label) Labels {
+func New(ls ...Label) Labels {
 	set := make(Labels, 0, len(ls))
 	for _, l := range ls {
 		set = append(set, l)
@@ -239,17 +197,17 @@ func ToLabels(ls ...Label) Labels {
 	return set
 }
 
-// LabelsFromMap returns new sorted Labels from the given map.
-func LabelsFromMap(m map[string]string) Labels {
+// FromMap returns new sorted Labels from the given map.
+func FromMap(m map[string]string) Labels {
 	l := make([]Label, 0, len(m))
 	for k, v := range m {
 		l = append(l, Label{Name: k, Value: v})
 	}
-	return ToLabels(l...)
+	return New(l...)
 }
 
-// LabelsFromStringList creates new labels from pairs of strings.
-func LabelsFromStringList(ss ...string) Labels {
+// FromStrings creates new labels from pairs of strings.
+func FromStrings(ss ...string) Labels {
 	if len(ss)%2 != 0 {
 		panic("invalid number of strings")
 	}
@@ -260,45 +218,6 @@ func LabelsFromStringList(ss ...string) Labels {
 
 	sort.Sort(res)
 	return res
-}
-
-// LabelsFromStringList creates new labels from a string in the following format key1=label1[,key2=label2,...]
-func LabelsFromStringWithName(name, lbls string) (Labels, error) {
-
-	if err := IsValidMetricName(name); err != nil {
-		return nil, errors.Wrap(err, fmt.Sprintf("Illegal metric name: '%s'", name))
-	}
-
-	lset := Labels{Label{Name: config.PrometheusMetricNameAttribute, Value: name}}
-
-	moreLabels, err := LabelsFromString(lbls)
-	if err != nil {
-		return nil, err
-	}
-	lset = append(lset, moreLabels...)
-	sort.Sort(lset)
-	return lset, nil
-}
-
-func LabelsFromString(lbls string) (Labels, error) {
-	lset := Labels{}
-
-	if lbls != "" {
-		splitLset := strings.Split(lbls, ",")
-		for _, l := range splitLset {
-			splitLbl := strings.Split(l, "=")
-			if len(splitLbl) != 2 {
-				return nil, errors.New("Labels must be in the form 'key1=label1[,key2=label2,...]'.")
-			}
-
-			if err := IsValidLabelName(splitLbl[0]); err != nil {
-				return nil, errors.Wrap(err, fmt.Sprintf("Illegal label name: '%s'", splitLbl[0]))
-			}
-			lset = append(lset, Label{Name: splitLbl[0], Value: splitLbl[1]})
-		}
-	}
-	sort.Sort(lset)
-	return lset, nil
 }
 
 // Compare compares the two label sets.

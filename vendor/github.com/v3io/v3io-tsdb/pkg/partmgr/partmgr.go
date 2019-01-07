@@ -26,9 +26,11 @@ import (
 	"math"
 	"path"
 	"strconv"
+	"strings"
 	"sync"
 
 	"github.com/pkg/errors"
+	"github.com/prometheus/prometheus/pkg/labels"
 	"github.com/v3io/v3io-go-http"
 	"github.com/v3io/v3io-tsdb/internal/pkg/performance"
 	"github.com/v3io/v3io-tsdb/pkg/aggregate"
@@ -43,7 +45,10 @@ func NewPartitionMngr(schemaConfig *config.Schema, cont *v3io.Container, v3ioCon
 		return nil, err
 	}
 	newMngr := &PartitionManager{schemaConfig: schemaConfig, cyclic: false, container: cont, currentPartitionInterval: currentPartitionInterval, v3ioConfig: v3ioConfig}
-	newMngr.updatePartitionsFromSchema(schemaConfig)
+	err = newMngr.updatePartitionsFromSchema(schemaConfig)
+	if err != nil {
+		return nil, err
+	}
 	return newMngr, nil
 }
 
@@ -136,7 +141,7 @@ func (p *PartitionManager) TimeToPart(t int64) (*DBPartition, error) {
 		} else {
 			// Iterate backwards; ignore the last element as it's the head partition
 			for i := len(p.partitions) - 2; i >= 0; i-- {
-				if t > p.partitions[i].startTime {
+				if t >= p.partitions[i].startTime {
 					return p.partitions[i], nil
 				}
 			}
@@ -191,7 +196,7 @@ func (p *PartitionManager) updateSchema() (err error) {
 	return
 }
 
-func (p *PartitionManager) DeletePartitionsFromSchema(partitionsToDelete []*DBPartition) {
+func (p *PartitionManager) DeletePartitionsFromSchema(partitionsToDelete []*DBPartition) error {
 	for i := len(p.partitions) - 1; i >= 0; i-- {
 		for _, partToDelete := range partitionsToDelete {
 			if p.partitions[i].startTime == partToDelete.startTime {
@@ -210,7 +215,7 @@ func (p *PartitionManager) DeletePartitionsFromSchema(partitionsToDelete []*DBPa
 		}
 
 	}
-	p.updateSchema()
+	return p.updateSchema()
 }
 
 func (p *PartitionManager) ReadAndUpdateSchema() (err error) {
@@ -255,8 +260,10 @@ func (p *PartitionManager) ReadAndUpdateSchema() (err error) {
 				err = errors.Wrapf(err, "Failed to unmarshal schema at path '%s'.", fullPath)
 			}
 			p.schemaConfig = schema
-			p.updatePartitionsFromSchema(schema)
-
+			err = p.updatePartitionsFromSchema(schema)
+			if err != nil {
+				err = errors.Wrapf(err, "Failed to update partitions from schema.", fullPath)
+			}
 		})
 	}
 	return
@@ -343,8 +350,22 @@ func (p *DBPartition) GetShardingKeys(name string) []string {
 }
 
 // Return the full path to the specified metric item
-func (p *DBPartition) GetMetricPath(name string, hash uint64) string {
-	return fmt.Sprintf("%s%s_%x.%016x", p.path, name, int(hash%uint64(p.GetHashingBuckets())), hash)
+func (p *DBPartition) GetMetricPath(name string, hash uint64, labelNames []string, isAggr bool) string {
+	agg := ""
+	if isAggr {
+		if len(labelNames) == 0 {
+			agg = "agg/"
+		} else {
+			var namelessLabelNames []string
+			for _, l := range labelNames {
+				if l != labels.MetricName {
+					namelessLabelNames = append(namelessLabelNames, l)
+				}
+			}
+			agg = fmt.Sprintf("agg/%s/", strings.Join(namelessLabelNames, ","))
+		}
+	}
+	return fmt.Sprintf("%s%s%s_%x.%016x", p.path, agg, name, int(hash%uint64(p.GetHashingBuckets())), hash)
 }
 
 func (p *DBPartition) AggrType() aggregate.AggrType {
