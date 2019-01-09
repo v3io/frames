@@ -22,8 +22,10 @@ package frames
 
 import (
 	"fmt"
-	"github.com/v3io/frames/pb"
+	"math"
 	"time"
+
+	"github.com/v3io/frames/pb"
 )
 
 // ColumnBuilder is interface for building columns
@@ -42,13 +44,15 @@ func NewSliceColumnBuilder(name string, dtype DType, size int) ColumnBuilder {
 		Dtype: pb.DType(dtype),
 		Size:  int64(size),
 	}
+
 	// TODO: pre alloate array. Note that for strings we probably don't want to
 	// do this since we'll allocate strings twice - zero value then real value
-	return &sliceColumBuilder{msg: msg}
+	return &sliceColumBuilder{msg: msg, originalSize: int64(size)}
 }
 
 type sliceColumBuilder struct {
-	msg *pb.Column
+	msg          *pb.Column
+	originalSize int64
 }
 
 func (b *sliceColumBuilder) At(index int) (interface{}, error) {
@@ -155,13 +159,15 @@ func (b *sliceColumBuilder) resize(size int) {
 	case pb.DType_INTEGER:
 		b.msg.Ints = resizeInt64(b.msg.Ints, size)
 	case pb.DType_FLOAT:
-		if cap(b.msg.Floats) >= size {
+		currentSize := cap(b.msg.Floats)
+		if currentSize >= size {
 			b.msg.Floats = b.msg.Floats[:size]
 			return
 		}
 		floats := make([]float64, size)
 		copy(floats, b.msg.Floats)
 		b.msg.Floats = floats
+		b.fillDefaultValues(currentSize, size)
 	case pb.DType_STRING:
 		if cap(b.msg.Strings) >= size {
 			b.msg.Strings = b.msg.Strings[:size]
@@ -193,7 +199,44 @@ func resizeInt64(buf []int64, size int) []int64 {
 }
 
 func (b *sliceColumBuilder) Finish() Column {
+	b.fillMissingRows()
 	return &colImpl{msg: b.msg}
+}
+
+func (b *sliceColumBuilder) fillMissingRows() {
+	currentSize, _ := b.getActualCapacity()
+	if int64(currentSize) >= b.originalSize {
+		return
+	}
+
+	b.resize(int(b.originalSize))
+	b.fillDefaultValues(currentSize, int(b.originalSize))
+}
+
+func (b *sliceColumBuilder) fillDefaultValues(from, to int) {
+	switch b.msg.Dtype {
+	case pb.DType_FLOAT:
+		for i := from; i < to; i++ {
+			b.setFloat(int(i), math.NaN())
+		}
+	}
+}
+
+func (b *sliceColumBuilder) getActualCapacity() (int, error) {
+	switch b.msg.Dtype {
+	case pb.DType_INTEGER:
+		return cap(b.msg.Ints), nil
+	case pb.DType_FLOAT:
+		return cap(b.msg.Floats), nil
+	case pb.DType_STRING:
+		return cap(b.msg.Strings), nil
+	case pb.DType_TIME:
+		return cap(b.msg.Times), nil
+	case pb.DType_BOOLEAN:
+		return cap(b.msg.Bools), nil
+	}
+
+	return 0, fmt.Errorf("not supported type %v", b.msg.Dtype)
 }
 
 // NewLabelColumnBuilder return a builder for LabelColumn
