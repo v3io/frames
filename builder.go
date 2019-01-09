@@ -215,26 +215,10 @@ func (b *sliceColumBuilder) fillMissingRows() {
 
 func (b *sliceColumBuilder) fillDefaultValues(from, to int) {
 	switch b.msg.Dtype {
-	//case pb.DType_INTEGER:
-	//	for i := from; i < to; i++ {
-	//		b.setInt(int(i), 0)
-	//	}
 	case pb.DType_FLOAT:
 		for i := from; i < to; i++ {
 			b.setFloat(int(i), math.NaN())
 		}
-		//case pb.DType_STRING:
-		//	for i := from; i < to; i++ {
-		//		b.setString(int(i), "")
-		//	}
-		//case pb.DType_TIME:
-		//	for i := from; i < to; i++ {
-		//		b.setTime(int(i), time.Unix(0, 0))
-		//	}
-		//case pb.DType_BOOLEAN:
-		//	for i := from; i < to; i++ {
-		//		b.setBool(int(i), false)
-		//	}
 	}
 }
 

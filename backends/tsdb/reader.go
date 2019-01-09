@@ -25,10 +25,11 @@ import (
 
 	"github.com/pkg/errors"
 	"github.com/v3io/frames"
-	tsdbutils "github.com/v3io/v3io-tsdb/pkg/utils"
-	"github.com/v3io/v3io-tsdb/pkg/pquerier"
 	"github.com/v3io/v3io-tsdb/pkg/config"
+	"github.com/v3io/v3io-tsdb/pkg/pquerier"
 	"github.com/v3io/v3io-tsdb/pkg/tsdb"
+	tsdbutils "github.com/v3io/v3io-tsdb/pkg/utils"
+	"strings"
 )
 
 type tsdbIteratorOld struct {
@@ -95,10 +96,7 @@ func (b *Backend) Read(request *frames.ReadRequest) (frames.FrameIterator, error
 	iter := tsdbIterator{request: request}
 	name := ""
 	if len(request.Columns) > 0 {
-		name = request.Columns[0]
-		for i := 1; i < len(request.Columns); i++ {
-			name = name + "," + request.Columns[i]
-		}
+		name = strings.Join(request.Columns, ",")
 		iter.withColumns = true
 	}
 
@@ -108,12 +106,12 @@ func (b *Backend) Read(request *frames.ReadRequest) (frames.FrameIterator, error
 		selectParams.Step = step
 	} else {
 		selectParams = &pquerier.SelectParams{Name: name,
-			From: from,
-			To: to,
-			Step: step,
+			From:      from,
+			To:        to,
+			Step:      step,
 			Functions: request.Aggragators,
-			Filter: request.Filter,
-			GroupBy: request.GroupBy}
+			Filter:    request.Filter,
+			GroupBy:   request.GroupBy}
 	}
 
 	iter.set, err = qry.SelectDataFrame(selectParams)
