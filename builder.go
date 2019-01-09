@@ -204,13 +204,13 @@ func (b *sliceColumBuilder) Finish() Column {
 }
 
 func (b *sliceColumBuilder) fillMissingRows() {
-	currentSize := b.msg.Size
-	if currentSize >= b.originalSize {
+	currentSize, _ := b.getActualCapacity()
+	if int64(currentSize) >= b.originalSize {
 		return
 	}
 
 	b.resize(int(b.originalSize))
-	b.fillDefaultValues(int(currentSize), int(b.originalSize))
+	b.fillDefaultValues(currentSize, int(b.originalSize))
 }
 
 func (b *sliceColumBuilder) fillDefaultValues(from, to int) {
@@ -236,6 +236,23 @@ func (b *sliceColumBuilder) fillDefaultValues(from, to int) {
 		//		b.setBool(int(i), false)
 		//	}
 	}
+}
+
+func (b *sliceColumBuilder) getActualCapacity() (int, error) {
+	switch b.msg.Dtype {
+	case pb.DType_INTEGER:
+		return cap(b.msg.Ints), nil
+	case pb.DType_FLOAT:
+		return cap(b.msg.Floats), nil
+	case pb.DType_STRING:
+		return cap(b.msg.Strings), nil
+	case pb.DType_TIME:
+		return cap(b.msg.Times), nil
+	case pb.DType_BOOLEAN:
+		return cap(b.msg.Bools), nil
+	}
+
+	return 0, fmt.Errorf("not supported type %v", b.msg.Dtype)
 }
 
 // NewLabelColumnBuilder return a builder for LabelColumn
