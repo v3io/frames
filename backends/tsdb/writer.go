@@ -254,7 +254,7 @@ func newLset(labels map[string]interface{}, name string, singleCol bool, extraId
 			val = name
 			hadName = true
 		}
-		lset = append(lset, utils.Label{Name: name, Value: fmt.Sprintf("%s", val)})
+		lset = append(lset, utils.Label{Name: name, Value: fmt.Sprintf("%v", val)})
 	}
 	if !hadName {
 		lset = append(lset, utils.Label{Name: "__name__", Value: name})
