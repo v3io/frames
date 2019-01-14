@@ -82,9 +82,9 @@ def pb2py(obj):
     return obj
 
 
-def msg2df(frame):
+def msg2df(frame, frame_factory):
     cols = {col.name: col2series(col) for col in frame.columns}
-    df = pd.DataFrame(cols)
+    df = frame_factory(cols)
 
     indices = [col2series(idx) for idx in frame.indices]
     if len(indices) == 1:
