@@ -157,7 +157,7 @@ def series2col(s):
             s = s.dt.tz_localize(pytz.UTC)
         kw['times'] = s.astype(np.int64)
         kw['dtype'] = fpb.TIME
-    elif isinstance(s.dtype, CategoricalDtype):
+    elif is_categorical_dtype(s.dtype):
         # We assume catgorical data is strings
         kw['strings'] = s.astype(str)
         kw['dtype'] = fpb.STRING
@@ -194,3 +194,22 @@ def is_float_dtype(dtype):
 
 def is_time_dtype(dtype):
     return dtype == _time_dt or dtype == _time_tz_dt
+
+
+def is_categorical_dtype(dtype):
+    return isinstance(dtype, CategoricalDtype)
+
+
+def _fix_pd():
+    # cudf works with older versions of pandas
+    import pandas.api.types
+    if not hasattr(pandas.api.types, 'is_categorical_dtype'):
+        pandas.api.types.is_categorical_dtype = is_categorical_dtype
+
+    import pandas.core.common
+    if not hasattr(pandas.core.common, 'is_categorical_dtype'):
+        pandas.core.common.is_categorical_dtype = is_categorical_dtype
+
+
+_fix_pd()
+del _fix_pd
