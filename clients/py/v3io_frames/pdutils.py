@@ -16,11 +16,15 @@ import pandas as pd
 import warnings
 
 
-def concat_dfs(dfs):
+def concat_dfs(dfs, frame_factory=pd.DataFrame):
     """Concat sequence of DataFrames, can handle MultiIndex frames."""
     dfs = list(dfs)
     if not dfs:
-        return pd.DataFrame()
+        return frame_factory()
+
+    if not isinstance(dfs[0], pd.DataFrame):
+        import cudf
+        return cudf.concat(dfs)
 
     names = list(dfs[0].index.names)
     wdf = pd.concat(

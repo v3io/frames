@@ -116,16 +116,22 @@ def col2series(col):
     return series
 
 
+def idx2series(idx):
+    return pd.Series(idx.values, name=idx.name)
+
+
 def df2msg(df, labels=None):
     indices = None
     if should_encode_index(df):
-        if hasattr(df.index, 'levels'):
-            by_name = df.index.get_level_values
-            names = df.index.names
-            serieses = (by_name(name).to_series() for name in names)
-            indices = [series2col(s) for s in serieses]
+        index = df.index
+        if hasattr(index, 'levels'):
+            by_name = index.get_level_values
+            names = index.names
+            serieses = (idx2series(by_name(name)) for name in names)
         else:
-            indices = [series2col(df.index.to_series())]
+            serieses = [idx2series(df.index)]
+
+        indices = [series2col(s) for s in serieses]
 
     return fpb.Frame(
         columns=[series2col(df[name]) for name in df.columns],
