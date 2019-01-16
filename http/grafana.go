@@ -162,7 +162,7 @@ func (req *simpleJSONQueryRequest) formatTSDB(ch chan frames.Frame) (interface{}
 		iter := frame.IterRows(true)
 		for iter.Next() {
 			rowData := iter.Row()
-			timestamp := rowData["time"]
+			timestamp := formatTimeTSDB(rowData["time"])
 			for _, field := range fields {
 				target := field + frameTarget
 				if _, ok := data[target]; !ok {
@@ -297,8 +297,11 @@ func setField(obj interface{}, name string, value interface{}) error {
 	return nil
 }
 
-func formatTimeTSDB(timestamp time.Time) interface{} {
-	return timestamp.UnixNano() / 1000000
+func formatTimeTSDB(timestamp interface{}) interface{} {
+	if val, ok := timestamp.(time.Time); ok {
+		return val.UnixNano() / 1000000
+	}
+	return timestamp
 }
 
 func getBaseTargetTSDB(frame frames.Frame) string {
