@@ -141,9 +141,13 @@ func (req *simpleJSONQueryRequest) formatKV(ch chan frames.Frame) (interface{}, 
 			rowData := iter.Row()
 			simpleJSONRow := []interface{}{}
 			for _, field := range fields {
-				simpleJSONRow = append(simpleJSONRow, rowData[field])
+				if isValidData(rowData[field]) {
+					simpleJSONRow = append(simpleJSONRow, rowData[field])
+				}
 			}
-			simpleJSONData.Rows = append(simpleJSONData.Rows, simpleJSONRow)
+			if len(simpleJSONRow) > 0 {
+				simpleJSONData.Rows = append(simpleJSONData.Rows, simpleJSONRow)
+			}
 		}
 		if err := iter.Err(); err != nil {
 			return nil, err
@@ -168,13 +172,8 @@ func (req *simpleJSONQueryRequest) formatTSDB(ch chan frames.Frame) (interface{}
 				if _, ok := data[target]; !ok {
 					data[target] = [][]interface{}{}
 				}
-				fieldData := rowData[field]
-				if v, ok := fieldData.(float64); ok {
-					if !math.IsNaN(v) {
-						data[target] = append(data[target], []interface{}{fieldData, timestamp})
-					}
-				} else {
-					data[target] = append(data[target], []interface{}{fieldData, timestamp})
+				if isValidData(rowData[field]) {
+					data[target] = append(data[target], []interface{}{rowData[field], timestamp})
 				}
 			}
 		}
@@ -273,6 +272,13 @@ func (req *simpleJSONQueryRequest) parseQueryLine(fieldInput string) error {
 		}
 	}
 	return nil
+}
+
+func isValidData(fieldData interface{}) bool {
+	if v, ok := fieldData.(float64); ok {
+		return !math.IsNaN(v)
+	}
+	return true
 }
 
 func setField(obj interface{}, name string, value interface{}) error {
