@@ -24,6 +24,7 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+	"math"
 	"reflect"
 	"regexp"
 	"sort"
@@ -66,6 +67,7 @@ type simpleJSONQueryRequest struct {
 	From      string
 	To        string
 	Container string
+	Step      string
 }
 
 type simpleJSONSearchRequest struct {
@@ -118,7 +120,8 @@ func (req *simpleJSONQueryRequest) GetReadRequest(session *frames.Session) *fram
 		}
 	}
 	return &frames.ReadRequest{Backend: req.Backend, Table: req.TableName, Columns: req.Fields,
-		Start: req.Range.From, End: req.Range.To, Step: "60m",
+		Start: req.Range.From, End: req.Range.To,
+		Step:    req.Step,
 		Session: session, Filter: req.Filter}
 }
 
@@ -127,11 +130,7 @@ func (req *simpleJSONQueryRequest) formatKV(ch chan frames.Frame) (interface{}, 
 	var err error
 	for frame := range ch {
 		simpleJSONData := tableOutput{Type: "table", Rows: [][]interface{}{}, Columns: []tableColumn{}}
-		fields := req.Fields
-		if len(fields) == 0 || fields[0] == "*" {
-			fields = frame.Names()
-			sort.Strings(fields)
-		}
+		fields := getFieldNames(frame, req.Fields)
 		simpleJSONData.Columns, err = prepareKVColumns(frame, fields)
 		if err != nil {
 			return nil, err
@@ -156,18 +155,35 @@ func (req *simpleJSONQueryRequest) formatKV(ch chan frames.Frame) (interface{}, 
 
 func (req *simpleJSONQueryRequest) formatTSDB(ch chan frames.Frame) (interface{}, error) {
 	retval := []timeSeriesOutput{}
+	data := map[string][][]interface{}{}
 	for frame := range ch {
-		target := getTargetTSDB(frame)
-		datapoints := [][]interface{}{}
+		frameTarget := getBaseTargetTSDB(frame)
+		fields := getFieldNames(frame, req.Fields)
 		iter := frame.IterRows(true)
 		for iter.Next() {
 			rowData := iter.Row()
-			timestamp := formatTimeTSDB(rowData["Date"].(time.Time))
-			datapoints = append(datapoints, []interface{}{rowData["values"], timestamp})
+			timestamp := rowData["time"]
+			for _, field := range fields {
+				target := field + frameTarget
+				if _, ok := data[target]; !ok {
+					data[target] = [][]interface{}{}
+				}
+				fieldData := rowData[field]
+				if v, ok := fieldData.(float64); ok {
+					if !math.IsNaN(v) {
+						data[target] = append(data[target], []interface{}{fieldData, timestamp})
+					}
+				} else {
+					data[target] = append(data[target], []interface{}{fieldData, timestamp})
+				}
+			}
 		}
 		if err := iter.Err(); err != nil {
 			return nil, err
 		}
+
+	}
+	for target, datapoints := range data {
 		retval = append(retval, timeSeriesOutput{datapoints, target})
 	}
 
@@ -234,7 +250,7 @@ func (req *simpleJSONSearchRequest) ParseRequest(requestBody []byte) error {
 func (req *simpleJSONQueryRequest) parseQueryLine(fieldInput string) error {
 	translate := map[string]string{"table_name": "TableName"}
 	// example query: fields=sentiment;table_name=stock_metrics;backend=tsdb;filter=symbol=="AAPL";container=container_name
-	re, err := regexp.Compile(`^\s*(filter|fields|table_name|backend|container)\s*=\s*(.*)\s*$`)
+	re, err := regexp.Compile(`^\s*(filter|fields|table_name|backend|container|step)\s*=\s*(.*)\s*$`)
 	if err != nil {
 		return err
 	}
@@ -285,17 +301,32 @@ func formatTimeTSDB(timestamp time.Time) interface{} {
 	return timestamp.UnixNano() / 1000000
 }
 
-func getTargetTSDB(frame frames.Frame) string {
-	name := ""
+func getBaseTargetTSDB(frame frames.Frame) string {
 	lbls := []string{}
 	for key, lbl := range frame.Labels() {
-		if key == "metric_name" {
-			name = lbl.(string)
-		} else {
-			lbls = append(lbls, fmt.Sprintf("%s=%s", key, lbl))
+		lbls = append(lbls, fmt.Sprintf("%s=%s", key, lbl))
+	}
+	return fmt.Sprintf("[%s]", strings.Join(lbls, ","))
+}
+
+func getFieldNames(frame frames.Frame, fields []string) []string {
+	retVal := fields
+	if len(retVal) == 0 || retVal[0] == "*" {
+		retVal = getMetricNames(frame)
+		sort.Strings(retVal)
+	}
+	return retVal
+}
+
+func getMetricNames(frame frames.Frame) []string {
+	retVal := []string{}
+	for _, name := range frame.Names() {
+		if _, ok := frame.Labels()[name]; !ok {
+			retVal = append(retVal, name)
 		}
 	}
-	return fmt.Sprintf("%s[%s]", name, strings.Join(lbls, ","))
+
+	return retVal
 }
 
 func prepareKVColumns(frame frames.Frame, headers []string) ([]tableColumn, error) {
