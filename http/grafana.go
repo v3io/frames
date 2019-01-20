@@ -38,12 +38,20 @@ const querySeparator = ";"
 const fieldsItemsSeperator = ","
 const defaultBackend = "tsdb"
 
+type outputType int
+
+// Possible output types
+const (
+	tableOutputType     outputType = 0
+	timeserieOutputType outputType = 1
+)
+
 type simpleJSONRequestInterface interface {
 	ParseRequest([]byte) error
 	GetReadRequest(*frames.Session) *frames.ReadRequest
 	formatTSDB(ch chan frames.Frame) (interface{}, error)
 	formatTable(ch chan frames.Frame) (interface{}, error)
-	getFormatType() string
+	getFormatType() outputType
 }
 
 type requestSimpleJSONBase struct {
@@ -108,12 +116,18 @@ func SimpleJSONRequestFactory(method string, request []byte) (simpleJSONRequestI
 	return retval, nil
 }
 
-func (req *simpleJSONQueryRequest) getFormatType() string {
-	return req.Type
+func (req *simpleJSONQueryRequest) getFormatType() outputType {
+	switch req.Type {
+	case "table":
+		return tableOutputType
+	case "timeseries", "timeserie":
+		return timeserieOutputType
+	}
+	return timeserieOutputType
 }
 
-func (req *simpleJSONSearchRequest) getFormatType() string {
-	return "table"
+func (req *simpleJSONSearchRequest) getFormatType() outputType {
+	return tableOutputType
 }
 
 func (req *simpleJSONQueryRequest) GetReadRequest(session *frames.Session) *frames.ReadRequest {
@@ -135,7 +149,7 @@ func (req *simpleJSONQueryRequest) formatTable(ch chan frames.Frame) (interface{
 	var err error
 	for frame := range ch {
 		simpleJSONData := tableOutput{Type: "table", Rows: [][]interface{}{}, Columns: []tableColumn{}}
-		fields := getFieldNames(frame, req.Fields)
+		fields := req.getFieldNames(frame)
 		simpleJSONData.Columns, err = prepareKVColumns(frame, fields)
 		if err != nil {
 			return nil, err
@@ -167,7 +181,7 @@ func (req *simpleJSONQueryRequest) formatTSDB(ch chan frames.Frame) (interface{}
 	data := map[string][][]interface{}{}
 	for frame := range ch {
 		frameTarget := getBaseTargetTSDB(frame)
-		fields := getFieldNames(frame, req.Fields)
+		fields := req.getFieldNames(frame)
 		iter := frame.IterRows(true)
 		for iter.Next() {
 			rowData := iter.Row()
@@ -196,12 +210,12 @@ func (req *simpleJSONQueryRequest) formatTSDB(ch chan frames.Frame) (interface{}
 
 func CreateResponse(req simpleJSONRequestInterface, ch chan frames.Frame) (interface{}, error) {
 	switch req.getFormatType() {
-	case "table":
+	case tableOutputType:
 		return req.formatTable(ch)
-	case "timeseries":
+	case timeserieOutputType:
 		return req.formatTSDB(ch)
 	}
-	return nil, fmt.Errorf("Unknown format: %s", req.getFormatType())
+	return nil, fmt.Errorf("Unknown format")
 }
 
 func (req *simpleJSONSearchRequest) formatTable(ch chan frames.Frame) (interface{}, error) {
@@ -323,10 +337,13 @@ func getBaseTargetTSDB(frame frames.Frame) string {
 	return fmt.Sprintf("[%s]", strings.Join(lbls, ","))
 }
 
-func getFieldNames(frame frames.Frame, fields []string) []string {
-	retVal := fields
+func (req *simpleJSONQueryRequest) getFieldNames(frame frames.Frame) []string {
+	retVal := req.Fields
 	if len(retVal) == 0 || retVal[0] == "*" {
-		retVal = getMetricNames(frame)
+		retVal = frame.Names()
+		if req.getFormatType() == timeserieOutputType {
+			retVal = getMetricNames(frame)
+		}
 		sort.Strings(retVal)
 	}
 	return retVal
