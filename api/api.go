@@ -37,6 +37,7 @@ import (
 
 	"github.com/nuclio/logger"
 	"github.com/pkg/errors"
+	"strings"
 )
 
 const (
@@ -144,6 +145,9 @@ func (api *API) Write(request *frames.WriteRequest, in chan frames.Frame) (int, 
 		if err := appender.Add(frame); err != nil {
 			msg := "can't add frame"
 			api.logger.ErrorWith(msg, "error", err)
+			if strings.Contains(err.Error(), "Failed POST with status 401") {
+				err = errors.New("unauthorized update (401), may be caused by wrong password or credentials")
+			}
 			return nFrames, nRows, errors.Wrap(err, msg)
 		}
 
