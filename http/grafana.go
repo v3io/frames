@@ -42,8 +42,8 @@ type simpleJSONRequestInterface interface {
 	ParseRequest([]byte) error
 	GetReadRequest(*frames.Session) *frames.ReadRequest
 	formatTSDB(ch chan frames.Frame) (interface{}, error)
-	formatKV(ch chan frames.Frame) (interface{}, error)
-	getBackend() string
+	formatTable(ch chan frames.Frame) (interface{}, error)
+	getFormatType() string
 }
 
 type requestSimpleJSONBase struct {
@@ -68,6 +68,7 @@ type simpleJSONQueryRequest struct {
 	To        string
 	Container string
 	Step      string
+	Query     string
 }
 
 type simpleJSONSearchRequest struct {
@@ -107,9 +108,14 @@ func SimpleJSONRequestFactory(method string, request []byte) (simpleJSONRequestI
 	return retval, nil
 }
 
-func (req *simpleJSONQueryRequest) getBackend() string {
-	return req.Backend
+func (req *simpleJSONQueryRequest) getFormatType() string {
+	return req.Type
 }
+
+func (req *simpleJSONSearchRequest) getFormatType() string {
+	return "table"
+}
+
 func (req *simpleJSONQueryRequest) GetReadRequest(session *frames.Session) *frames.ReadRequest {
 	if session == nil {
 		session = &frames.Session{Container: req.Container}
@@ -121,11 +127,10 @@ func (req *simpleJSONQueryRequest) GetReadRequest(session *frames.Session) *fram
 	}
 	return &frames.ReadRequest{Backend: req.Backend, Table: req.TableName, Columns: req.Fields,
 		Start: req.Range.From, End: req.Range.To,
-		Step:    req.Step,
-		Session: session, Filter: req.Filter}
+		Step: req.Step, Session: session, Filter: req.Filter, Query: req.Query}
 }
 
-func (req *simpleJSONQueryRequest) formatKV(ch chan frames.Frame) (interface{}, error) {
+func (req *simpleJSONQueryRequest) formatTable(ch chan frames.Frame) (interface{}, error) {
 	retVal := []tableOutput{}
 	var err error
 	for frame := range ch {
@@ -190,16 +195,16 @@ func (req *simpleJSONQueryRequest) formatTSDB(ch chan frames.Frame) (interface{}
 }
 
 func CreateResponse(req simpleJSONRequestInterface, ch chan frames.Frame) (interface{}, error) {
-	switch req.getBackend() {
-	case "kv":
-		return req.formatKV(ch)
-	case "tsdb":
+	switch req.getFormatType() {
+	case "table":
+		return req.formatTable(ch)
+	case "timeseries":
 		return req.formatTSDB(ch)
 	}
-	return nil, fmt.Errorf("Unknown format: %s", req.getBackend())
+	return nil, fmt.Errorf("Unknown format: %s", req.getFormatType())
 }
 
-func (req *simpleJSONSearchRequest) formatKV(ch chan frames.Frame) (interface{}, error) {
+func (req *simpleJSONSearchRequest) formatTable(ch chan frames.Frame) (interface{}, error) {
 	retval := []interface{}{}
 	for frame := range ch {
 		iter := frame.IterRows(true)
@@ -249,7 +254,7 @@ func (req *simpleJSONSearchRequest) ParseRequest(requestBody []byte) error {
 func (req *simpleJSONQueryRequest) parseQueryLine(fieldInput string) error {
 	translate := map[string]string{"table_name": "TableName"}
 	// example query: fields=sentiment;table_name=stock_metrics;backend=tsdb;filter=symbol=="AAPL";container=container_name
-	re, err := regexp.Compile(`^\s*(filter|fields|table_name|backend|container|step)\s*=\s*(.*)\s*$`)
+	re, err := regexp.Compile(`^\s*(filter|fields|table_name|backend|container|step|query)\s*=\s*(.*)\s*$`)
 	if err != nil {
 		return err
 	}
