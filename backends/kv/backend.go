@@ -59,16 +59,12 @@ func (b *Backend) Create(request *frames.CreateRequest) error {
 // Delete deletes a table (or part of it)
 func (b *Backend) Delete(request *frames.DeleteRequest) error {
 
-	if !strings.HasSuffix(request.Table, "/") {
-		request.Table += "/"
-	}
-
-	container, err := b.newContainer(request.Session)
+	container, path, err := b.newConnection(request.Session, request.Table, true)
 	if err != nil {
 		return err
 	}
 
-	return v3ioutils.DeleteTable(b.logger, container, request.Table, request.Filter, b.numWorkers)
+	return v3ioutils.DeleteTable(b.logger, container, path, request.Filter, b.numWorkers)
 	// TODO: delete the table directory entry if filter == ""
 }
 
@@ -85,11 +81,6 @@ func (b *Backend) Exec(request *frames.ExecRequest) error {
 }
 
 func (b *Backend) updateItem(request *frames.ExecRequest) error {
-	container, err := b.newContainer(request.Session)
-	if err != nil {
-		return err
-	}
-
 	varKey, hasKey := request.Args["key"]
 	varExpr, hasExpr := request.Args["expression"]
 	if !hasExpr || !hasKey || request.Table == "" {
@@ -104,16 +95,17 @@ func (b *Backend) updateItem(request *frames.ExecRequest) error {
 		condition = val.GetSval()
 	}
 
-	if !strings.HasSuffix(request.Table, "/") {
-		request.Table += "/"
+	container, path, err := b.newConnection(request.Session, request.Table, true)
+	if err != nil {
+		return err
 	}
 
-	b.logger.DebugWith("update item", "path", request.Table, "key", key, "expr", expr, "condition", condition)
+	b.logger.DebugWith("update item", "path", path, "key", key, "expr", expr, "condition", condition)
 	return container.Sync.UpdateItem(&v3io.UpdateItemInput{
-		Path: request.Table + key, Expression: &expr, Condition: condition})
+		Path: path + key, Expression: &expr, Condition: condition})
 }
 
-func (b *Backend) newContainer(session *frames.Session) (*v3io.Container, error) {
+/*func (b *Backend) newContainer(session *frames.Session) (*v3io.Container, error) {
 
 	container, err := v3ioutils.NewContainer(
 		session,
@@ -123,4 +115,24 @@ func (b *Backend) newContainer(session *frames.Session) (*v3io.Container, error)
 	)
 
 	return container, err
+}
+
+*/
+
+func (b *Backend) newConnection(session *frames.Session, path string, addSlash bool) (*v3io.Container, string, error) {
+
+	session = frames.InitSessionDefaults(session, b.framesConfig)
+	containerName, newPath, err := v3ioutils.ProcessPaths(session, path, addSlash)
+	if err != nil {
+		return nil, "", err
+	}
+
+	session.Container = containerName
+	container, err := v3ioutils.NewContainer(
+		session,
+		b.logger,
+		b.numWorkers,
+	)
+
+	return container, newPath, err
 }

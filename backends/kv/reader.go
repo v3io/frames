@@ -21,9 +21,7 @@ such restriction.
 package kv
 
 import (
-	"strings"
-
-	v3io "github.com/v3io/v3io-go-http"
+	"github.com/v3io/v3io-go-http"
 
 	"github.com/v3io/frames"
 	"github.com/v3io/frames/backends"
@@ -37,10 +35,6 @@ const (
 
 // Read does a read request
 func (kv *Backend) Read(request *frames.ReadRequest) (frames.FrameIterator, error) {
-	tablePath := request.Table
-	if !strings.HasSuffix(tablePath, "/") {
-		tablePath += "/"
-	}
 
 	if request.MessageLimit == 0 {
 		request.MessageLimit = 256 // TODO: More?
@@ -51,13 +45,13 @@ func (kv *Backend) Read(request *frames.ReadRequest) (frames.FrameIterator, erro
 		columns = []string{"*"}
 	}
 
-	input := v3io.GetItemsInput{Path: tablePath, Filter: request.Filter, AttributeNames: columns}
-	kv.logger.DebugWith("read input", "input", input, "request", request)
-
-	container, err := kv.newContainer(request.Session)
+	container, tablePath, err := kv.newConnection(request.Session, request.Table, true)
 	if err != nil {
 		return nil, err
 	}
+
+	input := v3io.GetItemsInput{Path: tablePath, Filter: request.Filter, AttributeNames: columns}
+	kv.logger.DebugWith("read input", "input", input, "request", request)
 
 	iter, err := v3ioutils.NewAsyncItemsCursor(
 		container, &input, kv.numWorkers, request.ShardingKeys, kv.logger, 0)

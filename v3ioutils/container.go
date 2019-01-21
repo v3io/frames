@@ -31,10 +31,13 @@ import (
 	"github.com/v3io/frames"
 	v3io "github.com/v3io/v3io-go-http"
 	"github.com/v3io/v3io-tsdb/pkg/utils"
+	"strings"
 )
 
-func NewContainer(session *frames.Session, framesCfg *frames.Config, logger logger.Logger, workers int) (*v3io.Container, error) {
-	session = frames.InitSessionDefaults(session, framesCfg)
+const v3ioUsersContainer = "users"
+const v3ioHomeVar = "$V3IO_HOME"
+
+func NewContainer(session *frames.Session, logger logger.Logger, workers int) (*v3io.Container, error) {
 
 	config := v3io.SessionConfig{
 		Username:   session.User,
@@ -177,4 +180,34 @@ func respWaitLoop(logger logger.Logger, comm chan int, responseChan chan *v3io.R
 	}()
 
 	return done
+}
+
+func ProcessPaths(session *frames.Session, path string, addSlash bool) (string, string, error) {
+
+	container := session.Container
+
+	if container == "" {
+		sp := strings.SplitN(path, "/", 2)
+		if len(sp) < 2 {
+			return "", "", errors.New("Please specify a data container name via the container parameters or the path prefix e.g. bigdata/mytable")
+		}
+		container = sp[0]
+		path = sp[1]
+	}
+
+	if container == v3ioHomeVar {
+		container = v3ioUsersContainer
+		path = session.User + "/" + path
+	}
+
+	if strings.HasPrefix(path, v3ioHomeVar+"/") {
+		container = v3ioUsersContainer
+		path = session.User + "/" + path[len(v3ioHomeVar)+1:]
+	}
+
+	if addSlash && !strings.HasSuffix(path, "/") {
+		path += "/"
+	}
+
+	return container, path, nil
 }

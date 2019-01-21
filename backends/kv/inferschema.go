@@ -25,19 +25,13 @@ import (
 	"github.com/v3io/frames"
 	"github.com/v3io/frames/v3ioutils"
 	"github.com/v3io/v3io-go-http"
-	"strings"
 )
 
 func (b *Backend) inferSchema(request *frames.ExecRequest) error {
 
-	container, err := b.newContainer(request.Session)
+	container, table, err := b.newConnection(request.Session, request.Table, true)
 	if err != nil {
 		return err
-	}
-
-	table := request.Table
-	if !strings.HasSuffix(table, "/") {
-		table += "/"
 	}
 
 	keyField := "__name"
