@@ -357,26 +357,22 @@ func (s *Server) handleExec(ctx *fasthttp.RequestCtx) {
 		return
 	}
 
-	resp := &pb.ExecResponse{}
 	enc := frames.NewEncoder(ctx)
+	var frameData string
 	if frame != nil {
-		iface, ok := frame.(pb.Framed)
-		if !ok {
-			s.logger.Error("unknown frame type")
-			s.writeError(enc, fmt.Errorf("unknown frame type"))
+		data, err := frames.MarshalFrame(frame)
+		if err != nil {
+			s.logger.ErrorWith("can't marshal frame", "error", err)
+			s.writeError(enc, fmt.Errorf("can't marsha frame - %s", err))
 		}
 
-		resp.Frame = iface.Proto()
-	}
-
-	data, err := json.Marshal(resp)
-	if err != nil {
-		s.logger.ErrorWith("can't encode frame", "error", err)
-		s.writeError(enc, fmt.Errorf("can't encode frame - %s", err))
+		frameData = base64.StdEncoding.EncodeToString(data)
 	}
 
 	ctx.SetStatusCode(http.StatusOK)
-	ctx.Write(data)
+	json.NewEncoder(ctx).Encode(map[string]string{
+		"frame": frameData,
+	})
 }
 
 func (s *Server) handleSimpleJSONQuery(ctx *fasthttp.RequestCtx) {

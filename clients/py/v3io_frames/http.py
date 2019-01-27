@@ -12,9 +12,11 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+import json
 import struct
+from base64 import b64decode
 from datetime import datetime
-from functools import wraps, partial
+from functools import partial, wraps
 from itertools import chain
 
 import requests
@@ -23,10 +25,11 @@ from urllib3.exceptions import HTTPError
 
 from . import frames_pb2 as fpb
 from .client import ClientBase
-from .errors import (CreateError, DeleteError, Error, ExecuteError,
-                     ReadError, WriteError)
-from .pbutils import pb2py, msg2df, df2msg
+from .errors import (CreateError, DeleteError, Error, ExecuteError, ReadError,
+                     WriteError)
+from .pbutils import df2msg, msg2df, pb2py
 from .pdutils import concat_dfs
+from .frames_pb2 import Frame
 
 header_fmt = '<q'
 header_fmt_size = struct.calcsize(header_fmt)
@@ -158,6 +161,18 @@ class Client(ClientBase):
         resp = requests.post(url, headers=headers, json=request)
         if not resp.ok:
             raise ExecuteError(resp.text)
+
+        try:
+            out = resp.json()
+        except json.JSONDecodeError as err:
+            raise ExecuteError(str(err))
+
+        frame = out.get('frame')
+        if not frame:
+            return
+
+        msg = Frame.FromString(b64decode(frame))
+        return msg2df(msg)
 
     def _url_for(self, action):
         return self.address + '/' + action

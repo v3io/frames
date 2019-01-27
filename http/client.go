@@ -22,6 +22,7 @@ package http
 
 import (
 	"bytes"
+	"encoding/base64"
 	"encoding/json"
 	"fmt"
 	"io"
@@ -210,17 +211,23 @@ func (c *Client) Exec(request *frames.ExecRequest) (frames.Frame, error) {
 	}
 
 	defer resp.Body.Close()
-	var eresp pb.ExecResponse
-	if err := json.NewDecoder(resp.Body).Decode(&eresp); err != nil {
-		return nil, err
+	var reply struct {
+		Frame string `json:"frame"`
+	}
+	if err := json.NewDecoder(resp.Body).Decode(&reply); err != nil {
+		return nil, errors.Wrap(err, "bad JSON reply")
 	}
 
-	var frame frames.Frame
-	if eresp.Frame != nil {
-		frame = frames.NewFrameFromProto(eresp.Frame)
+	if reply.Frame == "" {
+		return nil, nil
 	}
 
-	return frame, nil
+	data, err := base64.StdEncoding.DecodeString(reply.Frame)
+	if err != nil {
+		return nil, errors.Wrap(err, "bad base64 encoding of frame")
+	}
+
+	return frames.UnmarshalFrame(data)
 }
 
 func (c *Client) jsonCall(path string, request interface{}) (*http.Response, error) {
