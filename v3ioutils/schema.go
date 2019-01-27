@@ -29,6 +29,7 @@ import (
 	v3io "github.com/v3io/v3io-go-http"
 
 	"github.com/v3io/frames"
+	"strings"
 )
 
 const (
@@ -171,6 +172,10 @@ func (s *OldV3ioSchema) UpdateSchema(container *v3io.Container, tablePath string
 		err = container.Sync.PutObject(&v3io.PutObjectInput{
 			Path: tablePath + ".%23schema", Body: body})
 		if err != nil {
+			if strings.Contains(err.Error(), "status 401") {
+				return errors.New("unauthorized update (401), may be caused by wrong password or credentials")
+			}
+
 			return errors.Wrap(err, "failed to update schema")
 		}
 	}

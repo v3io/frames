@@ -45,17 +45,19 @@ type streamIterator struct {
 
 func (b *Backend) Read(request *frames.ReadRequest) (frames.FrameIterator, error) {
 
-	container, err := b.newContainer(request.Session)
-	if err != nil {
-		return nil, err
-	}
-
-	iter := streamIterator{request: request, b: b, container: container}
-
 	if request.Table == "" || request.Seek == "" || request.ShardId == "" {
 		return nil, fmt.Errorf("missing essential paramaters, need: table, seek, shard parameters")
 	}
-	input := v3io.SeekShardInput{Path: request.Table + "/" + request.ShardId}
+
+	container, path, err := b.newConnection(request.Session, request.Table, true)
+	if err != nil {
+		return nil, err
+	}
+	request.Table = path
+
+	iter := streamIterator{request: request, b: b, container: container}
+
+	input := v3io.SeekShardInput{Path: request.Table + request.ShardId}
 
 	if request.MessageLimit == 0 {
 		request.MessageLimit = 1024
@@ -106,7 +108,7 @@ func (i *streamIterator) Next() bool {
 	}
 
 	resp, err := i.container.Sync.GetRecords(&v3io.GetRecordsInput{
-		Path:     i.request.Table + "/" + i.request.ShardId,
+		Path:     i.request.Table + i.request.ShardId,
 		Location: i.nextLocation,
 		Limit:    int(i.request.MessageLimit),
 	})
