@@ -148,6 +148,7 @@ message InitialWriteRequest {
     Frame initial_data = 4;
     string expression = 5;
     bool more = 6;
+    repeated string partition_keys = 7;
 }
 
 message WriteRequest {
