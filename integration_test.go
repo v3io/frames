@@ -458,7 +458,7 @@ func integrationTest(t *testing.T, client frames.Client, backend string) {
 			Table:   table,
 		}
 		cfg.exec(ereq)
-		if err := client.Exec(ereq); err != nil {
+		if _, err := client.Exec(ereq); err != nil {
 			t.Fatal(err)
 		}
 	}

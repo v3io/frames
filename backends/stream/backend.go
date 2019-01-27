@@ -112,13 +112,13 @@ func (b *Backend) Delete(request *frames.DeleteRequest) error {
 }
 
 // Exec executes a command
-func (b *Backend) Exec(request *frames.ExecRequest) error {
+func (b *Backend) Exec(request *frames.ExecRequest) (frames.Frame, error) {
 	cmd := strings.TrimSpace(strings.ToLower(request.Command))
 	switch cmd {
 	case "put":
-		return b.put(request)
+		return nil, b.put(request)
 	}
-	return fmt.Errorf("Stream backend does not support commend - %s", cmd)
+	return nil, fmt.Errorf("Stream backend does not support commend - %s", cmd)
 }
 
 func (b *Backend) put(request *frames.ExecRequest) error {

@@ -158,13 +158,13 @@ func (b *Backend) Write(request *frames.WriteRequest) (frames.FrameAppender, err
 }
 
 // Exec executes a command
-func (b *Backend) Exec(request *frames.ExecRequest) error {
+func (b *Backend) Exec(request *frames.ExecRequest) (frames.Frame, error) {
 	if strings.ToLower(request.Command) == "ping" {
 		b.logger.Info("PONG")
-		return nil
+		return nil, nil
 	}
 
-	return fmt.Errorf("CSV backend does not support %q exec command", request.Command)
+	return nil, fmt.Errorf("CSV backend does not support %q exec command", request.Command)
 }
 
 func (b *Backend) csvPath(table string) string {

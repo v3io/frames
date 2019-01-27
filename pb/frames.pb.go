@@ -52,7 +52,7 @@ func (x DType) String() string {
 	return proto.EnumName(DType_name, int32(x))
 }
 func (DType) EnumDescriptor() ([]byte, []int) {
-	return fileDescriptor_frames_cfdbb668dfd64f77, []int{0}
+	return fileDescriptor_frames_cf6e736928b8ace5, []int{0}
 }
 
 type ErrorOptions int32
@@ -75,7 +75,7 @@ func (x ErrorOptions) String() string {
 	return proto.EnumName(ErrorOptions_name, int32(x))
 }
 func (ErrorOptions) EnumDescriptor() ([]byte, []int) {
-	return fileDescriptor_frames_cfdbb668dfd64f77, []int{1}
+	return fileDescriptor_frames_cf6e736928b8ace5, []int{1}
 }
 
 type Column_Kind int32
@@ -98,7 +98,7 @@ func (x Column_Kind) String() string {
 	return proto.EnumName(Column_Kind_name, int32(x))
 }
 func (Column_Kind) EnumDescriptor() ([]byte, []int) {
-	return fileDescriptor_frames_cfdbb668dfd64f77, []int{0, 0}
+	return fileDescriptor_frames_cf6e736928b8ace5, []int{0, 0}
 }
 
 type Column struct {
@@ -121,7 +121,7 @@ func (m *Column) Reset()         { *m = Column{} }
 func (m *Column) String() string { return proto.CompactTextString(m) }
 func (*Column) ProtoMessage()    {}
 func (*Column) Descriptor() ([]byte, []int) {
-	return fileDescriptor_frames_cfdbb668dfd64f77, []int{0}
+	return fileDescriptor_frames_cf6e736928b8ace5, []int{0}
 }
 func (m *Column) XXX_Unmarshal(b []byte) error {
 	return xxx_messageInfo_Column.Unmarshal(m, b)
@@ -222,7 +222,7 @@ func (m *Value) Reset()         { *m = Value{} }
 func (m *Value) String() string { return proto.CompactTextString(m) }
 func (*Value) ProtoMessage()    {}
 func (*Value) Descriptor() ([]byte, []int) {
-	return fileDescriptor_frames_cfdbb668dfd64f77, []int{1}
+	return fileDescriptor_frames_cf6e736928b8ace5, []int{1}
 }
 func (m *Value) XXX_Unmarshal(b []byte) error {
 	return xxx_messageInfo_Value.Unmarshal(m, b)
@@ -443,7 +443,7 @@ func (m *Frame) Reset()         { *m = Frame{} }
 func (m *Frame) String() string { return proto.CompactTextString(m) }
 func (*Frame) ProtoMessage()    {}
 func (*Frame) Descriptor() ([]byte, []int) {
-	return fileDescriptor_frames_cfdbb668dfd64f77, []int{2}
+	return fileDescriptor_frames_cf6e736928b8ace5, []int{2}
 }
 func (m *Frame) XXX_Unmarshal(b []byte) error {
 	return xxx_messageInfo_Frame.Unmarshal(m, b)
@@ -507,7 +507,7 @@ func (m *SchemaField) Reset()         { *m = SchemaField{} }
 func (m *SchemaField) String() string { return proto.CompactTextString(m) }
 func (*SchemaField) ProtoMessage()    {}
 func (*SchemaField) Descriptor() ([]byte, []int) {
-	return fileDescriptor_frames_cfdbb668dfd64f77, []int{3}
+	return fileDescriptor_frames_cf6e736928b8ace5, []int{3}
 }
 func (m *SchemaField) XXX_Unmarshal(b []byte) error {
 	return xxx_messageInfo_SchemaField.Unmarshal(m, b)
@@ -574,7 +574,7 @@ func (m *SchemaKey) Reset()         { *m = SchemaKey{} }
 func (m *SchemaKey) String() string { return proto.CompactTextString(m) }
 func (*SchemaKey) ProtoMessage()    {}
 func (*SchemaKey) Descriptor() ([]byte, []int) {
-	return fileDescriptor_frames_cfdbb668dfd64f77, []int{4}
+	return fileDescriptor_frames_cf6e736928b8ace5, []int{4}
 }
 func (m *SchemaKey) XXX_Unmarshal(b []byte) error {
 	return xxx_messageInfo_SchemaKey.Unmarshal(m, b)
@@ -626,7 +626,7 @@ func (m *TableSchema) Reset()         { *m = TableSchema{} }
 func (m *TableSchema) String() string { return proto.CompactTextString(m) }
 func (*TableSchema) ProtoMessage()    {}
 func (*TableSchema) Descriptor() ([]byte, []int) {
-	return fileDescriptor_frames_cfdbb668dfd64f77, []int{5}
+	return fileDescriptor_frames_cf6e736928b8ace5, []int{5}
 }
 func (m *TableSchema) XXX_Unmarshal(b []byte) error {
 	return xxx_messageInfo_TableSchema.Unmarshal(m, b)
@@ -705,7 +705,7 @@ func (m *JoinStruct) Reset()         { *m = JoinStruct{} }
 func (m *JoinStruct) String() string { return proto.CompactTextString(m) }
 func (*JoinStruct) ProtoMessage()    {}
 func (*JoinStruct) Descriptor() ([]byte, []int) {
-	return fileDescriptor_frames_cfdbb668dfd64f77, []int{6}
+	return fileDescriptor_frames_cf6e736928b8ace5, []int{6}
 }
 func (m *JoinStruct) XXX_Unmarshal(b []byte) error {
 	return xxx_messageInfo_JoinStruct.Unmarshal(m, b)
@@ -742,7 +742,7 @@ func (m *Session) Reset()         { *m = Session{} }
 func (m *Session) String() string { return proto.CompactTextString(m) }
 func (*Session) ProtoMessage()    {}
 func (*Session) Descriptor() ([]byte, []int) {
-	return fileDescriptor_frames_cfdbb668dfd64f77, []int{7}
+	return fileDescriptor_frames_cf6e736928b8ace5, []int{7}
 }
 func (m *Session) XXX_Unmarshal(b []byte) error {
 	return xxx_messageInfo_Session.Unmarshal(m, b)
@@ -851,7 +851,7 @@ func (m *ReadRequest) Reset()         { *m = ReadRequest{} }
 func (m *ReadRequest) String() string { return proto.CompactTextString(m) }
 func (*ReadRequest) ProtoMessage()    {}
 func (*ReadRequest) Descriptor() ([]byte, []int) {
-	return fileDescriptor_frames_cfdbb668dfd64f77, []int{8}
+	return fileDescriptor_frames_cf6e736928b8ace5, []int{8}
 }
 func (m *ReadRequest) XXX_Unmarshal(b []byte) error {
 	return xxx_messageInfo_ReadRequest.Unmarshal(m, b)
@@ -1077,7 +1077,7 @@ func (m *InitialWriteRequest) Reset()         { *m = InitialWriteRequest{} }
 func (m *InitialWriteRequest) String() string { return proto.CompactTextString(m) }
 func (*InitialWriteRequest) ProtoMessage()    {}
 func (*InitialWriteRequest) Descriptor() ([]byte, []int) {
-	return fileDescriptor_frames_cfdbb668dfd64f77, []int{9}
+	return fileDescriptor_frames_cf6e736928b8ace5, []int{9}
 }
 func (m *InitialWriteRequest) XXX_Unmarshal(b []byte) error {
 	return xxx_messageInfo_InitialWriteRequest.Unmarshal(m, b)
@@ -1160,7 +1160,7 @@ func (m *WriteRequest) Reset()         { *m = WriteRequest{} }
 func (m *WriteRequest) String() string { return proto.CompactTextString(m) }
 func (*WriteRequest) ProtoMessage()    {}
 func (*WriteRequest) Descriptor() ([]byte, []int) {
-	return fileDescriptor_frames_cfdbb668dfd64f77, []int{10}
+	return fileDescriptor_frames_cf6e736928b8ace5, []int{10}
 }
 func (m *WriteRequest) XXX_Unmarshal(b []byte) error {
 	return xxx_messageInfo_WriteRequest.Unmarshal(m, b)
@@ -1303,7 +1303,7 @@ func (m *WriteRespose) Reset()         { *m = WriteRespose{} }
 func (m *WriteRespose) String() string { return proto.CompactTextString(m) }
 func (*WriteRespose) ProtoMessage()    {}
 func (*WriteRespose) Descriptor() ([]byte, []int) {
-	return fileDescriptor_frames_cfdbb668dfd64f77, []int{11}
+	return fileDescriptor_frames_cf6e736928b8ace5, []int{11}
 }
 func (m *WriteRespose) XXX_Unmarshal(b []byte) error {
 	return xxx_messageInfo_WriteRespose.Unmarshal(m, b)
@@ -1354,7 +1354,7 @@ func (m *CreateRequest) Reset()         { *m = CreateRequest{} }
 func (m *CreateRequest) String() string { return proto.CompactTextString(m) }
 func (*CreateRequest) ProtoMessage()    {}
 func (*CreateRequest) Descriptor() ([]byte, []int) {
-	return fileDescriptor_frames_cfdbb668dfd64f77, []int{12}
+	return fileDescriptor_frames_cf6e736928b8ace5, []int{12}
 }
 func (m *CreateRequest) XXX_Unmarshal(b []byte) error {
 	return xxx_messageInfo_CreateRequest.Unmarshal(m, b)
@@ -1426,7 +1426,7 @@ func (m *CreateResponse) Reset()         { *m = CreateResponse{} }
 func (m *CreateResponse) String() string { return proto.CompactTextString(m) }
 func (*CreateResponse) ProtoMessage()    {}
 func (*CreateResponse) Descriptor() ([]byte, []int) {
-	return fileDescriptor_frames_cfdbb668dfd64f77, []int{13}
+	return fileDescriptor_frames_cf6e736928b8ace5, []int{13}
 }
 func (m *CreateResponse) XXX_Unmarshal(b []byte) error {
 	return xxx_messageInfo_CreateResponse.Unmarshal(m, b)
@@ -1465,7 +1465,7 @@ func (m *DeleteRequest) Reset()         { *m = DeleteRequest{} }
 func (m *DeleteRequest) String() string { return proto.CompactTextString(m) }
 func (*DeleteRequest) ProtoMessage()    {}
 func (*DeleteRequest) Descriptor() ([]byte, []int) {
-	return fileDescriptor_frames_cfdbb668dfd64f77, []int{14}
+	return fileDescriptor_frames_cf6e736928b8ace5, []int{14}
 }
 func (m *DeleteRequest) XXX_Unmarshal(b []byte) error {
 	return xxx_messageInfo_DeleteRequest.Unmarshal(m, b)
@@ -1544,7 +1544,7 @@ func (m *DeleteResponse) Reset()         { *m = DeleteResponse{} }
 func (m *DeleteResponse) String() string { return proto.CompactTextString(m) }
 func (*DeleteResponse) ProtoMessage()    {}
 func (*DeleteResponse) Descriptor() ([]byte, []int) {
-	return fileDescriptor_frames_cfdbb668dfd64f77, []int{15}
+	return fileDescriptor_frames_cf6e736928b8ace5, []int{15}
 }
 func (m *DeleteResponse) XXX_Unmarshal(b []byte) error {
 	return xxx_messageInfo_DeleteResponse.Unmarshal(m, b)
@@ -1580,7 +1580,7 @@ func (m *ExecRequest) Reset()         { *m = ExecRequest{} }
 func (m *ExecRequest) String() string { return proto.CompactTextString(m) }
 func (*ExecRequest) ProtoMessage()    {}
 func (*ExecRequest) Descriptor() ([]byte, []int) {
-	return fileDescriptor_frames_cfdbb668dfd64f77, []int{16}
+	return fileDescriptor_frames_cf6e736928b8ace5, []int{16}
 }
 func (m *ExecRequest) XXX_Unmarshal(b []byte) error {
 	return xxx_messageInfo_ExecRequest.Unmarshal(m, b)
@@ -1643,6 +1643,7 @@ func (m *ExecRequest) GetExpression() string {
 }
 
 type ExecResponse struct {
+	Frame                *Frame   `protobuf:"bytes,1,opt,name=frame,proto3" json:"frame,omitempty"`
 	XXX_NoUnkeyedLiteral struct{} `json:"-"`
 	XXX_unrecognized     []byte   `json:"-"`
 	XXX_sizecache        int32    `json:"-"`
@@ -1652,7 +1653,7 @@ func (m *ExecResponse) Reset()         { *m = ExecResponse{} }
 func (m *ExecResponse) String() string { return proto.CompactTextString(m) }
 func (*ExecResponse) ProtoMessage()    {}
 func (*ExecResponse) Descriptor() ([]byte, []int) {
-	return fileDescriptor_frames_cfdbb668dfd64f77, []int{17}
+	return fileDescriptor_frames_cf6e736928b8ace5, []int{17}
 }
 func (m *ExecResponse) XXX_Unmarshal(b []byte) error {
 	return xxx_messageInfo_ExecResponse.Unmarshal(m, b)
@@ -1671,6 +1672,13 @@ func (m *ExecResponse) XXX_DiscardUnknown() {
 }
 
 var xxx_messageInfo_ExecResponse proto.InternalMessageInfo
+
+func (m *ExecResponse) GetFrame() *Frame {
+	if m != nil {
+		return m.Frame
+	}
+	return nil
+}
 
 func init() {
 	proto.RegisterType((*Column)(nil), "pb.Column")
@@ -1966,10 +1974,10 @@ var _Frames_serviceDesc = grpc.ServiceDesc{
 	Metadata: "frames.proto",
 }
 
-func init() { proto.RegisterFile("frames.proto", fileDescriptor_frames_cfdbb668dfd64f77) }
+func init() { proto.RegisterFile("frames.proto", fileDescriptor_frames_cf6e736928b8ace5) }
 
-var fileDescriptor_frames_cfdbb668dfd64f77 = []byte{
-	// 1630 bytes of a gzipped FileDescriptorProto
+var fileDescriptor_frames_cf6e736928b8ace5 = []byte{
+	// 1638 bytes of a gzipped FileDescriptorProto
 	0x1f, 0x8b, 0x08, 0x00, 0x00, 0x00, 0x00, 0x00, 0x02, 0xff, 0xb4, 0x57, 0xcd, 0x72, 0x1b, 0xc7,
 	0x11, 0xc6, 0xe2, 0x7f, 0x1b, 0x20, 0x09, 0x8d, 0x65, 0x79, 0x85, 0x38, 0x11, 0xbc, 0xb4, 0x63,
 	0x94, 0x1d, 0x51, 0x09, 0x7d, 0x49, 0xf9, 0x92, 0x22, 0x25, 0x50, 0x84, 0x09, 0x89, 0xa9, 0x21,
@@ -2060,16 +2068,17 @@ var fileDescriptor_frames_cfdbb668dfd64f77 = []byte{
 	0x39, 0xff, 0xc8, 0x99, 0xd2, 0xa5, 0xb4, 0x5a, 0x89, 0x24, 0xca, 0x53, 0x2d, 0x44, 0xf6, 0x10,
 	0xea, 0x42, 0x2f, 0x8b, 0xb7, 0xe0, 0x7d, 0xca, 0x72, 0x17, 0xcf, 0xd1, 0x89, 0x5e, 0xe6, 0xaf,
 	0x40, 0x32, 0xbb, 0x35, 0x0b, 0x9a, 0xb7, 0x67, 0x41, 0xff, 0x14, 0xfc, 0xad, 0xcb, 0x87, 0x56,
-	0xc4, 0x3e, 0x74, 0x5d, 0x08, 0x8e, 0xa3, 0x6f, 0x4e, 0xa1, 0x41, 0x3f, 0x4e, 0xac, 0x03, 0xad,
-	0xf1, 0xf3, 0xeb, 0xd1, 0xd3, 0x11, 0x77, 0x7f, 0x29, 0x67, 0x93, 0xcb, 0x93, 0xeb, 0x9e, 0xc7,
-	0x00, 0x9a, 0x57, 0xd7, 0x7c, 0xfc, 0xfc, 0x69, 0xaf, 0xca, 0xda, 0x50, 0xbf, 0x1e, 0x3f, 0x1b,
-	0xf5, 0x6a, 0x68, 0x7d, 0x7a, 0x79, 0x39, 0x19, 0x9d, 0x3c, 0xef, 0xd5, 0xbf, 0xf9, 0x12, 0xba,
-	0xe5, 0xc3, 0x43, 0xb3, 0xb3, 0x93, 0xf1, 0xa4, 0x57, 0x41, 0xe7, 0xf1, 0xd3, 0xe7, 0x97, 0x7c,
-	0xd4, 0xf3, 0x8e, 0xff, 0xed, 0x41, 0xf3, 0xcc, 0x4d, 0x80, 0x9f, 0x43, 0x1d, 0x1f, 0x33, 0x8c,
-	0x5a, 0xa6, 0xf4, 0xac, 0xe9, 0xef, 0xc6, 0x4b, 0x58, 0xf9, 0xa5, 0xc7, 0x1e, 0x41, 0x83, 0x26,
-	0x0a, 0xa3, 0x02, 0x29, 0x8f, 0xa8, 0x7e, 0x19, 0xa1, 0x71, 0x13, 0x56, 0x86, 0x1e, 0xfb, 0x15,
-	0x34, 0x5d, 0xbd, 0xb3, 0x3b, 0xef, 0x34, 0x74, 0x9f, 0x95, 0xa1, 0xbc, 0x44, 0x2a, 0xe8, 0xe2,
-	0xca, 0xc6, 0xb9, 0xbc, 0xd5, 0x1b, 0xce, 0xe5, 0x56, 0x55, 0x55, 0xd8, 0xb7, 0x50, 0x47, 0x0e,
-	0x5d, 0xf8, 0xa5, 0x03, 0x75, 0x41, 0x95, 0xe9, 0x0d, 0x2b, 0xb3, 0x26, 0xfd, 0xf9, 0x7e, 0xf7,
-	0xbf, 0x00, 0x00, 0x00, 0xff, 0xff, 0x94, 0x06, 0xbe, 0x12, 0x09, 0x0f, 0x00, 0x00,
+	0xc4, 0x23, 0xe8, 0xba, 0x10, 0x1c, 0x47, 0xe8, 0xe4, 0xfa, 0xdb, 0xbb, 0x3d, 0xa6, 0x1c, 0xfe,
+	0xcd, 0x29, 0x34, 0xe8, 0xcf, 0x8a, 0x75, 0xa0, 0x35, 0x7e, 0x7e, 0x3d, 0x7a, 0x3a, 0xe2, 0xee,
+	0x37, 0xe6, 0x6c, 0x72, 0x79, 0x72, 0xdd, 0xf3, 0x18, 0x40, 0xf3, 0xea, 0x9a, 0x8f, 0x9f, 0x3f,
+	0xed, 0x55, 0x59, 0x1b, 0xea, 0xd7, 0xe3, 0x67, 0xa3, 0x5e, 0x0d, 0xad, 0x4f, 0x2f, 0x2f, 0x27,
+	0xa3, 0x93, 0xe7, 0xbd, 0xfa, 0x37, 0x5f, 0x42, 0xb7, 0x7c, 0xba, 0x68, 0x76, 0x76, 0x32, 0x9e,
+	0xf4, 0x2a, 0xe8, 0x3c, 0x7e, 0xfa, 0xfc, 0x92, 0x8f, 0x7a, 0xde, 0xf1, 0xbf, 0x3d, 0x68, 0x9e,
+	0xb9, 0x11, 0xf1, 0x73, 0xa8, 0xe3, 0x6b, 0x87, 0x51, 0x4f, 0x95, 0xde, 0x3d, 0xfd, 0x5d, 0x7c,
+	0x61, 0xe5, 0x97, 0x1e, 0x7b, 0x04, 0x0d, 0x1a, 0x39, 0x8c, 0x2a, 0xa8, 0x3c, 0xc3, 0xfa, 0x65,
+	0x84, 0xe6, 0x51, 0x58, 0x19, 0x7a, 0xec, 0x57, 0xd0, 0x74, 0x0d, 0xc1, 0xee, 0xbc, 0xd3, 0xf1,
+	0x7d, 0x56, 0x86, 0xf2, 0x1a, 0xaa, 0xa0, 0x8b, 0xab, 0x2b, 0xe7, 0xf2, 0x56, 0xf3, 0x38, 0x97,
+	0x5b, 0x65, 0x57, 0x61, 0xdf, 0x42, 0x1d, 0x49, 0x76, 0xe1, 0x97, 0x4e, 0xdc, 0x05, 0x55, 0xe6,
+	0x3f, 0xac, 0xcc, 0x9a, 0xf4, 0x6b, 0xfc, 0xdd, 0xff, 0x02, 0x00, 0x00, 0xff, 0xff, 0x64, 0x32,
+	0x70, 0x6e, 0x2a, 0x0f, 0x00, 0x00,
 }

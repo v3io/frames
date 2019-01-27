@@ -351,12 +351,32 @@ func (s *Server) handleExec(ctx *fasthttp.RequestCtx) {
 	}
 	s.httpAuth(ctx, request.Session)
 
-	if err := s.api.Exec(request); err != nil {
+	frame, err := s.api.Exec(request)
+	if err != nil {
 		ctx.Error("can't exec", http.StatusInternalServerError)
 		return
 	}
 
-	s.replyOK(ctx)
+	resp := &pb.ExecResponse{}
+	enc := frames.NewEncoder(ctx)
+	if frame != nil {
+		iface, ok := frame.(pb.Framed)
+		if !ok {
+			s.logger.Error("unknown frame type")
+			s.writeError(enc, fmt.Errorf("unknown frame type"))
+		}
+
+		resp.Frame = iface.Proto()
+	}
+
+	data, err := json.Marshal(resp)
+	if err != nil {
+		s.logger.ErrorWith("can't encode frame", "error", err)
+		s.writeError(enc, fmt.Errorf("can't encode frame - %s", err))
+	}
+
+	ctx.SetStatusCode(http.StatusOK)
+	ctx.Write(data)
 }
 
 func (s *Server) handleSimpleJSONQuery(ctx *fasthttp.RequestCtx) {
