@@ -93,7 +93,7 @@ class ClientBase:
             max_in_message, marker, iterator, **kw)
 
     def write(self, backend, table, dfs, expression='', labels=None,
-              max_in_message=0, partition_keys=None):
+              max_in_message=0, index_cols=None, partition_keys=None):
         """Write to table
 
         Parameters
@@ -110,6 +110,8 @@ class ClientBase:
             Set of lables
         max_in_message : int
             Maximal number of rows to send per message
+        index_cols : list of str
+            Columns to use as indices
         partition_keys : list of str
             Partition keys
 
@@ -125,7 +127,7 @@ class ClientBase:
 
         request = self._encode_write(
             backend, table, expression, partition_keys)
-        return self._write(request, dfs, labels)
+        return self._write(request, dfs, labels, index_cols)
 
     def create(self, backend, table, attrs=None, schema=None, if_exists=FAIL):
         """Create a table

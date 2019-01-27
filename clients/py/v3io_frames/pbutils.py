@@ -116,9 +116,13 @@ def col2series(col):
     return series
 
 
-def df2msg(df, labels=None):
+def df2msg(df, labels=None, index_cols=None):
     indices = None
-    if should_encode_index(df):
+    if index_cols is not None:
+        indices = [series2col(df[name]) for name in index_cols]
+        cols = [col for col in df.columns if col not in index_cols]
+        df = df[cols]
+    elif should_encode_index(df):
         if hasattr(df.index, 'levels'):
             by_name = df.index.get_level_values
             names = df.index.names

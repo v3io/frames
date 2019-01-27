@@ -74,3 +74,18 @@ def test_categorical():
     col = pbutils.series2col(s)
     assert col.name == s.name, 'bad name'
     assert list(col.strings) == list(s), 'bad data'
+
+
+def test_index_cols():
+    cols = list('abcdef')
+    size = 10
+    df = pd.DataFrame({
+        col: np.random.rand(size) for col in cols
+    })
+
+    index_cols = np.random.choice(cols, size=2)
+    cols = set(col for col in cols if col not in index_cols)
+    msg = pbutils.df2msg(df, index_cols=index_cols)
+    assert set(col.name for col in msg.columns) == cols, 'bad columns'
+    assert set(col.name for col in msg.indices) == set(index_cols), \
+        'bad indices'
