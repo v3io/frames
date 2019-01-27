@@ -40,3 +40,14 @@ def test_client(proto, cls):
         key = 'url' if key == 'data_url' else key
         assert getattr(client.session, key) == value, \
             'bad session value for {}'.format(key)
+
+
+def test_partition_keys():
+    class Proto(v3f.client.ClientBase):
+        def _write(self, request, dfs, labels, index_cols):
+            self.request = request
+
+    c = Proto('localhost:8081', None)
+    keys = ['pk1', 'pk2']
+    c.write('backend', 'table', None, partition_keys=keys)
+    assert c.request.partition_keys == keys, 'bad partition keys'

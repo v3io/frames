@@ -124,7 +124,7 @@ message ReadRequest {
 
     // NoSQL
     repeated int64 segments = 16;
-    int64 totoal_segments = 17;
+    int64 total_segments = 17;
     repeated string sharding_keys = 18;
     string sort_key_range_start = 19;
     string sort_key_range_end = 20;
@@ -148,6 +148,7 @@ message InitialWriteRequest {
     Frame initial_data = 4;
     string expression = 5;
     bool more = 6;
+    repeated string partition_keys = 7;
 }
 
 message WriteRequest {
