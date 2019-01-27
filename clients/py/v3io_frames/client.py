@@ -93,7 +93,7 @@ class ClientBase:
             max_in_message, marker, iterator, **kw)
 
     def write(self, backend, table, dfs, expression='', labels=None,
-              max_in_message=0):
+              max_in_message=0, partition_keys=None):
         """Write to table
 
         Parameters
@@ -110,6 +110,8 @@ class ClientBase:
             Set of lables
         max_in_message : int
             Maximal number of rows to send per message
+        partition_keys : list of str
+            Partition keys
 
         Returns:
             Write result
@@ -121,7 +123,8 @@ class ClientBase:
         if max_in_message:
             dfs = self._iter_chunks(dfs, max_in_message)
 
-        request = self._encode_write(backend, table, expression)
+        request = self._encode_write(
+            backend, table, expression, partition_keys)
         return self._write(request, dfs, labels)
 
     def create(self, backend, table, attrs=None, schema=None, if_exists=FAIL):
@@ -205,13 +208,14 @@ class ClientBase:
     def _encode_session(self, session):
         return session
 
-    def _encode_write(self, backend, table, expression):
+    def _encode_write(self, backend, table, expression, partition_keys):
         # TODO: InitialData?
         return fpb.InitialWriteRequest(
             session=self.session,
             backend=backend,
             table=table,
             expression=expression,
+            partition_keys=partition_keys,
         )
 
     def _validate_request(self, backend, table, err_cls):
