@@ -215,7 +215,12 @@ func (c *Client) Exec(request *frames.ExecRequest) (frames.Frame, error) {
 		return nil, err
 	}
 
-	return frames.NewFrameFromProto(eresp.Frame), nil
+	var frame frames.Frame
+	if eresp.Frame != nil {
+		frame = frames.NewFrameFromProto(eresp.Frame)
+	}
+
+	return frame, nil
 }
 
 func (c *Client) jsonCall(path string, request interface{}) (*http.Response, error) {

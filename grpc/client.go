@@ -175,7 +175,12 @@ func (c *Client) Exec(request *frames.ExecRequest) (frames.Frame, error) {
 		return nil, err
 	}
 
-	return frames.NewFrameFromProto(msg.Frame), nil
+	var frame frames.Frame
+	if msg.Frame != nil {
+		frame = frames.NewFrameFromProto(msg.Frame)
+	}
+
+	return frame, nil
 }
 
 type frameIterator struct {
