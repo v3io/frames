@@ -23,6 +23,8 @@ package frames
 import (
 	"fmt"
 	"math"
+	"sort"
+	"sync"
 	"time"
 
 	"github.com/v3io/frames/pb"
@@ -33,6 +35,7 @@ type ColumnBuilder interface {
 	Append(value interface{}) error
 	At(index int) (interface{}, error)
 	Set(index int, value interface{}) error
+	Delete(index int) error
 	Finish() Column
 }
 
@@ -47,11 +50,16 @@ func NewSliceColumnBuilder(name string, dtype DType, size int) ColumnBuilder {
 
 	// TODO: pre alloate array. Note that for strings we probably don't want to
 	// do this since we'll allocate strings twice - zero value then real value
-	return &sliceColumBuilder{msg: msg, originalSize: int64(size)}
+	return &sliceColumBuilder{
+		msg:          msg,
+		originalSize: int64(size),
+	}
 }
 
 type sliceColumBuilder struct {
 	msg          *pb.Column
+	deleted      map[int]bool // use map so deleting twice will work
+	once         sync.Once
 	originalSize int64
 }
 
@@ -61,6 +69,37 @@ func (b *sliceColumBuilder) At(index int) (interface{}, error) {
 
 func (b *sliceColumBuilder) Append(value interface{}) error {
 	return b.Set(int(b.msg.Size), value)
+}
+
+func (b *sliceColumBuilder) Set(index int, value interface{}) error {
+	b.resize(index + 1)
+	switch b.msg.Dtype {
+	case pb.DType_INTEGER:
+		return b.setInt(index, value)
+	case pb.DType_FLOAT:
+		return b.setFloat(index, value)
+	case pb.DType_STRING:
+		return b.setString(index, value)
+	case pb.DType_TIME:
+		return b.setTime(index, value)
+	case pb.DType_BOOLEAN:
+		return b.setBool(index, value)
+	default:
+		return fmt.Errorf("unknown dtype - %s", b.msg.Dtype)
+	}
+}
+
+func (b *sliceColumBuilder) Delete(index int) error {
+	if index < 0 || int64(index) >= b.msg.Size {
+		return fmt.Errorf("index out of bounds: [0:%d]", b.msg.Size-1)
+	}
+
+	b.once.Do(func() {
+		b.deleted = make(map[int]bool)
+	})
+
+	b.deleted[index] = true
+	return nil
 }
 
 func (b *sliceColumBuilder) setInt(index int, value interface{}) error {
@@ -135,24 +174,6 @@ func (b *sliceColumBuilder) setBool(index int, value interface{}) error {
 	return nil
 }
 
-func (b *sliceColumBuilder) Set(index int, value interface{}) error {
-	b.resize(index + 1)
-	switch b.msg.Dtype {
-	case pb.DType_INTEGER:
-		return b.setInt(index, value)
-	case pb.DType_FLOAT:
-		return b.setFloat(index, value)
-	case pb.DType_STRING:
-		return b.setString(index, value)
-	case pb.DType_TIME:
-		return b.setTime(index, value)
-	case pb.DType_BOOLEAN:
-		return b.setBool(index, value)
-	default:
-		return fmt.Errorf("unknown dtype - %s", b.msg.Dtype)
-	}
-}
-
 func (b *sliceColumBuilder) resize(size int) {
 	b.msg.Size = int64(size)
 	switch b.msg.Dtype {
@@ -198,9 +219,15 @@ func resizeInt64(buf []int64, size int) []int64 {
 	return ints
 }
 
+// TODO: Return error
 func (b *sliceColumBuilder) Finish() Column {
+	b.removeDeleted()
 	b.fillMissingRows()
 	return &colImpl{msg: b.msg}
+}
+
+func (b *sliceColumBuilder) removeDeleted() {
+	// TODO
 }
 
 func (b *sliceColumBuilder) fillMissingRows() {
@@ -265,8 +292,10 @@ func NewLabelColumnBuilder(name string, dtype DType, size int) ColumnBuilder {
 }
 
 type labelColumBuilder struct {
-	msg   *pb.Column
-	empty bool
+	msg     *pb.Column
+	empty   bool
+	deleted map[int]bool
+	once    sync.Once
 }
 
 func (b *labelColumBuilder) At(index int) (interface{}, error) {
@@ -274,6 +303,7 @@ func (b *labelColumBuilder) At(index int) (interface{}, error) {
 }
 
 func (b *labelColumBuilder) Finish() Column {
+	b.msg.Size -= int64(len(b.deleted))
 	return &colImpl{msg: b.msg}
 }
 
@@ -306,6 +336,16 @@ func (b *labelColumBuilder) Set(index int, value interface{}) error {
 	}
 
 	return err
+}
+
+func (b *labelColumBuilder) Delete(index int) error {
+	// TODO: Check error
+	b.once.Do(func() {
+		b.deleted = make(map[int]bool)
+	})
+
+	b.deleted[index] = true
+	return nil
 }
 
 func (b *labelColumBuilder) setInt(index int, value interface{}) error {
@@ -468,4 +508,42 @@ func valueAt(msg *pb.Column, index int) (interface{}, error) {
 	}
 
 	return nil, nil
+}
+
+func map2slice(m map[int]bool) []int {
+	s := make([]int, len(m))
+	i := 0
+	for v := range m {
+		s[i] = v
+		i++
+	}
+	return s
+}
+
+// FIXME:
+func shrink(values []int, deleted map[int]bool) []int {
+	if len(deleted) == 0 {
+		return nil
+	}
+
+	delIdxs := map2slice(deleted)
+	sort.Ints(delIdxs)
+	out := make([]int, len(values)-len(deleted))
+	start := 0
+	cp := 0
+	for _, end := range delIdxs {
+		if end == start || end == start+1 {
+			start = end
+			continue
+		}
+		copy(out[cp:], values[start:end])
+		cp += end - start
+		start = end + 1
+	}
+
+	if start < len(values) {
+		copy(out[cp:], values[start:])
+	}
+
+	return out
 }
