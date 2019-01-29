@@ -97,3 +97,40 @@ func TestLabelBuilder(t *testing.T) {
 		t.Fatal("changed value in label column")
 	}
 }
+
+func TestBuilderDelete(t *testing.T) {
+	size := 10
+	b := NewSliceColumnBuilder("a", IntType, size)
+	for i := 0; i < size; i++ {
+		b.Set(i, i)
+	}
+
+	deleted := map[int]bool{
+		1: true,
+		3: true,
+		9: true,
+	}
+
+	for v := range deleted {
+		if err := b.Delete(v); err != nil {
+			t.Fatalf("can't delete %d - %s", v, err)
+		}
+	}
+
+	col := b.Finish()
+	if cs := col.Len(); cs != size-len(deleted) {
+		t.Fatalf("wrong size %d != %d", col.Len(), cs)
+	}
+
+	for i := 0; i < col.Len(); i++ {
+		v, err := col.IntAt(i)
+		if err != nil {
+			t.Fatal(err)
+		}
+
+		if deleted[int(v)] {
+			t.Fatalf("found deleted value - %d", v)
+		}
+
+	}
+}

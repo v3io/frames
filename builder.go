@@ -23,7 +23,6 @@ package frames
 import (
 	"fmt"
 	"math"
-	"sort"
 	"sync"
 	"time"
 
@@ -221,13 +220,93 @@ func resizeInt64(buf []int64, size int) []int64 {
 
 // TODO: Return error
 func (b *sliceColumBuilder) Finish() Column {
-	b.removeDeleted()
 	b.fillMissingRows()
+	b.removeDeleted()
 	return &colImpl{msg: b.msg}
 }
 
 func (b *sliceColumBuilder) removeDeleted() {
-	// TODO
+	if len(b.deleted) == 0 {
+		return
+	}
+
+	switch b.msg.Dtype {
+	case pb.DType_INTEGER:
+		b.delInts()
+	case pb.DType_FLOAT:
+		b.delFloats()
+	case pb.DType_STRING:
+		b.delStrings()
+	case pb.DType_TIME:
+		b.delTimes()
+	case pb.DType_BOOLEAN:
+		b.delBools()
+	}
+}
+
+func (b *sliceColumBuilder) delInts() {
+	out := make([]int64, len(b.msg.Ints)-len(b.deleted))
+	d := 0
+	for i, v := range b.msg.Ints {
+		if b.deleted[i] {
+			continue
+		}
+		out[d] = v
+		d++
+	}
+	b.msg.Ints = out
+}
+
+func (b *sliceColumBuilder) delFloats() {
+	out := make([]float64, len(b.msg.Floats)-len(b.deleted))
+	d := 0
+	for i, v := range b.msg.Floats {
+		if b.deleted[i] {
+			continue
+		}
+		out[d] = v
+		d++
+	}
+	b.msg.Floats = out
+}
+
+func (b *sliceColumBuilder) delStrings() {
+	out := make([]string, len(b.msg.Strings)-len(b.deleted))
+	d := 0
+	for i, v := range b.msg.Strings {
+		if b.deleted[i] {
+			continue
+		}
+		out[d] = v
+		d++
+	}
+	b.msg.Strings = out
+}
+
+func (b *sliceColumBuilder) delTimes() {
+	out := make([]int64, len(b.msg.Times)-len(b.deleted))
+	d := 0
+	for i, v := range b.msg.Times {
+		if b.deleted[i] {
+			continue
+		}
+		out[d] = v
+		d++
+	}
+	b.msg.Times = out
+}
+
+func (b *sliceColumBuilder) delBools() {
+	out := make([]bool, len(b.msg.Bools)-len(b.deleted))
+	d := 0
+	for i, v := range b.msg.Bools {
+		if b.deleted[i] {
+			continue
+		}
+		out[d] = v
+		d++
+	}
+	b.msg.Bools = out
 }
 
 func (b *sliceColumBuilder) fillMissingRows() {
@@ -508,42 +587,4 @@ func valueAt(msg *pb.Column, index int) (interface{}, error) {
 	}
 
 	return nil, nil
-}
-
-func map2slice(m map[int]bool) []int {
-	s := make([]int, len(m))
-	i := 0
-	for v := range m {
-		s[i] = v
-		i++
-	}
-	return s
-}
-
-// FIXME:
-func shrink(values []int, deleted map[int]bool) []int {
-	if len(deleted) == 0 {
-		return nil
-	}
-
-	delIdxs := map2slice(deleted)
-	sort.Ints(delIdxs)
-	out := make([]int, len(values)-len(deleted))
-	start := 0
-	cp := 0
-	for _, end := range delIdxs {
-		if end == start || end == start+1 {
-			start = end
-			continue
-		}
-		copy(out[cp:], values[start:end])
-		cp += end - start
-		start = end + 1
-	}
-
-	if start < len(values) {
-		copy(out[cp:], values[start:])
-	}
-
-	return out
 }
