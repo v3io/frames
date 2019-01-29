@@ -93,10 +93,10 @@ class Client(ClientBase):
         return dfs
 
     @grpc_raise(WriteError)
-    def _write(self, request, dfs, labels):
+    def _write(self, request, dfs, labels, index_cols):
         with new_channel(self.address) as channel:
             stub = fgrpc.FramesStub(channel)
-            stub.Write(write_stream(request, dfs, labels))
+            stub.Write(write_stream(request, dfs, labels, index_cols))
 
     @grpc_raise(CreateError)
     def _create(self, backend, table, attrs, schema, if_exists):
@@ -151,10 +151,10 @@ def new_channel(address):
     return grpc.insecure_channel(address, options=channel_options)
 
 
-def write_stream(request, dfs, labels):
+def write_stream(request, dfs, labels, index_cols):
     yield fpb.WriteRequest(request=request)
     for df in dfs:
-        yield fpb.WriteRequest(frame=df2msg(df, labels))
+        yield fpb.WriteRequest(frame=df2msg(df, labels, index_cols))
 
 
 def time2str(ts):

@@ -44,7 +44,7 @@ def test_client(proto, cls):
 
 def test_partition_keys():
     class Proto(v3f.client.ClientBase):
-        def _write(self, request, dfs, labels):
+        def _write(self, request, dfs, labels, index_cols):
             self.request = request
 
     c = Proto('localhost:8081', None)
