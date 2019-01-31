@@ -48,6 +48,7 @@ func TestSliceBuilder(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
+	t.Logf("vals: %v", vals)
 
 	for i, val := range vals {
 		if int64(i) != val {
@@ -119,7 +120,7 @@ func TestBuilderDelete(t *testing.T) {
 
 	col := b.Finish()
 	if cs := col.Len(); cs != size-len(deleted) {
-		t.Fatalf("wrong size %d != %d", col.Len(), cs)
+		t.Fatalf("wrong size %d != %d", col.Len(), size-len(deleted))
 	}
 
 	for i := 0; i < col.Len(); i++ {
