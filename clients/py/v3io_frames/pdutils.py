@@ -46,7 +46,7 @@ def concat_dfs(dfs, frame_factory=pd.DataFrame):
         wdf.set_index(full_names, inplace=True)
         wdf.index.names = names
     elif names[0]:
-        wdf.index = wdf.pop(names[0])
+        wdf.set_index(names[0], inplace=True)
     elif names[0] is None:
         del wdf['index']  # Pandas will add 'index' column
 

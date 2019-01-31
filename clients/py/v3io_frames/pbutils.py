@@ -84,13 +84,14 @@ def pb2py(obj):
 
 def msg2df(frame, frame_factory):
     cols = {col.name: col2series(col) for col in frame.columns}
-    df = frame_factory(cols)
-
     indices = [col2series(idx) for idx in frame.indices]
+    index = None
     if len(indices) == 1:
-        df.index = indices[0]
+        index = indices[0]
     elif len(indices) > 1:
-        df.index = pd.MultiIndex.from_arrays(indices)
+        index = pd.MultiIndex.from_arrays(indices)
+
+    df = frame_factory(cols, index=index)
 
     with warnings.catch_warnings():
         warnings.simplefilter('ignore')

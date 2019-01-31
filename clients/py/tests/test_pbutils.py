@@ -38,7 +38,7 @@ def test_encode_df():
 
     # Now with index
     index_name = 'DATE'
-    df.index = df.pop(index_name)
+    df.set_index(index_name, inplace=True)
     msg = pbutils.df2msg(df, None)
 
     names = [col.name for col in msg.columns]
