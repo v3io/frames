@@ -94,7 +94,7 @@ def msg2df(frame, frame_factory):
     elif len(indices) > 1:
         index = pd.MultiIndex.from_arrays(indices)
 
-    if index:
+    if index is not None:
         try:
             df.index = index
         except AttributeError:  # cudf
