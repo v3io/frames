@@ -82,9 +82,9 @@ def pb2py(obj):
     return obj
 
 
-def msg2df(frame):
+def msg2df(frame, frame_factory):
     cols = {col.name: col2series(col) for col in frame.columns}
-    df = pd.DataFrame(cols)
+    df = frame_factory(cols)
 
     indices = [col2series(idx) for idx in frame.indices]
     if len(indices) == 1:
@@ -117,6 +117,10 @@ def col2series(col):
     return series
 
 
+def idx2series(idx):
+    return pd.Series(idx.values, name=idx.name)
+
+
 def df2msg(df, labels=None, index_cols=None):
     indices = None
     if index_cols is not None:
@@ -127,10 +131,12 @@ def df2msg(df, labels=None, index_cols=None):
         if hasattr(df.index, 'levels'):
             by_name = df.index.get_level_values
             names = df.index.names
-            serieses = (by_name(name).to_series() for name in names)
+            serieses = (idx2series(by_name(name)) for name in names)
             indices = [series2col(s) for s in serieses]
         else:
-            indices = [series2col(df.index.to_series())]
+            serieses = [idx2series(df.index)]
+
+        indices = [series2col(s) for s in serieses]
 
     return fpb.Frame(
         columns=[series2col(df[name]) for name in df.columns],
@@ -162,7 +168,7 @@ def series2col(s):
             s = s.dt.tz_localize(pytz.UTC)
         kw['times'] = s.astype(np.int64)
         kw['dtype'] = fpb.TIME
-    elif isinstance(s.dtype, CategoricalDtype):
+    elif is_categorical_dtype(s.dtype):
         # We assume catgorical data is strings
         kw['strings'] = s.astype(str)
         kw['dtype'] = fpb.STRING
@@ -199,3 +205,22 @@ def is_float_dtype(dtype):
 
 def is_time_dtype(dtype):
     return dtype == _time_dt or dtype == _time_tz_dt
+
+
+def is_categorical_dtype(dtype):
+    return isinstance(dtype, CategoricalDtype)
+
+
+def _fix_pd():
+    # cudf works with older versions of pandas
+    import pandas.api.types
+    if not hasattr(pandas.api.types, 'is_categorical_dtype'):
+        pandas.api.types.is_categorical_dtype = is_categorical_dtype
+
+    import pandas.core.common
+    if not hasattr(pandas.core.common, 'is_categorical_dtype'):
+        pandas.core.common.is_categorical_dtype = is_categorical_dtype
+
+
+_fix_pd()
+del _fix_pd

@@ -103,5 +103,5 @@ def test_label_col():
     s = pbutils.col2series(col)
     assert s.name == col.name, 'bad name'
     assert len(s) == col.size, 'bad size'
-    assert isinstance(s.dtype, pd.CategoricalDtype), 'not categorical'
+    assert pbutils.is_categorical_dtype(s.dtype), 'not categorical'
     assert set(s.cat.categories) == {col.strings[0]}, 'bad values'

@@ -15,7 +15,7 @@
 import numpy as np
 import pandas as pd
 
-from v3io_frames import pdutils
+from v3io_frames import pdutils, pbutils
 
 
 def gen_dfs():
@@ -62,5 +62,5 @@ def test_concat_dfs_categorical():
     df = pdutils.concat_dfs([df1, df2])
     assert len(df) == len(df1) + len(df2), 'bad length'
     assert set(df.columns) == set(df1.columns), 'bad columns'
-    assert isinstance(df['c'].dtype, pd.CategoricalDtype), 'not categorical'
+    assert pbutils.is_categorical_dtype(df['c'].dtype), 'not categorical'
     assert set(df['c']) == set(df1['c']) | set(df2['c']), 'bad values'

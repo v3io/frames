@@ -15,12 +15,18 @@
 import pandas as pd
 import warnings
 
+from .pbutils import is_categorical_dtype
 
-def concat_dfs(dfs):
+
+def concat_dfs(dfs, frame_factory=pd.DataFrame):
     """Concat sequence of DataFrames, can handle MultiIndex frames."""
     dfs = list(dfs)
     if not dfs:
-        return pd.DataFrame()
+        return frame_factory()
+
+    if not isinstance(dfs[0], pd.DataFrame):
+        import cudf
+        return cudf.concat(dfs)
 
     # Make sure concat keep categorical columns
     # See https://stackoverflow.com/a/44086708/7650
@@ -54,11 +60,11 @@ def align_categories(dfs):
     all_cats = set()
     for df in dfs:
         for col in df.columns:
-            if isinstance(df[col].dtype, pd.CategoricalDtype):
+            if is_categorical_dtype(df[col].dtype):
                 all_cats.update(df[col].cat.categories)
 
     for df in dfs:
         for col in df.columns:
-            if isinstance(df[col].dtype, pd.CategoricalDtype):
+            if is_categorical_dtype(df[col].dtype):
                 cats = all_cats - set(df[col].cat.categories)
                 df[col].cat.add_categories(cats, inplace=True)
