@@ -15,6 +15,8 @@
 import pandas as pd
 import warnings
 
+from .pbutils import is_categorical_dtype
+
 
 def concat_dfs(dfs, frame_factory=pd.DataFrame):
     """Concat sequence of DataFrames, can handle MultiIndex frames."""
@@ -58,11 +60,11 @@ def align_categories(dfs):
     all_cats = set()
     for df in dfs:
         for col in df.columns:
-            if isinstance(df[col].dtype, pd.CategoricalDtype):
+            if is_categorical_dtype(df[col].dtype):
                 all_cats.update(df[col].cat.categories)
 
     for df in dfs:
         for col in df.columns:
-            if isinstance(df[col].dtype, pd.CategoricalDtype):
+            if is_categorical_dtype(df[col].dtype):
                 cats = all_cats - set(df[col].cat.categories)
                 df[col].cat.add_categories(cats, inplace=True)
