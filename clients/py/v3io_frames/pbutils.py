@@ -83,7 +83,10 @@ def pb2py(obj):
 
 
 def msg2df(frame, frame_factory):
-    cols = {col.name: col2series(col) for col in frame.columns}
+    df = frame_factory()
+    for col in frame.columns:
+        df[col.name] = col2series(col)
+
     indices = [col2series(idx) for idx in frame.indices]
     index = None
     if len(indices) == 1:
@@ -91,7 +94,11 @@ def msg2df(frame, frame_factory):
     elif len(indices) > 1:
         index = pd.MultiIndex.from_arrays(indices)
 
-    df = frame_factory(cols, index=index)
+    if index:
+        try:
+            df.index = index
+        except AttributeError:  # cudf
+            df.set_index(index)
 
     with warnings.catch_warnings():
         warnings.simplefilter('ignore')
