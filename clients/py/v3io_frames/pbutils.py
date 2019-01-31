@@ -111,6 +111,7 @@ def col2series(col):
 
     series = pd.Series(data, name=col.name)
     if col.kind == col.LABEL:
+        series = series.astype('category')
         series = series.reindex(pd.RangeIndex(col.size), method='pad')
 
     return series

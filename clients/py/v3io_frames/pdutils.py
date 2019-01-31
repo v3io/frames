@@ -22,6 +22,10 @@ def concat_dfs(dfs):
     if not dfs:
         return pd.DataFrame()
 
+    # Make sure concat keep categorical columns
+    # See https://stackoverflow.com/a/44086708/7650
+    align_categories(dfs)
+
     names = list(dfs[0].index.names)
     wdf = pd.concat(
         [df.reset_index() for df in dfs],
@@ -37,8 +41,24 @@ def concat_dfs(dfs):
         wdf.index.names = names
     elif names[0]:
         wdf.index = wdf.pop(names[0])
+    elif names[0] is None:
+        del wdf['index']  # Pandas will add 'index' column
 
     with warnings.catch_warnings():
         warnings.simplefilter('ignore')
         wdf.labels = getattr(dfs[0], 'labels', {})
     return wdf
+
+
+def align_categories(dfs):
+    all_cats = set()
+    for df in dfs:
+        for col in df.columns:
+            if isinstance(df[col].dtype, pd.CategoricalDtype):
+                all_cats.update(df[col].cat.categories)
+
+    for df in dfs:
+        for col in df.columns:
+            if isinstance(df[col].dtype, pd.CategoricalDtype):
+                cats = all_cats - set(df[col].cat.categories)
+                df[col].cat.add_categories(cats, inplace=True)

@@ -39,3 +39,28 @@ def test_concat_dfs():
 def test_empty_result():
     df = pdutils.concat_dfs([])
     assert df.empty, 'non-empty df'
+
+
+def gen_cat(value, size):
+    series = pd.Series([value])
+    series = series.astype('category')
+    return series.reindex(pd.RangeIndex(size), method='pad')
+
+
+def test_concat_dfs_categorical():
+    size = 10
+    df1 = pd.DataFrame({
+        'c': gen_cat('val1', size),
+        'v': range(size),
+    })
+
+    df2 = pd.DataFrame({
+        'c': gen_cat('val2', size),
+        'v': range(size, 2*size),
+    })
+
+    df = pdutils.concat_dfs([df1, df2])
+    assert len(df) == len(df1) + len(df2), 'bad length'
+    assert set(df.columns) == set(df1.columns), 'bad columns'
+    assert isinstance(df['c'].dtype, pd.CategoricalDtype), 'not categorical'
+    assert set(df['c']) == set(df1['c']) | set(df2['c']), 'bad values'
