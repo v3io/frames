@@ -89,3 +89,19 @@ def test_index_cols():
     assert set(col.name for col in msg.columns) == cols, 'bad columns'
     assert set(col.name for col in msg.indices) == set(index_cols), \
         'bad indices'
+
+
+def test_label_col():
+    col = fpb.Column(
+        name='lcol',
+        kind=fpb.Column.LABEL,
+        dtype=fpb.STRING,
+        size=10,
+        strings=['srv1'],
+    )
+
+    s = pbutils.col2series(col)
+    assert s.name == col.name, 'bad name'
+    assert len(s) == col.size, 'bad size'
+    assert isinstance(s.dtype, pd.CategoricalDtype), 'not categorical'
+    assert set(s.cat.categories) == {col.strings[0]}, 'bad values'
