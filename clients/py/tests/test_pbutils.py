@@ -74,3 +74,34 @@ def test_categorical():
     col = pbutils.series2col(s)
     assert col.name == s.name, 'bad name'
     assert list(col.strings) == list(s), 'bad data'
+
+
+def test_index_cols():
+    cols = list('abcdef')
+    size = 10
+    df = pd.DataFrame({
+        col: np.random.rand(size) for col in cols
+    })
+
+    index_cols = np.random.choice(cols, size=2)
+    cols = set(col for col in cols if col not in index_cols)
+    msg = pbutils.df2msg(df, index_cols=index_cols)
+    assert set(col.name for col in msg.columns) == cols, 'bad columns'
+    assert set(col.name for col in msg.indices) == set(index_cols), \
+        'bad indices'
+
+
+def test_label_col():
+    col = fpb.Column(
+        name='lcol',
+        kind=fpb.Column.LABEL,
+        dtype=fpb.STRING,
+        size=10,
+        strings=['srv1'],
+    )
+
+    s = pbutils.col2series(col)
+    assert s.name == col.name, 'bad name'
+    assert len(s) == col.size, 'bad size'
+    assert isinstance(s.dtype, pd.CategoricalDtype), 'not categorical'
+    assert set(s.cat.categories) == {col.strings[0]}, 'bad values'

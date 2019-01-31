@@ -88,13 +88,14 @@ class Client(ClientBase):
         return dfs
 
     @connection_error(WriteError)
-    def _write(self, request, dfs, labels):
+    def _write(self, request, dfs, labels, index_cols):
         url = self._url_for('write')
         headers = self._headers()
         headers['Content-Encoding'] = 'chunked'
 
         request = self._encode_msg(request)
-        frames = (self._encode_msg(df2msg(df)) for df in dfs)
+        enc = self._encode_msg
+        frames = (enc(df2msg(df, labels, index_cols)) for df in dfs)
         data = chain([request], frames)
 
         resp = requests.post(url, headers=headers, data=data)

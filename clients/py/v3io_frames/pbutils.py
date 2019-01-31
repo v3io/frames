@@ -111,6 +111,7 @@ def col2series(col):
 
     series = pd.Series(data, name=col.name)
     if col.kind == col.LABEL:
+        series = series.astype('category')
         series = series.reindex(pd.RangeIndex(col.size), method='pad')
 
     return series
@@ -120,14 +121,18 @@ def idx2series(idx):
     return pd.Series(idx.values, name=idx.name)
 
 
-def df2msg(df, labels=None):
+def df2msg(df, labels=None, index_cols=None):
     indices = None
-    if should_encode_index(df):
-        index = df.index
-        if hasattr(index, 'levels'):
-            by_name = index.get_level_values
-            names = index.names
+    if index_cols is not None:
+        indices = [series2col(df[name]) for name in index_cols]
+        cols = [col for col in df.columns if col not in index_cols]
+        df = df[cols]
+    elif should_encode_index(df):
+        if hasattr(df.index, 'levels'):
+            by_name = df.index.get_level_values
+            names = df.index.names
             serieses = (idx2series(by_name(name)) for name in names)
+            indices = [series2col(s) for s in serieses]
         else:
             serieses = [idx2series(df.index)]
 

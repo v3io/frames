@@ -32,7 +32,7 @@ backends:
     rootDir: "/csv-root"
 '''
 
-docker_image = 'quay.io/v3io/frames'
+docker_image = 'quay.io/v3io/frames:unstable'
 
 
 # docker run \
