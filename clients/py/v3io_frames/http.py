@@ -174,7 +174,7 @@ class Client(ClientBase):
         for msg in iter(partial(self._read_msg, resp), None):
             if msg.error:
                 raise ReadError(msg.error)
-            yield msg2df(msg)
+            yield msg2df(msg, self.frame_factory)
 
     def _read_msg(self, resp):
         data = resp.read(header_fmt_size)

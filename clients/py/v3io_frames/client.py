@@ -24,7 +24,7 @@ FAIL = fpb.FAIL
 
 
 class ClientBase:
-    def __init__(self, address, session):
+    def __init__(self, address, session, frame_factory=pd.DataFrame):
         """Create new client
 
         Parameters
@@ -33,12 +33,15 @@ class ClientBase:
             framesd server address
         session : Session
             Session object
+        frame_factory : class
+            DataFrame factory (currencly pandas and cudf supported)
         """
         address = address or environ.get('V3IO_FRAMESD')
         if not address:
             raise ValueError('empty address')
         self.address = self._fix_address(address)
         self.session = session
+        self.frame_factory = frame_factory
 
     def read(self, backend='', table='', query='', columns=None, filter='',
              group_by='', limit=0, data_format='', row_layout=False,

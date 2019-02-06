@@ -20,6 +20,8 @@ from os import environ
 import json
 from urllib.parse import urlparse
 
+import pandas as pd
+
 
 from .http import Client as HTTPClient  # noqa
 from .grpc import Client as gRPCClient  # noqa
@@ -34,7 +36,7 @@ _known_protocols = {'grpc', 'http', 'https'}
 
 
 def Client(address='', data_url='', container='', path='', user='',
-           password='', token='', session_id=''):
+           password='', token='', session_id='', frame_factory=pd.DataFrame):
     """Return a new client.
 
     Parameters
@@ -56,6 +58,8 @@ def Client(address='', data_url='', container='', path='', user='',
         Login token (session info)
     session_id : str
         Session ID (session info)
+    frame_factory : class
+        DataFrame factory
     """
     protocol = urlparse(address).scheme or 'grpc'
     if protocol not in _known_protocols:
@@ -70,11 +74,11 @@ def Client(address='', data_url='', container='', path='', user='',
         user=user or env.user or environ.get('V3IO_USERNAME'),
         password=password or env.password or environ.get('V3IO_PASSWORD'),
         token=token or env.token or environ.get('V3IO_ACCESS_KEY'),
-        id=session_id or env.id
+        id=session_id or env.id,
     )
 
     cls = gRPCClient if protocol == 'grpc' else HTTPClient
-    return cls(address, session)
+    return cls(address, session, frame_factory=frame_factory)
 
 
 def session_from_env():

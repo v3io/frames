@@ -38,7 +38,7 @@ def test_encode_df():
 
     # Now with index
     index_name = 'DATE'
-    df.index = df.pop(index_name)
+    df = df.set_index(index_name)
     msg = pbutils.df2msg(df, None)
 
     names = [col.name for col in msg.columns]
@@ -89,3 +89,19 @@ def test_index_cols():
     assert set(col.name for col in msg.columns) == cols, 'bad columns'
     assert set(col.name for col in msg.indices) == set(index_cols), \
         'bad indices'
+
+
+def test_label_col():
+    col = fpb.Column(
+        name='lcol',
+        kind=fpb.Column.LABEL,
+        dtype=fpb.STRING,
+        size=10,
+        strings=['srv1'],
+    )
+
+    s = pbutils.col2series(col)
+    assert s.name == col.name, 'bad name'
+    assert len(s) == col.size, 'bad size'
+    assert pbutils.is_categorical_dtype(s.dtype), 'not categorical'
+    assert set(s.cat.categories) == {col.strings[0]}, 'bad values'
