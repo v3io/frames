@@ -71,7 +71,6 @@ func (b *sliceColumBuilder) At(index int) (interface{}, error) {
 
 func (b *sliceColumBuilder) Append(value interface{}) error {
 	err := b.Set(b.index, value)
-	b.index++
 	return err
 }
 
