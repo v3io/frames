@@ -59,7 +59,7 @@ type sliceColumBuilder struct {
 	msg     *pb.Column
 	values  map[int]interface{}
 	deleted map[int]bool
-	index   int
+	index   int // next index for append. TODO: Find a better name
 }
 
 func (b *sliceColumBuilder) At(index int) (interface{}, error) {
