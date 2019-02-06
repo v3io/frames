@@ -12,12 +12,8 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-
-# Exract min version ($$ is Makefile escape)
-go_minver = $(shell go version | awk '{print $$3}' | awk -F. '{print $$2}')
-ifeq ($(go_minver),11)
-    modflag = -mod=vendor
-endif
+# -mod=vendor is avaiable from Go 1.11 and up
+modflag=$(shell go run _scripts/modflag.go)
 
 all:
 	@echo Please pick a target
