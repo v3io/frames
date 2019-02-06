@@ -4,7 +4,7 @@
 [![GoDoc](https://godoc.org/github.com/v3io/frames?status.svg)](https://godoc.org/github.com/v3io/frames)
 [![License](https://img.shields.io/badge/License-Apache%202.0-blue.svg)](https://opensource.org/licenses/Apache-2.0)
 
-V3IO Frames is a server and client library of streaming data from the Iguazio Continuous Data Platform.
+V3IO Frames is a high-speed server and client library for accessing time-series (TSDB), NoSQL, and streaming data in the [Iguazio Continuous Data Platform](https://www.iguazio.com).
 
 ## Components
 
