@@ -94,7 +94,7 @@ func (b *sliceColumBuilder) Set(index int, value interface{}) error {
 
 	if err == nil {
 		delete(b.deleted, index) // Undelete
-		if index > b.index {
+		if index >= b.index {
 			b.index = index + 1
 		}
 	}

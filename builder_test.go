@@ -135,3 +135,19 @@ func TestBuilderDelete(t *testing.T) {
 
 	}
 }
+
+func TestBuilderDeleteFirst(t *testing.T) {
+	b := NewSliceColumnBuilder("a", IntType, 1)
+	b.Set(0, 1)
+
+	if err := b.Delete(0); err != nil {
+		if err != nil {
+			t.Fatal(err)
+		}
+	}
+
+	col := b.Finish()
+	if col.Len() != 0 {
+		t.Fatalf("bad size: %d != 0", col.Len())
+	}
+}
