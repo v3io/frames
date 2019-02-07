@@ -3,6 +3,7 @@ package pquerier
 import (
 	"fmt"
 	"math"
+	"time"
 
 	"github.com/pkg/errors"
 	"github.com/v3io/frames"
@@ -92,8 +93,8 @@ func (fi *frameIterator) Err() error {
 }
 
 // data frame, holds multiple value columns and an index (time) column
-func NewDataFrame(columnsSpec []columnMeta, indexColumn Column, lset utils.Labels, hash uint64, isRawQuery, getAllMetrics bool, columnSize int, useServerAggregates, showAggregateLabel bool, encoding chunkenc.Encoding) (*dataFrame, error) {
-	df := &dataFrame{lset: lset, hash: hash, isRawSeries: isRawQuery, showAggregateLabel: showAggregateLabel, encoding: encoding}
+func NewDataFrame(columnsSpec []columnMeta, indexColumn Column, lset utils.Labels, hash uint64, isRawQuery, getAllMetrics bool, columnSize int, useServerAggregates, showAggregateLabel bool) (*dataFrame, error) {
+	df := &dataFrame{lset: lset, hash: hash, isRawSeries: isRawQuery, showAggregateLabel: showAggregateLabel}
 	// is raw query
 	if isRawQuery {
 		df.columnByName = make(map[string]int, len(columnsSpec))
@@ -216,8 +217,6 @@ type dataFrame struct {
 
 	metrics             map[string]struct{}
 	metricToCountColumn map[string]Column
-
-	encoding chunkenc.Encoding
 }
 
 func (d *dataFrame) addMetricIfNotExist(metricName string, columnSize int, useServerAggregates bool) error {
@@ -319,13 +318,13 @@ func (d *dataFrame) TimeSeries(i int) (utils.Series, error) {
 		if err != nil {
 			return nil, err
 		}
+
 		return NewDataFrameColumnSeries(d.index,
 			currentColumn,
 			d.metricToCountColumn[currentColumn.GetColumnSpec().metric],
 			d.Labels(),
 			d.hash,
-			d.showAggregateLabel,
-			d.encoding), nil
+			d.showAggregateLabel), nil
 	}
 }
 
@@ -369,41 +368,47 @@ func (d *dataFrame) finishAllColumns() error {
 //	t2		  v1		  v3
 //
 func (d *dataFrame) rawSeriesToColumns() {
-	var timeData []int64
+	var timeData []time.Time
 
 	columns := make([]frames.ColumnBuilder, len(d.rawColumns))
 	nonExhaustedIterators := len(d.rawColumns)
-
+	seriesToDataType := make([]frames.DType, len(d.rawColumns))
+	seriesTodefaultValue := make([]interface{}, len(d.rawColumns))
 	currentTime := int64(math.MaxInt64)
 	nextTime := int64(math.MaxInt64)
-	isVariant := d.encoding == chunkenc.EncVariant
-	var defaultValue interface{}
-	if isVariant {
-		defaultValue = ""
-	} else {
-		defaultValue = math.NaN()
-	}
 
 	for i, rawSeries := range d.rawColumns {
-		rawSeries.Iterator().Next()
-		t, _ := rawSeries.Iterator().At()
-		if t < nextTime {
-			nextTime = t
+		if rawSeries.Iterator().Next() {
+			t, _ := rawSeries.Iterator().At()
+			if t < nextTime {
+				nextTime = t
+			}
+		} else {
+			nonExhaustedIterators--
 		}
 
-		if isVariant {
+		currentEnc := chunkenc.EncXOR
+		if ser, ok := rawSeries.(*V3ioRawSeries); ok {
+			currentEnc = ser.encoding
+		}
+
+		if currentEnc == chunkenc.EncVariant {
 			columns[i] = frames.NewSliceColumnBuilder(rawSeries.Labels().Get(config.PrometheusMetricNameAttribute),
 				frames.StringType, 0)
+			seriesToDataType[i] = frames.StringType
+			seriesTodefaultValue[i] = ""
 		} else {
 			columns[i] = frames.NewSliceColumnBuilder(rawSeries.Labels().Get(config.PrometheusMetricNameAttribute),
 				frames.FloatType, 0)
+			seriesToDataType[i] = frames.FloatType
+			seriesTodefaultValue[i] = math.NaN()
 		}
 	}
 
 	for nonExhaustedIterators > 0 {
 		currentTime = nextTime
 		nextTime = int64(math.MaxInt64)
-		timeData = append(timeData, currentTime)
+		timeData = append(timeData, time.Unix(currentTime/1000, (currentTime%1000)*1e6))
 
 		for seriesIndex, rawSeries := range d.rawColumns {
 			iter := rawSeries.Iterator()
@@ -411,7 +416,7 @@ func (d *dataFrame) rawSeriesToColumns() {
 			var v interface{}
 			var t int64
 
-			if isVariant {
+			if seriesToDataType[seriesIndex] == frames.StringType {
 				t, v = iter.AtString()
 			} else {
 				t, v = iter.At()
@@ -425,7 +430,7 @@ func (d *dataFrame) rawSeriesToColumns() {
 					nonExhaustedIterators--
 				}
 			} else if t > currentTime {
-				columns[seriesIndex].Append(defaultValue)
+				columns[seriesIndex].Append(seriesTodefaultValue[seriesIndex])
 			}
 
 			if t < nextTime {
@@ -436,20 +441,14 @@ func (d *dataFrame) rawSeriesToColumns() {
 
 	numberOfRows := len(timeData)
 	colSpec := columnMeta{metric: "time"}
-	d.index = NewDataColumn("time", colSpec, numberOfRows, frames.IntType)
+	d.index = NewDataColumn("time", colSpec, numberOfRows, frames.TimeType)
 	d.index.SetData(timeData, numberOfRows)
 
 	d.columns = make([]Column, len(d.rawColumns))
 	for i, series := range d.rawColumns {
 		name := series.Labels().Get(config.PrometheusMetricNameAttribute)
 		spec := columnMeta{metric: name}
-		var colType frames.DType
-		if d.encoding == chunkenc.EncVariant {
-			colType = frames.StringType
-		} else {
-			colType = frames.FloatType
-		}
-		col := NewDataColumn(name, spec, numberOfRows, colType)
+		col := NewDataColumn(name, spec, numberOfRows, seriesToDataType[i])
 		col.framesCol = columns[i].Finish()
 		d.columns[i] = col
 	}
@@ -478,13 +477,13 @@ func (d *dataFrame) GetFrame() (frames.Frame, error) {
 
 // Column is a data column
 type Column interface {
-	Len() int                       // Number of elements
-	Name() string                   // Column name
-	DType() frames.DType            // Data type (e.g. IntType, FloatType ...)
-	FloatAt(i int) (float64, error) // Float value at index i
-	StringAt(i int) (string, error) // String value at index i
-	TimeAt(i int) (int64, error)    // time value at index i
-	GetColumnSpec() columnMeta      // Get the column's metadata
+	Len() int                        // Number of elements
+	Name() string                    // Column name
+	DType() frames.DType             // Data type (e.g. IntType, FloatType ...)
+	FloatAt(i int) (float64, error)  // Float value at index i
+	StringAt(i int) (string, error)  // String value at index i
+	TimeAt(i int) (time.Time, error) // time value at index i
+	GetColumnSpec() columnMeta       // Get the column's metadata
 	SetDataAt(i int, value interface{}) error
 	SetData(d interface{}, size int) error
 	GetInterpolationFunction() (InterpolationFunction, int64)
@@ -567,8 +566,8 @@ func (dc *dataColumn) StringAt(i int) (string, error) {
 }
 
 // TimeAt returns time.Time value at index i
-func (dc *dataColumn) TimeAt(i int) (int64, error) {
-	return dc.framesCol.IntAt(i)
+func (dc *dataColumn) TimeAt(i int) (time.Time, error) {
+	return dc.framesCol.TimeAt(i)
 }
 
 func (dc *dataColumn) SetData(d interface{}, size int) error {
@@ -620,8 +619,8 @@ func (c *ConcreteColumn) FloatAt(i int) (float64, error) {
 func (c *ConcreteColumn) StringAt(i int) (string, error) {
 	return "", errors.New("aggregated column does not support string type")
 }
-func (c *ConcreteColumn) TimeAt(i int) (int64, error) {
-	return 0, errors.New("aggregated column does not support time type")
+func (c *ConcreteColumn) TimeAt(i int) (time.Time, error) {
+	return time.Unix(0, 0), errors.New("aggregated column does not support time type")
 }
 func (c *ConcreteColumn) SetDataAt(i int, val interface{}) error {
 	if !c.isValidIndex(i) {
@@ -673,6 +672,6 @@ func (c *virtualColumn) FloatAt(i int) (float64, error) {
 func (c *virtualColumn) StringAt(i int) (string, error) {
 	return c.framesCol.StringAt(i)
 }
-func (c *virtualColumn) TimeAt(i int) (int64, error) {
-	return c.framesCol.IntAt(i)
+func (c *virtualColumn) TimeAt(i int) (time.Time, error) {
+	return time.Unix(0, 0), errors.New("aggregated column does not support time type")
 }
