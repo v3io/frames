@@ -173,7 +173,7 @@ class Client(ClientBase):
             return
 
         msg = Frame.FromString(b64decode(frame))
-        return msg2df(msg)
+        return msg2df(msg, self.frame_factory)
 
     def _url_for(self, action):
         return self.address + '/' + action
