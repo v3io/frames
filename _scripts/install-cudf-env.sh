@@ -1,5 +1,6 @@
 #!/bin/bash
 # Install minconda + cudf 0.5 + go SDK on Linux machine
+# On AWS we use NVIDIA Volta Deep Learning AMI 18.11 AMI
 # All that needed to run frames tests
 
 set -o
