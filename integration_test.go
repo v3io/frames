@@ -458,8 +458,13 @@ func integrationTest(t *testing.T, client frames.Client, backend string) {
 			Table:   table,
 		}
 		cfg.exec(ereq)
-		if _, err := client.Exec(ereq); err != nil {
+		frame, err = client.Exec(ereq)
+		if err != nil {
 			t.Fatal(err)
+		}
+
+		if frame == nil || frame.Len() == 0 {
+			t.Fatal("empty frame")
 		}
 	}
 
