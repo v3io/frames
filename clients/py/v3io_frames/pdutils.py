@@ -15,12 +15,22 @@
 import pandas as pd
 import warnings
 
+from .pbutils import is_categorical_dtype
 
-def concat_dfs(dfs):
+
+def concat_dfs(dfs, frame_factory=pd.DataFrame):
     """Concat sequence of DataFrames, can handle MultiIndex frames."""
     dfs = list(dfs)
     if not dfs:
-        return pd.DataFrame()
+        return frame_factory()
+
+    if not isinstance(dfs[0], pd.DataFrame):
+        import cudf
+        return cudf.concat(dfs)
+
+    # Make sure concat keep categorical columns
+    # See https://stackoverflow.com/a/44086708/7650
+    align_categories(dfs)
 
     names = list(dfs[0].index.names)
     wdf = pd.concat(
@@ -33,12 +43,28 @@ def concat_dfs(dfs):
         # We need a name for set_index, if we don't have one, take the name
         # pandas assigned to the column
         full_names = [name or wdf.columns[i] for i, name in enumerate(names)]
-        wdf.set_index(full_names, inplace=True)
+        wdf = wdf.set_index(full_names)
         wdf.index.names = names
     elif names[0]:
-        wdf.index = wdf.pop(names[0])
+        wdf = wdf.set_index(names[0])
+    elif names[0] is None:
+        del wdf['index']  # Pandas will add 'index' column
 
     with warnings.catch_warnings():
         warnings.simplefilter('ignore')
         wdf.labels = getattr(dfs[0], 'labels', {})
     return wdf
+
+
+def align_categories(dfs):
+    all_cats = set()
+    for df in dfs:
+        for col in df.columns:
+            if is_categorical_dtype(df[col].dtype):
+                all_cats.update(df[col].cat.categories)
+
+    for df in dfs:
+        for col in df.columns:
+            if is_categorical_dtype(df[col].dtype):
+                cats = all_cats - set(df[col].cat.categories)
+                df[col].cat.add_categories(cats, inplace=True)

@@ -1,1 +1,5 @@
+googleapis-common-protos>=1.5.3
+grpcio-tools>=1.16.0
 numpydoc==0.8.0
+pandas>=0.23.*
+requests>=2.19.1
