@@ -23,6 +23,7 @@ package frames
 import (
 	"fmt"
 	"math"
+	"sort"
 	"time"
 
 	"github.com/v3io/frames/pb"
@@ -33,6 +34,7 @@ type ColumnBuilder interface {
 	Append(value interface{}) error
 	At(index int) (interface{}, error)
 	Set(index int, value interface{}) error
+	Delete(index int) error
 	Finish() Column
 }
 
@@ -42,43 +44,87 @@ func NewSliceColumnBuilder(name string, dtype DType, size int) ColumnBuilder {
 		Kind:  pb.Column_SLICE,
 		Name:  name,
 		Dtype: pb.DType(dtype),
-		Size:  int64(size),
 	}
 
 	// TODO: pre alloate array. Note that for strings we probably don't want to
 	// do this since we'll allocate strings twice - zero value then real value
-	return &sliceColumBuilder{msg: msg, originalSize: int64(size)}
+	return &sliceColumBuilder{
+		msg:     msg,
+		values:  make(map[int]interface{}),
+		deleted: make(map[int]bool),
+	}
 }
 
 type sliceColumBuilder struct {
-	msg          *pb.Column
-	originalSize int64
+	msg     *pb.Column
+	values  map[int]interface{}
+	deleted map[int]bool
+	index   int // next index for append. TODO: Find a better name
 }
 
 func (b *sliceColumBuilder) At(index int) (interface{}, error) {
-	return valueAt(b.msg, index)
+	if index < 0 || index >= b.index {
+		return nil, fmt.Errorf("index out of bounds [0:%d]", b.index-1)
+	}
+	return b.values[index], nil
 }
 
 func (b *sliceColumBuilder) Append(value interface{}) error {
-	return b.Set(int(b.msg.Size), value)
+	err := b.Set(b.index, value)
+	return err
+}
+
+func (b *sliceColumBuilder) Set(index int, value interface{}) error {
+	var err error
+	switch b.msg.Dtype {
+	case pb.DType_INTEGER:
+		err = b.setInt(index, value)
+	case pb.DType_FLOAT:
+		err = b.setFloat(index, value)
+	case pb.DType_STRING:
+		err = b.setString(index, value)
+	case pb.DType_TIME:
+		err = b.setTime(index, value)
+	case pb.DType_BOOLEAN:
+		err = b.setBool(index, value)
+	default:
+		return fmt.Errorf("unknown dtype - %s", b.msg.Dtype)
+	}
+
+	if err == nil {
+		delete(b.deleted, index) // Undelete
+		if index >= b.index {
+			b.index = index + 1
+		}
+	}
+	return err
+}
+
+func (b *sliceColumBuilder) Delete(index int) error {
+	if index < 0 || index >= b.index {
+		return fmt.Errorf("index out of bounds: [0:%d]", b.index-1)
+	}
+	b.deleted[index] = true
+	delete(b.values, index)
+	return nil
 }
 
 func (b *sliceColumBuilder) setInt(index int, value interface{}) error {
 	switch value.(type) {
 	case int64:
-		b.msg.Ints[index] = value.(int64)
+		b.values[index] = value.(int64)
 		return nil
 	case int:
-		b.msg.Ints[index] = int64(value.(int))
+		b.values[index] = int64(value.(int))
 		return nil
 	case int8:
-		b.msg.Ints[index] = int64(value.(int8))
+		b.values[index] = int64(value.(int8))
 		return nil
 	case int16:
-		b.msg.Ints[index] = int64(value.(int16))
+		b.values[index] = int64(value.(int16))
 		return nil
 	case int32:
-		b.msg.Ints[index] = int64(value.(int32))
+		b.values[index] = int64(value.(int32))
 		return nil
 	}
 
@@ -88,10 +134,10 @@ func (b *sliceColumBuilder) setInt(index int, value interface{}) error {
 func (b *sliceColumBuilder) setTime(index int, value interface{}) error {
 	switch value.(type) {
 	case time.Time:
-		b.msg.Times[index] = value.(time.Time).UnixNano()
+		b.values[index] = value.(time.Time).UnixNano()
 		return nil
 	case int64:
-		b.msg.Times[index] = value.(int64)
+		b.values[index] = value.(int64)
 		return nil
 	}
 
@@ -105,10 +151,10 @@ func (b *sliceColumBuilder) typeError(value interface{}) error {
 func (b *sliceColumBuilder) setFloat(index int, value interface{}) error {
 	switch value.(type) {
 	case float64:
-		b.msg.Floats[index] = value.(float64)
+		b.values[index] = value.(float64)
 		return nil
 	case float32:
-		b.msg.Floats[index] = float64(value.(float32))
+		b.values[index] = float64(value.(float32))
 		return nil
 	}
 
@@ -121,7 +167,7 @@ func (b *sliceColumBuilder) setString(index int, value interface{}) error {
 		return b.typeError(value)
 	}
 
-	b.msg.Strings[index] = s
+	b.values[index] = s
 	return nil
 }
 
@@ -131,112 +177,69 @@ func (b *sliceColumBuilder) setBool(index int, value interface{}) error {
 		return b.typeError(value)
 	}
 
-	b.msg.Bools[index] = bval
+	b.values[index] = bval
 	return nil
 }
 
-func (b *sliceColumBuilder) Set(index int, value interface{}) error {
-	b.resize(index + 1)
-	switch b.msg.Dtype {
-	case pb.DType_INTEGER:
-		return b.setInt(index, value)
-	case pb.DType_FLOAT:
-		return b.setFloat(index, value)
-	case pb.DType_STRING:
-		return b.setString(index, value)
-	case pb.DType_TIME:
-		return b.setTime(index, value)
-	case pb.DType_BOOLEAN:
-		return b.setBool(index, value)
-	default:
-		return fmt.Errorf("unknown dtype - %s", b.msg.Dtype)
-	}
-}
-
-func (b *sliceColumBuilder) resize(size int) {
-	b.msg.Size = int64(size)
-	switch b.msg.Dtype {
-	case pb.DType_INTEGER:
-		b.msg.Ints = resizeInt64(b.msg.Ints, size)
-	case pb.DType_FLOAT:
-		currentSize := cap(b.msg.Floats)
-		if currentSize >= size {
-			b.msg.Floats = b.msg.Floats[:size]
-			return
-		}
-		floats := make([]float64, size)
-		copy(floats, b.msg.Floats)
-		b.msg.Floats = floats
-		b.fillDefaultValues(currentSize, size)
-	case pb.DType_STRING:
-		if cap(b.msg.Strings) >= size {
-			b.msg.Strings = b.msg.Strings[:size]
-			return
-		}
-		strings := make([]string, size)
-		copy(strings, b.msg.Strings)
-		b.msg.Strings = strings
-	case pb.DType_TIME:
-		b.msg.Times = resizeInt64(b.msg.Times, size)
-	case pb.DType_BOOLEAN:
-		if cap(b.msg.Bools) >= size {
-			b.msg.Bools = b.msg.Bools[:size]
-			return
-		}
-		bools := make([]bool, size)
-		copy(bools, b.msg.Bools)
-		b.msg.Bools = bools
-	}
-}
-
-func resizeInt64(buf []int64, size int) []int64 {
-	if cap(buf) >= size {
-		return buf[:size]
-	}
-	ints := make([]int64, size)
-	copy(ints, buf)
-	return ints
-}
-
+// TODO: Return error
 func (b *sliceColumBuilder) Finish() Column {
-	b.fillMissingRows()
-	return &colImpl{msg: b.msg}
-}
+	size := b.index - len(b.deleted)
 
-func (b *sliceColumBuilder) fillMissingRows() {
-	currentSize, _ := b.getActualCapacity()
-	if int64(currentSize) >= b.originalSize {
-		return
+	dels := make([]int, 0, len(b.deleted))
+	for i := range b.deleted {
+		dels = append(dels, i)
 	}
+	sort.Ints(dels)
 
-	b.resize(int(b.originalSize))
-	b.fillDefaultValues(currentSize, int(b.originalSize))
-}
+	b.msg.Size = int64(size)
+	var set func(i int, value interface{})
 
-func (b *sliceColumBuilder) fillDefaultValues(from, to int) {
-	switch b.msg.Dtype {
-	case pb.DType_FLOAT:
-		for i := from; i < to; i++ {
-			b.setFloat(int(i), math.NaN())
-		}
-	}
-}
-
-func (b *sliceColumBuilder) getActualCapacity() (int, error) {
 	switch b.msg.Dtype {
 	case pb.DType_INTEGER:
-		return cap(b.msg.Ints), nil
+		b.msg.Ints = make([]int64, size)
+		set = func(i int, value interface{}) {
+			v, _ := value.(int64)
+			b.msg.Ints[i] = v
+		}
 	case pb.DType_FLOAT:
-		return cap(b.msg.Floats), nil
+		b.msg.Floats = make([]float64, size)
+		set = func(i int, value interface{}) {
+			v, ok := value.(float64)
+			if !ok {
+				v = math.NaN()
+			}
+			b.msg.Floats[i] = v
+		}
 	case pb.DType_STRING:
-		return cap(b.msg.Strings), nil
+		b.msg.Strings = make([]string, size)
+		set = func(i int, value interface{}) {
+			v, _ := value.(string)
+			b.msg.Strings[i] = v
+		}
 	case pb.DType_TIME:
-		return cap(b.msg.Times), nil
+		b.msg.Times = make([]int64, size)
+		set = func(i int, value interface{}) {
+			v, _ := value.(int64)
+			b.msg.Times[i] = v
+		}
 	case pb.DType_BOOLEAN:
-		return cap(b.msg.Bools), nil
+		b.msg.Bools = make([]bool, size)
+		set = func(i int, value interface{}) {
+			v, _ := value.(bool)
+			b.msg.Bools[i] = v
+		}
 	}
 
-	return 0, fmt.Errorf("not supported type %v", b.msg.Dtype)
+	d := 0
+	for i := 0; i < size; i++ {
+		for d < len(dels) && i+d >= dels[d] {
+			d++
+		}
+		v := b.values[i+d]
+		set(i, v)
+	}
+
+	return &colImpl{msg: b.msg}
 }
 
 // NewLabelColumnBuilder return a builder for LabelColumn
@@ -261,12 +264,17 @@ func NewLabelColumnBuilder(name string, dtype DType, size int) ColumnBuilder {
 		msg.Bools = make([]bool, 1)
 	}
 
-	return &labelColumBuilder{msg: msg, empty: true}
+	return &labelColumBuilder{
+		msg:     msg,
+		empty:   true,
+		deleted: make(map[int]bool),
+	}
 }
 
 type labelColumBuilder struct {
-	msg   *pb.Column
-	empty bool
+	msg     *pb.Column
+	empty   bool
+	deleted map[int]bool
 }
 
 func (b *labelColumBuilder) At(index int) (interface{}, error) {
@@ -274,6 +282,7 @@ func (b *labelColumBuilder) At(index int) (interface{}, error) {
 }
 
 func (b *labelColumBuilder) Finish() Column {
+	b.msg.Size -= int64(len(b.deleted))
 	return &colImpl{msg: b.msg}
 }
 
@@ -306,6 +315,11 @@ func (b *labelColumBuilder) Set(index int, value interface{}) error {
 	}
 
 	return err
+}
+
+func (b *labelColumBuilder) Delete(index int) error {
+	b.deleted[index] = true
+	return nil
 }
 
 func (b *labelColumBuilder) setInt(index int, value interface{}) error {

@@ -42,18 +42,18 @@ github.com/prometheus/prometheus/pkg/labels
 github.com/rcrowley/go-metrics
 # github.com/v3io/v3io-go-http v0.0.0-20181224070828-ef32781cf2de
 github.com/v3io/v3io-go-http
-# github.com/v3io/v3io-tsdb v0.8.6
+# github.com/v3io/v3io-tsdb v0.0.4-0.20190130082012-c185c909df82
 github.com/v3io/v3io-tsdb/pkg/utils
 github.com/v3io/v3io-tsdb/pkg/config
+github.com/v3io/v3io-tsdb/pkg/pquerier
 github.com/v3io/v3io-tsdb/pkg/tsdb
 github.com/v3io/v3io-tsdb/pkg/tsdb/schema
 github.com/v3io/v3io-tsdb/pkg/chunkenc
-github.com/v3io/v3io-tsdb/pkg/appender
-github.com/v3io/v3io-tsdb/pkg/partmgr
-github.com/v3io/v3io-tsdb/pkg/pquerier
-github.com/v3io/v3io-tsdb/pkg/querier
-github.com/v3io/v3io-tsdb/pkg/aggregate
 github.com/v3io/v3io-tsdb/internal/pkg/performance
+github.com/v3io/v3io-tsdb/pkg/aggregate
+github.com/v3io/v3io-tsdb/pkg/partmgr
+github.com/v3io/v3io-tsdb/pkg/appender
+github.com/v3io/v3io-tsdb/pkg/querier
 # github.com/valyala/bytebufferpool v1.0.0
 github.com/valyala/bytebufferpool
 # github.com/valyala/fasthttp v1.0.0
