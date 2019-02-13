@@ -63,7 +63,7 @@ type sliceColumBuilder struct {
 }
 
 func (b *sliceColumBuilder) At(index int) (interface{}, error) {
-	if index < 0 || index >= b.index-1 {
+	if index < 0 || index >= b.index {
 		return nil, fmt.Errorf("index out of bounds [0:%d]", b.index-1)
 	}
 	return b.values[index], nil
