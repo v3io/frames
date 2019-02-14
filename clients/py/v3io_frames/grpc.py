@@ -142,7 +142,9 @@ class Client(ClientBase):
                 args=args,
                 expression=expression,
             )
-            stub.Exec(request)
+            resp = stub.Exec(request)
+            if resp.frame:
+                return msg2df(resp.frame, self.frame_factory)
 
 
 def new_channel(address):

@@ -204,8 +204,8 @@ func (b *Backend) Delete(request *frames.DeleteRequest) error {
 }
 
 // Exec executes a command
-func (b *Backend) Exec(request *frames.ExecRequest) error {
-	return fmt.Errorf("TSDB backend does not support Exec")
+func (b *Backend) Exec(request *frames.ExecRequest) (frames.Frame, error) {
+	return nil, fmt.Errorf("TSDB backend does not support Exec")
 }
 
 func (b *Backend) ignoreCreateExists(request *frames.CreateRequest, err error) bool {

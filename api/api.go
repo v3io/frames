@@ -209,10 +209,10 @@ func (api *API) Delete(request *frames.DeleteRequest) error {
 }
 
 // Exec executes a command on the backend
-func (api *API) Exec(request *frames.ExecRequest) error {
+func (api *API) Exec(request *frames.ExecRequest) (frames.Frame, error) {
 	if request.Backend == "" || request.Table == "" {
 		api.logger.ErrorWith(missingMsg, "request", request)
-		return fmt.Errorf(missingMsg)
+		return nil, fmt.Errorf(missingMsg)
 	}
 
 	// TODO: This print session in clear text
@@ -220,15 +220,16 @@ func (api *API) Exec(request *frames.ExecRequest) error {
 	backend, ok := api.backends[request.Backend]
 	if !ok {
 		api.logger.ErrorWith("unkown backend", "name", request.Backend)
-		return fmt.Errorf("unknown backend - %s", request.Backend)
+		return nil, fmt.Errorf("unknown backend - %s", request.Backend)
 	}
 
-	if err := backend.Exec(request); err != nil {
+	frame, err := backend.Exec(request)
+	if err != nil {
 		api.logger.ErrorWith("error in exec", "error", err, "request", request)
-		return errors.Wrap(err, "can't exec")
+		return nil, errors.Wrap(err, "can't exec")
 	}
 
-	return nil
+	return frame, nil
 }
 
 func (api *API) populateQuery(request *frames.ReadRequest) error {

@@ -69,15 +69,15 @@ func (b *Backend) Delete(request *frames.DeleteRequest) error {
 }
 
 // Exec executes a command
-func (b *Backend) Exec(request *frames.ExecRequest) error {
+func (b *Backend) Exec(request *frames.ExecRequest) (frames.Frame, error) {
 	cmd := strings.TrimSpace(strings.ToLower(request.Command))
 	switch cmd {
 	case "infer", "inferschema":
-		return b.inferSchema(request)
+		return nil, b.inferSchema(request)
 	case "update":
-		return b.updateItem(request)
+		return nil, b.updateItem(request)
 	}
-	return fmt.Errorf("KV backend does not support commend - %s", cmd)
+	return nil, fmt.Errorf("KV backend does not support commend - %s", cmd)
 }
 
 func (b *Backend) updateItem(request *frames.ExecRequest) error {
