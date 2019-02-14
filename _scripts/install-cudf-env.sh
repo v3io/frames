@@ -3,7 +3,7 @@
 # On AWS we use NVIDIA Volta Deep Learning AMI 18.11 AMI
 # All that needed to run frames tests
 
-set -o
+set -x
 set -e
 
 miniconda_sh=Miniconda3-latest-Linux-x86_64.sh
