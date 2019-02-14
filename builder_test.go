@@ -48,6 +48,7 @@ func TestSliceBuilder(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
+	t.Logf("vals: %v", vals)
 
 	for i, val := range vals {
 		if int64(i) != val {
@@ -95,5 +96,73 @@ func TestLabelBuilder(t *testing.T) {
 	err := b.Set(0, false)
 	if err == nil {
 		t.Fatal("changed value in label column")
+	}
+}
+
+func TestBuilderDelete(t *testing.T) {
+	size := 10
+	b := NewSliceColumnBuilder("a", IntType, size)
+	for i := 0; i < size; i++ {
+		b.Set(i, i)
+	}
+
+	deleted := map[int]bool{
+		1: true,
+		3: true,
+		9: true,
+	}
+
+	for v := range deleted {
+		if err := b.Delete(v); err != nil {
+			t.Fatalf("can't delete %d - %s", v, err)
+		}
+	}
+
+	col := b.Finish()
+	if cs := col.Len(); cs != size-len(deleted) {
+		t.Fatalf("wrong size %d != %d", col.Len(), size-len(deleted))
+	}
+
+	for i := 0; i < col.Len(); i++ {
+		v, err := col.IntAt(i)
+		if err != nil {
+			t.Fatal(err)
+		}
+
+		if deleted[int(v)] {
+			t.Fatalf("found deleted value - %d", v)
+		}
+
+	}
+}
+
+func TestBuilderDeleteFirst(t *testing.T) {
+	b := NewSliceColumnBuilder("a", IntType, 1)
+	b.Set(0, 1)
+
+	if err := b.Delete(0); err != nil {
+		if err != nil {
+			t.Fatal(err)
+		}
+	}
+
+	col := b.Finish()
+	if col.Len() != 0 {
+		t.Fatalf("bad size: %d != 0", col.Len())
+	}
+}
+
+func TestBuilderAppend(t *testing.T) {
+	b := NewSliceColumnBuilder("a", IntType, 1)
+	size := 5
+	for i := 0; i < size; i++ {
+		if err := b.Append(i); err != nil {
+			t.Fatal(err)
+		}
+	}
+
+	col := b.Finish()
+	if col.Len() != size {
+		t.Fatalf("bad size: %d != %d", col.Len(), size)
 	}
 }

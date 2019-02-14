@@ -53,7 +53,7 @@ In [travis settings](https://travis-ci.org/v3io/frames/settings) we have the fol
 
      docker run \
 	-v /path/to/config.yaml:/etc/framesd.yaml \
-	quay.io/v3io/frames
+	quay.io/v3io/frames:unstable
 
 ## LICENSE
 

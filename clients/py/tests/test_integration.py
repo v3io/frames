@@ -174,6 +174,8 @@ def compare_dfs(df1, df2, backend):
             continue
         col1 = df1[name].sort_index()
         col2 = df2[name].sort_index()
+        assert len(col1) == len(col2), \
+            '{}: column {} size mismatch'.format(backend, name)
         if col1.dtype == np.float:
             ok = np.allclose(col1.values, col2.values)
         else:

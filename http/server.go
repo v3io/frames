@@ -351,12 +351,28 @@ func (s *Server) handleExec(ctx *fasthttp.RequestCtx) {
 	}
 	s.httpAuth(ctx, request.Session)
 
-	if err := s.api.Exec(request); err != nil {
+	frame, err := s.api.Exec(request)
+	if err != nil {
 		ctx.Error("can't exec", http.StatusInternalServerError)
 		return
 	}
 
-	s.replyOK(ctx)
+	enc := frames.NewEncoder(ctx)
+	var frameData string
+	if frame != nil {
+		data, err := frames.MarshalFrame(frame)
+		if err != nil {
+			s.logger.ErrorWith("can't marshal frame", "error", err)
+			s.writeError(enc, fmt.Errorf("can't marsha frame - %s", err))
+		}
+
+		frameData = base64.StdEncoding.EncodeToString(data)
+	}
+
+	ctx.SetStatusCode(http.StatusOK)
+	json.NewEncoder(ctx).Encode(map[string]string{
+		"frame": frameData,
+	})
 }
 
 func (s *Server) handleSimpleJSONQuery(ctx *fasthttp.RequestCtx) {

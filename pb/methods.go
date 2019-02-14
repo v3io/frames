@@ -257,3 +257,8 @@ func AsInt64(val interface{}) (int64, bool) {
 
 	return 0, false
 }
+
+// Arg returns the value of argument
+func (r *ExecRequest) Arg(name string) (interface{}, error) {
+	return r.Args[name].GoValue()
+}

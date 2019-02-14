@@ -165,13 +165,22 @@ func (c *Client) Delete(request *frames.DeleteRequest) error {
 }
 
 // Exec executes a command on the backend
-func (c *Client) Exec(request *frames.ExecRequest) error {
+func (c *Client) Exec(request *frames.ExecRequest) (frames.Frame, error) {
 	if request.Session == nil {
 		request.Session = c.session
 	}
 
-	_, err := c.client.Exec(context.Background(), request)
-	return err
+	msg, err := c.client.Exec(context.Background(), request)
+	if err != nil {
+		return nil, err
+	}
+
+	var frame frames.Frame
+	if msg.Frame != nil {
+		frame = frames.NewFrameFromProto(msg.Frame)
+	}
+
+	return frame, nil
 }
 
 type frameIterator struct {
