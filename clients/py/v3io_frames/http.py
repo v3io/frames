@@ -87,7 +87,7 @@ class Client(ClientBase):
         dfs = self._iter_dfs(resp.raw)
 
         if not iterator:
-            return concat_dfs(dfs)
+            return concat_dfs(dfs, self.frame_factory, self.concat)
         return dfs
 
     @connection_error(WriteError)

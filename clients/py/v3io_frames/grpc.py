@@ -89,7 +89,7 @@ class Client(ClientBase):
             backend, table, query, columns, filter, group_by, limit,
             data_format, row_layout, max_in_message, marker, **kw)
         if not iterator:
-            return concat_dfs(dfs)
+            return concat_dfs(dfs, self.frame_factory, self.concat)
         return dfs
 
     @grpc_raise(WriteError)

@@ -18,25 +18,20 @@ import warnings
 from .pbutils import is_categorical_dtype
 
 
-def concat_dfs(dfs, frame_factory=pd.DataFrame):
+def concat_dfs(dfs, frame_factory=pd.DataFrame, concat=pd.concat):
     """Concat sequence of DataFrames, can handle MultiIndex frames."""
     dfs = list(dfs)
     if not dfs:
         return frame_factory()
-
-    if not isinstance(dfs[0], pd.DataFrame):
-        import cudf
-        return cudf.concat(dfs)
 
     # Make sure concat keep categorical columns
     # See https://stackoverflow.com/a/44086708/7650
     align_categories(dfs)
 
     names = list(dfs[0].index.names)
-    wdf = pd.concat(
+    wdf = concat(
         [df.reset_index() for df in dfs],
         ignore_index=True,
-        sort=False,
     )
 
     if len(names) > 1:
