@@ -118,6 +118,7 @@ func aggregateClientAggregates(ctx *selectQueryContext, res *qryResults) {
 		for _, col := range res.frame.columns {
 			if col.GetColumnSpec().metric == res.name {
 				col.SetDataAt(int(currentCell), v)
+				res.frame.updateHasValue(int(currentCell))
 			}
 		}
 	}
@@ -153,6 +154,7 @@ func aggregateServerAggregates(ctx *selectQueryContext, res *qryResults) {
 						floatVal = math.Float64frombits(val)
 					}
 					col.SetDataAt(int(currentCell), floatVal)
+					res.frame.updateHasValue(int(currentCell))
 				}
 			}
 		}
@@ -165,7 +167,10 @@ func downsampleRawData(ctx *selectQueryContext, res *qryResults,
 
 	var lastT int64
 	var lastV float64
-	it := newRawChunkIterator(res, nil).(*rawChunkIterator)
+	it, ok := newRawChunkIterator(res, nil).(*RawChunkIterator)
+	if !ok {
+		return previousPartitionLastTime, previousPartitionLastValue, nil
+	}
 	col, err := res.frame.Column(res.name)
 	if err != nil {
 		return previousPartitionLastTime, previousPartitionLastValue, err
@@ -192,6 +197,7 @@ func downsampleRawData(ctx *selectQueryContext, res *qryResults,
 				} else {
 					_, interpolatedV := interpolateFunc(prevT, t, currBucketTime, prevV, v)
 					col.SetDataAt(currBucket, interpolatedV)
+					res.frame.updateHasValue(currBucket)
 				}
 			} else {
 				col.SetDataAt(currBucket, math.NaN())

@@ -42,10 +42,10 @@ const (
 	defaultBatchSize             = 64
 	defaultTimeoutInSeconds      = 24 * 60 * 60 // 24 hours
 
-	defaultMaximumSampleSize    = 8       // bytes
-	defaultMaximumPartitionSize = 1700000 // 1.7MB
-	defaultMinimumChunkSize     = 200     // bytes
-	defaultMaximumChunkSize     = 32000   // bytes
+	defaultMaximumSampleSize    = 8           // bytes
+	defaultMaximumPartitionSize = 1024 * 1024 // 1 MB
+	defaultMinimumChunkSize     = 200         // bytes
+	defaultMaximumChunkSize     = 32000       // bytes
 
 	DefaultShardingBucketsCount   = 8
 	DefaultStorageClass           = "local"
@@ -183,8 +183,7 @@ type Rollup struct {
 	SampleRetention int `json:"sampleRetention"`
 	// Layer retention time, in months ('m'), days ('d'), or hours ('h').
 	// Format: "[0-9]+[hmd]". For example: "3h", "7d", "1m"
-	LayerRetentionTime string         `json:"layerRetentionTime"`
-	PreAggregates      []PreAggregate `json:"preAggregates"`
+	LayerRetentionTime string `json:"layerRetentionTime"`
 }
 
 type PreAggregate struct {
@@ -194,11 +193,12 @@ type PreAggregate struct {
 }
 
 type TableSchema struct {
-	Version              int      `json:"version"`
-	RollupLayers         []Rollup `json:"rollupLayers"`
-	ShardingBucketsCount int      `json:"shardingBucketsCount"`
-	PartitionerInterval  string   `json:"partitionerInterval"`
-	ChunckerInterval     string   `json:"chunckerInterval"`
+	Version              int            `json:"version"`
+	RollupLayers         []Rollup       `json:"rollupLayers"`
+	ShardingBucketsCount int            `json:"shardingBucketsCount"`
+	PartitionerInterval  string         `json:"partitionerInterval"`
+	ChunckerInterval     string         `json:"chunckerInterval"`
+	PreAggregates        []PreAggregate `json:"preAggregates"`
 }
 
 type PartitionSchema struct {
