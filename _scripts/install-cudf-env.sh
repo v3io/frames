@@ -23,7 +23,7 @@ mv go goroot
 echo 'export GOROOT=${HOME}/goroot' >> ~/.bashrc
 echo 'export PATH=${GOROOT}/bin:${PATH}' >> ~/.bashrc
 
-CONDA_INSTALL="~/miniconda3/bin/conda install -y"
+CONDA_INSTALL="${HOME}/miniconda3/bin/conda install -y"
 
 # Install cudf
 ${CONDA_INSTALL} \
