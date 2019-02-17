@@ -32,6 +32,7 @@ def concat_dfs(dfs, frame_factory=pd.DataFrame, concat=pd.concat):
         names = list(dfs[0].index.names)
     else:
         names = [dfs[0].index.name]
+    had_index = 'index' in dfs[0].columns
 
     wdf = concat(
         [df.reset_index() for df in dfs],
@@ -47,7 +48,8 @@ def concat_dfs(dfs, frame_factory=pd.DataFrame, concat=pd.concat):
     elif names[0]:
         wdf = wdf.set_index(names[0])
     elif names[0] is None:
-        del wdf['index']  # Pandas will add 'index' column
+        if not had_index and 'index' in wdf.columns:
+            del wdf['index']  # Pandas will add 'index' column
 
     with warnings.catch_warnings():
         warnings.simplefilter('ignore')
