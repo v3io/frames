@@ -28,7 +28,11 @@ def concat_dfs(dfs, frame_factory=pd.DataFrame, concat=pd.concat):
     # See https://stackoverflow.com/a/44086708/7650
     align_categories(dfs)
 
-    names = list(dfs[0].index.names)
+    if hasattr(dfs[0].index, 'names'):
+        names = list(dfs[0].index.names)
+    else:
+        names = [dfs[0].index.name]
+
     wdf = concat(
         [df.reset_index() for df in dfs],
         ignore_index=True,
