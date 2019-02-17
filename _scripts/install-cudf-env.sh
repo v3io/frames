@@ -37,3 +37,6 @@ ${CONDA_INSTALL} pytest pyyaml
 
 # Get frames code
 git clone https://github.com/v3io/frames.git
+
+# Install frames dependencies
+conda install grpcio-tools=1.16.1 protobuf=3.6.1 requests=2.21.0

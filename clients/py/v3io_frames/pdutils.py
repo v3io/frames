@@ -61,5 +61,4 @@ def align_categories(dfs):
     for df in dfs:
         for col in df.columns:
             if is_categorical_dtype(df[col].dtype):
-                cats = all_cats - set(df[col].cat.categories)
-                df[col].cat.add_categories(cats, inplace=True)
+                df[col] = df[col].cat.set_categories(all_cats)
