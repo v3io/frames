@@ -1,0 +1,7 @@
+channels:
+- defaults
+dependencies:
+- grpcio-tools=1.16.1
+- protobuf=3.6.1
+- requests=2.21.0
+- pandas>=0.23.*

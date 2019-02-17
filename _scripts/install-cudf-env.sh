@@ -23,15 +23,20 @@ mv go goroot
 echo 'export GOROOT=${HOME}/goroot' >> ~/.bashrc
 echo 'export PATH=${GOROOT}/bin:${PATH}' >> ~/.bashrc
 
+CONDA_INSTALL="${HOME}/miniconda3/bin/conda install -y"
+
 # Install cudf
-~/miniconda3/bin/conda install \
+${CONDA_INSTALL} \
     -c nvidia -c rapidsai -c pytorch -c numba \
     -c conda-forge -c defaults \
     cudf=0.5 cuml=0.5 python=3.6
-~/miniconda3/bin/conda install cudatoolkit=9.2
+${CONDA_INSTALL} cudatoolkit=9.2
 
 # Install testing
-~/miniconda3/bin/conda install pytest pyyaml
+${CONDA_INSTALL} pytest pyyaml
 
 # Get frames code
 git clone https://github.com/v3io/frames.git
+
+# Install frames dependencies
+conda install grpcio-tools=1.16.1 protobuf=3.6.1 requests=2.21.0
