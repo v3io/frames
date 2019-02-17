@@ -83,7 +83,7 @@ type DataBackend interface {
 	Write(request *WriteRequest) (FrameAppender, error) // TODO: use Appender for write streaming
 	Create(request *CreateRequest) error
 	Delete(request *DeleteRequest) error
-	Exec(request *ExecRequest) error
+	Exec(request *ExecRequest) (Frame, error)
 }
 
 // FrameIterator iterates over frames
@@ -109,15 +109,15 @@ type JoinStruct = pb.JoinStruct
 // TODO: Unite with probouf (currenly the protobuf message combines both this
 // and a frame message)
 type WriteRequest struct {
-	Session *Session `msgpack:"session"`
-	Backend string   `msgpack:"backend"` // backend name
-	Table   string   `msgpack:"table"`   // Table name (path)
+	Session *Session
+	Backend string // backend name
+	Table   string // Table name (path)
 	// Data message sent with the write request (in case of a stream multiple messages can follow)
-	ImmidiateData Frame `msgpack:"intermidate,omitempty"`
+	ImmidiateData Frame
 	// Expression template, for update expressions generated from combining columns data with expression
-	Expression string `msgpack:"expression,omitempty"`
+	Expression string
 	// Will we get more message chunks (in a stream), if not we can complete
-	HaveMore bool `msgpack:"more"`
+	HaveMore bool
 }
 
 // CreateRequest is a table creation request

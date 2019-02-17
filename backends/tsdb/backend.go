@@ -75,19 +75,25 @@ func (b *Backend) newConfig(session *frames.Session) *config.V3ioConfig {
 func (b *Backend) newAdapter(session *frames.Session, path string) (*tsdb.V3ioAdapter, error) {
 
 	session = frames.InitSessionDefaults(session, b.framesConfig)
+	containerName, newPath, err := v3ioutils.ProcessPaths(session, path, false)
+	if err != nil {
+		return nil, err
+	}
+
+	session.Container = containerName
 	cfg := b.newConfig(session)
 
-	if path == "" {
-		path = session.Path
-	}
+	container, err := v3ioutils.NewContainer(
+		session,
+		b.logger,
+		cfg.Workers,
+	)
 
-	container, err := v3ioutils.CreateContainer(b.logger,
-		session.Url, cfg.Container, cfg.Username, cfg.Password, cfg.Workers)
 	if err != nil {
-		return nil, errors.Wrap(err, "Failed to create V3IO data container")
+		return nil, err
 	}
 
-	cfg.TablePath = path
+	cfg.TablePath = newPath
 	b.logger.DebugWith("tsdb config", "config", cfg)
 	adapter, err := tsdb.NewV3ioAdapter(cfg, container, b.logger)
 	if err != nil {
@@ -100,10 +106,6 @@ func (b *Backend) newAdapter(session *frames.Session, path string) (*tsdb.V3ioAd
 // GetAdapter returns an adapter
 func (b *Backend) GetAdapter(session *frames.Session, path string) (*tsdb.V3ioAdapter, error) {
 	// TODO: maintain adapter cache, for now create new per read/write request
-	//adapter, ok := b.adapters[path]
-	//if !ok {
-	//	b.adapters[path] = adapter
-	//}
 
 	adapter, err := b.newAdapter(session, path)
 	if err != nil {
@@ -147,8 +149,15 @@ func (b *Backend) Create(request *frames.CreateRequest) error {
 	}
 
 	session := frames.InitSessionDefaults(request.Session, b.framesConfig)
+	containerName, path, err := v3ioutils.ProcessPaths(session, request.Table, false)
+	if err != nil {
+		return err
+	}
+
+	session.Container = containerName
 	cfg := b.newConfig(session)
-	cfg.TablePath = request.Table
+
+	cfg.TablePath = path
 	dbSchema, err := schema.NewSchema(cfg, rate, aggregationGranularity, defaultRollups)
 
 	if err != nil {
@@ -195,9 +204,8 @@ func (b *Backend) Delete(request *frames.DeleteRequest) error {
 }
 
 // Exec executes a command
-func (b *Backend) Exec(request *frames.ExecRequest) error {
-	// FIXME
-	return fmt.Errorf("TSDB backend does not support Exec")
+func (b *Backend) Exec(request *frames.ExecRequest) (frames.Frame, error) {
+	return nil, fmt.Errorf("TSDB backend does not support Exec")
 }
 
 func (b *Backend) ignoreCreateExists(request *frames.CreateRequest, err error) bool {

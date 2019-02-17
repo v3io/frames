@@ -81,19 +81,15 @@ func (b *Backend) Create(request *frames.CreateRequest) error {
 		}
 	}
 
-	if !strings.HasSuffix(request.Table, "/") {
-		request.Table += "/"
-	}
-
-	container, err := b.newContainer(request.Session)
+	container, path, err := b.newConnection(request.Session, request.Table, true)
 	if err != nil {
 		return err
 	}
 
 	err = container.Sync.CreateStream(&v3io.CreateStreamInput{
-		Path: request.Table, ShardCount: int(shards), RetentionPeriodHours: int(retention)})
+		Path: path, ShardCount: int(shards), RetentionPeriodHours: int(retention)})
 	if err != nil {
-		b.logger.ErrorWith("CreateStream failed", "path", request.Table, "err", err)
+		b.logger.ErrorWith("CreateStream failed", "path", path, "err", err)
 	}
 
 	return nil
@@ -102,44 +98,80 @@ func (b *Backend) Create(request *frames.CreateRequest) error {
 // Delete deletes a table or part of it
 func (b *Backend) Delete(request *frames.DeleteRequest) error {
 
-	if !strings.HasSuffix(request.Table, "/") {
-		request.Table += "/"
-	}
-
-	container, err := b.newContainer(request.Session)
+	container, path, err := b.newConnection(request.Session, request.Table, true)
 	if err != nil {
 		return err
 	}
 
-	err = container.Sync.DeleteStream(&v3io.DeleteStreamInput{Path: request.Table})
+	err = container.Sync.DeleteStream(&v3io.DeleteStreamInput{Path: path})
 	if err != nil {
-		b.logger.ErrorWith("DeleteStream failed", "path", request.Table, "err", err)
+		b.logger.ErrorWith("DeleteStream failed", "path", path, "err", err)
 	}
 
 	return nil
 }
 
 // Exec executes a command
-func (b *Backend) Exec(request *frames.ExecRequest) error {
-	// FIXME
-	return fmt.Errorf("KV backend does not support Exec")
+func (b *Backend) Exec(request *frames.ExecRequest) (frames.Frame, error) {
+	cmd := strings.TrimSpace(strings.ToLower(request.Command))
+	switch cmd {
+	case "put":
+		return nil, b.put(request)
+	}
+	return nil, fmt.Errorf("Stream backend does not support commend - %s", cmd)
 }
 
-func (b *Backend) newContainer(session *frames.Session) (*v3io.Container, error) {
+func (b *Backend) put(request *frames.ExecRequest) error {
+
+	varData, hasData := request.Args["data"]
+	if !hasData || request.Table == "" {
+		return fmt.Errorf("table name and data parameter must be specified")
+	}
+	data := varData.GetSval()
+
+	clientInfo := ""
+	if val, ok := request.Args["clientinfo"]; ok {
+		clientInfo = val.GetSval()
+	}
+
+	partitionKey := ""
+	if val, ok := request.Args["partition"]; ok {
+		partitionKey = val.GetSval()
+	}
+
+	container, path, err := b.newConnection(request.Session, request.Table, true)
+	if err != nil {
+		return err
+	}
+
+	b.logger.DebugWith("put record", "path", path, "len", len(data), "client", clientInfo, "partition", partitionKey)
+	records := []*v3io.StreamRecord{{
+		Data: []byte(data), ClientInfo: []byte(clientInfo), PartitionKey: partitionKey,
+	}}
+	_, err = container.Sync.PutRecords(&v3io.PutRecordsInput{
+		Path:    path,
+		Records: records,
+	})
+
+	return err
+}
+
+func (b *Backend) newConnection(session *frames.Session, path string, addSlash bool) (*v3io.Container, string, error) {
 
 	session = frames.InitSessionDefaults(session, b.framesConfig)
-	container, err := v3ioutils.CreateContainer(
+	containerName, newPath, err := v3ioutils.ProcessPaths(session, path, addSlash)
+	if err != nil {
+		return nil, "", err
+	}
+
+	session.Container = containerName
+	container, err := v3ioutils.NewContainer(
+		session,
 		b.logger,
-		session.Url, session.Container,
-		session.User, session.Password,
 		b.backendConfig.Workers,
 	)
 
-	if err != nil {
-		return nil, errors.Wrap(err, "Failed to create V3IO data container")
-	}
-
-	return container, nil
+	return container, newPath, err
 }
 
 func init() {

@@ -47,6 +47,20 @@ type Labels []Label
 type LabelsIfc interface {
 	GetKey() (string, string, uint64)
 	GetExpr() string
+	Filter([]string) LabelsIfc
+	LabelNames() []string
+}
+
+func (ls Labels) Filter(keep []string) LabelsIfc {
+	var res Labels
+	for _, l := range ls {
+		for _, keepLabel := range keep {
+			if l.Name == MetricName || l.Name == keepLabel {
+				res = append(res, l)
+			}
+		}
+	}
+	return res
 }
 
 // convert Label set to a string in the form key1=v1,key2=v2.. + name + hash
@@ -79,6 +93,14 @@ func (ls Labels) GetExpr() string {
 	}
 
 	return lblexpr
+}
+
+func (ls Labels) LabelNames() []string {
+	var res []string
+	for _, l := range ls {
+		res = append(res, l.Name)
+	}
+	return res
 }
 
 func (ls Labels) Len() int           { return len(ls) }
@@ -197,8 +219,8 @@ func Equal(ls, o Labels) bool {
 }
 
 // Map returns a string map of the labels.
-func (ls Labels) Map() map[string]string {
-	m := make(map[string]string, len(ls))
+func (ls Labels) Map() map[string]interface{} {
+	m := make(map[string]interface{}, len(ls))
 	for _, l := range ls {
 		m[l.Name] = l.Value
 	}

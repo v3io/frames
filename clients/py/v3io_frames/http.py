@@ -12,9 +12,11 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+import json
 import struct
+from base64 import b64decode
 from datetime import datetime
-from functools import wraps, partial
+from functools import partial, wraps
 from itertools import chain
 
 import requests
@@ -23,10 +25,11 @@ from urllib3.exceptions import HTTPError
 
 from . import frames_pb2 as fpb
 from .client import ClientBase
-from .errors import (CreateError, DeleteError, Error, ExecuteError,
-                     ReadError, WriteError)
-from .pbutils import pb2py, msg2df, df2msg
+from .errors import (CreateError, DeleteError, Error, ExecuteError, ReadError,
+                     WriteError)
+from .pbutils import df2msg, msg2df, pb2py
 from .pdutils import concat_dfs
+from .frames_pb2 import Frame
 
 header_fmt = '<q'
 header_fmt_size = struct.calcsize(header_fmt)
@@ -84,17 +87,18 @@ class Client(ClientBase):
         dfs = self._iter_dfs(resp.raw)
 
         if not iterator:
-            return concat_dfs(dfs)
+            return concat_dfs(dfs, self.frame_factory, self.concat)
         return dfs
 
     @connection_error(WriteError)
-    def _write(self, request, dfs, labels):
+    def _write(self, request, dfs, labels, index_cols):
         url = self._url_for('write')
         headers = self._headers()
         headers['Content-Encoding'] = 'chunked'
 
         request = self._encode_msg(request)
-        frames = (self._encode_msg(df2msg(df)) for df in dfs)
+        enc = self._encode_msg
+        frames = (enc(df2msg(df, labels, index_cols)) for df in dfs)
         data = chain([request], frames)
 
         resp = requests.post(url, headers=headers, data=data)
@@ -159,6 +163,18 @@ class Client(ClientBase):
         if not resp.ok:
             raise ExecuteError(resp.text)
 
+        try:
+            out = resp.json()
+        except json.JSONDecodeError as err:
+            raise ExecuteError(str(err))
+
+        frame = out.get('frame')
+        if not frame:
+            return
+
+        msg = Frame.FromString(b64decode(frame))
+        return msg2df(msg, self.frame_factory)
+
     def _url_for(self, action):
         return self.address + '/' + action
 
@@ -173,7 +189,7 @@ class Client(ClientBase):
         for msg in iter(partial(self._read_msg, resp), None):
             if msg.error:
                 raise ReadError(msg.error)
-            yield msg2df(msg)
+            yield msg2df(msg, self.frame_factory)
 
     def _read_msg(self, resp):
         data = resp.read(header_fmt_size)

@@ -2,8 +2,11 @@ package pquerier
 
 import (
 	"math"
+	"time"
 
+	"github.com/v3io/frames"
 	"github.com/v3io/v3io-tsdb/pkg/aggregate"
+	"github.com/v3io/v3io-tsdb/pkg/chunkenc"
 	"github.com/v3io/v3io-tsdb/pkg/config"
 	"github.com/v3io/v3io-tsdb/pkg/utils"
 )
@@ -14,8 +17,13 @@ func NewDataFrameColumnSeries(indexColumn, dataColumn, countColumn Column, label
 		labels = append(labels, utils.LabelsFromStringList(aggregate.AggregateLabel, dataColumn.GetColumnSpec().function.String())...)
 	}
 
+	wantedMetricName := dataColumn.GetColumnSpec().alias
+	if wantedMetricName == "" {
+		wantedMetricName = dataColumn.GetColumnSpec().metric
+	}
+
 	// The labels we get from the Dataframe are agnostic to the metric name, since there might be several metrics in one Dataframe
-	labels = append(labels, utils.LabelsFromStringList(config.PrometheusMetricNameAttribute, dataColumn.GetColumnSpec().metric)...)
+	labels = append(labels, utils.LabelsFromStringList(config.PrometheusMetricNameAttribute, wantedMetricName)...)
 	s := &DataFrameColumnSeries{labels: labels, key: hash}
 	s.iter = &dataFrameColumnSeriesIterator{indexColumn: indexColumn, dataColumn: dataColumn, countColumn: countColumn, currentIndex: -1}
 	return s
@@ -71,7 +79,19 @@ func (it *dataFrameColumnSeriesIterator) At() (int64, float64) {
 	if err != nil {
 		it.err = err
 	}
-	return t, v
+	return t.UnixNano() / int64(time.Millisecond), v
+}
+
+func (it *dataFrameColumnSeriesIterator) AtString() (int64, string) {
+	t, err := it.indexColumn.TimeAt(it.currentIndex)
+	if err != nil {
+		it.err = err
+	}
+	v, err := it.dataColumn.StringAt(it.currentIndex)
+	if err != nil {
+		it.err = err
+	}
+	return t.UnixNano() / int64(time.Millisecond), v
 }
 
 func (it *dataFrameColumnSeriesIterator) Next() bool {
@@ -85,6 +105,14 @@ func (it *dataFrameColumnSeriesIterator) Next() bool {
 }
 
 func (it *dataFrameColumnSeriesIterator) Err() error { return it.err }
+
+func (it *dataFrameColumnSeriesIterator) Encoding() chunkenc.Encoding {
+	enc := chunkenc.EncXOR
+	if it.dataColumn.DType() == frames.StringType {
+		enc = chunkenc.EncVariant
+	}
+	return enc
+}
 
 func (it *dataFrameColumnSeriesIterator) getNextValidCell(from int) (nextIndex int) {
 	for nextIndex = from + 1; nextIndex < it.dataColumn.Len() && !it.doesCellHasData(nextIndex); nextIndex++ {

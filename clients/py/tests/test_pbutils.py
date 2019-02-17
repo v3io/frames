@@ -12,11 +12,12 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+import numpy as np
 import pandas as pd
 
+import v3io_frames.frames_pb2 as fpb
 from conftest import here
 from v3io_frames import pbutils
-import v3io_frames.frames_pb2 as fpb
 
 
 def test_encode_df():
@@ -26,6 +27,8 @@ def test_encode_df():
     }
 
     df = pd.read_csv('{}/weather.csv'.format(here))
+    df['STATION_CAT'] = df['STATION'].astype('category')
+    df['WDF2_F'] = df['WDF2'].astype(np.float)
     msg = pbutils.df2msg(df, labels)
 
     names = [col.name for col in msg.columns]
@@ -35,7 +38,7 @@ def test_encode_df():
 
     # Now with index
     index_name = 'DATE'
-    df.index = df.pop(index_name)
+    df = df.set_index(index_name)
     msg = pbutils.df2msg(df, None)
 
     names = [col.name for col in msg.columns]
@@ -64,3 +67,41 @@ def test_multi_index():
     for col in msg.indices:
         values = col.strings
         assert len(values) == len(df), 'bad index length'
+
+
+def test_categorical():
+    s = pd.Series(['a', 'b', 'c'] * 7, name='cat').astype('category')
+    col = pbutils.series2col(s)
+    assert col.name == s.name, 'bad name'
+    assert list(col.strings) == list(s), 'bad data'
+
+
+def test_index_cols():
+    cols = list('abcdef')
+    size = 10
+    df = pd.DataFrame({
+        col: np.random.rand(size) for col in cols
+    })
+
+    index_cols = np.random.choice(cols, size=2)
+    cols = set(col for col in cols if col not in index_cols)
+    msg = pbutils.df2msg(df, index_cols=index_cols)
+    assert set(col.name for col in msg.columns) == cols, 'bad columns'
+    assert set(col.name for col in msg.indices) == set(index_cols), \
+        'bad indices'
+
+
+def test_label_col():
+    col = fpb.Column(
+        name='lcol',
+        kind=fpb.Column.LABEL,
+        dtype=fpb.STRING,
+        size=10,
+        strings=['srv1'],
+    )
+
+    s = pbutils.col2series(col)
+    assert s.name == col.name, 'bad name'
+    assert len(s) == col.size, 'bad size'
+    assert pbutils.is_categorical_dtype(s.dtype), 'not categorical'
+    assert set(s.cat.categories) == {col.strings[0]}, 'bad values'

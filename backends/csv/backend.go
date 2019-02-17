@@ -157,14 +157,40 @@ func (b *Backend) Write(request *frames.WriteRequest) (frames.FrameAppender, err
 
 }
 
-// Exec executes a command
-func (b *Backend) Exec(request *frames.ExecRequest) error {
-	if strings.ToLower(request.Command) == "ping" {
-		b.logger.Info("PONG")
-		return nil
+func getInt(r *frames.ExecRequest, name string, defval int) int {
+	ival, err := r.Arg(name)
+	if err != nil {
+		return defval
 	}
 
-	return fmt.Errorf("CSV backend does not support %q exec command", request.Command)
+	val, ok := ival.(int64)
+	if !ok {
+		return defval
+	}
+
+	return int(val)
+}
+
+// Exec executes a command
+func (b *Backend) Exec(request *frames.ExecRequest) (frames.Frame, error) {
+	if strings.ToLower(request.Command) == "ping" {
+		b.logger.Info("PONG")
+		nRows, nCols := getInt(request, "rows", 37), getInt(request, "cols", 4)
+		cols := make([]frames.Column, nCols)
+		for c := 0; c < nCols; c++ {
+			name := fmt.Sprintf("col-%d", c)
+			bld := frames.NewSliceColumnBuilder(name, frames.IntType, nRows)
+			for r := 0; r < nRows; r++ {
+				if err := bld.Set(r, r*c); err != nil {
+					b.logger.WarnWith("can't set column value", "name", name, "row", r)
+				}
+			}
+			cols[c] = bld.Finish()
+		}
+		return frames.NewFrame(cols, nil, nil)
+	}
+
+	return nil, fmt.Errorf("CSV backend does not support %q exec command", request.Command)
 }
 
 func (b *Backend) csvPath(table string) string {

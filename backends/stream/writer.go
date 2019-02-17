@@ -22,24 +22,18 @@ package stream
 
 import (
 	"encoding/json"
-	"strings"
 	"time"
 
 	"github.com/nuclio/logger"
 	"github.com/pkg/errors"
-	v3io "github.com/v3io/v3io-go-http"
+	"github.com/v3io/v3io-go-http"
 
 	"github.com/v3io/frames"
 )
 
 func (b *Backend) Write(request *frames.WriteRequest) (frames.FrameAppender, error) {
 
-	tablePath := request.Table
-	if !strings.HasSuffix(tablePath, "/") {
-		tablePath += "/"
-	}
-
-	container, err := b.newContainer(request.Session)
+	container, tablePath, err := b.newConnection(request.Session, request.Table, true)
 	if err != nil {
 		return nil, err
 	}

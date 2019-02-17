@@ -22,13 +22,14 @@ package tsdb
 
 import (
 	"fmt"
+	"sort"
+	"time"
+
 	"github.com/nuclio/logger"
 	"github.com/pkg/errors"
 	"github.com/v3io/frames"
 	"github.com/v3io/v3io-tsdb/pkg/tsdb"
 	"github.com/v3io/v3io-tsdb/pkg/utils"
-	"sort"
-	"time"
 )
 
 func (b *Backend) Write(request *frames.WriteRequest) (frames.FrameAppender, error) {
@@ -92,6 +93,7 @@ func (a *tsdbAppender) Add(frame frames.Frame) error {
 	for i, col := range frame.Indices() {
 		if col.DType() == frames.TimeType {
 			timeColIndex = i
+			break
 		}
 	}
 
@@ -111,7 +113,7 @@ func (a *tsdbAppender) Add(frame frames.Frame) error {
 	}
 	a.logger.DebugWith("Write Frame", "len", len(tarray), "names", names, "idxlen", len(frame.Indices()))
 
-	values := make([][]float64, len(names))
+	values := make([][]interface{}, len(names))
 	for i, name := range names {
 		col, err := frame.Column(name)
 		if err != nil {
@@ -120,13 +122,35 @@ func (a *tsdbAppender) Add(frame frames.Frame) error {
 
 		switch col.DType() {
 		case frames.FloatType:
-			asFloat, _ := col.Floats()
-			values[i] = asFloat
+			typed, _ := col.Floats()
+			data := make([]interface{}, len(typed))
+			for i, v := range typed {
+				data[i] = v
+			}
+			values[i] = data
 		case frames.IntType:
-			asInt, _ := col.Ints()
-			data := make([]float64, frame.Len())
-			for i := 0; i < frame.Len(); i++ {
-				data[i] = float64(asInt[i])
+			typed, _ := col.Ints()
+			data := make([]interface{}, len(typed))
+			for i, v := range typed {
+				data[i] = float64(v) // TODO: why?
+			}
+			values[i] = data
+		case frames.BoolType:
+			typed, _ := col.Bools()
+			data := make([]interface{}, len(typed))
+			for i, v := range typed {
+				if v {
+					data[i] = 1.0
+				} else {
+					data[i] = 0.0
+				}
+			}
+			values[i] = data
+		case frames.StringType:
+			typed := col.Strings()
+			data := make([]interface{}, len(typed))
+			for i, v := range typed {
+				data[i] = v
 			}
 			values[i] = data
 		default:
@@ -230,7 +254,7 @@ func newLset(labels map[string]interface{}, name string, singleCol bool, extraId
 			val = name
 			hadName = true
 		}
-		lset = append(lset, utils.Label{Name: name, Value: fmt.Sprintf("%s", val)})
+		lset = append(lset, utils.Label{Name: name, Value: fmt.Sprintf("%v", val)})
 	}
 	if !hadName {
 		lset = append(lset, utils.Label{Name: "__name__", Value: name})

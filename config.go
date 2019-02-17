@@ -21,6 +21,7 @@ such restriction.
 package frames
 
 import (
+	"encoding/json"
 	"fmt"
 	"os"
 )
@@ -41,6 +42,7 @@ type Config struct {
 	Container      string `json:"container"`
 	Username       string `json:"username,omitempty"`
 	Password       string `json:"password,omitempty"`
+	SessionKey     string `json:"sessionKey,omitempty"`
 
 	// Number of parallel V3IO worker routines
 	Workers int `json:"workers"`
@@ -75,6 +77,9 @@ func InitSessionDefaults(session *Session, framesConfig *Config) *Session {
 	}
 	if session.Password == "" {
 		session.Password = framesConfig.Password
+	}
+	if session.Token == "" {
+		session.Token = framesConfig.SessionKey
 	}
 
 	return session
@@ -130,38 +135,47 @@ type BackendConfig struct {
 }
 
 // NewSession will create a new session. It will populate missing values from
-// the environment.  Environment variables have V3IO_ prefix (e.g. V3IO_USER)
-func NewSession(url, container, path, user, password, token string) *Session {
-	if url == "" {
-		url = os.Getenv("V3IO_URL")
+// the V3IO_SESSION environment variable (JSON encoded)
+func NewSession(url, container, path, user, password, token, id string) (*Session, error) {
+	env, err := envSession()
+	if err != nil {
+		return nil, err
 	}
 
-	if container == "" {
-		container = os.Getenv("V3IO_CONTAINER")
+	// TODO: Use reflect (see sessionFields pb/method.go)
+	session := &Session{
+		Url:       firstVal(url, env.Url),
+		Container: firstVal(container, env.Container),
+		Path:      firstVal(path, env.Path),
+		User:      firstVal(user, env.User),
+		Password:  firstVal(password, env.Password),
+		Token:     firstVal(token, env.Token),
+		Id:        firstVal(id, env.Id),
 	}
 
-	if path == "" {
-		path = os.Getenv("V3IO_PATH")
+	return session, nil
+}
+
+func envSession() (*Session, error) {
+	var envSession Session
+	data := os.Getenv("V3IO_SESSION")
+	if len(data) == 0 {
+		return &envSession, nil
 	}
 
-	if user == "" {
-		user = os.Getenv("V3IO_USER")
+	if err := json.Unmarshal([]byte(data), &envSession); err != nil {
+		return nil, err
 	}
 
-	if password == "" {
-		password = os.Getenv("V3IO_PASSWORD")
+	return &envSession, nil
+}
+
+func firstVal(args ...string) string {
+	for _, arg := range args {
+		if len(arg) > 0 {
+			return arg
+		}
 	}
 
-	if token == "" {
-		token = os.Getenv("V3IO_TOKEN")
-	}
-
-	return &Session{
-		Url:       url,
-		Container: container,
-		Path:      path,
-		User:      user,
-		Password:  password,
-		Token:     token,
-	}
+	return ""
 }

@@ -10,7 +10,6 @@ source:
 
 requirements:
     build:
-        - conda-forge::msgpack-python
         - pandas
         - setuptools
     run:

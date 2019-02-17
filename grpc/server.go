@@ -23,10 +23,11 @@ package grpc
 import (
 	"context"
 	"fmt"
-	"github.com/v3io/frames"
-	"github.com/v3io/frames/api"
 	"io"
 	"net"
+
+	"github.com/v3io/frames"
+	"github.com/v3io/frames/api"
 
 	"github.com/nuclio/logger"
 	"github.com/pkg/errors"
@@ -34,6 +35,10 @@ import (
 	"google.golang.org/grpc/reflection"
 
 	"github.com/v3io/frames/pb"
+)
+
+const (
+	grpcMsgSize = 128 * (1 << 20) // 128MB
 )
 
 // Server is a frames gRPC server
@@ -77,7 +82,10 @@ func NewServer(config *frames.Config, addr string, logger logger.Logger) (*Serve
 		api:     api,
 		config:  config,
 		logger:  logger,
-		server:  grpc.NewServer(),
+		server: grpc.NewServer(
+			grpc.MaxRecvMsgSize(grpcMsgSize),
+			grpc.MaxSendMsgSize(grpcMsgSize),
+		),
 	}
 
 	pb.RegisterFramesServer(server.server, server)
@@ -228,9 +236,21 @@ func (s *Server) Delete(ctx context.Context, req *pb.DeleteRequest) (*pb.DeleteR
 
 // Exec executes a command
 func (s *Server) Exec(ctx context.Context, req *pb.ExecRequest) (*pb.ExecResponse, error) {
-	if err := s.api.Exec(req); err != nil {
+	frame, err := s.api.Exec(req)
+	if err != nil {
 		return nil, err
 	}
 
-	return &pb.ExecResponse{}, nil
+	resp := &pb.ExecResponse{}
+
+	if frame != nil {
+		fpb, ok := frame.(pb.Framed)
+		if !ok {
+			s.logger.Error("unknown frame type")
+			return nil, errors.New("unknown frame type")
+		}
+		resp.Frame = fpb.Proto()
+	}
+
+	return resp, nil
 }

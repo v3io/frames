@@ -22,6 +22,8 @@ package http
 
 import (
 	"bufio"
+	"bytes"
+	"encoding/base64"
 	"encoding/json"
 	"fmt"
 	"io"
@@ -37,7 +39,9 @@ import (
 )
 
 var (
-	okBytes = []byte("OK")
+	okBytes          = []byte("OK")
+	basicAuthPrefix  = []byte("Basic ")
+	bearerAuthPrefix = []byte("Bearer ")
 )
 
 // Server is HTTP server
@@ -149,6 +153,7 @@ func (s *Server) handleRead(ctx *fasthttp.RequestCtx) {
 
 	// TODO: Validate request
 	s.logger.InfoWith("read request", "request", request)
+	s.httpAuth(ctx, request.Session)
 
 	ch := make(chan frames.Frame)
 	var apiError error
@@ -227,6 +232,7 @@ func (s *Server) handleWrite(ctx *fasthttp.RequestCtx) {
 		Expression:    req.Expression,
 		HaveMore:      req.More,
 	}
+	s.httpAuth(ctx, request.Session)
 
 	var nFrames, nRows int
 	var writeError error
@@ -280,6 +286,7 @@ func (s *Server) handleCreate(ctx *fasthttp.RequestCtx) {
 		ctx.Error(fmt.Sprintf("bad request - %s", err), http.StatusBadRequest)
 		return
 	}
+	s.httpAuth(ctx, request.Session)
 
 	s.logger.InfoWith("create", "request", request)
 	if err := s.api.Create(request); err != nil {
@@ -301,6 +308,7 @@ func (s *Server) handleDelete(ctx *fasthttp.RequestCtx) {
 		ctx.Error(fmt.Sprintf("bad request - %s", err), http.StatusBadRequest)
 		return
 	}
+	s.httpAuth(ctx, request.Session)
 
 	if err := s.api.Delete(request); err != nil {
 		ctx.Error("can't delete", http.StatusInternalServerError)
@@ -330,55 +338,6 @@ func (s *Server) replyOK(ctx *fasthttp.RequestCtx) {
 	ctx.Write(okBytes)
 }
 
-func (s *Server) handleGrafana(ctx *fasthttp.RequestCtx) {
-	args := ctx.QueryArgs()
-	request := &frames.ReadRequest{
-		Backend:      string(args.Peek("backend")),
-		Table:        string(args.Peek("table")),
-		Query:        string(args.Peek("query")),
-		Filter:       string(args.Peek("filter")),
-		GroupBy:      string(args.Peek("group_by")),
-		Limit:        int64(args.GetUintOrZero("limit")),
-		MessageLimit: int64(args.GetUintOrZero("messge_limit")),
-		Marker:       string(args.Peek("marker")),
-	}
-
-	// TODO: Validate request
-	s.logger.InfoWith("grafana request", "request", request)
-
-	ch := make(chan frames.Frame)
-	var apiError error
-	go func() {
-		defer close(ch)
-		apiError = s.api.Read(request, ch)
-		if apiError != nil {
-			s.logger.ErrorWith("error reading (grafana)", "error", apiError)
-		}
-	}()
-
-	var frames []*JSONFrame
-	for frame := range ch {
-		jframe, err := frameToJSON(frame)
-		if err != nil {
-			s.logger.ErrorWith("can't encode frame", "error", err)
-			msg := fmt.Sprintf("can't encode frame - %s", err)
-			ctx.Error(msg, http.StatusInternalServerError)
-			return
-		}
-		frames = append(frames, jframe)
-	}
-
-	if apiError != nil {
-		msg := fmt.Sprintf("API error - %s", apiError)
-		ctx.Error(msg, http.StatusInternalServerError)
-		return
-	}
-
-	if err := json.NewEncoder(ctx).Encode(frames); err != nil {
-		s.logger.ErrorWith("can't encode result", "error", err)
-	}
-}
-
 func (s *Server) handleExec(ctx *fasthttp.RequestCtx) {
 	if !ctx.IsPost() { // ctx.PostBody() blocks on GET
 		ctx.Error("unsupported method", http.StatusMethodNotAllowed)
@@ -390,13 +349,108 @@ func (s *Server) handleExec(ctx *fasthttp.RequestCtx) {
 		ctx.Error(fmt.Sprintf("bad request - %s", err), http.StatusBadRequest)
 		return
 	}
+	s.httpAuth(ctx, request.Session)
 
-	if err := s.api.Exec(request); err != nil {
+	frame, err := s.api.Exec(request)
+	if err != nil {
 		ctx.Error("can't exec", http.StatusInternalServerError)
 		return
 	}
 
-	s.replyOK(ctx)
+	enc := frames.NewEncoder(ctx)
+	var frameData string
+	if frame != nil {
+		data, err := frames.MarshalFrame(frame)
+		if err != nil {
+			s.logger.ErrorWith("can't marshal frame", "error", err)
+			s.writeError(enc, fmt.Errorf("can't marsha frame - %s", err))
+		}
+
+		frameData = base64.StdEncoding.EncodeToString(data)
+	}
+
+	ctx.SetStatusCode(http.StatusOK)
+	json.NewEncoder(ctx).Encode(map[string]string{
+		"frame": frameData,
+	})
+}
+
+func (s *Server) handleSimpleJSONQuery(ctx *fasthttp.RequestCtx) {
+	s.handleSimpleJSON(ctx, "query")
+}
+
+func (s *Server) handleSimpleJSONSearch(ctx *fasthttp.RequestCtx) {
+	s.handleSimpleJSON(ctx, "search")
+}
+
+func (s *Server) handleSimpleJSON(ctx *fasthttp.RequestCtx, method string) {
+	req, err := SimpleJSONRequestFactory(method, ctx.PostBody())
+	if err != nil {
+		s.logger.ErrorWith("can't initialize simplejson request", "error", err)
+		ctx.Error(fmt.Sprintf("bad request - %s", err), http.StatusBadRequest)
+		return
+	}
+	// passing session in order to easily pass token, when implemented
+	readRequest := req.GetReadRequest(nil)
+	s.httpAuth(ctx, readRequest.Session)
+	ch := make(chan frames.Frame)
+	var apiError error
+	go func() {
+		defer close(ch)
+		apiError = s.api.Read(readRequest, ch)
+		if apiError != nil {
+			s.logger.ErrorWith("error reading", "error", apiError)
+		}
+	}()
+	if apiError != nil {
+		ctx.Error(fmt.Sprintf("Error creating response - %s", apiError), http.StatusInternalServerError)
+	}
+	if resp, err := CreateResponse(req, ch); err != nil {
+		ctx.Error(fmt.Sprintf("Error creating response - %s", err), http.StatusInternalServerError)
+	} else {
+		s.replyJSON(ctx, resp)
+	}
+}
+
+// based on https://github.com/buaazp/fasthttprouter/tree/master/examples/auth
+func (s *Server) httpAuth(ctx *fasthttp.RequestCtx, session *frames.Session) {
+	auth := ctx.Request.Header.Peek("Authorization")
+	if auth == nil {
+		return
+	}
+
+	switch {
+	case bytes.HasPrefix(auth, basicAuthPrefix):
+		s.parseBasicAuth(auth, session)
+	case bytes.HasPrefix(auth, bearerAuthPrefix):
+		s.parseBearerAuth(auth, session)
+	default:
+		s.logger.WarnWith("unknown auth scheme")
+	}
+}
+
+func (s *Server) parseBasicAuth(auth []byte, session *frames.Session) {
+	encodedData := auth[len(basicAuthPrefix):]
+	data := make([]byte, base64.StdEncoding.DecodedLen(len(encodedData)))
+	n, err := base64.StdEncoding.Decode(data, encodedData)
+	if err != nil {
+		s.logger.WarnWith("error in basic auth, can't base64 decode", "error", err)
+		return
+	}
+	data = data[:n]
+
+	i := bytes.IndexByte(data, ':')
+	if i < 0 {
+		s.logger.Warn("error in basic auth, can't find ':'")
+		return
+	}
+
+	session.User = string(data[:i])
+	session.Password = string(data[i+1:])
+}
+
+func (s *Server) parseBearerAuth(auth []byte, session *frames.Session) {
+	session.Token = string(auth[len(bearerAuthPrefix):])
 }
 
 func (s *Server) initRoutes() {
@@ -405,9 +459,11 @@ func (s *Server) initRoutes() {
 		"/_/status": s.handleStatus,
 		"/create":   s.handleCreate,
 		"/delete":   s.handleDelete,
-		"/grafana":  s.handleGrafana,
 		"/read":     s.handleRead,
 		"/write":    s.handleWrite,
 		"/exec":     s.handleExec,
+		"/":         s.handleStatus,
+		"/query":    s.handleSimpleJSONQuery,
+		"/search":   s.handleSimpleJSONSearch,
 	}
 }

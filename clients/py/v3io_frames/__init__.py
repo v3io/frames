@@ -14,18 +14,20 @@
 
 """Stream data from/to Nuclio into pandas DataFrame"""
 
-__version__ = '0.3.4'
+__version__ = '0.3.6'
 
 from os import environ
 import json
 from urllib.parse import urlparse
 
+import pandas as pd
+
 
 from .http import Client as HTTPClient  # noqa
 from .grpc import Client as gRPCClient  # noqa
 from .errors import *  # noqa
-from .frames_pb2 import TableSchema as Schema, SchemaKey, FAIL, IGNORE  # noqa
-from .pbutils import SchemaField, Session  # noqa 
+from .frames_pb2 import TableSchema as Schema, SchemaKey, FAIL, IGNORE, Session  # noqa
+from .pbutils import SchemaField # noqa
 
 
 SESSION_ENV_KEY = 'V3IO_SESSION'
@@ -34,7 +36,8 @@ _known_protocols = {'grpc', 'http', 'https'}
 
 
 def Client(address='', data_url='', container='', path='', user='',
-           password='', token=''):
+           password='', token='', session_id='', frame_factory=pd.DataFrame,
+           concat=pd.concat):
     """Return a new client.
 
     Parameters
@@ -54,8 +57,13 @@ def Client(address='', data_url='', container='', path='', user='',
         Login password (session info)
     token : str
         Login token (session info)
+    session_id : str
+        Session ID (session info)
+    frame_factory : class
+        DataFrame factory
+    concat : function
+        Function to concat DataFrames
     """
-
     protocol = urlparse(address).scheme or 'grpc'
     if protocol not in _known_protocols:
         raise ValueError('unknown protocol - {}'.format(protocol))
@@ -66,13 +74,14 @@ def Client(address='', data_url='', container='', path='', user='',
         url=data_url or env.url,
         container=container or env.container,
         path=path or env.path,
-        user=user or env.user,
-        password=password or env.password,
-        token=token or env.token,
+        user=user or env.user or environ.get('V3IO_USERNAME'),
+        password=password or env.password or environ.get('V3IO_PASSWORD'),
+        token=token or env.token or environ.get('V3IO_ACCESS_KEY'),
+        id=session_id or env.id,
     )
 
     cls = gRPCClient if protocol == 'grpc' else HTTPClient
-    return cls(address, session)
+    return cls(address, session, frame_factory=frame_factory, concat=concat)
 
 
 def session_from_env():

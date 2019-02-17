@@ -41,7 +41,7 @@ type Client interface {
 	// Delete deletes data or table
 	Delete(request *DeleteRequest) error
 	// Exec executes a command on the backend
-	Exec(request *ExecRequest) error
+	Exec(request *ExecRequest) (Frame, error)
 }
 
 // SessionFromEnv return a session from V3IO_SESSION environment variable (JSON encoded)

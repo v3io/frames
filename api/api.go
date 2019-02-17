@@ -37,6 +37,7 @@ import (
 
 	"github.com/nuclio/logger"
 	"github.com/pkg/errors"
+	"strings"
 )
 
 const (
@@ -77,14 +78,6 @@ func New(logger logger.Logger, config *frames.Config) (*API, error) {
 
 // Read reads from database, emitting results to wf
 func (api *API) Read(request *frames.ReadRequest, out chan frames.Frame) error {
-	if request.Query != "" {
-		if err := api.populateQuery(request); err != nil {
-			msg := "can't populate query"
-			api.logger.ErrorWith(msg, "request", request, "error", err)
-			return errors.Wrap(err, msg)
-		}
-	}
-
 	api.logger.InfoWith("read request", "request", request)
 
 	backend, ok := api.backends[request.Backend]
@@ -144,6 +137,9 @@ func (api *API) Write(request *frames.WriteRequest, in chan frames.Frame) (int, 
 		if err := appender.Add(frame); err != nil {
 			msg := "can't add frame"
 			api.logger.ErrorWith(msg, "error", err)
+			if strings.Contains(err.Error(), "Failed POST with status 401") {
+				err = errors.New("unauthorized update (401), may be caused by wrong password or credentials")
+			}
 			return nFrames, nRows, errors.Wrap(err, msg)
 		}
 
@@ -213,25 +209,27 @@ func (api *API) Delete(request *frames.DeleteRequest) error {
 }
 
 // Exec executes a command on the backend
-func (api *API) Exec(request *frames.ExecRequest) error {
+func (api *API) Exec(request *frames.ExecRequest) (frames.Frame, error) {
 	if request.Backend == "" || request.Table == "" {
 		api.logger.ErrorWith(missingMsg, "request", request)
-		return fmt.Errorf(missingMsg)
+		return nil, fmt.Errorf(missingMsg)
 	}
 
-	api.logger.DebugWith("exec", "request", request)
+	// TODO: This print session in clear text
+	//	api.logger.DebugWith("exec", "request", request)
 	backend, ok := api.backends[request.Backend]
 	if !ok {
 		api.logger.ErrorWith("unkown backend", "name", request.Backend)
-		return fmt.Errorf("unknown backend - %s", request.Backend)
+		return nil, fmt.Errorf("unknown backend - %s", request.Backend)
 	}
 
-	if err := backend.Exec(request); err != nil {
-		api.logger.ErrorWith("error deleting table", "error", err, "request", request)
-		return errors.Wrap(err, "can't delete")
+	frame, err := backend.Exec(request)
+	if err != nil {
+		api.logger.ErrorWith("error in exec", "error", err, "request", request)
+		return nil, errors.Wrap(err, "can't exec")
 	}
 
-	return nil
+	return frame, nil
 }
 
 func (api *API) populateQuery(request *frames.ReadRequest) error {

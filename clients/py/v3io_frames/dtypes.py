@@ -75,4 +75,4 @@ def dtype_of(val):
         if dtype.match(val):
             return dtype
 
-    raise TypeError(f'unknown type - {val!r}')
+    raise TypeError('unknown type - {!r}'.format(val))

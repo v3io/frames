@@ -108,6 +108,31 @@ func NewV3ioAdapter(cfg *config.V3ioConfig, container *v3io.Container, logger lo
 	return &newV3ioAdapter, err
 }
 
+func NewContainer(v3ioUrl string, numWorkers int, accessKey string, username string, password string, containerName string, logger logger.Logger) (*v3io.Container, error) {
+	ctx, err := v3io.NewContext(logger, v3ioUrl, numWorkers)
+	if err != nil {
+		return nil, err
+	}
+
+	// Create session - accessKey will take precedence over user/password if exists
+	sessionConfig := &v3io.SessionConfig{
+		Username:   username,
+		Password:   password,
+		Label:      "tsdb",
+		SessionKey: accessKey,
+	}
+	session, err := ctx.NewSessionFromConfig(sessionConfig)
+	if err != nil {
+		return nil, errors.Wrap(err, "Failed to create a session.")
+	}
+
+	container, err := session.NewContainer(containerName)
+	if err != nil {
+		return nil, err
+	}
+	return container, nil
+}
+
 func (a *V3ioAdapter) GetSchema() *config.Schema {
 	return a.partitionMngr.GetConfig()
 }
@@ -196,7 +221,7 @@ func (a *V3ioAdapter) Querier(_ context.Context, mint, maxt int64) (*querier.V3i
 }
 
 // Create a Querier interface, used for time-series queries
-func (a *V3ioAdapter) QuerierV2(_ context.Context) (*pquerier.V3ioQuerier, error) {
+func (a *V3ioAdapter) QuerierV2() (*pquerier.V3ioQuerier, error) {
 	return pquerier.NewV3ioQuerier(a.container, a.logger, a.cfg, a.partitionMngr), nil
 }
 
@@ -220,7 +245,10 @@ func (a *V3ioAdapter) DeleteDB(deleteAll bool, ignoreErrors bool, fromTime int64
 			return errors.Wrapf(err, "Failed to delete partition object '%s'.", part.GetTablePath())
 		}
 	}
-	a.partitionMngr.DeletePartitionsFromSchema(partitions)
+	err := a.partitionMngr.DeletePartitionsFromSchema(partitions)
+	if err != nil {
+		return err
+	}
 
 	if len(a.partitionMngr.GetPartitionsPaths()) == 0 {
 		path := filepath.Join(a.cfg.TablePath, config.NamesDirectory) + "/" // Need a trailing slash
@@ -284,12 +312,12 @@ type v3ioAppender struct {
 }
 
 // Add a t/v value to a metric item and return refID (for AddFast)
-func (a v3ioAppender) Add(lset utils.Labels, t int64, v float64) (uint64, error) {
+func (a v3ioAppender) Add(lset utils.Labels, t int64, v interface{}) (uint64, error) {
 	return a.metricsCache.Add(lset, t, v)
 }
 
 // Faster Add using refID obtained from Add (avoid some hash/lookup overhead)
-func (a v3ioAppender) AddFast(lset utils.Labels, ref uint64, t int64, v float64) error {
+func (a v3ioAppender) AddFast(lset utils.Labels, ref uint64, t int64, v interface{}) error {
 	return a.metricsCache.AddFast(ref, t, v)
 }
 
@@ -304,8 +332,8 @@ func (a v3ioAppender) Rollback() error { return nil }
 
 // The Appender interface provides batched appends against a storage.
 type Appender interface {
-	Add(l utils.Labels, t int64, v float64) (uint64, error)
-	AddFast(l utils.Labels, ref uint64, t int64, v float64) error
+	Add(l utils.Labels, t int64, v interface{}) (uint64, error)
+	AddFast(l utils.Labels, ref uint64, t int64, v interface{}) error
 	WaitForCompletion(timeout time.Duration) (int, error)
 	Commit() error
 	Rollback() error

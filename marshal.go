@@ -25,10 +25,13 @@ package frames
 import (
 	"bytes"
 	"encoding/binary"
+	"fmt"
 	"io"
 
 	"github.com/golang/protobuf/proto"
 	"github.com/pkg/errors"
+
+	"github.com/v3io/frames/pb"
 )
 
 var (
@@ -43,6 +46,26 @@ type Encoder struct {
 // NewEncoder returns new Encoder
 func NewEncoder(w io.Writer) *Encoder {
 	return &Encoder{w}
+}
+
+// MarshalFrame serializes a frame to []byte
+func MarshalFrame(frame Frame) ([]byte, error) {
+	iface, ok := frame.(pb.Framed)
+	if !ok {
+		return nil, fmt.Errorf("unknown frame type")
+	}
+
+	return proto.Marshal(iface.Proto())
+}
+
+// UnmarshalFrame de-serialize a frame from []byte
+func UnmarshalFrame(data []byte) (Frame, error) {
+	msg := &pb.Frame{}
+	if err := proto.Unmarshal(data, msg); err != nil {
+		return nil, err
+	}
+
+	return NewFrameFromProto(msg), nil
 }
 
 // Encode encoders the message to e.w

@@ -29,6 +29,7 @@ import v3io_frames as v3f
 
 
 has_session = v3f.SESSION_ENV_KEY in environ
+is_travis = 'TRAVIS' in environ
 test_id = uuid4().hex
 here = path.dirname(path.abspath(__file__))
 
@@ -122,6 +123,7 @@ def framesd():
     cmd = [
         'go', 'build',
         '-o', server_exe,
+        '-mod=vendor',
         '{}/cmd/framesd/framesd.go'.format(git_root),
     ]
     assert call(cmd) == 0, 'cannot build server'

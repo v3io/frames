@@ -22,6 +22,7 @@ package http
 
 import (
 	"bytes"
+	"encoding/base64"
 	"encoding/json"
 	"fmt"
 	"io"
@@ -184,7 +185,8 @@ func (c *Client) Delete(request *frames.DeleteRequest) error {
 		request.Session = c.session
 	}
 
-	return c.jsonCall("/delete", request)
+	_, err := c.jsonCall("/delete", request)
+	return err
 }
 
 // Create creates a table
@@ -193,42 +195,65 @@ func (c *Client) Create(request *frames.CreateRequest) error {
 		request.Session = c.session
 	}
 
-	return c.jsonCall("/create", request)
+	_, err := c.jsonCall("/create", request)
+	return err
 }
 
 // Exec executes a command
-func (c *Client) Exec(request *frames.ExecRequest) error {
+func (c *Client) Exec(request *frames.ExecRequest) (frames.Frame, error) {
 	if request.Session == nil {
 		request.Session = c.session
 	}
 
-	return c.jsonCall("/exec", request)
+	resp, err := c.jsonCall("/exec", request)
+	if err != nil {
+		return nil, err
+	}
+
+	defer resp.Body.Close()
+	var reply struct {
+		Frame string `json:"frame"`
+	}
+	if err := json.NewDecoder(resp.Body).Decode(&reply); err != nil {
+		return nil, errors.Wrap(err, "bad JSON reply")
+	}
+
+	if reply.Frame == "" {
+		return nil, nil
+	}
+
+	data, err := base64.StdEncoding.DecodeString(reply.Frame)
+	if err != nil {
+		return nil, errors.Wrap(err, "bad base64 encoding of frame")
+	}
+
+	return frames.UnmarshalFrame(data)
 }
 
-func (c *Client) jsonCall(path string, request interface{}) error {
+func (c *Client) jsonCall(path string, request interface{}) (*http.Response, error) {
 	var buf bytes.Buffer
 
 	if err := json.NewEncoder(&buf).Encode(request); err != nil {
-		return errors.Wrap(err, "can't encode request")
+		return nil, errors.Wrap(err, "can't encode request")
 	}
 
 	req, err := http.NewRequest("POST", c.URL+path, &buf)
 	if err != nil {
-		return errors.Wrap(err, "can't create HTTP request")
+		return nil, errors.Wrap(err, "can't create HTTP request")
 	}
 
 	req.Header.Set("Content-Type", "application/json")
 
 	resp, err := http.DefaultClient.Do(req)
 	if err != nil {
-		return errors.Wrap(err, "can't call server")
+		return nil, errors.Wrap(err, "can't call server")
 	}
 
 	if resp.StatusCode != http.StatusOK {
-		return fmt.Errorf("error calling server - %q", resp.Status)
+		return resp, fmt.Errorf("error calling server - %q", resp.Status)
 	}
 
-	return nil
+	return resp, nil
 }
 
 // streamFrameIterator implements FrameIterator over io.Reader

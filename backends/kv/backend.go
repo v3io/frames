@@ -25,8 +25,7 @@ import (
 	"strings"
 
 	"github.com/nuclio/logger"
-	"github.com/pkg/errors"
-	v3io "github.com/v3io/v3io-go-http"
+	"github.com/v3io/v3io-go-http"
 
 	"github.com/v3io/frames"
 	"github.com/v3io/frames/v3ioutils"
@@ -60,55 +59,80 @@ func (b *Backend) Create(request *frames.CreateRequest) error {
 // Delete deletes a table (or part of it)
 func (b *Backend) Delete(request *frames.DeleteRequest) error {
 
-	if !strings.HasSuffix(request.Table, "/") {
-		request.Table += "/"
-	}
-
-	container, err := b.newContainer(request.Session)
+	container, path, err := b.newConnection(request.Session, request.Table, true)
 	if err != nil {
 		return err
 	}
 
-	return v3ioutils.DeleteTable(b.logger, container, request.Table, request.Filter, b.numWorkers)
+	return v3ioutils.DeleteTable(b.logger, container, path, request.Filter, b.numWorkers)
 	// TODO: delete the table directory entry if filter == ""
 }
 
 // Exec executes a command
-func (b *Backend) Exec(request *frames.ExecRequest) error {
-	// FIXME
+func (b *Backend) Exec(request *frames.ExecRequest) (frames.Frame, error) {
 	cmd := strings.TrimSpace(strings.ToLower(request.Command))
 	switch cmd {
 	case "infer", "inferschema":
-		return b.inferSchema(request)
+		return nil, b.inferSchema(request)
 	case "update":
-		return b.updateItem(request)
+		return nil, b.updateItem(request)
 	}
-	return fmt.Errorf("KV backend does not support Exec")
+	return nil, fmt.Errorf("KV backend does not support commend - %s", cmd)
 }
 
 func (b *Backend) updateItem(request *frames.ExecRequest) error {
-	container, err := b.newContainer(request.Session)
-	if err != nil {
-		return err
+	varKey, hasKey := request.Args["key"]
+	varExpr, hasExpr := request.Args["expression"]
+	if !hasExpr || !hasKey || request.Table == "" {
+		return fmt.Errorf("table, key and expression parameters must be specified")
 	}
+
+	key := varKey.GetSval()
+	expr := varExpr.GetSval()
 
 	condition := ""
 	if val, ok := request.Args["condition"]; ok {
 		condition = val.GetSval()
 	}
 
-	b.logger.DebugWith("update item", "path", request.Table, "expr", request.Expression)
-	return container.Sync.UpdateItem(&v3io.UpdateItemInput{
-		Path: request.Table, Expression: &request.Expression, Condition: condition})
-}
-
-func (b *Backend) newContainer(session *frames.Session) (*v3io.Container, error) {
-	session = frames.InitSessionDefaults(session, b.framesConfig)
-	container, err := v3ioutils.CreateContainer(
-		b.logger, session.Url, session.Container, session.User, session.Password, b.numWorkers)
+	container, path, err := b.newConnection(request.Session, request.Table, true)
 	if err != nil {
-		return nil, errors.Wrap(err, "failed to create data container")
+		return err
 	}
 
-	return container, nil
+	b.logger.DebugWith("update item", "path", path, "key", key, "expr", expr, "condition", condition)
+	return container.Sync.UpdateItem(&v3io.UpdateItemInput{
+		Path: path + key, Expression: &expr, Condition: condition})
+}
+
+/*func (b *Backend) newContainer(session *frames.Session) (*v3io.Container, error) {
+
+	container, err := v3ioutils.NewContainer(
+		session,
+		b.framesConfig,
+		b.logger,
+		b.numWorkers,
+	)
+
+	return container, err
+}
+
+*/
+
+func (b *Backend) newConnection(session *frames.Session, path string, addSlash bool) (*v3io.Container, string, error) {
+
+	session = frames.InitSessionDefaults(session, b.framesConfig)
+	containerName, newPath, err := v3ioutils.ProcessPaths(session, path, addSlash)
+	if err != nil {
+		return nil, "", err
+	}
+
+	session.Container = containerName
+	container, err := v3ioutils.NewContainer(
+		session,
+		b.logger,
+		b.numWorkers,
+	)
+
+	return container, newPath, err
 }

@@ -12,14 +12,14 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-from os import environ
 import warnings
 
-from google.protobuf.message import Message
 import google.protobuf.pyext._message as message
-import pandas as pd
 import numpy as np
+import pandas as pd
 import pytz
+from google.protobuf.message import Message
+from pandas.core.dtypes.dtypes import CategoricalDtype
 
 from . import frames_pb2 as fpb
 from .dtypes import dtype_of, dtypes
@@ -61,40 +61,6 @@ def SchemaField(name=None, doc=None, default=None, type=None, properties=None):
         )
 
 
-def Session(url='', container='', path='', user='', password='', token=''):
-    """Return a new session.
-
-    Will populate missing values from environment. Environment variables have
-    V3IO_ prefix (e.g. V3IO_URL)
-
-    Parameters
-    ----------
-    url : str
-        Backend URL
-    container : str
-        Container name
-    path : str
-        Path in container
-    user : str
-        Login user
-    password : str
-        Login password
-    token : str
-        Login token
-
-    Returns:
-        A session object
-    """
-    return fpb.Session(
-        url=url,
-        container=container,
-        path=path,
-        user=user or environ.get('V3IO_USER', ''),
-        password=password or environ.get('V3IO_PASSWORD', ''),
-        token=token or environ.get('V3IO_TOKEN', ''),
-    )
-
-
 def pb2py(obj):
     """Convert protobuf object to Python object"""
     if isinstance(obj, fpb.Value):
@@ -116,15 +82,23 @@ def pb2py(obj):
     return obj
 
 
-def msg2df(frame):
-    cols = {col.name: col2series(col) for col in frame.columns}
-    df = pd.DataFrame(cols)
+def msg2df(frame, frame_factory):
+    df = frame_factory()
+    for col in frame.columns:
+        df[col.name] = col2series(col)
 
     indices = [col2series(idx) for idx in frame.indices]
+    index = None
     if len(indices) == 1:
-        df.index = indices[0]
+        index = indices[0]
     elif len(indices) > 1:
-        df.index = pd.MultiIndex.from_arrays(indices)
+        index = pd.MultiIndex.from_arrays(indices)
+
+    if index is not None:
+        try:
+            df.index = index
+        except AttributeError:  # cudf
+            df.set_index(index)
 
     with warnings.catch_warnings():
         warnings.simplefilter('ignore')
@@ -145,21 +119,32 @@ def col2series(col):
 
     series = pd.Series(data, name=col.name)
     if col.kind == col.LABEL:
+        series = series.astype('category')
         series = series.reindex(pd.RangeIndex(col.size), method='pad')
 
     return series
 
 
-def df2msg(df, labels=None):
+def idx2series(idx):
+    return pd.Series(idx.values, name=idx.name)
+
+
+def df2msg(df, labels=None, index_cols=None):
     indices = None
-    if should_encode_index(df):
+    if index_cols is not None:
+        indices = [series2col(df[name]) for name in index_cols]
+        cols = [col for col in df.columns if col not in index_cols]
+        df = df[cols]
+    elif should_encode_index(df):
         if hasattr(df.index, 'levels'):
             by_name = df.index.get_level_values
             names = df.index.names
-            serieses = (by_name(name).to_series() for name in names)
+            serieses = (idx2series(by_name(name)) for name in names)
             indices = [series2col(s) for s in serieses]
         else:
-            indices = [series2col(df.index.to_series())]
+            serieses = [idx2series(df.index)]
+
+        indices = [series2col(s) for s in serieses]
 
     return fpb.Frame(
         columns=[series2col(df[name]) for name in df.columns],
@@ -191,9 +176,12 @@ def series2col(s):
             s = s.dt.tz_localize(pytz.UTC)
         kw['times'] = s.astype(np.int64)
         kw['dtype'] = fpb.TIME
+    elif is_categorical_dtype(s.dtype):
+        # We assume catgorical data is strings
+        kw['strings'] = s.astype(str)
+        kw['dtype'] = fpb.STRING
     else:
-        raise WriteError(
-            '{} - unsupported type - {}'.format(s.name, s.dtype))
+        raise WriteError('{} - unsupported type - {}'.format(s.name, s.dtype))
 
     return fpb.Column(**kw)
 
@@ -225,3 +213,22 @@ def is_float_dtype(dtype):
 
 def is_time_dtype(dtype):
     return dtype == _time_dt or dtype == _time_tz_dt
+
+
+def is_categorical_dtype(dtype):
+    return isinstance(dtype, CategoricalDtype)
+
+
+def _fix_pd():
+    # cudf works with older versions of pandas
+    import pandas.api.types
+    if not hasattr(pandas.api.types, 'is_categorical_dtype'):
+        pandas.api.types.is_categorical_dtype = is_categorical_dtype
+
+    import pandas.core.common
+    if not hasattr(pandas.core.common, 'is_categorical_dtype'):
+        pandas.core.common.is_categorical_dtype = is_categorical_dtype
+
+
+_fix_pd()
+del _fix_pd

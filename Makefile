@@ -12,12 +12,8 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-
-# Exract min version ($$ is Makefile escape)
-go_minver = $(shell go version | awk '{print $$3}' | awk -F. '{print $$2}')
-ifeq ($(go_minver),11)
-    modflag = -mod=vendor
-endif
+# -mod=vendor is avaiable from Go 1.11 and up
+modflag=$(shell go run _scripts/modflag.go)
 
 all:
 	@echo Please pick a target
@@ -43,7 +39,7 @@ wheel:
 	cd clients/py && python setup.py bdist_wheel
 
 update-tsdb-dep:
-	GO111MODULE=on go get github.com/v3io/v3io-tsdb@master
+	GO111MODULE=on go get github.com/v3io/v3io-tsdb@frames-integration
 	GO111MODULE=on go mod vendor
 	@echo "Done. Don't forget to commit ☺"
 
