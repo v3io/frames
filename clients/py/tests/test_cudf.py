@@ -58,4 +58,5 @@ def test_concat_categorical():
 
     df = v3f.pdutils.concat_dfs([df1, df2], cudf.DataFrame, cudf.concat)
     assert len(df) == len(df1) + len(df2), 'bad concat size'
-    assert v3f.pdutils.is_categorical_dtype(df['c']), 'result not categorical'
+    dtype = df['c'].dtype
+    assert v3f.pdutils.is_categorical_dtype(dtype), 'result not categorical'
