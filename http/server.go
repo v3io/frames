@@ -44,6 +44,8 @@ var (
 	bearerAuthPrefix = []byte("Bearer ")
 )
 
+const ACCESS_KEY_USER = "__ACCESS_KEY"
+
 // Server is HTTP server
 type Server struct {
 	*frames.ServerBase
@@ -445,8 +447,13 @@ func (s *Server) parseBasicAuth(auth []byte, session *frames.Session) {
 		return
 	}
 
-	session.User = string(data[:i])
-	session.Password = string(data[i+1:])
+	user := string(data[:i])
+	if user == ACCESS_KEY_USER {
+		session.Token = string(data[i+1:])
+	} else {
+		session.User = user
+		session.Password = string(data[i+1:])
+	}
 }
 
 func (s *Server) parseBearerAuth(auth []byte, session *frames.Session) {
