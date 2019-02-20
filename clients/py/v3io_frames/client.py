@@ -24,7 +24,8 @@ FAIL = fpb.FAIL
 
 
 class ClientBase:
-    def __init__(self, address, session, frame_factory=pd.DataFrame):
+    def __init__(self, address, session, frame_factory=pd.DataFrame,
+                 concat=pd.concat):
         """Create new client
 
         Parameters
@@ -35,6 +36,8 @@ class ClientBase:
             Session object
         frame_factory : class
             DataFrame factory (currencly pandas and cudf supported)
+        concat : function
+            Function to concat DataFrames
         """
         address = address or environ.get('V3IO_FRAMESD')
         if not address:
@@ -42,6 +45,7 @@ class ClientBase:
         self.address = self._fix_address(address)
         self.session = session
         self.frame_factory = frame_factory
+        self.concat = concat
 
     def read(self, backend='', table='', query='', columns=None, filter='',
              group_by='', limit=0, data_format='', row_layout=False,

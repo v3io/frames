@@ -1,0 +1,12 @@
+channels:
+- conda-forge
+- defaults
+- numba
+- nvidia
+- pytorch
+- rapidsai
+dependencies:
+- cudf=0.5
+- cuml=0.5
+- python=3.6
+- cudatoolkit=9.2

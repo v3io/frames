@@ -138,7 +138,7 @@ func TestEnd2End(t *testing.T) {
 		Command: "ping",
 	}
 
-	if err := client.Exec(execReq); err != nil {
+	if _, err := client.Exec(execReq); err != nil {
 		t.Fatalf("can't exec - %s", err)
 	}
 }

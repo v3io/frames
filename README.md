@@ -65,7 +65,7 @@ Use the following command to run the Docker image:
 ```sh
 docker run \
 	-v /path/to/config.yaml:/etc/framesd.yaml \
-	quay.io/v3io/frames
+	quay.io/v3io/frames:unstable
 ```
 
 ## LICENSE

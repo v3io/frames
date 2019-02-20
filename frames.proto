@@ -204,7 +204,9 @@ message ExecRequest {
     string expression = 6;
 }
 
-message ExecResponse {}
+message ExecResponse {
+    Frame frame = 1;
+}
 
 service Frames {
     rpc Read(ReadRequest) returns (stream Frame) {}

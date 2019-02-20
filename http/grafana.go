@@ -69,7 +69,7 @@ type simpleJSONQueryRequest struct {
 	requestSimpleJSONBase
 	Filter    string
 	Fields    []string
-	TableName string
+	Table     string
 	Type      string
 	Backend   string
 	From      string
@@ -139,7 +139,7 @@ func (req *simpleJSONQueryRequest) GetReadRequest(session *frames.Session) *fram
 			session.Container = req.Container
 		}
 	}
-	return &frames.ReadRequest{Backend: req.Backend, Table: req.TableName, Columns: req.Fields,
+	return &frames.ReadRequest{Backend: req.Backend, Table: req.Table, Columns: req.Fields,
 		Start: req.Range.From, End: req.Range.To,
 		Step: req.Step, Session: session, Filter: req.Filter, Query: req.Query}
 }
@@ -266,9 +266,8 @@ func (req *simpleJSONSearchRequest) ParseRequest(requestBody []byte) error {
 }
 
 func (req *simpleJSONQueryRequest) parseQueryLine(fieldInput string) error {
-	translate := map[string]string{"table_name": "TableName"}
-	// example query: fields=sentiment;table_name=stock_metrics;backend=tsdb;filter=symbol=="AAPL";container=container_name
-	re, err := regexp.Compile(`^\s*(filter|fields|table_name|backend|container|step|query)\s*=\s*(.*)\s*$`)
+	// example query: fields=sentiment;table=stock_metrics;backend=tsdb;filter=symbol=="AAPL";container=container_name
+	re, err := regexp.Compile(`^\s*(filter|fields|table|backend|container|step|query)\s*=\s*(.*)\s*$`)
 	if err != nil {
 		return err
 	}
@@ -277,9 +276,6 @@ func (req *simpleJSONQueryRequest) parseQueryLine(fieldInput string) error {
 		var value interface{}
 		if len(match) > 0 {
 			fieldName := strings.Title(match[1])
-			if fieldNameTranslated, ok := translate[match[1]]; ok {
-				fieldName = fieldNameTranslated
-			}
 			if fieldName == "Fields" {
 				value = strings.Split(match[2], fieldsItemsSeperator)
 			} else {

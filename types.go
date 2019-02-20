@@ -83,7 +83,7 @@ type DataBackend interface {
 	Write(request *WriteRequest) (FrameAppender, error) // TODO: use Appender for write streaming
 	Create(request *CreateRequest) error
 	Delete(request *DeleteRequest) error
-	Exec(request *ExecRequest) error
+	Exec(request *ExecRequest) (Frame, error)
 }
 
 // FrameIterator iterates over frames

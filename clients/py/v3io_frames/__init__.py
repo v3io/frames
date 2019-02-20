@@ -14,7 +14,7 @@
 
 """Stream data from/to Nuclio into pandas DataFrame"""
 
-__version__ = '0.3.6'
+__version__ = '0.4.0'
 
 from os import environ
 import json
@@ -36,7 +36,8 @@ _known_protocols = {'grpc', 'http', 'https'}
 
 
 def Client(address='', data_url='', container='', path='', user='',
-           password='', token='', session_id='', frame_factory=pd.DataFrame):
+           password='', token='', session_id='', frame_factory=pd.DataFrame,
+           concat=pd.concat):
     """Return a new client.
 
     Parameters
@@ -60,6 +61,8 @@ def Client(address='', data_url='', container='', path='', user='',
         Session ID (session info)
     frame_factory : class
         DataFrame factory
+    concat : function
+        Function to concat DataFrames
     """
     protocol = urlparse(address).scheme or 'grpc'
     if protocol not in _known_protocols:
@@ -78,7 +81,7 @@ def Client(address='', data_url='', container='', path='', user='',
     )
 
     cls = gRPCClient if protocol == 'grpc' else HTTPClient
-    return cls(address, session, frame_factory=frame_factory)
+    return cls(address, session, frame_factory=frame_factory, concat=concat)
 
 
 def session_from_env():

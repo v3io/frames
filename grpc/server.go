@@ -23,10 +23,11 @@ package grpc
 import (
 	"context"
 	"fmt"
-	"github.com/v3io/frames"
-	"github.com/v3io/frames/api"
 	"io"
 	"net"
+
+	"github.com/v3io/frames"
+	"github.com/v3io/frames/api"
 
 	"github.com/nuclio/logger"
 	"github.com/pkg/errors"
@@ -235,9 +236,21 @@ func (s *Server) Delete(ctx context.Context, req *pb.DeleteRequest) (*pb.DeleteR
 
 // Exec executes a command
 func (s *Server) Exec(ctx context.Context, req *pb.ExecRequest) (*pb.ExecResponse, error) {
-	if err := s.api.Exec(req); err != nil {
+	frame, err := s.api.Exec(req)
+	if err != nil {
 		return nil, err
 	}
 
-	return &pb.ExecResponse{}, nil
+	resp := &pb.ExecResponse{}
+
+	if frame != nil {
+		fpb, ok := frame.(pb.Framed)
+		if !ok {
+			s.logger.Error("unknown frame type")
+			return nil, errors.New("unknown frame type")
+		}
+		resp.Frame = fpb.Proto()
+	}
+
+	return resp, nil
 }
