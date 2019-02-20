@@ -66,6 +66,7 @@ func (b *Backend) newConfig(session *frames.Session) *config.V3ioConfig {
 		Container:      session.Container,
 		Username:       session.User,
 		Password:       session.Password,
+		AccessKey:      session.Token,
 		Workers:        b.backendConfig.Workers,
 		LogLevel:       b.framesConfig.Log.Level,
 	}
