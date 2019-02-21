@@ -154,9 +154,9 @@ type PutItemInput struct {
 }
 
 type PutItemsInput struct {
-	Path       string
-	Condition  string
-	Items      map[string]map[string]interface{}
+	Path      string
+	Condition string
+	Items     map[string]map[string]interface{}
 }
 
 type PutItemsOutput struct {
@@ -181,14 +181,16 @@ type GetItemOutput struct {
 }
 
 type GetItemsInput struct {
-	Path           string
-	AttributeNames []string
-	Filter         string
-	Marker         string
-	ShardingKey    string
-	Limit          int
-	Segment        int
-	TotalSegments  int
+	Path              string
+	AttributeNames    []string
+	Filter            string
+	Marker            string
+	ShardingKey       string
+	Limit             int
+	Segment           int
+	TotalSegments     int
+	SortKeyRangeStart string
+	SortKeyRangeEnd   string
 }
 
 type GetItemsOutput struct {
@@ -204,10 +206,10 @@ type CreateStreamInput struct {
 }
 
 type StreamRecord struct {
-	ShardID       *int
-	Data          []byte
-	ClientInfo    []byte
-	PartitionKey  string
+	ShardID      *int
+	Data         []byte
+	ClientInfo   []byte
+	PartitionKey string
 }
 
 type PutRecordsInput struct {
