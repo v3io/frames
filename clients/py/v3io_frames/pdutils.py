@@ -37,6 +37,7 @@ def concat_dfs(dfs, frame_factory=pd.DataFrame, concat=pd.concat):
     wdf = concat(
         [df.reset_index() for df in dfs],
         ignore_index=True,
+        sort=False,
     )
 
     if len(names) > 1:
