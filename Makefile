@@ -13,7 +13,7 @@
 # limitations under the License.
 
 # -mod=vendor is avaiable from Go 1.11 and up
-modflag=$(shell go run _scripts/modflag.go)
+modflag=$(shell GO111MODULE=off go run _scripts/modflag.go)
 
 all:
 	@echo Please pick a target

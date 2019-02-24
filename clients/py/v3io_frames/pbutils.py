@@ -134,7 +134,6 @@ def df2msg(df, labels=None, index_cols=None):
             by_name = df.index.get_level_values
             names = df.index.names
             serieses = (idx2series(by_name(name)) for name in names)
-            indices = [series2col(s) for s in serieses]
         else:
             serieses = [idx2series(df.index)]
 
