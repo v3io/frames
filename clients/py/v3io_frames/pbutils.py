@@ -22,7 +22,7 @@ from google.protobuf.message import Message
 from pandas.core.dtypes.dtypes import CategoricalDtype
 
 from . import frames_pb2 as fpb
-from .dtypes import dtype_of, dtypes
+from .dtypes import dtype_of
 from .errors import MessageError, WriteError
 
 _ts = pd.Series(pd.Timestamp(0))
@@ -83,7 +83,6 @@ def pb2py(obj):
 
 
 def msg2df(frame, frame_factory):
-    data = {col.name: col2series(col) for col in frame.columns}
     indices = [col2series(idx) for idx in frame.indices]
     if len(indices) == 1:
         index = indices[0]
@@ -91,6 +90,8 @@ def msg2df(frame, frame_factory):
         index = pd.MultiIndex.from_arrays(indices)
     else:
         index = None
+
+    data = {col.name: col2series(col, index) for col in frame.columns}
 
     df = frame_factory(data, index)
 
@@ -100,23 +101,26 @@ def msg2df(frame, frame_factory):
     return df
 
 
-def col2series(col):
-    for dtype in dtypes:
-        if col.dtype == dtype.dtype:
-            data = getattr(col, dtype.col_key)
-            break
+def col2series(col, index):
+    if col.dtype == fpb.BOOLEAN:
+        data = col.bools
+    elif col.dtype == fpb.FLOAT:
+        data = col.floats
+    elif col.dtype == fpb.INTEGER:
+        data = col.ints
+    elif col.dtype == fpb.STRING:
+        data = col.strings
+    elif col.dtype == fpb.TIME:
+        data = [pd.Timestamp(t, unit='ns') for t in col.times]
     else:
         raise MessageError('unknown dtype - {}'.format(col.dtype))
 
-    if col.dtype == fpb.TIME:
-        data = pd.to_datetime(data)
-
-    series = pd.Series(data, name=col.name)
     if col.kind == col.LABEL:
-        series = series.astype('category')
-        series = series.reindex(pd.RangeIndex(col.size), method='pad')
+        data = [data[0]] * col.size
+        if col.dtype == fpb.STRING:
+            data = pd.Series(data, dtype='category', index=index)
 
-    return series
+    return data
 
 
 def idx2series(idx):
