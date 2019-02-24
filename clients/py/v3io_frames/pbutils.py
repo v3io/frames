@@ -83,7 +83,7 @@ def pb2py(obj):
 
 
 def msg2df(frame, frame_factory):
-    indices = [col2series(idx) for idx in frame.indices]
+    indices = [col2series(idx, None) for idx in frame.indices]
     if len(indices) == 1:
         index = indices[0]
     elif len(indices) > 1:
