@@ -59,6 +59,8 @@ github.com/v3io/v3io-go-http v0.0.0-20181217205714-7be4ad9b25af h1:8p1oqxzExqrUe
 github.com/v3io/v3io-go-http v0.0.0-20181217205714-7be4ad9b25af/go.mod h1:GXYcR9MxgfbE3BJdkXki5EclvtS8Nxu2RQNLA8hMMog=
 github.com/v3io/v3io-go-http v0.0.0-20181224070828-ef32781cf2de h1:gprjHJFMshlpSq5lxhI8Y1Ln8yXUFz6oqpT45DcSXYM=
 github.com/v3io/v3io-go-http v0.0.0-20181224070828-ef32781cf2de/go.mod h1:GXYcR9MxgfbE3BJdkXki5EclvtS8Nxu2RQNLA8hMMog=
+github.com/v3io/v3io-go-http v0.0.0-20190221115935-53e2b487c9a2 h1:NJc63wM25iS+ci5z7LVwjWD4QM0QpTQw/fovKzatss0=
+github.com/v3io/v3io-go-http v0.0.0-20190221115935-53e2b487c9a2/go.mod h1:GXYcR9MxgfbE3BJdkXki5EclvtS8Nxu2RQNLA8hMMog=
 github.com/v3io/v3io-tsdb v0.0.4-0.20181126115443-3822bae80c58 h1:RCv4Ic5hkpeUyoFjsy5Q6B7OyR+52nMynzu/evpdwtI=
 github.com/v3io/v3io-tsdb v0.0.4-0.20181126115443-3822bae80c58/go.mod h1:A+5yKC16QxLf+Fy5v7VvIxSw+jwsKHLhUS7dCYFDLAA=
 github.com/v3io/v3io-tsdb v0.0.4-0.20190130082012-c185c909df82 h1:2orH4SLeblsN0MANOjcC321h3qYpXPxMQrLiEP1BOKA=
@@ -70,6 +72,8 @@ github.com/v3io/v3io-tsdb v0.8.3/go.mod h1:A+5yKC16QxLf+Fy5v7VvIxSw+jwsKHLhUS7dC
 github.com/v3io/v3io-tsdb v0.8.4-0.20181212133952-2b1d11668336 h1:+xD4my6+/sJj79QWZth9DF44wO/cbiPQfuBOi+qgmrM=
 github.com/v3io/v3io-tsdb v0.8.4-0.20181212133952-2b1d11668336/go.mod h1:A+5yKC16QxLf+Fy5v7VvIxSw+jwsKHLhUS7dCYFDLAA=
 github.com/v3io/v3io-tsdb v0.8.7 h1:Btkfhz9RlSYqpe5A5vFJQ1EWgBbdnAY4mtlefcH1Zj4=
+github.com/v3io/v3io-tsdb v0.8.11 h1:qRX3DveIXN7+rPZhs5l7oCQocftsQ1Lg0Um1fmNrhoU=
+github.com/v3io/v3io-tsdb v0.8.11/go.mod h1:A+5yKC16QxLf+Fy5v7VvIxSw+jwsKHLhUS7dCYFDLAA=
 github.com/valyala/bytebufferpool v1.0.0 h1:GqA5TC/0021Y/b9FG4Oi9Mr3q7XYx6KllzawFIhcdPw=
 github.com/valyala/bytebufferpool v1.0.0/go.mod h1:6bBcMArwyJ5K/AmCkWv1jt77kVWyCJ6HpOuEn7z0Csc=
 github.com/valyala/fasthttp v1.0.0 h1:BwIoZQbBsTo3v2F5lz5Oy3TlTq4wLKTLV260EVTEWco=

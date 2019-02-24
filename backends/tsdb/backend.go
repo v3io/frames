@@ -66,6 +66,7 @@ func (b *Backend) newConfig(session *frames.Session) *config.V3ioConfig {
 		Container:      session.Container,
 		Username:       session.User,
 		Password:       session.Password,
+		AccessKey:      session.Token,
 		Workers:        b.backendConfig.Workers,
 		LogLevel:       b.framesConfig.Log.Level,
 	}
@@ -158,7 +159,7 @@ func (b *Backend) Create(request *frames.CreateRequest) error {
 	cfg := b.newConfig(session)
 
 	cfg.TablePath = path
-	dbSchema, err := schema.NewSchema(cfg, rate, aggregationGranularity, defaultRollups)
+	dbSchema, err := schema.NewSchema(cfg, rate, aggregationGranularity, defaultRollups, "") // todo: support create table with cross label aggregates
 
 	if err != nil {
 		return errors.Wrap(err, "Failed to create a TSDB schema.")

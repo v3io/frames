@@ -39,7 +39,7 @@ wheel:
 	cd clients/py && python setup.py bdist_wheel
 
 update-tsdb-dep:
-	GO111MODULE=on go get github.com/v3io/v3io-tsdb@frames-integration
+	GO111MODULE=on go get github.com/v3io/v3io-tsdb@master
 	GO111MODULE=on go mod vendor
 	@echo "Done. Don't forget to commit ☺"
 

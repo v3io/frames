@@ -26,7 +26,7 @@ func NewFrameIterator(ctx *selectQueryContext) (*frameIterator, error) {
 	if !ctx.isRawQuery() {
 		for _, f := range ctx.frameList {
 			if err := f.finishAllColumns(); err != nil {
-				return nil, err
+				return nil, errors.Wrapf(err, "failed to create columns for DF=%v", f.Labels())
 			}
 		}
 	}
@@ -48,8 +48,13 @@ func (fi *frameIterator) GetFrame() (frames.Frame, error) {
 // advance to the next time series (for Prometheus mode)
 func (fi *frameIterator) Next() bool {
 
+	var numberOfColumnsInCurrentSeries int
+	if len(fi.ctx.frameList) > 0 {
+		numberOfColumnsInCurrentSeries = len(fi.ctx.frameList[fi.setIndex].columnByName)
+	}
+
 	// can advance series within a frame
-	if fi.seriesIndex < fi.columnNum-1 {
+	if fi.seriesIndex < numberOfColumnsInCurrentSeries-1 {
 		fi.seriesIndex++
 		if fi.isCurrentSeriesHidden() {
 			return fi.Next()
@@ -108,7 +113,7 @@ func NewDataFrame(columnsSpec []columnMeta, indexColumn Column, lset utils.Label
 		df.columns = make([]Column, 0, numOfColumns)
 		df.metricToCountColumn = map[string]Column{}
 		df.metrics = map[string]struct{}{}
-		df.nonEmptyRowsIndicator = make([]bool, columnSize)
+		df.nonEmptyRowsIndicators = make([]bool, columnSize)
 		// In case user wanted all metrics, save the template for every metric.
 		// Once we know what metrics we have we will create Columns out of the column Templates
 		if getAllMetrics {
@@ -214,20 +219,14 @@ type dataFrame struct {
 	isRawColumnsGenerated bool
 	rawColumns            []utils.Series
 
-	columnsTemplates      []columnMeta
-	columns               []Column
-	index                 Column
-	columnByName          map[string]int // name -> index in columns
-	nonEmptyRowsIndicator []bool
+	columnsTemplates       []columnMeta
+	columns                []Column
+	index                  Column
+	columnByName           map[string]int // name -> index in columns
+	nonEmptyRowsIndicators []bool
 
 	metrics             map[string]struct{}
 	metricToCountColumn map[string]Column
-}
-
-func (d *dataFrame) updateHasValue(index int) {
-	if index >= 0 && index < len(d.nonEmptyRowsIndicator) {
-		d.nonEmptyRowsIndicator[index] = true
-	}
 }
 
 func (d *dataFrame) addMetricIfNotExist(metricName string, columnSize int, useServerAggregates bool) error {
@@ -262,6 +261,20 @@ func (d *dataFrame) addMetricFromTemplate(metricName string, columnSize int, use
 	}
 	d.metrics[metricName] = struct{}{}
 	return nil
+}
+
+func (d *dataFrame) setDataAt(columnName string, index int, value interface{}) error {
+	colIndex, ok := d.columnByName[columnName]
+	if !ok {
+		return fmt.Errorf("no such column %v", columnName)
+	}
+	col := d.columns[colIndex]
+	err := col.SetDataAt(index, value)
+	if err == nil {
+		d.nonEmptyRowsIndicators[index] = true
+	}
+
+	return err
 }
 
 func (d *dataFrame) Len() int {
@@ -343,13 +356,13 @@ func (d *dataFrame) TimeSeries(i int) (utils.Series, error) {
 // First do all the concrete columns and then the virtual who are dependant on the concrete.
 func (d *dataFrame) finishAllColumns() error {
 
-	// Marking as Deleted all the indexes that has no data.
-	for i, hasData := range d.nonEmptyRowsIndicator {
+	// Marking as deleted every index (row) that has no data.
+	for i, hasData := range d.nonEmptyRowsIndicators {
 		if !hasData {
 			for _, col := range d.columns {
 				_ = col.Delete(i)
 			}
-			d.index.Delete(i)
+			_ = d.index.Delete(i)
 		}
 	}
 
@@ -364,11 +377,11 @@ func (d *dataFrame) finishAllColumns() error {
 			if columnSize == 0 {
 				columnSize = col.FramesColumn().Len()
 			} else if columnSize != col.FramesColumn().Len() {
-				return fmt.Errorf("columns length mismath %v!=%v col=%v", columnSize, col.FramesColumn().Len(), col.Name())
+				return fmt.Errorf("column length mismatch %v!=%v col=%v", columnSize, col.FramesColumn().Len(), col.Name())
 			}
 		}
 		if err != nil {
-			return err
+			return errors.Wrapf(err, "failed to create column '%v'", col.Name())
 		}
 	}
 	for _, col := range d.columns {
@@ -378,13 +391,13 @@ func (d *dataFrame) finishAllColumns() error {
 			err = col.finish()
 		}
 		if err != nil {
-			return err
+			return errors.Wrapf(err, "failed to create column '%v'", col.Name())
 		}
 	}
 
-	d.index.finish()
+	err = d.index.finish()
 
-	return nil
+	return err
 }
 
 // Normalizing the raw data of different metrics to one timeline with both metric's times.
@@ -454,18 +467,20 @@ func (d *dataFrame) rawSeriesToColumns() {
 				t, v = iter.At()
 			}
 
+			hasMoreData := true
 			if t == currentTime {
 				columns[seriesIndex].Append(v)
 				if iter.Next() {
 					t, _ = iter.At()
 				} else {
 					nonExhaustedIterators--
+					hasMoreData = false
 				}
-			} else if t > currentTime {
+			} else {
 				columns[seriesIndex].Append(seriesTodefaultValue[seriesIndex])
 			}
 
-			if t < nextTime {
+			if hasMoreData && t < nextTime {
 				nextTime = t
 			}
 		}
@@ -518,7 +533,7 @@ type Column interface {
 	GetColumnSpec() columnMeta       // Get the column's metadata
 	SetDataAt(i int, value interface{}) error
 	SetData(d interface{}, size int) error
-	GetInterpolationFunction() (InterpolationFunction, int64)
+	GetInterpolationFunction() InterpolationFunction
 	setMetricName(name string)
 	finish() error
 	FramesColumn() frames.Column
@@ -526,13 +541,12 @@ type Column interface {
 }
 
 type basicColumn struct {
-	name                   string
-	size                   int
-	spec                   columnMeta
-	interpolationFunction  InterpolationFunction
-	interpolationTolerance int64
-	builder                frames.ColumnBuilder
-	framesCol              frames.Column
+	name                  string
+	size                  int
+	spec                  columnMeta
+	interpolationFunction InterpolationFunction
+	builder               frames.ColumnBuilder
+	framesCol             frames.Column
 }
 
 func (c *basicColumn) finish() error {
@@ -555,6 +569,9 @@ func (c *basicColumn) Name() string {
 
 // Len returns the number of elements
 func (c *basicColumn) Len() int {
+	if c.framesCol != nil {
+		return c.framesCol.Len()
+	}
 	return c.size
 }
 
@@ -571,21 +588,20 @@ func (c *basicColumn) SetDataAt(i int, value interface{}) error { return nil }
 func (c *basicColumn) SetData(d interface{}, size int) error {
 	return errors.New("method not supported")
 }
-func (c *basicColumn) GetInterpolationFunction() (InterpolationFunction, int64) {
-	return c.interpolationFunction, c.interpolationTolerance
+func (c *basicColumn) GetInterpolationFunction() InterpolationFunction {
+	return c.interpolationFunction
 }
 
 func NewDataColumn(name string, colSpec columnMeta, size int, datatype frames.DType) *dataColumn {
 	dc := &dataColumn{basicColumn: basicColumn{name: name, spec: colSpec, size: size,
-		interpolationFunction:  GetInterpolateFunc(colSpec.interpolationType),
-		interpolationTolerance: colSpec.interpolationTolerance, builder: frames.NewSliceColumnBuilder(name, datatype, size)}}
+		interpolationFunction: GetInterpolateFunc(colSpec.interpolationType, colSpec.interpolationTolerance),
+		builder:               frames.NewSliceColumnBuilder(name, datatype, size)}}
 	return dc
 
 }
 
 type dataColumn struct {
 	basicColumn
-	data interface{}
 }
 
 // DType returns the data type
@@ -609,7 +625,6 @@ func (dc *dataColumn) TimeAt(i int) (time.Time, error) {
 }
 
 func (dc *dataColumn) SetData(d interface{}, size int) error {
-	dc.data = d
 	dc.size = size
 	var err error
 	dc.framesCol, err = frames.NewSliceColumn(dc.name, d)
@@ -637,15 +652,14 @@ func (dc *dataColumn) SetDataAt(i int, value interface{}) error {
 
 func NewConcreteColumn(name string, colSpec columnMeta, size int, setFunc func(old, new interface{}) interface{}) *ConcreteColumn {
 	col := &ConcreteColumn{basicColumn: basicColumn{name: name, spec: colSpec, size: size,
-		interpolationFunction: GetInterpolateFunc(interpolateNone), builder: frames.NewSliceColumnBuilder(name, frames.FloatType, size)}, setFunc: setFunc}
-	col.data = make([]interface{}, size)
+		interpolationFunction: GetInterpolateFunc(colSpec.interpolationType, colSpec.interpolationTolerance),
+		builder:               frames.NewSliceColumnBuilder(name, frames.FloatType, size)}, setFunc: setFunc}
 	return col
 }
 
 type ConcreteColumn struct {
 	basicColumn
 	setFunc func(old, new interface{}) interface{}
-	data    []interface{}
 }
 
 func (c *ConcreteColumn) DType() frames.DType {
@@ -671,7 +685,8 @@ func (c *ConcreteColumn) SetDataAt(i int, val interface{}) error {
 
 func NewVirtualColumn(name string, colSpec columnMeta, size int, function func([]Column, int) (interface{}, error)) Column {
 	col := &virtualColumn{basicColumn: basicColumn{name: name, spec: colSpec, size: size,
-		interpolationFunction: GetInterpolateFunc(interpolateNone), builder: frames.NewSliceColumnBuilder(name, frames.FloatType, size)},
+		interpolationFunction: GetInterpolateFunc(colSpec.interpolationType, colSpec.interpolationTolerance),
+		builder:               frames.NewSliceColumnBuilder(name, frames.FloatType, size)},
 		function: function}
 	return col
 }
@@ -688,10 +703,9 @@ func (c *virtualColumn) finish() error {
 	for i := 0; i < c.Len(); i++ {
 		value, err := c.function(c.dependantColumns, i)
 		if err != nil {
-			data[i] = math.NaN()
-		} else {
-			data[i] = value.(float64)
+			return err
 		}
+		data[i] = value.(float64)
 	}
 
 	c.framesCol, err = frames.NewSliceColumn(c.name, data)

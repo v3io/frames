@@ -5,6 +5,8 @@ import (
 	"math"
 
 	"github.com/v3io/v3io-tsdb/pkg/aggregate"
+	"github.com/v3io/v3io-tsdb/pkg/config"
+	"github.com/v3io/v3io-tsdb/pkg/utils"
 )
 
 /* main query flow logic
@@ -59,8 +61,8 @@ once collectors are done (wg.done) return SeriesSet (prom compatible) or FrameSe
 func mainCollector(ctx *selectQueryContext, responseChannel chan *qryResults) {
 	defer ctx.wg.Done()
 
-	lastTimePerMetric := make(map[string]int64, len(ctx.columnsSpecByMetric))
-	lastValuePerMetric := make(map[string]float64, len(ctx.columnsSpecByMetric))
+	lastTimePerMetric := make(map[uint64]int64, len(ctx.columnsSpecByMetric))
+	lastValuePerMetric := make(map[uint64]float64, len(ctx.columnsSpecByMetric))
 
 	for res := range responseChannel {
 		if res.IsRawQuery() {
@@ -72,16 +74,25 @@ func mainCollector(ctx *selectQueryContext, responseChannel chan *qryResults) {
 				ctx.errorChannel <- err
 				return
 			}
+			lsetAttr, _ := res.fields[config.LabelSetAttrName].(string)
+			lset, _ := utils.LabelsFromString(lsetAttr)
+			currentResultHash := lset.Hash()
 
-			if res.IsServerAggregates() {
-				aggregateServerAggregates(ctx, res)
-			} else if res.IsClientAggregates() {
-				aggregateClientAggregates(ctx, res)
+			// Aggregating cross series aggregates, only supported over raw data.
+			if ctx.isCrossSeriesAggregate {
+				lastTimePerMetric[currentResultHash], lastValuePerMetric[currentResultHash], _ = aggregateClientAggregatesCrossSeries(ctx, res, lastTimePerMetric[currentResultHash], lastValuePerMetric[currentResultHash])
+			} else {
+				// Aggregating over time aggregates
+				if res.IsServerAggregates() {
+					aggregateServerAggregates(ctx, res)
+				} else if res.IsClientAggregates() {
+					aggregateClientAggregates(ctx, res)
+				}
 			}
 
 			// It is possible to query an aggregate and down sample raw chunks in the same df.
 			if res.IsDownsample() {
-				lastTimePerMetric[res.name], lastValuePerMetric[res.name], err = downsampleRawData(ctx, res, lastTimePerMetric[res.name], lastValuePerMetric[res.name])
+				lastTimePerMetric[currentResultHash], lastValuePerMetric[currentResultHash], err = downsampleRawData(ctx, res, lastTimePerMetric[currentResultHash], lastValuePerMetric[currentResultHash])
 				if err != nil {
 					ctx.logger.Error("problem downsampling '%v', lset: %v, err:%v", res.name, res.frame.lset, err)
 					ctx.errorChannel <- err
@@ -110,15 +121,14 @@ func rawCollector(ctx *selectQueryContext, res *qryResults) {
 
 func aggregateClientAggregates(ctx *selectQueryContext, res *qryResults) {
 	ctx.logger.Debug("using Client Aggregates Collector for metric %v", res.name)
-	it := newRawChunkIterator(res, nil)
+	it := newRawChunkIterator(res, ctx.logger)
 	for it.Next() {
 		t, v := it.At()
 		currentCell := (t - ctx.queryParams.From) / res.query.aggregationParams.Interval
 
 		for _, col := range res.frame.columns {
 			if col.GetColumnSpec().metric == res.name {
-				col.SetDataAt(int(currentCell), v)
-				res.frame.updateHasValue(int(currentCell))
+				_ = res.frame.setDataAt(col.Name(), int(currentCell), v)
 			}
 		}
 	}
@@ -144,7 +154,9 @@ func aggregateServerAggregates(ctx *selectQueryContext, res *qryResults) {
 				for i := 16; i+8 <= len(bytes); i += 8 {
 					val := binary.LittleEndian.Uint64(bytes[i : i+8])
 					currentValueIndex := (i - 16) / 8
-					currentValueTime := partitionStartTime + int64(currentValueIndex+1)*rollupInterval
+
+					// Calculate the last time in the current cell
+					currentValueTime := partitionStartTime + int64(currentValueIndex)*rollupInterval + (rollupInterval - 1)
 					currentCell := (currentValueTime - ctx.queryParams.From) / res.query.aggregationParams.Interval
 
 					var floatVal float64
@@ -153,8 +165,7 @@ func aggregateServerAggregates(ctx *selectQueryContext, res *qryResults) {
 					} else {
 						floatVal = math.Float64frombits(val)
 					}
-					col.SetDataAt(int(currentCell), floatVal)
-					res.frame.updateHasValue(int(currentCell))
+					_ = res.frame.setDataAt(col.Name(), int(currentCell), floatVal)
 				}
 			}
 		}
@@ -165,9 +176,7 @@ func downsampleRawData(ctx *selectQueryContext, res *qryResults,
 	previousPartitionLastTime int64, previousPartitionLastValue float64) (int64, float64, error) {
 	ctx.logger.Debug("using Downsample Collector for metric %v", res.name)
 
-	var lastT int64
-	var lastV float64
-	it, ok := newRawChunkIterator(res, nil).(*RawChunkIterator)
+	it, ok := newRawChunkIterator(res, ctx.logger).(*RawChunkIterator)
 	if !ok {
 		return previousPartitionLastTime, previousPartitionLastValue, nil
 	}
@@ -175,14 +184,14 @@ func downsampleRawData(ctx *selectQueryContext, res *qryResults,
 	if err != nil {
 		return previousPartitionLastTime, previousPartitionLastValue, err
 	}
-	for currBucket := 0; currBucket < col.Len(); currBucket++ {
-		currBucketTime := int64(currBucket)*ctx.queryParams.Step + ctx.queryParams.From
-		if it.Seek(currBucketTime) {
+	for currCell := 0; currCell < col.Len(); currCell++ {
+		currCellTime := int64(currCell)*ctx.queryParams.Step + ctx.queryParams.From
+		if it.Seek(currCellTime) {
 			t, v := it.At()
-			tBucketIndex := (t - ctx.queryParams.From) / ctx.queryParams.Step
-			if t == currBucketTime {
-				col.SetDataAt(currBucket, v)
-			} else if tBucketIndex == int64(currBucket) {
+			tCellIndex := (t - ctx.queryParams.From) / ctx.queryParams.Step
+			if t == currCellTime {
+				_ = res.frame.setDataAt(col.Name(), int(currCell), v)
+			} else if tCellIndex == int64(currCell) {
 				prevT, prevV := it.PeakBack()
 
 				// In case it's the first point in the partition use the last point of the previous partition for the interpolation
@@ -190,23 +199,67 @@ func downsampleRawData(ctx *selectQueryContext, res *qryResults,
 					prevT = previousPartitionLastTime
 					prevV = previousPartitionLastValue
 				}
-				// If previous point is too old for interpolation
-				interpolateFunc, tolerance := col.GetInterpolationFunction()
-				if prevT != 0 && t-prevT > tolerance {
-					col.SetDataAt(currBucket, math.NaN())
-				} else {
-					_, interpolatedV := interpolateFunc(prevT, t, currBucketTime, prevV, v)
-					col.SetDataAt(currBucket, interpolatedV)
-					res.frame.updateHasValue(currBucket)
+				interpolatedT, interpolatedV := col.GetInterpolationFunction()(prevT, t, currCellTime, prevV, v)
+
+				// Check if the interpolation was successful in terms of exceeding tolerance
+				if !(interpolatedT == 0 && interpolatedV == 0) {
+					_ = res.frame.setDataAt(col.Name(), int(currCell), interpolatedV)
 				}
-			} else {
-				col.SetDataAt(currBucket, math.NaN())
 			}
-		} else {
-			lastT, lastV = it.At()
-			col.SetDataAt(currBucket, math.NaN())
 		}
 	}
 
+	lastT, lastV := it.At()
+	return lastT, lastV, nil
+}
+
+func aggregateClientAggregatesCrossSeries(ctx *selectQueryContext, res *qryResults, previousPartitionLastTime int64, previousPartitionLastValue float64) (int64, float64, error) {
+	ctx.logger.Debug("using Client Aggregates Collector for metric %v", res.name)
+	it := newRawChunkIterator(res, ctx.logger).(*RawChunkIterator)
+
+	var previousPartitionEndBucket int
+	if previousPartitionLastTime != 0 {
+		previousPartitionEndBucket = int((previousPartitionLastTime-ctx.queryParams.From)/ctx.queryParams.Step) + 1
+	}
+	maxBucketForPartition := int((res.query.partition.GetEndTime() - ctx.queryParams.From) / ctx.queryParams.Step)
+	if maxBucketForPartition > ctx.getResultBucketsSize() {
+		maxBucketForPartition = ctx.getResultBucketsSize()
+	}
+
+	for currBucket := previousPartitionEndBucket; currBucket < maxBucketForPartition; currBucket++ {
+		currBucketTime := int64(currBucket)*ctx.queryParams.Step + ctx.queryParams.From
+
+		if it.Seek(currBucketTime) {
+			t, v := it.At()
+			if t == currBucketTime {
+				for _, col := range res.frame.columns {
+					if col.GetColumnSpec().metric == res.name {
+						_ = res.frame.setDataAt(col.Name(), int(currBucket), v)
+					}
+				}
+			} else {
+				prevT, prevV := it.PeakBack()
+
+				// In case it's the first point in the partition use the last point of the previous partition for the interpolation
+				if prevT == 0 {
+					prevT = previousPartitionLastTime
+					prevV = previousPartitionLastValue
+				}
+
+				for _, col := range res.frame.columns {
+					if col.GetColumnSpec().metric == res.name {
+						interpolatedT, interpolatedV := col.GetInterpolationFunction()(prevT, t, currBucketTime, prevV, v)
+						if !(interpolatedT == 0 && interpolatedV == 0) {
+							_ = res.frame.setDataAt(col.Name(), int(currBucket), interpolatedV)
+						}
+					}
+				}
+			}
+		} else {
+			break
+		}
+	}
+
+	lastT, lastV := it.At()
 	return lastT, lastV, nil
 }
