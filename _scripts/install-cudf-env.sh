@@ -33,7 +33,7 @@ ${CONDA_INSTALL} \
 ${CONDA_INSTALL} cudatoolkit=9.2
 
 # Install testing
-${CONDA_INSTALL} pytest pyyaml
+${CONDA_INSTALL} pytest pyyaml ipython
 
 # Get frames code
 git clone https://github.com/v3io/frames.git
