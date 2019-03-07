@@ -19,7 +19,7 @@ require (
 	github.com/rcrowley/go-metrics v0.0.0-20181016184325-3113b8401b8a // indirect
 	github.com/stretchr/testify v1.2.2 // indirect
 	github.com/v3io/v3io-go-http v0.0.0-20190221115935-53e2b487c9a2
-	github.com/v3io/v3io-tsdb v0.8.11
+	github.com/v3io/v3io-tsdb v0.8.13
 	github.com/valyala/fasthttp v1.0.0
 	github.com/xwb1989/sqlparser v0.0.0-20180606152119-120387863bf2
 	go.uber.org/atomic v1.3.2 // indirect
