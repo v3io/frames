@@ -12,9 +12,6 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-# -mod=vendor is avaiable from Go 1.11 and up
-modflag=$(shell GO111MODULE=off go run _scripts/modflag.go)
-
 all:
 	@echo Please pick a target
 	@egrep '^[^ :]+:' Makefile | \
@@ -24,10 +21,10 @@ all:
 	@false
 
 test:
-	GO111MODULE=on go test -v $(testflags) $(modflag) ./...
+	GO111MODULE=on go test -v $(testflags) ./...
 
 build:
-	GO111MODULE=on go build -v $(modflag) ./...
+	GO111MODULE=on go build -v ./...
 
 test-python:
 	cd clients/py && $(MAKE) test
@@ -40,7 +37,6 @@ wheel:
 
 update-tsdb-dep:
 	GO111MODULE=on go get github.com/v3io/v3io-tsdb@master
-	GO111MODULE=on go mod vendor
 	@echo "Done. Don't forget to commit ☺"
 
 grpc: grpc-go grpc-py
@@ -63,13 +59,12 @@ pypi:
 
 cloc:
 	cloc \
-	    --exclude-dir=vendor,_t,.ipynb_checkpoints,_examples,_build \
+	    --exclude-dir=_t,.ipynb_checkpoints,_examples,_build \
 	    .
 
 update-go-deps:
 	go mod tidy
-	go mod vendor
-	git add vendor go.mod go.sum
+	git add go.mod go.sum
 	@echo "Don't forget to test & commit"
 
 update-py-deps:
