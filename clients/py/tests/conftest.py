@@ -123,7 +123,6 @@ def framesd():
     cmd = [
         'go', 'build',
         '-o', server_exe,
-        '-mod=vendor',
         '{}/cmd/framesd/framesd.go'.format(git_root),
     ]
     assert call(cmd) == 0, 'cannot build server'
