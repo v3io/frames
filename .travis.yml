@@ -3,7 +3,7 @@ services:
 - docker
 matrix:
   include:
-  - go: 1.11.x
+  - go: 1.12.x
     script:
     - make test
     after_success:
@@ -15,8 +15,8 @@ matrix:
     - PATH=/opt/go/bin:${PATH}
     - GOROOT=/opt/go
     install:
-    - curl -LO https://dl.google.com/go/go1.11.1.linux-amd64.tar.gz
-    - tar xzf go1.11.1.linux-amd64.tar.gz -C /opt
+    - curl -LO https://dl.google.com/go/go1.12.linux-amd64.tar.gz
+    - tar xzf go1.12.linux-amd64.tar.gz -C /opt
     - pip install pipenv
     - make python-deps
     script:
@@ -24,9 +24,8 @@ matrix:
     after_success:
     - make pypi
 env:
-  matrix:
-  - GO111MODULE=on
   global:
+    - GO111MODULE=on
 deploy:
   - provider: releases
     skip_cleanup: true
