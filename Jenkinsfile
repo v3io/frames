@@ -76,6 +76,20 @@ podTemplate(label: "${git_project}-${label}", inheritFrom: "jnlp-docker-golang-p
                                     github.upload_asset(git_project, git_project_user, "framesd-${github.TAG_VERSION}-windows-amd64", RELEASE_ID, GIT_TOKEN)
                                 }
                             },
+                            'upload to pypi': {
+                                container('python37') {
+                                    withCredentials([
+                                            usernamePassword(credentialsId: "iguazio-prod-pypi-credentials", passwordVariable: 'V3IO_PYPI_PASSWORD', usernameVariable: 'V3IO_PYPI_USER')
+                                    ]) {
+                                        dir("${github.BUILD_FOLDER}/src/github.com/${git_project_upstream_user}/${git_project}") {
+                                            common.shellc("pip install pipenv")
+                                            common.shellc("make python-deps")
+                                            common.shellc("make test-py")
+                                            common.shellc("V3IO_PYPI_USER=${V3IO_PYPI_USER} V3IO_PYPI_PASSWORD=${V3IO_PYPI_PASSWORD} TRAVIS_TAG=${github.DOCKER_TAG_VERSION} make pypi")
+                                        }
+                                    }
+                                }
+                            },
                     )
 
                     container('docker-cmd') {
