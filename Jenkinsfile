@@ -6,7 +6,7 @@ git_deploy_user = "iguazio-prod-git-user"
 git_deploy_user_token = "iguazio-prod-git-user-token"
 git_deploy_user_private_key = "iguazio-prod-git-user-private-key"
 
-podTemplate(label: "${git_project}-${label}", inheritFrom: "jnlp-docker-golang") {
+podTemplate(label: "${git_project}-${label}", inheritFrom: "jnlp-docker-golang-python37") {
     node("${git_project}-${label}") {
         pipelinex = library(identifier: 'pipelinex@refs', retriever: modernSCM(
                 [$class       : 'GitSCMSource',
@@ -84,14 +84,31 @@ podTemplate(label: "${git_project}-${label}", inheritFrom: "jnlp-docker-golang")
                     }
                 }
                 github.pr(git_deploy_user, git_project, git_project_user, git_project_upstream_user, true, GIT_TOKEN) {
-                    stage("build ${git_project} in dood") {
-                        container('golang') {
-                            dir("${github.BUILD_FOLDER}/src/github.com/${git_project_upstream_user}/${git_project}") {
-                                common.shellc("make test")
-                                common.shellc("make lint")
+                    parallel(
+                            'test-py': {
+                                container('python37') {
+                                    dir("${github.BUILD_FOLDER}/src/github.com/${git_project_upstream_user}/${git_project}") {
+                                        common.shellc("pip install pipenv")
+                                        common.shellc("make python-deps")
+                                        common.shellc("make test-py")
+                                    }
+                                }
+                            },
+                            'test-go': {
+                                container('golang') {
+                                    dir("${github.BUILD_FOLDER}/src/github.com/${git_project_upstream_user}/${git_project}") {
+                                        common.shellc("make test-go")
+                                    }
+                                }
+                            },
+                            'make lint': {
+                                container('golang') {
+                                    dir("${github.BUILD_FOLDER}/src/github.com/${git_project_upstream_user}/${git_project}") {
+                                        common.shellc("make lint")
+                                    }
+                                }
                             }
-                        }
-                    }
+                    )
                 }
             }
         }
