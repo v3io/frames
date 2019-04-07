@@ -101,13 +101,13 @@ podTemplate(label: "${git_project}-${label}", inheritFrom: "jnlp-docker-golang-p
                                     }
                                 }
                             },
-                            'make lint': {
-                                container('golang') {
-                                    dir("${github.BUILD_FOLDER}/src/github.com/${git_project_upstream_user}/${git_project}") {
-                                        common.shellc("make lint")
-                                    }
-                                }
-                            }
+//                            'make lint': {
+//                                container('golang') {
+//                                    dir("${github.BUILD_FOLDER}/src/github.com/${git_project_upstream_user}/${git_project}") {
+//                                        common.shellc("make lint")
+//                                    }
+//                                }
+//                            }
                     )
                 }
             }
