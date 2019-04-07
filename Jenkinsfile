@@ -51,7 +51,6 @@ podTemplate(label: "${git_project}-${label}", inheritFrom: "jnlp-docker-golang-p
 
                     )
 
-
                     parallel(
                             'upload linux binaries': {
                                 container('jnlp') {
