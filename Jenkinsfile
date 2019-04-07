@@ -8,7 +8,7 @@ git_deploy_user_private_key = "iguazio-prod-git-user-private-key"
 
 podTemplate(label: "${git_project}-${label}", inheritFrom: "jnlp-docker-golang-python37") {
     node("${git_project}-${label}") {
-        pipelinex = library(identifier: 'pipelinex@refs', retriever: modernSCM(
+        pipelinex = library(identifier: 'pipelinex@_tmp_refs', retriever: modernSCM(
                 [$class       : 'GitSCMSource',
                  credentialsId: git_deploy_user_private_key,
                  remote       : "git@github.com:iguazio/pipelinex.git"])).com.iguazio.pipelinex
@@ -82,6 +82,26 @@ podTemplate(label: "${git_project}-${label}", inheritFrom: "jnlp-docker-golang-p
                     container('docker-cmd') {
                         dockerx.images_push_multi_registries(["frames:${github.DOCKER_TAG_VERSION}"], [pipelinex.DockerRepoDev.ARTIFACTORY_IGUAZIO, pipelinex.DockerRepoDev.DOCKER_HUB, pipelinex.DockerRepoDev.QUAY_IO])
                     }
+                }
+                github.branch(git_deploy_user, git_project, git_project_user, git_project_upstream_user, true, GIT_TOKEN) {
+                    parallel(
+                            'test-py': {
+                                container('python37') {
+                                    dir("${github.BUILD_FOLDER}/src/github.com/${git_project_upstream_user}/${git_project}") {
+                                        common.shellc("pip install pipenv")
+                                        common.shellc("make python-deps")
+                                        common.shellc("make test-py")
+                                    }
+                                }
+                            },
+                            'test-go': {
+                                container('golang') {
+                                    dir("${github.BUILD_FOLDER}/src/github.com/${git_project_upstream_user}/${git_project}") {
+                                        common.shellc("make test-go")
+                                    }
+                                }
+                            }
+                    )
                 }
                 github.pr(git_deploy_user, git_project, git_project_user, git_project_upstream_user, true, GIT_TOKEN) {
                     parallel(
