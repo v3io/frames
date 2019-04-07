@@ -23,28 +23,28 @@ podTemplate(label: "${git_project}-${label}", inheritFrom: "jnlp-docker-golang")
                             'build linux binaries': {
                                 container('golang') {
                                     dir("${github.BUILD_FOLDER}/src/github.com/${git_project_upstream_user}/${git_project}") {
-                                        common.shellc("FRAMES_TAG=${github.TAG_VERSION} GOARCH=amd64 GOOS=linux make framesd-bin")
+                                        common.shellc("FRAMES_TAG=${github.TAG_VERSION} GOARCH=amd64 GOOS=linux make frames-bin")
                                     }
                                 }
                             },
                             'build darwin binaries': {
                                 container('golang') {
                                     dir("${github.BUILD_FOLDER}/src/github.com/${git_project_upstream_user}/${git_project}") {
-                                        common.shellc("FRAMES_TAG=${github.TAG_VERSION} GOARCH=amd64 GOOS=darwin make framesd-bin")
+                                        common.shellc("FRAMES_TAG=${github.TAG_VERSION} GOARCH=amd64 GOOS=darwin make frames-bin")
                                     }
                                 }
                             },
                             'build windows binaries': {
                                 container('golang') {
                                     dir("${github.BUILD_FOLDER}/src/github.com/${git_project_upstream_user}/${git_project}") {
-                                        common.shellc("FRAMES_TAG=${github.TAG_VERSION} GOARCH=amd64 GOOS=windows make framesd-bin")
+                                        common.shellc("FRAMES_TAG=${github.TAG_VERSION} GOARCH=amd64 GOOS=windows make frames-bin")
                                     }
                                 }
                             },
                             'build frames': {
                                 container('docker-cmd') {
                                     dir("${github.BUILD_FOLDER}/src/github.com/${git_project_upstream_user}/${git_project}") {
-                                        common.shellc("FRAMES_REPOSITORY= FRAMES_TAG=${github.DOCKER_TAG_VERSION} make frames")
+                                        common.shellc("FRAMES_REPOSITORY= FRAMES_TAG=${github.DOCKER_TAG_VERSION} make build")
                                     }
                                 }
                             },

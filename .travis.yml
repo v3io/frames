@@ -20,7 +20,7 @@ matrix:
     - pip install pipenv
     - make python-deps
     script:
-    - make test-python
+    - make test-py
     after_success:
     - make pypi
 env:
