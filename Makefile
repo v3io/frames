@@ -1,7 +1,7 @@
 FRAMES_TAG ?= latest
 FRAMES_REPOSITORY ?= iguazio/
 FRAMES_PATH ?= src/github.com/v3io/frames
-FRAMES_BUILD_COMMAND ?= GO111MODULE=on go build -o framesd-$(FRAMES_TAG)-$(GOOS)-$(GOARCH) -ldflags "-X main.Version=$(FRAMES_TAG)" ./cmd/framesd
+FRAMES_BUILD_COMMAND ?= GO111MODULE=on go build -o $(GOPATH)/bin/framesd-$(FRAMES_TAG)-$(GOOS)-$(GOARCH) -ldflags "-X main.Version=$(FRAMES_TAG)" ./cmd/framesd
 
 .PHONY: build
 build:
