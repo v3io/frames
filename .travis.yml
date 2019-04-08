@@ -5,7 +5,7 @@ matrix:
   include:
   - go: 1.12.x
     script:
-    - make test
+    - make test-go
     after_success:
     - go run ./_scripts/travis.go docker
     - go run ./_scripts/travis.go binaries
