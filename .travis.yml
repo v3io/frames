@@ -3,40 +3,21 @@ services:
 - docker
 matrix:
   include:
-  - go: 1.11.x
+  - go: 1.12.x
     script:
-    - make test
-    after_success:
-    - go run ./_scripts/travis.go docker
-    - go run ./_scripts/travis.go binaries
+    - make test-go
   - language: python
     python: 3.7-dev
     env:
     - PATH=/opt/go/bin:${PATH}
     - GOROOT=/opt/go
     install:
-    - curl -LO https://dl.google.com/go/go1.11.1.linux-amd64.tar.gz
-    - tar xzf go1.11.1.linux-amd64.tar.gz -C /opt
+    - curl -LO https://dl.google.com/go/go1.12.linux-amd64.tar.gz
+    - tar xzf go1.12.linux-amd64.tar.gz -C /opt
     - pip install pipenv
     - make python-deps
     script:
-    - make test-python
-    after_success:
-    - make pypi
+    - make test-py
 env:
-  matrix:
-  - GO111MODULE=on
   global:
-deploy:
-  - provider: releases
-    skip_cleanup: true
-    api_key:
-      secure: ZzxPkLeLSgWQXUB7lldUJ/VTcUMfkoTTN4wdOqVhAktIrV0ssMBl5CJ7pCfnqCG709drgQbLCXbMprSv05x4/bBvCerkjkBuH5+RDorbmkb0OdtyPsf5MkPJVZjksUZ2MShcgICdyiy7FsGRLj5EUK7aWzmsw5YjKAVc6Prj9bzO8eksM8/iv0xMM0fRW8DUoCZ2f8VOGdPCD4ukCJcz/gV50y+N8BYiCMkF04Sy7P0b/wK/0EQM48FqHP1VMip97jyont8NoBmvSrngP/ycas4BBSAHNINkbgXTiVHFWx4C7GHuYeCnp6Q39CLxra81KCUZa96FE1Y5CzwT69qHxBefNLq8CQA0Wy0D9qnSDW5XjBw+qpzrpUu1S4vdSlUq3vtXgTgWdRC/NPfX5UiTOj262VCGlLiRVh1uhGVHJMHEtdKNi7mdhHA2zqzSEFarRqhMzG0NnBQwLpmt37xdG279r0L/7cnxwE1T8olXO8VRlBOhjUjaKo7AJ+veYZbElvBShFnmq61lsTNSJHbNluqAYxUvDCGXM7N4KonY2OQaa8xzOQcIcOA/1V40oabjGKK40o+DaaWIPmfbI10/t7abQrJY3Dg3MKfMQs/KBr4knzfov2+/UyOO76sUHePLbl0AvoV8Zuzspfi/xocYpj5E7NZFbNWCec5k7Ff5y2o=
-    file:
-      - framesd-linux-amd64
-      - framesd-darwin-amd64
-      - framesd-windows-amd64.exe
-    on:
-      repo: v3io/frames
-      branch: master
-      tags: true
+    - GO111MODULE=on

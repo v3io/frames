@@ -178,7 +178,6 @@ func runServer(t testing.TB, root string, grpcPort int, httpPort int) *exec.Cmd 
 	exePath := fmt.Sprintf("%s/framesd", root)
 	cmd := exec.Command(
 		"go", "build",
-		"-mod=vendor",
 		"-o", exePath,
 		"cmd/framesd/framesd.go",
 	)

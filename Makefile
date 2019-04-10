@@ -1,53 +1,39 @@
-# Copyright 2018 Iguazio
-#
-# Licensed under the Apache License, Version 2.0 (the "License");
-# you may not use this file except in compliance with the License.
-# You may obtain a copy of the License at
-#
-#     http://www.apache.org/licenses/LICENSE-2.0
-#
-# Unless required by applicable law or agreed to in writing, software
-# distributed under the License is distributed on an "AS IS" BASIS,
-# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-# See the License for the specific language governing permissions and
-# limitations under the License.
+FRAMES_TAG ?= latest
+FRAMES_REPOSITORY ?= iguazio/
+FRAMES_PATH ?= src/github.com/v3io/frames
+FRAMES_BUILD_COMMAND ?= GO111MODULE=on go build -o $(GOPATH)/bin/framesd-$(FRAMES_TAG)-$(GOOS)-$(GOARCH) -ldflags "-X main.Version=$(FRAMES_TAG)" ./cmd/framesd
 
-# -mod=vendor is avaiable from Go 1.11 and up
-modflag=$(shell GO111MODULE=off go run _scripts/modflag.go)
-
-all:
-	@echo Please pick a target
-	@egrep '^[^ :]+:' Makefile | \
-	   grep -v all | \
-	   sed -e 's/://' -e 's/^/    /' | \
-	   sort
-	@false
-
-test:
-	GO111MODULE=on go test -v $(testflags) $(modflag) ./...
-
+.PHONY: build
 build:
-	GO111MODULE=on go build -v $(modflag) ./...
+	docker build \
+		--build-arg FRAMES_VERSION=$(FRAMES_TAG) \
+		--file cmd/framesd/Dockerfile \
+		--tag $(FRAMES_REPOSITORY)frames:$(FRAMES_TAG) \
+		.
 
-test-python:
+.PHONY: test
+test: test-go test-py
+
+.PHONY: test-go
+test-go:
+	GO111MODULE=on go test -v $(testflags) ./...
+
+.PHONY: test-py
+test-py:
 	cd clients/py && $(MAKE) test
 
-build-docker:
-	docker build -f ./cmd/framesd/Dockerfile -t quay.io/v3io/frames .
-
+.PHONY: wheel
 wheel:
 	cd clients/py && python setup.py bdist_wheel
 
-update-tsdb-dep:
-	GO111MODULE=on go get github.com/v3io/v3io-tsdb@master
-	GO111MODULE=on go mod vendor
-	@echo "Done. Don't forget to commit ☺"
-
+.PHONY: grpc
 grpc: grpc-go grpc-py
 
+.PHONY: grpc-go
 grpc-go:
-	protoc  frames.proto --go_out=plugins=grpc:pb
+	protoc frames.proto --go_out=plugins=grpc:pb
 
+.PHONY: grpc-py
 grpc-py:
 	cd clients/py && \
 	pipenv run python -m grpc_tools.protoc \
@@ -57,37 +43,74 @@ grpc-py:
 	python _scripts/fix_pb_import.py \
 	    clients/py/v3io_frames/frames_pb2_grpc.py
 
+.PHONY: pypi
 pypi:
 	cd clients/py && \
 	    pipenv run make upload
 
+.PHONY: cloc
 cloc:
 	cloc \
-	    --exclude-dir=vendor,_t,.ipynb_checkpoints,_examples,_build \
+	    --exclude-dir=_t,.ipynb_checkpoints,_examples,_build \
 	    .
 
+.PHONY: update-deps
+update-deps: update-go-deps update-py-deps update-tsdb-deps
+
+.PHONY: update-go-deps
 update-go-deps:
 	go mod tidy
-	go mod vendor
-	git add vendor go.mod go.sum
+	git add go.mod go.sum
 	@echo "Don't forget to test & commit"
 
+.PHONY: update-py-deps
 update-py-deps:
 	cd clients/py && $(MAKE) update-deps
 	git add clients/py/Pipfile*
 	@echo "Don't forget to test & commit"
 
-bench-go:
-	./_scripts/go_benchmark.py
+.PHONY: update-tsdb-deps
+update-tsdb-deps:
+	GO111MODULE=on go get github.com/v3io/v3io-tsdb@master
+	@echo "Done. Don't forget to commit ☺"
 
-bench-py:
-	./_scripts/py_benchmark.py
+.PHONY: python-deps
+python-deps:
+	cd clients/py && $(MAKE) sync-deps
 
+.PHONY: bench
 bench:
 	@echo Go
 	$(MAKE) bench-go
 	@echo Python
 	$(MAKE) bench-py
 
-python-deps:
-	cd clients/py && $(MAKE) sync-deps
+.PHONY: bench-go
+bench-go:
+	./_scripts/go_benchmark.py
+
+.PHONY: bench-py
+bench-py:
+	./_scripts/py_benchmark.py
+
+.PHONY: frames-bin
+frames-bin: ensure-gopath
+	$(FRAMES_BUILD_COMMAND)
+
+.PHONY: frames
+frames:
+	docker run \
+		--volume $(shell pwd):/go/$(FRAMES_PATH) \
+		--volume $(shell pwd):/go/bin \
+		--workdir /go/$(FRAMES_PATH) \
+		--env GOOS=$(GOOS) \
+		--env GOARCH=$(GOARCH) \
+		--env FRAMES_TAG=$(FRAMES_TAG) \
+		golang:1.12 \
+		make frames-bin
+
+.PHONY: ensure-gopath
+ensure-gopath:
+ifndef GOPATH
+	$(error GOPATH must be set)
+endif
