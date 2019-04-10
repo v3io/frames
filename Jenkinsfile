@@ -16,6 +16,53 @@ podTemplate(label: "${git_project}-${label}", inheritFrom: "jnlp-docker-golang-p
             withCredentials([
                     string(credentialsId: git_deploy_user_token, variable: 'GIT_TOKEN')
             ]) {
+                github.branch(git_deploy_user, git_project, git_project_user, git_project_upstream_user, true, GIT_TOKEN) {
+                    parallel(
+                            'test-py': {
+                                container('python37') {
+                                    dir("${github.BUILD_FOLDER}/src/github.com/${git_project_upstream_user}/${git_project}") {
+                                        common.shellc("pip install pipenv")
+                                        common.shellc("make python-deps")
+                                        common.shellc("make test-py")
+                                    }
+                                }
+                            },
+                            'test-go': {
+                                container('golang') {
+                                    dir("${github.BUILD_FOLDER}/src/github.com/${git_project_upstream_user}/${git_project}") {
+                                        common.shellc("make test-go")
+                                    }
+                                }
+                            }
+                    )
+                }
+                github.pr(git_deploy_user, git_project, git_project_user, git_project_upstream_user, true, GIT_TOKEN) {
+                    parallel(
+                            'test-py': {
+                                container('python37') {
+                                    dir("${github.BUILD_FOLDER}/src/github.com/${git_project_upstream_user}/${git_project}") {
+                                        common.shellc("pip install pipenv")
+                                        common.shellc("make python-deps")
+                                        common.shellc("make test-py")
+                                    }
+                                }
+                            },
+                            'test-go': {
+                                container('golang') {
+                                    dir("${github.BUILD_FOLDER}/src/github.com/${git_project_upstream_user}/${git_project}") {
+                                        common.shellc("make test-go")
+                                    }
+                                }
+                            },
+//                            'make lint': {
+//                                container('golang') {
+//                                    dir("${github.BUILD_FOLDER}/src/github.com/${git_project_upstream_user}/${git_project}") {
+//                                        common.shellc("make lint")
+//                                    }
+//                                }
+//                            }
+                    )
+                }
                 github.release(git_deploy_user, git_project, git_project_user, git_project_upstream_user, true, GIT_TOKEN) {
                     RELEASE_ID = github.get_release_id(git_project, git_project_user, "${github.TAG_VERSION}", GIT_TOKEN)
 
@@ -83,10 +130,14 @@ podTemplate(label: "${git_project}-${label}", inheritFrom: "jnlp-docker-golang-p
                                                 usernamePassword(credentialsId: "iguazio-prod-pypi-credentials", passwordVariable: 'V3IO_PYPI_PASSWORD', usernameVariable: 'V3IO_PYPI_USER')
                                         ]) {
                                             dir("${github.BUILD_FOLDER}/src/github.com/${git_project_upstream_user}/${git_project}") {
+                                                FRAMES_PYPI_VERSION = sh(
+                                                        script: "echo ${github.DOCKER_TAG_VERSION} | awk -F - '{print \$1}'",
+                                                        returnStdout: true
+                                                ).trim()
                                                 common.shellc("pip install pipenv")
                                                 common.shellc("make python-deps")
                                                 common.shellc("make test-py")
-                                                common.shellc("TRAVIS_REPO_SLUG=v3io/frames V3IO_PYPI_USER=${V3IO_PYPI_USER} V3IO_PYPI_PASSWORD=${V3IO_PYPI_PASSWORD} TRAVIS_TAG=${github.DOCKER_TAG_VERSION} make pypi")
+                                                common.shellc("TRAVIS_REPO_SLUG=v3io/frames V3IO_PYPI_USER=${V3IO_PYPI_USER} V3IO_PYPI_PASSWORD=${V3IO_PYPI_PASSWORD} TRAVIS_TAG=${FRAMES_PYPI_VERSION} make pypi")
                                             }
                                         }
                                     } else {
@@ -99,53 +150,6 @@ podTemplate(label: "${git_project}-${label}", inheritFrom: "jnlp-docker-golang-p
                     container('docker-cmd') {
                         dockerx.images_push_multi_registries(["frames:${github.DOCKER_TAG_VERSION}"], [pipelinex.DockerRepo.ARTIFACTORY_IGUAZIO, pipelinex.DockerRepo.DOCKER_HUB, pipelinex.DockerRepo.QUAY_IO])
                     }
-                }
-                github.branch(git_deploy_user, git_project, git_project_user, git_project_upstream_user, true, GIT_TOKEN) {
-                    parallel(
-                            'test-py': {
-                                container('python37') {
-                                    dir("${github.BUILD_FOLDER}/src/github.com/${git_project_upstream_user}/${git_project}") {
-                                        common.shellc("pip install pipenv")
-                                        common.shellc("make python-deps")
-                                        common.shellc("make test-py")
-                                    }
-                                }
-                            },
-                            'test-go': {
-                                container('golang') {
-                                    dir("${github.BUILD_FOLDER}/src/github.com/${git_project_upstream_user}/${git_project}") {
-                                        common.shellc("make test-go")
-                                    }
-                                }
-                            }
-                    )
-                }
-                github.pr(git_deploy_user, git_project, git_project_user, git_project_upstream_user, true, GIT_TOKEN) {
-                    parallel(
-                            'test-py': {
-                                container('python37') {
-                                    dir("${github.BUILD_FOLDER}/src/github.com/${git_project_upstream_user}/${git_project}") {
-                                        common.shellc("pip install pipenv")
-                                        common.shellc("make python-deps")
-                                        common.shellc("make test-py")
-                                    }
-                                }
-                            },
-                            'test-go': {
-                                container('golang') {
-                                    dir("${github.BUILD_FOLDER}/src/github.com/${git_project_upstream_user}/${git_project}") {
-                                        common.shellc("make test-go")
-                                    }
-                                }
-                            },
-//                            'make lint': {
-//                                container('golang') {
-//                                    dir("${github.BUILD_FOLDER}/src/github.com/${git_project_upstream_user}/${git_project}") {
-//                                        common.shellc("make lint")
-//                                    }
-//                                }
-//                            }
-                    )
                 }
             }
         }
