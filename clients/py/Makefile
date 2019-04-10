@@ -18,7 +18,7 @@ all:
 
 .PHONY: upload
 upload:
-	pipenv run python pypi_upload.py
+	pipenv run python pypi_upload.py --force
 
 .PHONY: clean_pyc
 clean_pyc:
