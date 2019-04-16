@@ -6,12 +6,10 @@ require (
 	github.com/nuclio/logger v0.0.1
 	github.com/nuclio/zap v0.0.2
 	github.com/pkg/errors v0.8.1
-	github.com/v3io/v3io-go v0.0.3
+	github.com/v3io/v3io-go v0.0.0-20190416000000-1c46bb377c604d66b977f179edc92949c0f0588d
 	github.com/v3io/v3io-tsdb v0.0.0-20190415000000-3748a7a3d0ce082633692719de3628de7925a0de
 	github.com/valyala/fasthttp v1.2.0
 	github.com/xwb1989/sqlparser v0.0.0-20180606152119-120387863bf2
 	golang.org/x/net v0.0.0-20181114220301-adae6a3d119a
 	google.golang.org/grpc v1.17.0
 )
-
-replace github.com/v3io/v3io-go => github.com/gtopper/v3io-go v0.0.0-20190415000000-db6714b7650000465c000ba59104d9a50d3cdf45
