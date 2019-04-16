@@ -3,15 +3,15 @@ module github.com/v3io/frames
 require (
 	github.com/ghodss/yaml v1.0.0
 	github.com/golang/protobuf v1.2.0
-	github.com/mattn/go-colorable v0.1.1 // indirect
 	github.com/nuclio/logger v0.0.1
 	github.com/nuclio/zap v0.0.2
-	github.com/pavius/zap v0.0.0-20190228181622-8d52692529b8954a4a5f92c32efa7850383a11e2 // indirect
 	github.com/pkg/errors v0.8.1
-	github.com/v3io/v3io-go-http v0.0.0-20190221115935-53e2b487c9a2
-	github.com/v3io/v3io-tsdb v0.9.1
-	github.com/valyala/fasthttp v1.0.0
+	github.com/v3io/v3io-go v0.0.3
+	github.com/v3io/v3io-tsdb v0.0.0-20190415000000-3748a7a3d0ce082633692719de3628de7925a0de
+	github.com/valyala/fasthttp v1.2.0
 	github.com/xwb1989/sqlparser v0.0.0-20180606152119-120387863bf2
 	golang.org/x/net v0.0.0-20181114220301-adae6a3d119a
 	google.golang.org/grpc v1.17.0
 )
+
+replace github.com/v3io/v3io-go => github.com/gtopper/v3io-go v0.0.0-20190415000000-db6714b7650000465c000ba59104d9a50d3cdf45

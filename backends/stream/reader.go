@@ -26,7 +26,7 @@ import (
 	"strings"
 	"time"
 
-	v3io "github.com/v3io/v3io-go-http"
+	v3io "github.com/v3io/v3io-go/pkg/dataplane"
 	"github.com/v3io/v3io-tsdb/pkg/utils"
 
 	"github.com/v3io/frames"
@@ -34,7 +34,7 @@ import (
 
 type streamIterator struct {
 	request      *frames.ReadRequest
-	container    *v3io.Container
+	container    v3io.Container
 	err          error
 	currFrame    frames.Frame
 	nextLocation string
@@ -92,7 +92,7 @@ func (b *Backend) Read(request *frames.ReadRequest) (frames.FrameIterator, error
 
 	}
 
-	resp, err := iter.container.Sync.SeekShard(&input)
+	resp, err := iter.container.SeekShardSync(&input)
 	if err != nil {
 		return nil, fmt.Errorf("Error in Seek operation - %v", err)
 	}
@@ -107,7 +107,7 @@ func (i *streamIterator) Next() bool {
 		return false
 	}
 
-	resp, err := i.container.Sync.GetRecords(&v3io.GetRecordsInput{
+	resp, err := i.container.GetRecordsSync(&v3io.GetRecordsInput{
 		Path:     i.request.Table + i.request.ShardId,
 		Location: i.nextLocation,
 		Limit:    int(i.request.MessageLimit),

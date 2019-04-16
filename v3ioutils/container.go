@@ -23,30 +23,30 @@ package v3ioutils
 import (
 	"encoding/binary"
 	"net/url"
+	"strings"
 	"time"
 
 	"github.com/nuclio/logger"
 	"github.com/pkg/errors"
+	v3iohttp "github.com/v3io/v3io-go/pkg/dataplane/http"
 
 	"github.com/v3io/frames"
-	v3io "github.com/v3io/v3io-go-http"
+	v3io "github.com/v3io/v3io-go/pkg/dataplane"
 	"github.com/v3io/v3io-tsdb/pkg/utils"
-	"strings"
 )
 
 const v3ioUsersContainer = "users"
 const v3ioHomeVar = "$V3IO_HOME"
 
-func NewContainer(session *frames.Session, logger logger.Logger, workers int) (*v3io.Container, error) {
+func NewContainer(session *frames.Session, logger logger.Logger, workers int) (v3io.Container, error) {
 
-	config := v3io.SessionConfig{
-		Username:   session.User,
-		Password:   session.Password,
-		Label:      "v3frames",
-		SessionKey: session.Token}
-
+	newSessionInput := v3io.NewSessionInput{
+		Username:  session.User,
+		Password:  session.Password,
+		AccessKey: session.Token,
+	}
 	container, err := createContainer(
-		logger, session.Url, session.Container, &config, workers)
+		logger, session.Url, session.Container, &newSessionInput, workers)
 	if err != nil {
 		return nil, errors.Wrap(err, "failed to create data container")
 	}
@@ -56,25 +56,23 @@ func NewContainer(session *frames.Session, logger logger.Logger, workers int) (*
 }
 
 // CreateContainer creates a new container
-func createContainer(logger logger.Logger, addr, cont string, config *v3io.SessionConfig, workers int) (*v3io.Container, error) {
+func createContainer(logger logger.Logger, addr, cont string, newSessionInput *v3io.NewSessionInput, workers int) (v3io.Container, error) {
 	// create context
 	if workers == 0 {
 		workers = 8
 	}
 
-	context, err := v3io.NewContext(logger, addr, workers)
+	context, err := v3iohttp.NewContext(logger, &v3io.NewContextInput{ClusterEndpoints: []string{addr}, NumWorkers: workers})
 	if err != nil {
 		return nil, errors.Wrap(err, "failed to create client")
 	}
 
-	// create session
-	session, err := context.NewSessionFromConfig(config)
+	session, err := context.NewSession(newSessionInput)
 	if err != nil {
 		return nil, errors.Wrap(err, "failed to create session")
 	}
 
-	// create the container
-	container, err := session.NewContainer(cont)
+	container, err := session.NewContainer(&v3io.NewContainerInput{ContainerName: cont})
 	if err != nil {
 		return nil, errors.Wrap(err, "failed to create container")
 	}
@@ -94,7 +92,7 @@ func AsInt64Array(val []byte) []uint64 {
 }
 
 // DeleteTable deletes a table
-func DeleteTable(logger logger.Logger, container *v3io.Container, path, filter string, workers int) error {
+func DeleteTable(logger logger.Logger, container v3io.Container, path, filter string, workers int) error {
 
 	input := v3io.GetItemsInput{Path: path, AttributeNames: []string{"__name"}, Filter: filter}
 	iter, err := NewAsyncItemsCursor(container, &input, workers, []string{}, logger, 0)
@@ -128,7 +126,7 @@ func DeleteTable(logger logger.Logger, container *v3io.Container, path, filter s
 
 	<-doneChan
 
-	err = container.Sync.DeleteObject(&v3io.DeleteObjectInput{Path: path})
+	err = container.DeleteObjectSync(&v3io.DeleteObjectInput{Path: path})
 	if err != nil {
 		if !utils.IsNotExistsError(err) {
 			return errors.Wrapf(err, "Failed to delete table object '%s'.", path)

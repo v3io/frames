@@ -25,7 +25,7 @@ import (
 	"strings"
 
 	"github.com/nuclio/logger"
-	"github.com/v3io/v3io-go-http"
+	"github.com/v3io/v3io-go/pkg/dataplane"
 
 	"github.com/v3io/frames"
 	"github.com/v3io/frames/v3ioutils"
@@ -101,11 +101,10 @@ func (b *Backend) updateItem(request *frames.ExecRequest) error {
 	}
 
 	b.logger.DebugWith("update item", "path", path, "key", key, "expr", expr, "condition", condition)
-	return container.Sync.UpdateItem(&v3io.UpdateItemInput{
-		Path: path + key, Expression: &expr, Condition: condition})
+	return container.UpdateItemSync(&v3io.UpdateItemInput{Path: path + key, Expression: &expr, Condition: condition})
 }
 
-/*func (b *Backend) newContainer(session *frames.Session) (*v3io.Container, error) {
+/*func (b *Backend) newContainer(session *frames.Session) (v3io.Container, error) {
 
 	container, err := v3ioutils.NewContainer(
 		session,
@@ -119,7 +118,7 @@ func (b *Backend) updateItem(request *frames.ExecRequest) error {
 
 */
 
-func (b *Backend) newConnection(session *frames.Session, path string, addSlash bool) (*v3io.Container, string, error) {
+func (b *Backend) newConnection(session *frames.Session, path string, addSlash bool) (v3io.Container, string, error) {
 
 	session = frames.InitSessionDefaults(session, b.framesConfig)
 	containerName, newPath, err := v3ioutils.ProcessPaths(session, path, addSlash)

@@ -21,7 +21,7 @@ such restriction.
 package kv
 
 import (
-	"github.com/v3io/v3io-go-http"
+	"github.com/v3io/v3io-go/pkg/dataplane"
 
 	"github.com/v3io/frames"
 	"github.com/v3io/frames/backends"

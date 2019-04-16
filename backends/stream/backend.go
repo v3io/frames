@@ -31,7 +31,7 @@ import (
 	"github.com/v3io/frames"
 	"github.com/v3io/frames/backends"
 	"github.com/v3io/frames/v3ioutils"
-	v3io "github.com/v3io/v3io-go-http"
+	v3io "github.com/v3io/v3io-go/pkg/dataplane"
 )
 
 // Backend is a tsdb backend
@@ -86,7 +86,7 @@ func (b *Backend) Create(request *frames.CreateRequest) error {
 		return err
 	}
 
-	err = container.Sync.CreateStream(&v3io.CreateStreamInput{
+	err = container.CreateStreamSync(&v3io.CreateStreamInput{
 		Path: path, ShardCount: int(shards), RetentionPeriodHours: int(retention)})
 	if err != nil {
 		b.logger.ErrorWith("CreateStream failed", "path", path, "err", err)
@@ -103,7 +103,7 @@ func (b *Backend) Delete(request *frames.DeleteRequest) error {
 		return err
 	}
 
-	err = container.Sync.DeleteStream(&v3io.DeleteStreamInput{Path: path})
+	err = container.DeleteStreamSync(&v3io.DeleteStreamInput{Path: path})
 	if err != nil {
 		b.logger.ErrorWith("DeleteStream failed", "path", path, "err", err)
 	}
@@ -148,7 +148,7 @@ func (b *Backend) put(request *frames.ExecRequest) error {
 	records := []*v3io.StreamRecord{{
 		Data: []byte(data), ClientInfo: []byte(clientInfo), PartitionKey: partitionKey,
 	}}
-	_, err = container.Sync.PutRecords(&v3io.PutRecordsInput{
+	_, err = container.PutRecordsSync(&v3io.PutRecordsInput{
 		Path:    path,
 		Records: records,
 	})
@@ -156,7 +156,7 @@ func (b *Backend) put(request *frames.ExecRequest) error {
 	return err
 }
 
-func (b *Backend) newConnection(session *frames.Session, path string, addSlash bool) (*v3io.Container, string, error) {
+func (b *Backend) newConnection(session *frames.Session, path string, addSlash bool) (v3io.Container, string, error) {
 
 	session = frames.InitSessionDefaults(session, b.framesConfig)
 	containerName, newPath, err := v3ioutils.ProcessPaths(session, path, addSlash)
