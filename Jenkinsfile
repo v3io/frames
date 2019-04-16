@@ -137,7 +137,11 @@ podTemplate(label: "${git_project}-${label}", inheritFrom: "jnlp-docker-golang-p
                                                 common.shellc("pip install pipenv")
                                                 common.shellc("make python-deps")
                                                 common.shellc("make test-py")
-                                                common.shellc("TRAVIS_REPO_SLUG=v3io/frames V3IO_PYPI_USER=${V3IO_PYPI_USER} V3IO_PYPI_PASSWORD=${V3IO_PYPI_PASSWORD} TRAVIS_TAG=${FRAMES_PYPI_VERSION} make pypi")
+                                                try {
+                                                    common.shellc("TRAVIS_REPO_SLUG=v3io/frames V3IO_PYPI_USER=${V3IO_PYPI_USER} V3IO_PYPI_PASSWORD=${V3IO_PYPI_PASSWORD} TRAVIS_TAG=${FRAMES_PYPI_VERSION} make pypi")
+                                                } catch (err) {
+                                                    echo "Can not upload to pypi"
+                                                }
                                             }
                                         }
                                     } else {
