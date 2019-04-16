@@ -27,7 +27,7 @@ import (
 	"time"
 
 	"github.com/nuclio/logger"
-	v3io "github.com/v3io/v3io-go-http"
+	v3io "github.com/v3io/v3io-go/pkg/dataplane"
 
 	"github.com/v3io/frames"
 	"github.com/v3io/frames/backends/utils"
@@ -37,7 +37,7 @@ import (
 // Appender is key/value appender
 type Appender struct {
 	request      *frames.WriteRequest
-	container    *v3io.Container
+	container    v3io.Container
 	tablePath    string
 	responseChan chan *v3io.Response
 	commChan     chan int

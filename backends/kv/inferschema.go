@@ -24,7 +24,7 @@ import (
 	"fmt"
 	"github.com/v3io/frames"
 	"github.com/v3io/frames/v3ioutils"
-	"github.com/v3io/v3io-go-http"
+	"github.com/v3io/v3io-go/pkg/dataplane"
 )
 
 func (b *Backend) inferSchema(request *frames.ExecRequest) error {
