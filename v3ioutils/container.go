@@ -62,6 +62,11 @@ func createContainer(logger logger.Logger, addr, cont string, newSessionInput *v
 		workers = 8
 	}
 
+	// Backward compatibility for non-URL addr parameter.
+	if !strings.HasPrefix(addr, "http://") && !strings.HasPrefix(addr, "https://") {
+		addr = "http://" + addr
+	}
+
 	context, err := v3iohttp.NewContext(logger, &v3io.NewContextInput{ClusterEndpoints: []string{addr}, NumWorkers: workers})
 	if err != nil {
 		return nil, errors.Wrap(err, "failed to create client")

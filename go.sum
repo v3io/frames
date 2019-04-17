@@ -73,8 +73,8 @@ github.com/stretchr/testify v1.3.0 h1:TivCn/peBQ7UY8ooIcPgZFpTNSz0Q2U6UrFlUfqbe0
 github.com/stretchr/testify v1.3.0/go.mod h1:M5WIy9Dh21IEIfnGCwXGc5bZfKNJtfHm1UVUgZn+9EI=
 github.com/v3io/frames v0.0.0-20190328123118-1dad1ff610509e7b087d9cd390ed1b452caecf15/go.mod h1:6aKW4Wl4A+gQhXH0JRCVOLgwvcrLyk+fqEpemuie094=
 github.com/v3io/v3io-go v0.0.0-20180415000000-a0c7cc523b6e17283300c46b385096bdf0278aad/go.mod h1:MHc+d/Jg/y8lV4B9sgwTvuS3tEE9wS+kqtU0+D0Sr78=
-github.com/v3io/v3io-go v0.0.0-20190416000000-1c46bb377c604d66b977f179edc92949c0f0588d h1:EWy0y79xkyCDpH3kRs9XgpJBythRiAvqO74jYmUZCWw=
-github.com/v3io/v3io-go v0.0.0-20190416000000-1c46bb377c604d66b977f179edc92949c0f0588d/go.mod h1:MHc+d/Jg/y8lV4B9sgwTvuS3tEE9wS+kqtU0+D0Sr78=
+github.com/v3io/v3io-go v0.0.0-20190417090821-4b31e5f11cc0a333dfeacb93eebde86934e18460 h1:GnD7dy7wd4kGVScU4jIJ6lsQ7wHKszTgCZNgGTO9yEo=
+github.com/v3io/v3io-go v0.0.0-20190417090821-4b31e5f11cc0a333dfeacb93eebde86934e18460/go.mod h1:MHc+d/Jg/y8lV4B9sgwTvuS3tEE9wS+kqtU0+D0Sr78=
 github.com/v3io/v3io-go-http v0.0.0-20190221115935-53e2b487c9a2 h1:NJc63wM25iS+ci5z7LVwjWD4QM0QpTQw/fovKzatss0=
 github.com/v3io/v3io-go-http v0.0.0-20190221115935-53e2b487c9a2/go.mod h1:GXYcR9MxgfbE3BJdkXki5EclvtS8Nxu2RQNLA8hMMog=
 github.com/v3io/v3io-tsdb v0.0.0-20190328071546-4e85f3df2d205fc7368d54184bb2ceff949ab4bd/go.mod h1:A+5yKC16QxLf+Fy5v7VvIxSw+jwsKHLhUS7dCYFDLAA=
