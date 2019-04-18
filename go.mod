@@ -6,7 +6,7 @@ require (
 	github.com/nuclio/logger v0.0.1
 	github.com/nuclio/zap v0.0.2
 	github.com/pkg/errors v0.8.1
-	github.com/v3io/v3io-go v0.0.0-20190417122154-5ef4514d19fbffd1b47468caf07f6dd9d1df1506
+	github.com/v3io/v3io-go v0.0.0-20190418092154-5ef4514d19fbffd1b47468caf07f6dd9d1df1506
 	github.com/v3io/v3io-tsdb v0.0.0-20190415000000-3748a7a3d0ce082633692719de3628de7925a0de
 	github.com/valyala/fasthttp v1.2.0
 	github.com/xwb1989/sqlparser v0.0.0-20180606152119-120387863bf2
