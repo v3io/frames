@@ -1,7 +1,7 @@
 log:
   level: "info"
 limit: 1000
-webApiEndpoint: "127.0.0.1:888"
+webApiEndpoint: "http://127.0.0.1:888"
 container: "bigdata"
 username: "iguazio"
 password: "t0ps3cr3t"
