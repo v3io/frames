@@ -37,7 +37,7 @@ const (
 	doubleType = "double"
 	stringType = "string"
 	timeType   = "time"
-	// TODO: boolType?
+	boolType   = "boolean"
 )
 
 // NewSchema returns a new schema
@@ -85,6 +85,8 @@ func (s *OldV3ioSchema) AddColumn(name string, col frames.Column, nullable bool)
 		ftype = stringType
 	case frames.TimeType:
 		ftype = timeType
+	case frames.BoolType:
+		ftype = boolType
 	}
 
 	field := OldSchemaField{Name: name, Type: ftype, Nullable: nullable}
@@ -104,6 +106,8 @@ func (s *OldV3ioSchema) AddField(name string, val interface{}, nullable bool) er
 		ftype = stringType
 	case time.Time:
 		ftype = timeType
+	case bool:
+		ftype = boolType
 	}
 
 	field := OldSchemaField{Name: name, Type: ftype, Nullable: nullable}
