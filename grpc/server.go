@@ -160,6 +160,7 @@ func (s *Server) Write(stream pb.Frames_WriteServer) error {
 		Session:       pbReq.Session,
 		Backend:       pbReq.Backend,
 		Expression:    pbReq.Expression,
+		Condition:     pbReq.Condition,
 		HaveMore:      pbReq.More,
 		ImmidiateData: frame,
 		Table:         pbReq.Table,

@@ -12,9 +12,8 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-from os import environ
-
 import pandas as pd
+from os import environ
 
 from . import frames_pb2 as fpb
 from .errors import (CreateError, DeleteError, ExecuteError, ReadError,
@@ -99,8 +98,9 @@ class ClientBase:
             group_by, limit, data_format, row_layout,
             max_in_message, marker, iterator, **kw)
 
-    def write(self, backend, table, dfs, expression='', labels=None,
-              max_in_message=0, index_cols=None, partition_keys=None):
+    def write(self, backend, table, dfs, expression='', condition='',
+              labels=None, max_in_message=0, index_cols=None,
+              partition_keys=None):
         """Write to table
 
         Parameters
@@ -111,8 +111,10 @@ class ClientBase:
             Table to write to
         dfs : iterable of DataFrame or a single data frame
             Frames to write
-        experssion : str
+        expression : str
             Write expression
+        condition : str
+            Write condition
         labels : dict
             Set of lables
         max_in_message : int
@@ -133,7 +135,7 @@ class ClientBase:
             dfs = self._iter_chunks(dfs, max_in_message)
 
         request = self._encode_write(
-            backend, table, expression, partition_keys)
+            backend, table, expression, condition, partition_keys)
         return self._write(request, dfs, labels, index_cols)
 
     def create(self, backend, table, attrs=None, schema=None, if_exists=FAIL):
@@ -217,13 +219,15 @@ class ClientBase:
     def _encode_session(self, session):
         return session
 
-    def _encode_write(self, backend, table, expression, partition_keys):
+    def _encode_write(self, backend, table, expression, condition,
+                      partition_keys):
         # TODO: InitialData?
         return fpb.InitialWriteRequest(
             session=self.session,
             backend=backend,
             table=table,
             expression=expression,
+            condition=condition,
             partition_keys=partition_keys,
         )
 
@@ -239,5 +243,5 @@ class ClientBase:
             size = size if size else len(df)
             i = 0
             while i < len(df):
-                yield df[i:i+size]
+                yield df[i:i + size]
                 i += size

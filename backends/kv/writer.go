@@ -84,7 +84,7 @@ func (a *Appender) Add(frame frames.Frame) error {
 		return fmt.Errorf("empty frame")
 	}
 
-	if a.request.Expression != "" {
+	if a.request.Expression != "" || a.request.Condition != "" {
 		return a.update(frame)
 	}
 
@@ -170,14 +170,27 @@ func (a *Appender) update(frame frames.Frame) error {
 
 	for r := 0; r < frame.Len(); r++ {
 
-		expr, err := genExpr(a.request.Expression, frame, r)
-		if err != nil {
-			a.logger.ErrorWith("error generating expression", "error", err)
-			return err
+		var expr *string
+		if a.request.Expression != "" {
+			exprString, err := genExpr(a.request.Expression, frame, r)
+			if err != nil {
+				a.logger.ErrorWith("error generating expression", "error", err)
+				return err
+			}
+			expr = &exprString
+		}
+
+		var cond string
+		if a.request.Condition != "" {
+			cond, err = genExpr(a.request.Condition, frame, r)
+			if err != nil {
+				a.logger.ErrorWith("error generating condition", "error", err)
+				return err
+			}
 		}
 
 		key := indexVal(r)
-		input := v3io.UpdateItemInput{Path: a.tablePath + key, Expression: &expr}
+		input := v3io.UpdateItemInput{Path: a.tablePath + key, Expression: expr, Condition: cond}
 		a.logger.DebugWith("write update", "input", input)
 		_, err = a.container.UpdateItem(&input, r, a.responseChan)
 		if err != nil {
@@ -191,7 +204,7 @@ func (a *Appender) update(frame frames.Frame) error {
 	return nil
 }
 
-// generate the update expression
+// generate the update expression or condition
 func genExpr(expr string, frame frames.Frame, index int) (string, error) {
 	args := make([]string, 0)
 
