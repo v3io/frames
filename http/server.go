@@ -231,6 +231,7 @@ func (s *Server) handleWrite(ctx *fasthttp.RequestCtx) {
 		Backend:       req.Backend,
 		Table:         req.Table,
 		ImmidiateData: frame,
+		Condition:     req.Condition,
 		Expression:    req.Expression,
 		HaveMore:      req.More,
 	}

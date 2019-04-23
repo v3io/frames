@@ -116,6 +116,8 @@ type WriteRequest struct {
 	ImmidiateData Frame
 	// Expression template, for update expressions generated from combining columns data with expression
 	Expression string
+	// Condition template, for update conditions generated from combining columns data with expression
+	Condition string
 	// Will we get more message chunks (in a stream), if not we can complete
 	HaveMore bool
 }
