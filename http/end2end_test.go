@@ -32,6 +32,7 @@ import (
 
 	"github.com/v3io/frames"
 	"github.com/v3io/frames/http"
+	"github.com/v3io/frames/pb"
 )
 
 func TestEnd2End(t *testing.T) {
@@ -100,11 +101,11 @@ func TestEnd2End(t *testing.T) {
 		t.Fatal(err)
 	}
 
-	readReq := &frames.ReadRequest{
+	readReq := &frames.ReadRequest{Proto: &pb.ReadRequest{
 		Backend:      backendName,
 		Table:        tableName,
 		MessageLimit: 100,
-	}
+	}}
 
 	it, err := client.Read(readReq)
 	if err != nil {
@@ -132,11 +133,11 @@ func TestEnd2End(t *testing.T) {
 	testGrafana(t, url, backendName, tableName)
 
 	// Exec
-	execReq := &frames.ExecRequest{
+	execReq := &frames.ExecRequest{Proto: &pb.ExecRequest{
 		Backend: backendName,
 		Table:   tableName,
 		Command: "ping",
-	}
+	}}
 
 	if _, err := client.Exec(execReq); err != nil {
 		t.Fatalf("can't exec - %s", err)
