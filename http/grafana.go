@@ -32,6 +32,7 @@ import (
 	"time"
 
 	"github.com/v3io/frames"
+	"github.com/v3io/frames/pb"
 )
 
 const querySeparator = ";"
@@ -139,9 +140,16 @@ func (req *simpleJSONQueryRequest) GetReadRequest(session *frames.Session) *fram
 			session.Container = req.Container
 		}
 	}
-	return &frames.ReadRequest{Backend: req.Backend, Table: req.Table, Columns: req.Fields,
-		Start: req.Range.From, End: req.Range.To,
-		Step: req.Step, Session: session, Filter: req.Filter, Query: req.Query}
+	return &frames.ReadRequest{Proto: &pb.ReadRequest{
+		Backend: req.Backend,
+		Table:   req.Table,
+		Columns: req.Fields,
+		Start:   req.Range.From,
+		End:     req.Range.To,
+		Step:    req.Step,
+		Session: session,
+		Filter:  req.Filter,
+		Query:   req.Query}}
 }
 
 func (req *simpleJSONQueryRequest) formatTable(ch chan frames.Frame) (interface{}, error) {

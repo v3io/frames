@@ -96,8 +96,8 @@ func NewClient(url string, session *frames.Session, logger logger.Logger) (*Clie
 
 // Read runs a query on the client
 func (c *Client) Read(request *frames.ReadRequest) (frames.FrameIterator, error) {
-	if request.Session == nil {
-		request.Session = c.session
+	if request.Proto.Session == nil {
+		request.Proto.Session = c.session
 	}
 
 	var buf bytes.Buffer
@@ -181,8 +181,8 @@ func (c *Client) Write(request *frames.WriteRequest) (frames.FrameAppender, erro
 
 // Delete deletes data
 func (c *Client) Delete(request *frames.DeleteRequest) error {
-	if request.Session == nil {
-		request.Session = c.session
+	if request.Proto.Session == nil {
+		request.Proto.Session = c.session
 	}
 
 	_, err := c.jsonCall("/delete", request)
@@ -191,8 +191,8 @@ func (c *Client) Delete(request *frames.DeleteRequest) error {
 
 // Create creates a table
 func (c *Client) Create(request *frames.CreateRequest) error {
-	if request.Session == nil {
-		request.Session = c.session
+	if request.Proto.Session == nil {
+		request.Proto.Session = c.session
 	}
 
 	_, err := c.jsonCall("/create", request)
@@ -201,8 +201,8 @@ func (c *Client) Create(request *frames.CreateRequest) error {
 
 // Exec executes a command
 func (c *Client) Exec(request *frames.ExecRequest) (frames.Frame, error) {
-	if request.Session == nil {
-		request.Session = c.session
+	if request.Proto.Session == nil {
+		request.Proto.Session = c.session
 	}
 
 	resp, err := c.jsonCall("/exec", request)

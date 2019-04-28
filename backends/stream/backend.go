@@ -60,7 +60,7 @@ func (b *Backend) Create(request *frames.CreateRequest) error {
 	// TODO: check if Stream exist, if it already has the desired params can silently ignore, may need a -silent flag
 
 	var isInt bool
-	attrs := request.Attributes()
+	attrs := request.Proto.Attributes()
 	shards := int64(1)
 
 	shardsVar, ok := attrs["shards"]
@@ -81,7 +81,7 @@ func (b *Backend) Create(request *frames.CreateRequest) error {
 		}
 	}
 
-	container, path, err := b.newConnection(request.Session, request.Table, true)
+	container, path, err := b.newConnection(request.Proto.Session, request.Password.Get(), request.Token.Get(), request.Proto.Table, true)
 	if err != nil {
 		return err
 	}
@@ -98,7 +98,7 @@ func (b *Backend) Create(request *frames.CreateRequest) error {
 // Delete deletes a table or part of it
 func (b *Backend) Delete(request *frames.DeleteRequest) error {
 
-	container, path, err := b.newConnection(request.Session, request.Table, true)
+	container, path, err := b.newConnection(request.Proto.Session, request.Password.Get(), request.Token.Get(), request.Proto.Table, true)
 	if err != nil {
 		return err
 	}
@@ -113,7 +113,7 @@ func (b *Backend) Delete(request *frames.DeleteRequest) error {
 
 // Exec executes a command
 func (b *Backend) Exec(request *frames.ExecRequest) (frames.Frame, error) {
-	cmd := strings.TrimSpace(strings.ToLower(request.Command))
+	cmd := strings.TrimSpace(strings.ToLower(request.Proto.Command))
 	switch cmd {
 	case "put":
 		return nil, b.put(request)
@@ -123,23 +123,23 @@ func (b *Backend) Exec(request *frames.ExecRequest) (frames.Frame, error) {
 
 func (b *Backend) put(request *frames.ExecRequest) error {
 
-	varData, hasData := request.Args["data"]
-	if !hasData || request.Table == "" {
+	varData, hasData := request.Proto.Args["data"]
+	if !hasData || request.Proto.Table == "" {
 		return fmt.Errorf("table name and data parameter must be specified")
 	}
 	data := varData.GetSval()
 
 	clientInfo := ""
-	if val, ok := request.Args["clientinfo"]; ok {
+	if val, ok := request.Proto.Args["clientinfo"]; ok {
 		clientInfo = val.GetSval()
 	}
 
 	partitionKey := ""
-	if val, ok := request.Args["partition"]; ok {
+	if val, ok := request.Proto.Args["partition"]; ok {
 		partitionKey = val.GetSval()
 	}
 
-	container, path, err := b.newConnection(request.Session, request.Table, true)
+	container, path, err := b.newConnection(request.Proto.Session, request.Password.Get(), request.Token.Get(), request.Proto.Table, true)
 	if err != nil {
 		return err
 	}
@@ -156,7 +156,7 @@ func (b *Backend) put(request *frames.ExecRequest) error {
 	return err
 }
 
-func (b *Backend) newConnection(session *frames.Session, path string, addSlash bool) (v3io.Container, string, error) {
+func (b *Backend) newConnection(session *frames.Session, password string, token string, path string, addSlash bool) (v3io.Container, string, error) {
 
 	session = frames.InitSessionDefaults(session, b.framesConfig)
 	containerName, newPath, err := v3ioutils.ProcessPaths(session, path, addSlash)
@@ -167,6 +167,8 @@ func (b *Backend) newConnection(session *frames.Session, path string, addSlash b
 	session.Container = containerName
 	container, err := v3ioutils.NewContainer(
 		session,
+		password,
+		token,
 		b.logger,
 		b.backendConfig.Workers,
 	)

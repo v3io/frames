@@ -86,6 +86,8 @@ func (b *Backend) newAdapter(session *frames.Session, path string) (*tsdb.V3ioAd
 
 	container, err := v3ioutils.NewContainer(
 		session,
+		"",
+		"",
 		b.logger,
 		cfg.Workers,
 	)
@@ -118,7 +120,7 @@ func (b *Backend) GetAdapter(session *frames.Session, path string) (*tsdb.V3ioAd
 // Create creates a table
 func (b *Backend) Create(request *frames.CreateRequest) error {
 
-	attrs := request.Attributes()
+	attrs := request.Proto.Attributes()
 
 	attr, ok := attrs["rate"]
 	if !ok {
@@ -149,8 +151,8 @@ func (b *Backend) Create(request *frames.CreateRequest) error {
 		defaultRollups = val
 	}
 
-	session := frames.InitSessionDefaults(request.Session, b.framesConfig)
-	containerName, path, err := v3ioutils.ProcessPaths(session, request.Table, false)
+	session := frames.InitSessionDefaults(request.Proto.Session, b.framesConfig)
+	containerName, path, err := v3ioutils.ProcessPaths(session, request.Proto.Table, false)
 	if err != nil {
 		return err
 	}
@@ -175,19 +177,19 @@ func (b *Backend) Create(request *frames.CreateRequest) error {
 // Delete deletes a table or part of it
 func (b *Backend) Delete(request *frames.DeleteRequest) error {
 
-	start, err := tsdbutils.Str2duration(request.Start)
+	start, err := tsdbutils.Str2duration(request.Proto.Start)
 	if err != nil {
 		return err
 	}
 
-	end, err := tsdbutils.Str2duration(request.End)
+	end, err := tsdbutils.Str2duration(request.Proto.End)
 	if err != nil {
 		return err
 	}
 
-	delAll := request.Start == "" && request.End == ""
+	delAll := request.Proto.Start == "" && request.Proto.End == ""
 
-	adapter, err := b.GetAdapter(request.Session, request.Table)
+	adapter, err := b.GetAdapter(request.Proto.Session, request.Proto.Table)
 	if err != nil {
 		return err
 	}
@@ -197,7 +199,7 @@ func (b *Backend) Delete(request *frames.DeleteRequest) error {
 		return err
 	}
 
-	if tsdbutils.IsNotExistsError(err) && request.IfMissing == frames.IgnoreError {
+	if tsdbutils.IsNotExistsError(err) && request.Proto.IfMissing == frames.IgnoreError {
 		return nil
 	}
 	return err
@@ -210,7 +212,7 @@ func (b *Backend) Exec(request *frames.ExecRequest) (frames.Frame, error) {
 }
 
 func (b *Backend) ignoreCreateExists(request *frames.CreateRequest, err error) bool {
-	if request.IfExists != frames.IgnoreError {
+	if request.Proto.IfExists != frames.IgnoreError {
 		return false
 	}
 

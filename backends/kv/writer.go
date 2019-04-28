@@ -51,7 +51,7 @@ type Appender struct {
 // Write support writing to backend
 func (kv *Backend) Write(request *frames.WriteRequest) (frames.FrameAppender, error) {
 
-	container, tablePath, err := kv.newConnection(request.Session, request.Table, true)
+	container, tablePath, err := kv.newConnection(request.Session, request.Password.Get(), request.Token.Get(), request.Table, true)
 	if err != nil {
 		return nil, err
 	}

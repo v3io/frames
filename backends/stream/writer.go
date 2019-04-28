@@ -33,7 +33,7 @@ import (
 
 func (b *Backend) Write(request *frames.WriteRequest) (frames.FrameAppender, error) {
 
-	container, tablePath, err := b.newConnection(request.Session, request.Table, true)
+	container, tablePath, err := b.newConnection(request.Session, request.Password.Get(), request.Token.Get(), request.Table, true)
 	if err != nil {
 		return nil, err
 	}
