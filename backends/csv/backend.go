@@ -55,10 +55,10 @@ func NewBackend(logger logger.Logger, config *frames.BackendConfig, framesConfig
 
 // Create will create a table
 func (b *Backend) Create(request *frames.CreateRequest) error {
-	csvPath := b.csvPath(request.Table)
+	csvPath := b.csvPath(request.Proto.Table)
 	// TODO: Overwrite?
 	if fileExists(csvPath) {
-		return fmt.Errorf("table %q already exists", request.Table)
+		return fmt.Errorf("table %q already exists", request.Proto.Table)
 	}
 
 	file, err := os.Create(csvPath)
@@ -67,13 +67,13 @@ func (b *Backend) Create(request *frames.CreateRequest) error {
 	}
 
 	defer file.Close()
-	if request.Schema == nil || len(request.Schema.Fields) == 0 {
+	if request.Proto.Schema == nil || len(request.Proto.Schema.Fields) == 0 {
 		return nil
 	}
 
-	numFields := len(request.Schema.Fields)
+	numFields := len(request.Proto.Schema.Fields)
 	names := make([]string, numFields)
-	for i, field := range request.Schema.Fields {
+	for i, field := range request.Proto.Schema.Fields {
 		if field.Name == "" {
 			return fmt.Errorf("field %d with no name", i)
 		}
@@ -96,13 +96,13 @@ func (b *Backend) Create(request *frames.CreateRequest) error {
 
 // Delete will delete a table
 func (b *Backend) Delete(request *frames.DeleteRequest) error {
-	csvPath := b.csvPath(request.Table)
-	if request.IfMissing == frames.FailOnError && !fileExists(csvPath) {
-		return fmt.Errorf("table %q doesn't exist", request.Table)
+	csvPath := b.csvPath(request.Proto.Table)
+	if request.Proto.IfMissing == frames.FailOnError && !fileExists(csvPath) {
+		return fmt.Errorf("table %q doesn't exist", request.Proto.Table)
 	}
 
 	if err := os.Remove(csvPath); err != nil {
-		return errors.Wrapf(err, "can't delete %q", request.Table)
+		return errors.Wrapf(err, "can't delete %q", request.Proto.Table)
 	}
 
 	return nil
@@ -110,7 +110,7 @@ func (b *Backend) Delete(request *frames.DeleteRequest) error {
 
 // Read handles reading
 func (b *Backend) Read(request *frames.ReadRequest) (frames.FrameIterator, error) {
-	file, err := os.Open(b.csvPath(request.Table))
+	file, err := os.Open(b.csvPath(request.Proto.Table))
 	if err != nil {
 		return nil, err
 	}
@@ -123,11 +123,11 @@ func (b *Backend) Read(request *frames.ReadRequest) (frames.FrameIterator, error
 
 	it := &FrameIterator{
 		logger:      b.logger,
-		path:        request.Table,
+		path:        request.Proto.Table,
 		reader:      reader,
 		columnNames: columns,
-		limit:       int(request.Limit),
-		frameLimit:  int(request.MessageLimit),
+		limit:       int(request.Proto.Limit),
+		frameLimit:  int(request.Proto.MessageLimit),
 	}
 
 	return it, nil
@@ -158,7 +158,7 @@ func (b *Backend) Write(request *frames.WriteRequest) (frames.FrameAppender, err
 }
 
 func getInt(r *frames.ExecRequest, name string, defval int) int {
-	ival, err := r.Arg(name)
+	ival, err := r.Proto.Arg(name)
 	if err != nil {
 		return defval
 	}
@@ -173,7 +173,7 @@ func getInt(r *frames.ExecRequest, name string, defval int) int {
 
 // Exec executes a command
 func (b *Backend) Exec(request *frames.ExecRequest) (frames.Frame, error) {
-	if strings.ToLower(request.Command) == "ping" {
+	if strings.ToLower(request.Proto.Command) == "ping" {
 		b.logger.Info("PONG")
 		nRows, nCols := getInt(request, "rows", 37), getInt(request, "cols", 4)
 		cols := make([]frames.Column, nCols)
@@ -190,7 +190,7 @@ func (b *Backend) Exec(request *frames.ExecRequest) (frames.Frame, error) {
 		return frames.NewFrame(cols, nil, nil)
 	}
 
-	return nil, fmt.Errorf("CSV backend does not support %q exec command", request.Command)
+	return nil, fmt.Errorf("CSV backend does not support %q exec command", request.Proto.Command)
 }
 
 func (b *Backend) csvPath(table string) string {

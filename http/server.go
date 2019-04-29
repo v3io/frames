@@ -154,8 +154,14 @@ func (s *Server) handleRead(ctx *fasthttp.RequestCtx) {
 	}
 
 	// TODO: Validate request
+
+	s.httpAuth(ctx, request.Proto.Session)
+	request.Password = frames.InitSecretString(request.Proto.Session.Password)
+	request.Token = frames.InitSecretString(request.Proto.Session.Token)
+	request.Proto.Session.Password = ""
+	request.Proto.Session.Token = ""
+
 	s.logger.InfoWith("read request", "request", request)
-	s.httpAuth(ctx, request.Session)
 
 	ch := make(chan frames.Frame)
 	var apiError error
@@ -234,7 +240,12 @@ func (s *Server) handleWrite(ctx *fasthttp.RequestCtx) {
 		Expression:    req.Expression,
 		HaveMore:      req.More,
 	}
+
 	s.httpAuth(ctx, request.Session)
+	request.Password = frames.InitSecretString(req.Session.Password)
+	request.Token = frames.InitSecretString(req.Session.Token)
+	req.Session.Password = ""
+	req.Session.Token = ""
 
 	var nFrames, nRows int
 	var writeError error
@@ -288,7 +299,12 @@ func (s *Server) handleCreate(ctx *fasthttp.RequestCtx) {
 		ctx.Error(fmt.Sprintf("bad request - %s", err), http.StatusBadRequest)
 		return
 	}
-	s.httpAuth(ctx, request.Session)
+
+	s.httpAuth(ctx, request.Proto.Session)
+	request.Password = frames.InitSecretString(request.Proto.Session.Password)
+	request.Token = frames.InitSecretString(request.Proto.Session.Token)
+	request.Proto.Session.Password = ""
+	request.Proto.Session.Token = ""
 
 	s.logger.InfoWith("create", "request", request)
 	if err := s.api.Create(request); err != nil {
@@ -310,7 +326,12 @@ func (s *Server) handleDelete(ctx *fasthttp.RequestCtx) {
 		ctx.Error(fmt.Sprintf("bad request - %s", err), http.StatusBadRequest)
 		return
 	}
-	s.httpAuth(ctx, request.Session)
+
+	s.httpAuth(ctx, request.Proto.Session)
+	request.Password = frames.InitSecretString(request.Proto.Session.Password)
+	request.Token = frames.InitSecretString(request.Proto.Session.Token)
+	request.Proto.Session.Password = ""
+	request.Proto.Session.Token = ""
 
 	if err := s.api.Delete(request); err != nil {
 		ctx.Error("can't delete", http.StatusInternalServerError)
@@ -351,7 +372,12 @@ func (s *Server) handleExec(ctx *fasthttp.RequestCtx) {
 		ctx.Error(fmt.Sprintf("bad request - %s", err), http.StatusBadRequest)
 		return
 	}
-	s.httpAuth(ctx, request.Session)
+
+	s.httpAuth(ctx, request.Proto.Session)
+	request.Password = frames.InitSecretString(request.Proto.Session.Password)
+	request.Token = frames.InitSecretString(request.Proto.Session.Token)
+	request.Proto.Session.Password = ""
+	request.Proto.Session.Token = ""
 
 	frame, err := s.api.Exec(request)
 	if err != nil {
@@ -393,13 +419,19 @@ func (s *Server) handleSimpleJSON(ctx *fasthttp.RequestCtx, method string) {
 		return
 	}
 	// passing session in order to easily pass token, when implemented
-	readRequest := req.GetReadRequest(nil)
-	s.httpAuth(ctx, readRequest.Session)
+	request := req.GetReadRequest(nil)
+
+	s.httpAuth(ctx, request.Proto.Session)
+	request.Password = frames.InitSecretString(request.Proto.Session.Password)
+	request.Token = frames.InitSecretString(request.Proto.Session.Token)
+	request.Proto.Session.Password = ""
+	request.Proto.Session.Token = ""
+
 	ch := make(chan frames.Frame)
 	var apiError error
 	go func() {
 		defer close(ch)
-		apiError = s.api.Read(readRequest, ch)
+		apiError = s.api.Read(request, ch)
 		if apiError != nil {
 			s.logger.ErrorWith("error reading", "error", apiError)
 		}

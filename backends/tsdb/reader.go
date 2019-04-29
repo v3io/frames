@@ -50,40 +50,40 @@ type tsdbIterator struct {
 
 func (b *Backend) Read(request *frames.ReadRequest) (frames.FrameIterator, error) {
 
-	step, err := tsdbutils.Str2duration(request.Step)
+	step, err := tsdbutils.Str2duration(request.Proto.Step)
 	if err != nil {
 		return nil, err
 	}
 
 	// TODO: start & end times
 	to := time.Now().Unix() * 1000
-	if request.End != "" {
-		to, err = tsdbutils.Str2unixTime(request.End)
+	if request.Proto.End != "" {
+		to, err = tsdbutils.Str2unixTime(request.Proto.End)
 		if err != nil {
 			return nil, err
 		}
 	}
 
 	from := to - 1000*3600 // default of last hour
-	if request.Start != "" {
-		from, err = tsdbutils.Str2unixTime(request.Start)
+	if request.Proto.Start != "" {
+		from, err = tsdbutils.Str2unixTime(request.Proto.Start)
 		if err != nil {
 			return nil, err
 		}
 	}
 
-	b.logger.DebugWith("Query", "from", from, "to", to, "table", request.Table,
-		"filter", request.Filter, "functions", request.Aggragators, "step", step)
+	b.logger.DebugWith("Query", "from", from, "to", to, "table", request.Proto.Table,
+		"filter", request.Proto.Filter, "functions", request.Proto.Aggragators, "step", step)
 
-	table := request.Table
+	table := request.Proto.Table
 	var selectParams *pquerier.SelectParams
-	if request.Query != "" {
-		selectParams, table, err = pquerier.ParseQuery(request.Query)
+	if request.Proto.Query != "" {
+		selectParams, table, err = pquerier.ParseQuery(request.Proto.Query)
 		if err != nil {
 			return nil, err
 		}
 	}
-	adapter, err := b.GetAdapter(request.Session, table)
+	adapter, err := b.GetAdapter(request.Proto.Session, table)
 	if err != nil {
 		return nil, errors.Wrap(err, "failed to create adapter")
 	}
@@ -95,8 +95,8 @@ func (b *Backend) Read(request *frames.ReadRequest) (frames.FrameIterator, error
 
 	iter := tsdbIterator{request: request}
 	name := ""
-	if len(request.Columns) > 0 {
-		name = strings.Join(request.Columns, ",")
+	if len(request.Proto.Columns) > 0 {
+		name = strings.Join(request.Proto.Columns, ",")
 		iter.withColumns = true
 	}
 
@@ -109,9 +109,9 @@ func (b *Backend) Read(request *frames.ReadRequest) (frames.FrameIterator, error
 			From:      from,
 			To:        to,
 			Step:      step,
-			Functions: request.Aggragators,
-			Filter:    request.Filter,
-			GroupBy:   request.GroupBy}
+			Functions: request.Proto.Aggragators,
+			Filter:    request.Proto.Filter,
+			GroupBy:   request.Proto.GroupBy}
 	}
 
 	iter.set, err = qry.SelectDataFrame(selectParams)
@@ -130,12 +130,12 @@ func oldQuery(adapter *tsdb.V3ioAdapter, request *frames.ReadRequest, from, to, 
 
 	iter := tsdbIteratorOld{request: request}
 	name := ""
-	if len(request.Columns) > 0 {
-		name = request.Columns[0]
+	if len(request.Proto.Columns) > 0 {
+		name = request.Proto.Columns[0]
 		iter.withColumns = true
 	}
 
-	iter.set, err = qry.Select(name, request.Aggragators, step, request.Filter)
+	iter.set, err = qry.Select(name, request.Proto.Aggragators, step, request.Proto.Filter)
 	if err != nil {
 		return nil, errors.Wrap(err, "Failed on TSDB Select")
 	}
@@ -171,7 +171,7 @@ func (i *tsdbIterator) Next() bool {
 				return false
 			}
 
-			if i.request.MultiIndex {
+			if i.request.Proto.MultiIndex {
 				indices = append(indices, icol)
 			} else {
 				columns = append(columns, icol)
@@ -249,7 +249,7 @@ func (i *tsdbIteratorOld) Next() bool {
 				return false
 			}
 
-			if i.request.MultiIndex {
+			if i.request.Proto.MultiIndex {
 				indices = append(indices, icol)
 			} else {
 				columns = append(columns, icol)

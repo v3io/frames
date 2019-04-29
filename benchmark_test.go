@@ -27,13 +27,14 @@ import (
 	"github.com/v3io/frames"
 	"github.com/v3io/frames/grpc"
 	"github.com/v3io/frames/http"
+	"github.com/v3io/frames/pb"
 )
 
 var (
-	rreq = &frames.ReadRequest{
+	rreq = &frames.ReadRequest{Proto: &pb.ReadRequest{
 		Backend: "csv",
 		Table:   "weather.csv",
-	}
+	}}
 	wreq = &frames.WriteRequest{
 		Backend: "csv",
 		Table:   "write-bench.csv",

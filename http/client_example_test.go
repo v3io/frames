@@ -25,6 +25,7 @@ import (
 	"time"
 
 	"github.com/v3io/frames"
+	"github.com/v3io/frames/pb"
 )
 
 func ExampleClient() {
@@ -69,11 +70,11 @@ func ExampleClient() {
 	}
 
 	fmt.Println(">>> reading")
-	readReq := &frames.ReadRequest{
+	readReq := &frames.ReadRequest{Proto: &pb.ReadRequest{
 		Backend:      "weather",
 		Table:        tableName,
 		MessageLimit: 100,
-	}
+	}}
 
 	it, err := client.Read(readReq)
 	if err != nil {

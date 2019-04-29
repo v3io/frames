@@ -23,6 +23,7 @@ package v3ioutils
 import (
 	"encoding/binary"
 	"net/url"
+	"strings"
 	"time"
 
 	"github.com/nuclio/logger"
@@ -31,20 +32,33 @@ import (
 	"github.com/v3io/frames"
 	v3io "github.com/v3io/v3io-go-http"
 	"github.com/v3io/v3io-tsdb/pkg/utils"
-	"strings"
 )
 
 const v3ioUsersContainer = "users"
 const v3ioHomeVar = "$V3IO_HOME"
 
-func NewContainer(session *frames.Session, logger logger.Logger, workers int) (*v3io.Container, error) {
+func NewContainer(session *frames.Session, password string, token string, logger logger.Logger, workers int) (*v3io.Container, error) {
+
+	var pass string
+	if password == "" {
+		pass = session.Password
+	} else {
+		pass = password
+	}
+
+	var tok string
+	if token == "" {
+		tok = session.Token
+	} else {
+		tok = token
+	}
 
 	config := v3io.SessionConfig{
 		Username:   session.User,
-		Password:   session.Password,
+		Password:   pass,
 		Label:      "v3frames",
-		SessionKey: session.Token}
-
+		SessionKey: tok,
+	}
 	container, err := createContainer(
 		logger, session.Url, session.Container, &config, workers)
 	if err != nil {
