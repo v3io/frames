@@ -27,7 +27,7 @@ import (
 	"time"
 
 	"github.com/nuclio/logger"
-	v3io "github.com/v3io/v3io-go-http"
+	v3io "github.com/v3io/v3io-go/pkg/dataplane"
 
 	"github.com/v3io/frames"
 	"github.com/v3io/frames/backends/utils"
@@ -37,7 +37,7 @@ import (
 // Appender is key/value appender
 type Appender struct {
 	request      *frames.WriteRequest
-	container    *v3io.Container
+	container    v3io.Container
 	tablePath    string
 	responseChan chan *v3io.Response
 	commChan     chan int
@@ -51,7 +51,7 @@ type Appender struct {
 // Write support writing to backend
 func (kv *Backend) Write(request *frames.WriteRequest) (frames.FrameAppender, error) {
 
-	container, tablePath, err := kv.newConnection(request.Session, request.Table, true)
+	container, tablePath, err := kv.newConnection(request.Session, request.Password.Get(), request.Token.Get(), request.Table, true)
 	if err != nil {
 		return nil, err
 	}
@@ -84,7 +84,7 @@ func (a *Appender) Add(frame frames.Frame) error {
 		return fmt.Errorf("empty frame")
 	}
 
-	if a.request.Expression != "" {
+	if a.request.Expression != "" || a.request.Condition != "" {
 		return a.update(frame)
 	}
 
@@ -170,14 +170,27 @@ func (a *Appender) update(frame frames.Frame) error {
 
 	for r := 0; r < frame.Len(); r++ {
 
-		expr, err := genExpr(a.request.Expression, frame, r)
-		if err != nil {
-			a.logger.ErrorWith("error generating expression", "error", err)
-			return err
+		var expr *string
+		if a.request.Expression != "" {
+			exprString, err := genExpr(a.request.Expression, frame, r)
+			if err != nil {
+				a.logger.ErrorWith("error generating expression", "error", err)
+				return err
+			}
+			expr = &exprString
+		}
+
+		var cond string
+		if a.request.Condition != "" {
+			cond, err = genExpr(a.request.Condition, frame, r)
+			if err != nil {
+				a.logger.ErrorWith("error generating condition", "error", err)
+				return err
+			}
 		}
 
 		key := indexVal(r)
-		input := v3io.UpdateItemInput{Path: a.tablePath + key, Expression: &expr}
+		input := v3io.UpdateItemInput{Path: a.tablePath + key, Expression: expr, Condition: cond}
 		a.logger.DebugWith("write update", "input", input)
 		_, err = a.container.UpdateItem(&input, r, a.responseChan)
 		if err != nil {
@@ -191,7 +204,7 @@ func (a *Appender) update(frame frames.Frame) error {
 	return nil
 }
 
-// generate the update expression
+// generate the update expression or condition
 func genExpr(expr string, frame frames.Frame, index int) (string, error) {
 	args := make([]string, 0)
 

@@ -25,7 +25,7 @@ import (
 	"strings"
 
 	"github.com/nuclio/logger"
-	"github.com/v3io/v3io-go-http"
+	"github.com/v3io/v3io-go/pkg/dataplane"
 
 	"github.com/v3io/frames"
 	"github.com/v3io/frames/v3ioutils"
@@ -59,18 +59,18 @@ func (b *Backend) Create(request *frames.CreateRequest) error {
 // Delete deletes a table (or part of it)
 func (b *Backend) Delete(request *frames.DeleteRequest) error {
 
-	container, path, err := b.newConnection(request.Session, request.Table, true)
+	container, path, err := b.newConnection(request.Proto.Session, request.Password.Get(), request.Token.Get(), request.Proto.Table, true)
 	if err != nil {
 		return err
 	}
 
-	return v3ioutils.DeleteTable(b.logger, container, path, request.Filter, b.numWorkers)
+	return v3ioutils.DeleteTable(b.logger, container, path, request.Proto.Filter, b.numWorkers)
 	// TODO: delete the table directory entry if filter == ""
 }
 
 // Exec executes a command
 func (b *Backend) Exec(request *frames.ExecRequest) (frames.Frame, error) {
-	cmd := strings.TrimSpace(strings.ToLower(request.Command))
+	cmd := strings.TrimSpace(strings.ToLower(request.Proto.Command))
 	switch cmd {
 	case "infer", "inferschema":
 		return nil, b.inferSchema(request)
@@ -81,9 +81,9 @@ func (b *Backend) Exec(request *frames.ExecRequest) (frames.Frame, error) {
 }
 
 func (b *Backend) updateItem(request *frames.ExecRequest) error {
-	varKey, hasKey := request.Args["key"]
-	varExpr, hasExpr := request.Args["expression"]
-	if !hasExpr || !hasKey || request.Table == "" {
+	varKey, hasKey := request.Proto.Args["key"]
+	varExpr, hasExpr := request.Proto.Args["expression"]
+	if !hasExpr || !hasKey || request.Proto.Table == "" {
 		return fmt.Errorf("table, key and expression parameters must be specified")
 	}
 
@@ -91,21 +91,20 @@ func (b *Backend) updateItem(request *frames.ExecRequest) error {
 	expr := varExpr.GetSval()
 
 	condition := ""
-	if val, ok := request.Args["condition"]; ok {
+	if val, ok := request.Proto.Args["condition"]; ok {
 		condition = val.GetSval()
 	}
 
-	container, path, err := b.newConnection(request.Session, request.Table, true)
+	container, path, err := b.newConnection(request.Proto.Session, request.Password.Get(), request.Token.Get(), request.Proto.Table, true)
 	if err != nil {
 		return err
 	}
 
 	b.logger.DebugWith("update item", "path", path, "key", key, "expr", expr, "condition", condition)
-	return container.Sync.UpdateItem(&v3io.UpdateItemInput{
-		Path: path + key, Expression: &expr, Condition: condition})
+	return container.UpdateItemSync(&v3io.UpdateItemInput{Path: path + key, Expression: &expr, Condition: condition})
 }
 
-/*func (b *Backend) newContainer(session *frames.Session) (*v3io.Container, error) {
+/*func (b *Backend) newContainer(session *frames.Session) (v3io.Container, error) {
 
 	container, err := v3ioutils.NewContainer(
 		session,
@@ -119,7 +118,7 @@ func (b *Backend) updateItem(request *frames.ExecRequest) error {
 
 */
 
-func (b *Backend) newConnection(session *frames.Session, path string, addSlash bool) (*v3io.Container, string, error) {
+func (b *Backend) newConnection(session *frames.Session, password string, token string, path string, addSlash bool) (v3io.Container, string, error) {
 
 	session = frames.InitSessionDefaults(session, b.framesConfig)
 	containerName, newPath, err := v3ioutils.ProcessPaths(session, path, addSlash)
@@ -130,6 +129,8 @@ func (b *Backend) newConnection(session *frames.Session, path string, addSlash b
 	session.Container = containerName
 	container, err := v3ioutils.NewContainer(
 		session,
+		password,
+		token,
 		b.logger,
 		b.numWorkers,
 	)

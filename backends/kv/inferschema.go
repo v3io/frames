@@ -22,20 +22,21 @@ package kv
 
 import (
 	"fmt"
+
 	"github.com/v3io/frames"
 	"github.com/v3io/frames/v3ioutils"
-	"github.com/v3io/v3io-go-http"
+	"github.com/v3io/v3io-go/pkg/dataplane"
 )
 
 func (b *Backend) inferSchema(request *frames.ExecRequest) error {
 
-	container, table, err := b.newConnection(request.Session, request.Table, true)
+	container, table, err := b.newConnection(request.Proto.Session, request.Password.Get(), request.Token.Get(), request.Proto.Table, true)
 	if err != nil {
 		return err
 	}
 
 	keyField := "__name"
-	if val, ok := request.Args["key"]; ok {
+	if val, ok := request.Proto.Args["key"]; ok {
 		keyField = val.GetSval()
 	}
 	maxrec := 50

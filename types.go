@@ -100,7 +100,11 @@ type FrameAppender interface {
 }
 
 // ReadRequest is a read/query request
-type ReadRequest = pb.ReadRequest
+type ReadRequest struct {
+	Proto    *pb.ReadRequest
+	Password SecretString
+	Token    SecretString
+}
 
 // JoinStruct is a join structure
 type JoinStruct = pb.JoinStruct
@@ -109,22 +113,34 @@ type JoinStruct = pb.JoinStruct
 // TODO: Unite with probouf (currenly the protobuf message combines both this
 // and a frame message)
 type WriteRequest struct {
-	Session *Session
-	Backend string // backend name
-	Table   string // Table name (path)
+	Session  *Session
+	Password SecretString
+	Token    SecretString
+	Backend  string // backend name
+	Table    string // Table name (path)
 	// Data message sent with the write request (in case of a stream multiple messages can follow)
 	ImmidiateData Frame
 	// Expression template, for update expressions generated from combining columns data with expression
 	Expression string
+	// Condition template, for update conditions generated from combining columns data with expression
+	Condition string
 	// Will we get more message chunks (in a stream), if not we can complete
 	HaveMore bool
 }
 
 // CreateRequest is a table creation request
-type CreateRequest = pb.CreateRequest
+type CreateRequest struct {
+	Proto    *pb.CreateRequest
+	Password SecretString
+	Token    SecretString
+}
 
 // DeleteRequest is a deletion request
-type DeleteRequest = pb.DeleteRequest
+type DeleteRequest struct {
+	Proto    *pb.DeleteRequest
+	Password SecretString
+	Token    SecretString
+}
 
 // TableSchema is a table schema
 type TableSchema = pb.TableSchema
@@ -145,4 +161,21 @@ const (
 )
 
 // ExecRequest is execution request
-type ExecRequest = pb.ExecRequest
+type ExecRequest struct {
+	Proto    *pb.ExecRequest
+	Password SecretString
+	Token    SecretString
+}
+
+// Hides a string such as a password from both plain and json logs.
+type SecretString struct {
+	s *string
+}
+
+func InitSecretString(s string) SecretString {
+	return SecretString{s: &s}
+}
+
+func (s SecretString) Get() string {
+	return *s.s
+}

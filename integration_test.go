@@ -34,6 +34,7 @@ import (
 	"time"
 
 	"github.com/ghodss/yaml"
+	"github.com/v3io/frames/pb"
 
 	"github.com/v3io/frames"
 	"github.com/v3io/frames/grpc"
@@ -373,10 +374,10 @@ func integrationTest(t *testing.T, client frames.Client, backend string) {
 
 	if cfg.create != nil {
 		t.Log("create")
-		req := &frames.CreateRequest{
+		req := &frames.CreateRequest{Proto: &pb.CreateRequest{
 			Backend: backend,
 			Table:   table,
-		}
+		}}
 		cfg.create(req)
 		if err := client.Create(req); err != nil {
 			t.Fatal(err)
@@ -409,10 +410,10 @@ func integrationTest(t *testing.T, client frames.Client, backend string) {
 	time.Sleep(3 * time.Second) // Let DB sync
 
 	t.Log("read")
-	rreq := &frames.ReadRequest{
+	rreq := &frames.ReadRequest{Proto: &pb.ReadRequest{
 		Backend: backend,
 		Table:   table,
-	}
+	}}
 	if cfg.read != nil {
 		cfg.read(rreq)
 	}
@@ -452,10 +453,10 @@ func integrationTest(t *testing.T, client frames.Client, backend string) {
 
 	t.Log("exec")
 	if cfg.exec != nil {
-		ereq := &frames.ExecRequest{
+		ereq := &frames.ExecRequest{Proto: &pb.ExecRequest{
 			Backend: backend,
 			Table:   table,
-		}
+		}}
 		cfg.exec(ereq)
 		frame, err = client.Exec(ereq)
 		if err != nil {
@@ -468,10 +469,10 @@ func integrationTest(t *testing.T, client frames.Client, backend string) {
 	}
 
 	t.Log("delete")
-	dreq := &frames.DeleteRequest{
+	dreq := &frames.DeleteRequest{Proto: &pb.DeleteRequest{
 		Backend: backend,
 		Table:   table,
-	}
+	}}
 	if cfg.del != nil {
 		cfg.del(dreq)
 	}
@@ -549,7 +550,7 @@ func init() {
 		"csv": &testConfig{
 			frameFn: csvFrame,
 			exec: func(req *frames.ExecRequest) {
-				req.Command = "ping"
+				req.Proto.Command = "ping"
 			},
 		},
 		"kv": &testConfig{
@@ -558,24 +559,24 @@ func init() {
 		"stream": &testConfig{
 			frameFn: streamFrame,
 			create: func(req *frames.CreateRequest) {
-				req.SetAttribute("retention_hours", 48)
-				req.SetAttribute("shards", 1)
+				req.Proto.SetAttribute("retention_hours", 48)
+				req.Proto.SetAttribute("shards", 1)
 			},
 			read: func(req *frames.ReadRequest) {
-				req.Seek = "earliest"
-				req.ShardId = "0"
+				req.Proto.Seek = "earliest"
+				req.Proto.ShardId = "0"
 			},
 		},
 		"tsdb": &testConfig{
 			frameFn: tsdbFrame,
 			create: func(req *frames.CreateRequest) {
-				req.SetAttribute("rate", "1/m")
+				req.Proto.SetAttribute("rate", "1/m")
 			},
 			read: func(req *frames.ReadRequest) {
-				req.Step = "10m"
-				req.Aggragators = "avg,max,count"
-				req.Start = "now-5h"
-				req.End = "now"
+				req.Proto.Step = "10m"
+				req.Proto.Aggragators = "avg,max,count"
+				req.Proto.Start = "now-5h"
+				req.Proto.End = "now"
 			},
 		},
 	}

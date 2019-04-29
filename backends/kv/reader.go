@@ -21,7 +21,7 @@ such restriction.
 package kv
 
 import (
-	"github.com/v3io/v3io-go-http"
+	"github.com/v3io/v3io-go/pkg/dataplane"
 
 	"github.com/v3io/frames"
 	"github.com/v3io/frames/backends"
@@ -36,25 +36,25 @@ const (
 // Read does a read request
 func (kv *Backend) Read(request *frames.ReadRequest) (frames.FrameIterator, error) {
 
-	if request.MessageLimit == 0 {
-		request.MessageLimit = 256 // TODO: More?
+	if request.Proto.MessageLimit == 0 {
+		request.Proto.MessageLimit = 256 // TODO: More?
 	}
 
-	columns := request.Columns
+	columns := request.Proto.Columns
 	if len(columns) < 1 || columns[0] == "" {
 		columns = []string{"*"}
 	}
 
-	container, tablePath, err := kv.newConnection(request.Session, request.Table, true)
+	container, tablePath, err := kv.newConnection(request.Proto.Session, request.Password.Get(), request.Token.Get(), request.Proto.Table, true)
 	if err != nil {
 		return nil, err
 	}
 
-	input := v3io.GetItemsInput{Path: tablePath, Filter: request.Filter, AttributeNames: columns}
+	input := v3io.GetItemsInput{Path: tablePath, Filter: request.Proto.Filter, AttributeNames: columns}
 	kv.logger.DebugWith("read input", "input", input, "request", request)
 
 	iter, err := v3ioutils.NewAsyncItemsCursor(
-		container, &input, kv.numWorkers, request.ShardingKeys, kv.logger, 0)
+		container, &input, kv.numWorkers, request.Proto.ShardingKeys, kv.logger, 0)
 	if err != nil {
 		return nil, err
 	}
@@ -77,7 +77,7 @@ func (ki *Iterator) Next() bool {
 	byName := map[string]frames.Column{}
 
 	rowNum := 0
-	for ; rowNum < int(ki.request.MessageLimit) && ki.iter.Next(); rowNum++ {
+	for ; rowNum < int(ki.request.Proto.MessageLimit) && ki.iter.Next(); rowNum++ {
 		row := ki.iter.GetFields()
 
 		// Skip table schema object

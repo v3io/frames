@@ -23,13 +23,13 @@ package v3ioutils
 import (
 	"encoding/json"
 	"fmt"
+	"strings"
 	"time"
 
 	"github.com/pkg/errors"
-	v3io "github.com/v3io/v3io-go-http"
+	v3io "github.com/v3io/v3io-go/pkg/dataplane"
 
 	"github.com/v3io/frames"
-	"strings"
 )
 
 const (
@@ -37,7 +37,7 @@ const (
 	doubleType = "double"
 	stringType = "string"
 	timeType   = "time"
-	// TODO: boolType?
+	boolType   = "boolean"
 )
 
 // NewSchema returns a new schema
@@ -56,7 +56,7 @@ func SchemaFromJSON(data []byte) (V3ioSchema, error) {
 type V3ioSchema interface {
 	AddColumn(name string, col frames.Column, nullable bool) error
 	AddField(name string, val interface{}, nullable bool) error
-	UpdateSchema(container *v3io.Container, tablePath string, newSchema V3ioSchema) error
+	UpdateSchema(container v3io.Container, tablePath string, newSchema V3ioSchema) error
 }
 
 // OldV3ioSchema is old v3io schema
@@ -85,6 +85,8 @@ func (s *OldV3ioSchema) AddColumn(name string, col frames.Column, nullable bool)
 		ftype = stringType
 	case frames.TimeType:
 		ftype = timeType
+	case frames.BoolType:
+		ftype = boolType
 	}
 
 	field := OldSchemaField{Name: name, Type: ftype, Nullable: nullable}
@@ -104,6 +106,8 @@ func (s *OldV3ioSchema) AddField(name string, val interface{}, nullable bool) er
 		ftype = stringType
 	case time.Time:
 		ftype = timeType
+	case bool:
+		ftype = boolType
 	}
 
 	field := OldSchemaField{Name: name, Type: ftype, Nullable: nullable}
@@ -158,7 +162,7 @@ func (s *OldV3ioSchema) merge(new *OldV3ioSchema) (bool, error) {
 }
 
 // UpdateSchema updates the schema
-func (s *OldV3ioSchema) UpdateSchema(container *v3io.Container, tablePath string, newSchema V3ioSchema) error {
+func (s *OldV3ioSchema) UpdateSchema(container v3io.Container, tablePath string, newSchema V3ioSchema) error {
 	changed, err := s.merge(newSchema.(*OldV3ioSchema))
 	if err != nil {
 		return errors.Wrap(err, "failed to merge schema")
@@ -169,8 +173,7 @@ func (s *OldV3ioSchema) UpdateSchema(container *v3io.Container, tablePath string
 		if err != nil {
 			return errors.Wrap(err, "failed to marshal schema")
 		}
-		err = container.Sync.PutObject(&v3io.PutObjectInput{
-			Path: tablePath + ".%23schema", Body: body})
+		err = container.PutObjectSync(&v3io.PutObjectInput{Path: tablePath + ".%23schema", Body: body})
 		if err != nil {
 			if strings.Contains(err.Error(), "status 401") {
 				return errors.New("unauthorized update (401), may be caused by wrong password or credentials")
