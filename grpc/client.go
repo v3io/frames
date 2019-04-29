@@ -23,11 +23,12 @@ package grpc
 import (
 	"context"
 	"fmt"
-	"github.com/v3io/frames"
-	"github.com/v3io/frames/pb"
 	"io"
 	"os"
 	"time"
+
+	"github.com/v3io/frames"
+	"github.com/v3io/frames/pb"
 
 	"github.com/nuclio/logger"
 	"github.com/pkg/errors"
@@ -81,11 +82,11 @@ func NewClient(address string, session *frames.Session, logger logger.Logger) (*
 }
 
 func (c *Client) Read(request *frames.ReadRequest) (frames.FrameIterator, error) {
-	if request.Session == nil {
-		request.Session = c.session
+	if request.Proto.Session == nil {
+		request.Proto.Session = c.session
 	}
 
-	stream, err := c.client.Read(context.Background(), request)
+	stream, err := c.client.Read(context.Background(), request.Proto)
 	if err != nil {
 		return nil, err
 	}
@@ -146,31 +147,31 @@ func (c *Client) Write(request *frames.WriteRequest) (frames.FrameAppender, erro
 
 // Create creates a table
 func (c *Client) Create(request *frames.CreateRequest) error {
-	if request.Session == nil {
-		request.Session = c.session
+	if request.Proto.Session == nil {
+		request.Proto.Session = c.session
 	}
 
-	_, err := c.client.Create(context.Background(), request)
+	_, err := c.client.Create(context.Background(), request.Proto)
 	return err
 }
 
 // Delete deletes data or table
 func (c *Client) Delete(request *frames.DeleteRequest) error {
-	if request.Session == nil {
-		request.Session = c.session
+	if request.Proto.Session == nil {
+		request.Proto.Session = c.session
 	}
 
-	_, err := c.client.Delete(context.Background(), request)
+	_, err := c.client.Delete(context.Background(), request.Proto)
 	return err
 }
 
 // Exec executes a command on the backend
 func (c *Client) Exec(request *frames.ExecRequest) (frames.Frame, error) {
-	if request.Session == nil {
-		request.Session = c.session
+	if request.Proto.Session == nil {
+		request.Proto.Session = c.session
 	}
 
-	msg, err := c.client.Exec(context.Background(), request)
+	msg, err := c.client.Exec(context.Background(), request.Proto)
 	if err != nil {
 		return nil, err
 	}

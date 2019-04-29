@@ -38,12 +38,26 @@ import (
 const v3ioUsersContainer = "users"
 const v3ioHomeVar = "$V3IO_HOME"
 
-func NewContainer(session *frames.Session, logger logger.Logger, workers int) (v3io.Container, error) {
+func NewContainer(session *frames.Session, password string, token string, logger logger.Logger, workers int) (v3io.Container, error) {
+
+	var pass string
+	if password == "" {
+		pass = session.Password
+	} else {
+		pass = password
+	}
+
+	var tok string
+	if token == "" {
+		tok = session.Token
+	} else {
+		tok = token
+	}
 
 	newSessionInput := v3io.NewSessionInput{
 		Username:  session.User,
-		Password:  session.Password,
-		AccessKey: session.Token,
+		Password:  pass,
+		AccessKey: tok,
 	}
 	container, err := createContainer(
 		logger, session.Url, session.Container, &newSessionInput, workers)

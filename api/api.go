@@ -24,6 +24,7 @@ package api
 
 import (
 	"fmt"
+	"strings"
 	"time"
 
 	"github.com/v3io/frames"
@@ -37,7 +38,6 @@ import (
 
 	"github.com/nuclio/logger"
 	"github.com/pkg/errors"
-	"strings"
 )
 
 const (
@@ -80,11 +80,11 @@ func New(logger logger.Logger, config *frames.Config) (*API, error) {
 func (api *API) Read(request *frames.ReadRequest, out chan frames.Frame) error {
 	api.logger.InfoWith("read request", "request", request)
 
-	backend, ok := api.backends[request.Backend]
+	backend, ok := api.backends[request.Proto.Backend]
 
 	if !ok {
-		api.logger.ErrorWith("unknown backend", "name", request.Backend)
-		return fmt.Errorf("unknown backend - %q", request.Backend)
+		api.logger.ErrorWith("unknown backend", "name", request.Proto.Backend)
+		return fmt.Errorf("unknown backend - %q", request.Proto.Backend)
 	}
 
 	iter, err := backend.Read(request)
@@ -166,16 +166,16 @@ func (api *API) Write(request *frames.WriteRequest, in chan frames.Frame) (int, 
 
 // Create will create a new table
 func (api *API) Create(request *frames.CreateRequest) error {
-	if request.Backend == "" || request.Table == "" {
+	if request.Proto.Backend == "" || request.Proto.Table == "" {
 		api.logger.ErrorWith(missingMsg, "request", request)
 		return fmt.Errorf(missingMsg)
 	}
 
 	api.logger.DebugWith("create", "request", request)
-	backend, ok := api.backends[request.Backend]
+	backend, ok := api.backends[request.Proto.Backend]
 	if !ok {
-		api.logger.ErrorWith("unkown backend", "name", request.Backend)
-		return fmt.Errorf("unknown backend - %s", request.Backend)
+		api.logger.ErrorWith("unkown backend", "name", request.Proto.Backend)
+		return fmt.Errorf("unknown backend - %s", request.Proto.Backend)
 	}
 
 	if err := backend.Create(request); err != nil {
@@ -188,16 +188,16 @@ func (api *API) Create(request *frames.CreateRequest) error {
 
 // Delete deletes a table or part of it
 func (api *API) Delete(request *frames.DeleteRequest) error {
-	if request.Backend == "" || request.Table == "" {
+	if request.Proto.Backend == "" || request.Proto.Table == "" {
 		api.logger.ErrorWith(missingMsg, "request", request)
 		return fmt.Errorf(missingMsg)
 	}
 
 	api.logger.DebugWith("delete", "request", request)
-	backend, ok := api.backends[request.Backend]
+	backend, ok := api.backends[request.Proto.Backend]
 	if !ok {
-		api.logger.ErrorWith("unkown backend", "name", request.Backend)
-		return fmt.Errorf("unknown backend - %s", request.Backend)
+		api.logger.ErrorWith("unkown backend", "name", request.Proto.Backend)
+		return fmt.Errorf("unknown backend - %s", request.Proto.Backend)
 	}
 
 	if err := backend.Delete(request); err != nil {
@@ -210,17 +210,17 @@ func (api *API) Delete(request *frames.DeleteRequest) error {
 
 // Exec executes a command on the backend
 func (api *API) Exec(request *frames.ExecRequest) (frames.Frame, error) {
-	if request.Backend == "" || request.Table == "" {
+	if request.Proto.Backend == "" || request.Proto.Table == "" {
 		api.logger.ErrorWith(missingMsg, "request", request)
 		return nil, fmt.Errorf(missingMsg)
 	}
 
 	// TODO: This print session in clear text
 	//	api.logger.DebugWith("exec", "request", request)
-	backend, ok := api.backends[request.Backend]
+	backend, ok := api.backends[request.Proto.Backend]
 	if !ok {
-		api.logger.ErrorWith("unkown backend", "name", request.Backend)
-		return nil, fmt.Errorf("unknown backend - %s", request.Backend)
+		api.logger.ErrorWith("unkown backend", "name", request.Proto.Backend)
+		return nil, fmt.Errorf("unknown backend - %s", request.Proto.Backend)
 	}
 
 	frame, err := backend.Exec(request)
@@ -233,30 +233,30 @@ func (api *API) Exec(request *frames.ExecRequest) (frames.Frame, error) {
 }
 
 func (api *API) populateQuery(request *frames.ReadRequest) error {
-	sqlQuery, err := frames.ParseSQL(request.Query)
+	sqlQuery, err := frames.ParseSQL(request.Proto.Query)
 	if err != nil {
 		return errors.Wrap(err, "bad SQL query")
 	}
 
-	if request.Table != "" {
+	if request.Proto.Table != "" {
 		return fmt.Errorf("both query AND table provided")
 	}
-	request.Table = sqlQuery.Table
+	request.Proto.Table = sqlQuery.Table
 
-	if request.Columns != nil {
+	if request.Proto.Columns != nil {
 		return fmt.Errorf("both query AND columns provided")
 	}
-	request.Columns = sqlQuery.Columns
+	request.Proto.Columns = sqlQuery.Columns
 
-	if request.Filter != "" {
+	if request.Proto.Filter != "" {
 		return fmt.Errorf("both query AND filter provided")
 	}
-	request.Filter = sqlQuery.Filter
+	request.Proto.Filter = sqlQuery.Filter
 
-	if request.GroupBy != "" {
+	if request.Proto.GroupBy != "" {
 		return fmt.Errorf("both query AND group_by provided")
 	}
-	request.GroupBy = sqlQuery.GroupBy
+	request.Proto.GroupBy = sqlQuery.GroupBy
 
 	return nil
 }
