@@ -53,12 +53,12 @@ def SchemaField(name=None, doc=None, default=None, type=None, properties=None):
     """A schema field"""
     # We return a frames_pb2.SchemaField from Python types
     return fpb.SchemaField(
-            name=name,
-            doc=doc,
-            default=pb_value(default),
-            type=type,
-            properties=pb_map(properties),
-        )
+        name=name,
+        doc=doc,
+        default=pb_value(default),
+        type=type,
+        properties=pb_map(properties),
+    )
 
 
 def pb2py(obj):
@@ -98,6 +98,22 @@ def msg2df(frame, frame_factory):
     with warnings.catch_warnings():
         warnings.simplefilter('ignore')
         df.labels = pb2py(frame.labels)
+
+    i = 0
+    is_range = True
+    for name in df.columns:
+        try:
+            if name.startswith('column_') and int(name[len('column_'):]) == i:
+                i += 1
+                continue
+        except ValueError:
+            pass
+        is_range = False
+        break
+
+    if is_range:
+        df.columns = pd.RangeIndex(start=0, step=1, stop=len(df.columns))
+
     return df
 
 
@@ -143,16 +159,23 @@ def df2msg(df, labels=None, index_cols=None):
 
         indices = [series2col(s) for s in serieses]
 
+    columns = []
+    for name in df.columns:
+        series = df[name]
+        if isinstance(name, int):
+            name = 'column_' + str(name)
+        columns.append(series2col(series, name))
+
     return fpb.Frame(
-        columns=[series2col(df[name]) for name in df.columns],
+        columns=columns,
         indices=indices,
         labels=pb_map(labels),
     )
 
 
-def series2col(s):
+def series2col(s, name):
     kw = {
-        'name': s.name or '',
+        'name': name,
         'kind': fpb.Column.SLICE,
     }
 
