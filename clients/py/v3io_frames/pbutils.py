@@ -146,7 +146,7 @@ def idx2series(idx):
 def df2msg(df, labels=None, index_cols=None):
     indices = None
     if index_cols is not None:
-        indices = [series2col(df[name]) for name in index_cols]
+        indices = [series2col(df[name], name) for name in index_cols]
         cols = [col for col in df.columns if col not in index_cols]
         df = df[cols]
     elif should_encode_index(df):
@@ -157,7 +157,7 @@ def df2msg(df, labels=None, index_cols=None):
         else:
             serieses = [idx2series(df.index)]
 
-        indices = [series2col(s) for s in serieses]
+        indices = [series2col(s, s.name) for s in serieses]
 
     columns = []
     for name in df.columns:
