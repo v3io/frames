@@ -159,8 +159,11 @@ def df2msg(df, labels=None, index_cols=None):
 
         indices = [series2col(s, s.name) for s in serieses]
 
+    is_range = isinstance(df.columns, pd.RangeIndex)
     columns = []
     for name in df.columns:
+        if not is_range and not isinstance(name, str):
+            raise Exception('Column names must be strings')
         series = df[name]
         if isinstance(name, int):
             name = 'column_' + str(name)
