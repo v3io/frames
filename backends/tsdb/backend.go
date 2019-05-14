@@ -73,7 +73,7 @@ func (b *Backend) newConfig(session *frames.Session) *config.V3ioConfig {
 	return config.WithDefaults(cfg)
 }
 
-func (b *Backend) newAdapter(session *frames.Session, path string) (*tsdb.V3ioAdapter, error) {
+func (b *Backend) newAdapter(session *frames.Session, password string, token string, path string) (*tsdb.V3ioAdapter, error) {
 
 	session = frames.InitSessionDefaults(session, b.framesConfig)
 	containerName, newPath, err := v3ioutils.ProcessPaths(session, path, false)
@@ -86,8 +86,8 @@ func (b *Backend) newAdapter(session *frames.Session, path string) (*tsdb.V3ioAd
 
 	container, err := v3ioutils.NewContainer(
 		session,
-		"",
-		"",
+		password,
+		token,
 		b.logger,
 		cfg.Workers,
 	)
@@ -107,10 +107,10 @@ func (b *Backend) newAdapter(session *frames.Session, path string) (*tsdb.V3ioAd
 }
 
 // GetAdapter returns an adapter
-func (b *Backend) GetAdapter(session *frames.Session, path string) (*tsdb.V3ioAdapter, error) {
+func (b *Backend) GetAdapter(session *frames.Session, password string, token string, path string) (*tsdb.V3ioAdapter, error) {
 	// TODO: maintain adapter cache, for now create new per read/write request
 
-	adapter, err := b.newAdapter(session, path)
+	adapter, err := b.newAdapter(session, password, token, path)
 	if err != nil {
 		return nil, err
 	}
@@ -189,7 +189,7 @@ func (b *Backend) Delete(request *frames.DeleteRequest) error {
 
 	delAll := request.Proto.Start == "" && request.Proto.End == ""
 
-	adapter, err := b.GetAdapter(request.Proto.Session, request.Proto.Table)
+	adapter, err := b.GetAdapter(request.Proto.Session, request.Password.Get(), request.Token.Get(), request.Proto.Table)
 	if err != nil {
 		return err
 	}
