@@ -159,6 +159,8 @@ func (b *Backend) Create(request *frames.CreateRequest) error {
 
 	session.Container = containerName
 	cfg := b.newConfig(session)
+	cfg.Password = request.Password.Get()
+	cfg.AccessKey = request.Token.Get()
 
 	cfg.TablePath = path
 	dbSchema, err := schema.NewSchema(cfg, rate, aggregationGranularity, defaultRollups, "") // todo: support create table with cross label aggregates
