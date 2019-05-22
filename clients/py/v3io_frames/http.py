@@ -80,7 +80,8 @@ class Client(ClientBase):
 
         url = self._url_for('read')
         resp = requests.post(
-            url, verify=False, json=request, headers=self._headers(json=True), stream=True)
+            url, verify=False, json=request, headers=self._headers(json=True),
+            stream=True)
         if not resp.ok:
             raise Error('cannot call API - {}'.format(resp.text))
 
