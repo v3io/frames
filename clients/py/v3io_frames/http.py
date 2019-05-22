@@ -80,7 +80,8 @@ class Client(ClientBase):
 
         url = self._url_for('read')
         resp = requests.post(
-            url, json=request, headers=self._headers(json=True), stream=True)
+            url, verify=False, json=request, headers=self._headers(json=True),
+            stream=True)
         if not resp.ok:
             raise Error('cannot call API - {}'.format(resp.text))
 
@@ -101,7 +102,7 @@ class Client(ClientBase):
         frames = (enc(df2msg(df, labels, index_cols)) for df in dfs)
         data = chain([request], frames)
 
-        resp = requests.post(url, headers=headers, data=data)
+        resp = requests.post(url, verify=False, headers=headers, data=data)
 
         if not resp.ok:
             raise Error('cannot call API - {}'.format(resp.text))
@@ -121,7 +122,7 @@ class Client(ClientBase):
 
         url = self._url_for('create')
         headers = self._headers()
-        resp = requests.post(url, headers=headers, json=request)
+        resp = requests.post(url, verify=False, headers=headers, json=request)
         if not resp.ok:
             raise CreateError(resp.text)
 
@@ -142,7 +143,7 @@ class Client(ClientBase):
         url = self._url_for('delete')
         headers = self._headers()
         # TODO: Make it DELETE ?
-        resp = requests.post(url, headers=headers, json=request)
+        resp = requests.post(url, verify=False, headers=headers, json=request)
         if not resp.ok:
             raise CreateError(resp.text)
 
@@ -159,7 +160,7 @@ class Client(ClientBase):
 
         url = self._url_for('exec')
         headers = self._headers()
-        resp = requests.post(url, headers=headers, json=request)
+        resp = requests.post(url, verify=False, headers=headers, json=request)
         if not resp.ok:
             raise ExecuteError(resp.text)
 
