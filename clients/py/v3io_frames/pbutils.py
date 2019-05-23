@@ -12,12 +12,11 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-import warnings
-
 import google.protobuf.pyext._message as message
 import numpy as np
 import pandas as pd
 import pytz
+import warnings
 from google.protobuf.message import Message
 from pandas.core.dtypes.dtypes import CategoricalDtype
 
@@ -134,7 +133,9 @@ def col2series(col, index):
     if col.kind == col.LABEL:
         data = [data[0]] * col.size
         if col.dtype == fpb.STRING:
-            data = pd.Series(data, dtype='category', index=index, name=col.name)
+            data = pd.Series(data, dtype='category',
+                             index=index,
+                             name=col.name)
     else:
         data = pd.Series(data, index=index, name=col.name)
 
