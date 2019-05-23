@@ -55,6 +55,11 @@ func (b *Backend) Read(request *frames.ReadRequest) (frames.FrameIterator, error
 		return nil, err
 	}
 
+	aggregationWindow, err := tsdbutils.Str2duration(request.Proto.AggregationWindow)
+	if err != nil {
+		return nil, err
+	}
+
 	// TODO: start & end times
 	to := time.Now().Unix() * 1000
 	if request.Proto.End != "" {
@@ -104,14 +109,16 @@ func (b *Backend) Read(request *frames.ReadRequest) (frames.FrameIterator, error
 		selectParams.From = from
 		selectParams.To = to
 		selectParams.Step = step
+		selectParams.AggregationWindow = aggregationWindow
 	} else {
 		selectParams = &pquerier.SelectParams{Name: name,
-			From:      from,
-			To:        to,
-			Step:      step,
-			Functions: request.Proto.Aggragators,
-			Filter:    request.Proto.Filter,
-			GroupBy:   request.Proto.GroupBy}
+			From:              from,
+			To:                to,
+			Step:              step,
+			Functions:         request.Proto.Aggragators,
+			Filter:            request.Proto.Filter,
+			GroupBy:           request.Proto.GroupBy,
+			AggregationWindow: aggregationWindow}
 	}
 
 	iter.set, err = qry.SelectDataFrame(selectParams)
