@@ -134,7 +134,9 @@ def col2series(col, index):
     if col.kind == col.LABEL:
         data = [data[0]] * col.size
         if col.dtype == fpb.STRING:
-            data = pd.Series(data, dtype='category', index=index)
+            data = pd.Series(data, dtype='category', index=index, name=col.name)
+    else:
+        data = pd.Series(data, index=index, name=col.name)
 
     return data
 
