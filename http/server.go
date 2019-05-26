@@ -146,16 +146,19 @@ func (s *Server) handleRead(ctx *fasthttp.RequestCtx) {
 		ctx.Error("unsupported method", http.StatusMethodNotAllowed)
 	}
 
-	request := &frames.ReadRequest{}
-	if err := json.Unmarshal(ctx.PostBody(), request); err != nil {
+	requestInner := &pb.ReadRequest{}
+	if err := json.Unmarshal(ctx.PostBody(), requestInner); err != nil {
 		s.logger.ErrorWith("can't decode request", "error", err)
 		ctx.Error(fmt.Sprintf("bad request - %s", err), http.StatusBadRequest)
 		return
 	}
+	request := &frames.ReadRequest{
+		Proto: requestInner,
+	}
 
 	// TODO: Validate request
 
-	s.httpAuth(ctx, request.Proto.Session)
+	s.httpAuth(ctx, requestInner.Session)
 	request.Password = frames.InitSecretString(request.Proto.Session.Password)
 	request.Token = frames.InitSecretString(request.Proto.Session.Token)
 	request.Proto.Session.Password = ""
