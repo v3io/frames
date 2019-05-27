@@ -31,10 +31,10 @@ import (
 )
 
 var (
-	rreq = &frames.ReadRequest{Proto: &pb.ReadRequest{
+	rreq = &pb.ReadRequest{
 		Backend: "csv",
 		Table:   "weather.csv",
-	}}
+	}
 	wreq = &frames.WriteRequest{
 		Backend: "csv",
 		Table:   "write-bench.csv",

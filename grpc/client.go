@@ -81,12 +81,12 @@ func NewClient(address string, session *frames.Session, logger logger.Logger) (*
 	return client, nil
 }
 
-func (c *Client) Read(request *frames.ReadRequest) (frames.FrameIterator, error) {
-	if request.Proto.Session == nil {
-		request.Proto.Session = c.session
+func (c *Client) Read(request *pb.ReadRequest) (frames.FrameIterator, error) {
+	if request.Session == nil {
+		request.Session = c.session
 	}
 
-	stream, err := c.client.Read(context.Background(), request.Proto)
+	stream, err := c.client.Read(context.Background(), request)
 	if err != nil {
 		return nil, err
 	}
@@ -146,32 +146,32 @@ func (c *Client) Write(request *frames.WriteRequest) (frames.FrameAppender, erro
 }
 
 // Create creates a table
-func (c *Client) Create(request *frames.CreateRequest) error {
-	if request.Proto.Session == nil {
-		request.Proto.Session = c.session
+func (c *Client) Create(request *pb.CreateRequest) error {
+	if request.Session == nil {
+		request.Session = c.session
 	}
 
-	_, err := c.client.Create(context.Background(), request.Proto)
+	_, err := c.client.Create(context.Background(), request)
 	return err
 }
 
 // Delete deletes data or table
-func (c *Client) Delete(request *frames.DeleteRequest) error {
-	if request.Proto.Session == nil {
-		request.Proto.Session = c.session
+func (c *Client) Delete(request *pb.DeleteRequest) error {
+	if request.Session == nil {
+		request.Session = c.session
 	}
 
-	_, err := c.client.Delete(context.Background(), request.Proto)
+	_, err := c.client.Delete(context.Background(), request)
 	return err
 }
 
 // Exec executes a command on the backend
-func (c *Client) Exec(request *frames.ExecRequest) (frames.Frame, error) {
-	if request.Proto.Session == nil {
-		request.Proto.Session = c.session
+func (c *Client) Exec(request *pb.ExecRequest) (frames.Frame, error) {
+	if request.Session == nil {
+		request.Session = c.session
 	}
 
-	msg, err := c.client.Exec(context.Background(), request.Proto)
+	msg, err := c.client.Exec(context.Background(), request)
 	if err != nil {
 		return nil, err
 	}
