@@ -63,7 +63,7 @@ func (kv *Backend) Write(request *frames.WriteRequest) (frames.FrameAppender, er
 		responseChan: make(chan *v3io.Response, 1000),
 		commChan:     make(chan int, 2),
 		logger:       kv.logger,
-		schema:       v3ioutils.NewSchema("__name"),
+		schema:       v3ioutils.NewSchema("index"),
 	}
 	go appender.respWaitLoop(time.Minute)
 
