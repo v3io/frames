@@ -54,11 +54,11 @@ var (
 type frameFn func(t testing.TB, size int) frames.Frame
 type testConfig struct {
 	frameFn frameFn
-	create  func(*frames.CreateRequest) // if not defined, create won't be called
+	create  func(*pb.CreateRequest) // if not defined, create won't be called
 	write   func(*frames.WriteRequest)
-	read    func(*frames.ReadRequest)
-	del     func(*frames.DeleteRequest) // can't use "delete", it's a keyword
-	exec    func(*frames.ExecRequest)   // if not defined, exec won't be called
+	read    func(*pb.ReadRequest)
+	del     func(*pb.DeleteRequest) // can't use "delete", it's a keyword
+	exec    func(*pb.ExecRequest)   // if not defined, exec won't be called
 }
 
 func setupRoot(t testing.TB) string {
@@ -374,10 +374,10 @@ func integrationTest(t *testing.T, client frames.Client, backend string) {
 
 	if cfg.create != nil {
 		t.Log("create")
-		req := &frames.CreateRequest{Proto: &pb.CreateRequest{
+		req := &pb.CreateRequest{
 			Backend: backend,
 			Table:   table,
-		}}
+		}
 		cfg.create(req)
 		if err := client.Create(req); err != nil {
 			t.Fatal(err)
@@ -410,10 +410,10 @@ func integrationTest(t *testing.T, client frames.Client, backend string) {
 	time.Sleep(3 * time.Second) // Let DB sync
 
 	t.Log("read")
-	rreq := &frames.ReadRequest{Proto: &pb.ReadRequest{
+	rreq := &pb.ReadRequest{
 		Backend: backend,
 		Table:   table,
-	}}
+	}
 	if cfg.read != nil {
 		cfg.read(rreq)
 	}
@@ -453,10 +453,10 @@ func integrationTest(t *testing.T, client frames.Client, backend string) {
 
 	t.Log("exec")
 	if cfg.exec != nil {
-		ereq := &frames.ExecRequest{Proto: &pb.ExecRequest{
+		ereq := &pb.ExecRequest{
 			Backend: backend,
 			Table:   table,
-		}}
+		}
 		cfg.exec(ereq)
 		frame, err = client.Exec(ereq)
 		if err != nil {
@@ -469,10 +469,10 @@ func integrationTest(t *testing.T, client frames.Client, backend string) {
 	}
 
 	t.Log("delete")
-	dreq := &frames.DeleteRequest{Proto: &pb.DeleteRequest{
+	dreq := &pb.DeleteRequest{
 		Backend: backend,
 		Table:   table,
-	}}
+	}
 	if cfg.del != nil {
 		cfg.del(dreq)
 	}
@@ -549,8 +549,8 @@ func init() {
 	testsConfig = map[string]*testConfig{
 		"csv": &testConfig{
 			frameFn: csvFrame,
-			exec: func(req *frames.ExecRequest) {
-				req.Proto.Command = "ping"
+			exec: func(req *pb.ExecRequest) {
+				req.Command = "ping"
 			},
 		},
 		"kv": &testConfig{
@@ -558,25 +558,25 @@ func init() {
 		},
 		"stream": &testConfig{
 			frameFn: streamFrame,
-			create: func(req *frames.CreateRequest) {
-				req.Proto.SetAttribute("retention_hours", 48)
-				req.Proto.SetAttribute("shards", 1)
+			create: func(req *pb.CreateRequest) {
+				req.SetAttribute("retention_hours", 48)
+				req.SetAttribute("shards", 1)
 			},
-			read: func(req *frames.ReadRequest) {
-				req.Proto.Seek = "earliest"
-				req.Proto.ShardId = "0"
+			read: func(req *pb.ReadRequest) {
+				req.Seek = "earliest"
+				req.ShardId = "0"
 			},
 		},
 		"tsdb": &testConfig{
 			frameFn: tsdbFrame,
-			create: func(req *frames.CreateRequest) {
-				req.Proto.SetAttribute("rate", "1/m")
+			create: func(req *pb.CreateRequest) {
+				req.SetAttribute("rate", "1/m")
 			},
-			read: func(req *frames.ReadRequest) {
-				req.Proto.Step = "10m"
-				req.Proto.Aggragators = "avg,max,count"
-				req.Proto.Start = "now-5h"
-				req.Proto.End = "now"
+			read: func(req *pb.ReadRequest) {
+				req.Step = "10m"
+				req.Aggragators = "avg,max,count"
+				req.Start = "now-5h"
+				req.End = "now"
 			},
 		},
 	}
