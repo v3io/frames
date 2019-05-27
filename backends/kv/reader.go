@@ -21,12 +21,12 @@ such restriction.
 package kv
 
 import (
-	"github.com/v3io/v3io-go/pkg/dataplane"
-
+	"encoding/json"
 	"github.com/v3io/frames"
 	"github.com/v3io/frames/backends"
 	"github.com/v3io/frames/backends/utils"
 	"github.com/v3io/frames/v3ioutils"
+	"github.com/v3io/v3io-go/pkg/dataplane"
 )
 
 const (
@@ -59,16 +59,28 @@ func (kv *Backend) Read(request *frames.ReadRequest) (frames.FrameIterator, erro
 		return nil, err
 	}
 
-	newKVIter := Iterator{request: request, iter: iter}
+	// Get Schema
+	schemaInput := &v3io.GetObjectInput{Path: tablePath + ".#schema"}
+	resp, err := container.GetObjectSync(schemaInput)
+	if err != nil {
+		return nil, err
+	}
+	schema := &v3ioutils.OldV3ioSchema{}
+	if err := json.Unmarshal(resp.HTTPResponse.Body(), schema); err != nil {
+		return nil, err
+	}
+
+	newKVIter := Iterator{request: request, iter: iter, keyColumnName: schema.Key}
 	return &newKVIter, nil
 }
 
 // Iterator is key/value iterator
 type Iterator struct {
-	request   *frames.ReadRequest
-	iter      *v3ioutils.AsyncItemsCursor
-	err       error
-	currFrame frames.Frame
+	request       *frames.ReadRequest
+	iter          *v3ioutils.AsyncItemsCursor
+	err           error
+	currFrame     frames.Frame
+	keyColumnName string
 }
 
 // Next advances the iterator to next frame
@@ -77,32 +89,40 @@ func (ki *Iterator) Next() bool {
 	byName := map[string]frames.Column{}
 
 	rowNum := 0
+	numOfSchemaFiles := 0
+
 	for ; rowNum < int(ki.request.Proto.MessageLimit) && ki.iter.Next(); rowNum++ {
 		row := ki.iter.GetFields()
 
 		// Skip table schema object
 		rowIndex, ok := row[indexColKey]
 		if (ok && rowIndex == ".#schema") || len(row) == 0 {
+			numOfSchemaFiles++
 			continue
 		}
 
 		for name, field := range row {
-			col, ok := byName[name]
+			colName := name
+			if colName == indexColKey { // convert `__name` attribute name to the key column
+				colName = ki.keyColumnName
+			}
+
+			col, ok := byName[colName]
 			field = maybeFloat(field) // Make all number floats
 			if !ok {
-				data, err := utils.NewColumn(field, rowNum)
+				data, err := utils.NewColumn(field, rowNum-numOfSchemaFiles)
 				if err != nil {
 					ki.err = err
 					return false
 				}
 
-				col, err = frames.NewSliceColumn(name, data)
+				col, err = frames.NewSliceColumn(colName, data)
 				if err != nil {
 					ki.err = err
 					return false
 				}
 				columns = append(columns, col)
-				byName[name] = col
+				byName[colName] = col
 			}
 
 			if err := utils.AppendColumn(col, field); err != nil {
@@ -113,6 +133,9 @@ func (ki *Iterator) Next() bool {
 
 		// fill columns with nil if there was no value
 		for name, col := range byName {
+			if name == ki.keyColumnName {
+				name = indexColKey
+			}
 			if _, ok := row[name]; ok {
 				continue
 			}
@@ -136,11 +159,11 @@ func (ki *Iterator) Next() bool {
 	}
 
 	var indices []frames.Column
-	indexCol, ok := byName[indexColKey]
+	indexCol, ok := byName[ki.keyColumnName]
 	if ok {
-		delete(byName, indexColKey)
+		delete(byName, ki.keyColumnName)
 		indices = []frames.Column{indexCol}
-		columns = utils.RemoveColumn(indexColKey, columns)
+		columns = utils.RemoveColumn(ki.keyColumnName, columns)
 	}
 
 	var err error
