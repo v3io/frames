@@ -134,6 +134,7 @@ message ReadRequest {
     string end = 22;
     string step = 23;
     string aggragators = 24;
+    string aggregationWindow = 28;
 
     // Stream
     string seek = 25;

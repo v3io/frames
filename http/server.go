@@ -146,20 +146,25 @@ func (s *Server) handleRead(ctx *fasthttp.RequestCtx) {
 		ctx.Error("unsupported method", http.StatusMethodNotAllowed)
 	}
 
-	request := &frames.ReadRequest{}
-	if err := json.Unmarshal(ctx.PostBody(), request); err != nil {
+	requestInner := &pb.ReadRequest{}
+	if err := json.Unmarshal(ctx.PostBody(), requestInner); err != nil {
 		s.logger.ErrorWith("can't decode request", "error", err)
 		ctx.Error(fmt.Sprintf("bad request - %s", err), http.StatusBadRequest)
 		return
 	}
+	request := &frames.ReadRequest{
+		Proto: requestInner,
+	}
 
 	// TODO: Validate request
 
-	s.httpAuth(ctx, request.Proto.Session)
-	request.Password = frames.InitSecretString(request.Proto.Session.Password)
-	request.Token = frames.InitSecretString(request.Proto.Session.Token)
-	request.Proto.Session.Password = ""
-	request.Proto.Session.Token = ""
+	if requestInner.Session != nil {
+		s.httpAuth(ctx, requestInner.Session)
+		request.Password = frames.InitSecretString(requestInner.Session.Password)
+		request.Token = frames.InitSecretString(requestInner.Session.Token)
+		requestInner.Session.Password = ""
+		requestInner.Session.Token = ""
+	}
 
 	s.logger.InfoWith("read request", "request", request)
 
@@ -294,18 +299,23 @@ func (s *Server) handleCreate(ctx *fasthttp.RequestCtx) {
 		ctx.Error("unsupported method", http.StatusMethodNotAllowed)
 	}
 
-	request := &frames.CreateRequest{}
-	if err := json.Unmarshal(ctx.PostBody(), request); err != nil {
+	requestInner := &pb.CreateRequest{}
+	if err := json.Unmarshal(ctx.PostBody(), requestInner); err != nil {
 		s.logger.ErrorWith("can't decode request", "error", err)
 		ctx.Error(fmt.Sprintf("bad request - %s", err), http.StatusBadRequest)
 		return
 	}
+	request := &frames.CreateRequest{
+		Proto: requestInner,
+	}
 
-	s.httpAuth(ctx, request.Proto.Session)
-	request.Password = frames.InitSecretString(request.Proto.Session.Password)
-	request.Token = frames.InitSecretString(request.Proto.Session.Token)
-	request.Proto.Session.Password = ""
-	request.Proto.Session.Token = ""
+	if requestInner.Session != nil {
+		s.httpAuth(ctx, requestInner.Session)
+		request.Password = frames.InitSecretString(requestInner.Session.Password)
+		request.Token = frames.InitSecretString(requestInner.Session.Token)
+		requestInner.Session.Password = ""
+		requestInner.Session.Token = ""
+	}
 
 	s.logger.InfoWith("create", "request", request)
 	if err := s.api.Create(request); err != nil {
@@ -321,18 +331,23 @@ func (s *Server) handleDelete(ctx *fasthttp.RequestCtx) {
 		ctx.Error("unsupported method", http.StatusMethodNotAllowed)
 	}
 
-	request := &frames.DeleteRequest{}
-	if err := json.Unmarshal(ctx.PostBody(), request); err != nil {
+	requestInner := &pb.DeleteRequest{}
+	if err := json.Unmarshal(ctx.PostBody(), requestInner); err != nil {
 		s.logger.ErrorWith("can't decode request", "error", err)
 		ctx.Error(fmt.Sprintf("bad request - %s", err), http.StatusBadRequest)
 		return
 	}
+	request := &frames.DeleteRequest{
+		Proto: requestInner,
+	}
 
-	s.httpAuth(ctx, request.Proto.Session)
-	request.Password = frames.InitSecretString(request.Proto.Session.Password)
-	request.Token = frames.InitSecretString(request.Proto.Session.Token)
-	request.Proto.Session.Password = ""
-	request.Proto.Session.Token = ""
+	if requestInner.Session != nil {
+		s.httpAuth(ctx, requestInner.Session)
+		request.Password = frames.InitSecretString(requestInner.Session.Password)
+		request.Token = frames.InitSecretString(requestInner.Session.Token)
+		requestInner.Session.Password = ""
+		requestInner.Session.Token = ""
+	}
 
 	if err := s.api.Delete(request); err != nil {
 		ctx.Error("can't delete", http.StatusInternalServerError)
@@ -367,11 +382,14 @@ func (s *Server) handleExec(ctx *fasthttp.RequestCtx) {
 		ctx.Error("unsupported method", http.StatusMethodNotAllowed)
 	}
 
-	request := &frames.ExecRequest{}
-	if err := json.Unmarshal(ctx.PostBody(), request); err != nil {
+	requestInner := &pb.ExecRequest{}
+	if err := json.Unmarshal(ctx.PostBody(), requestInner); err != nil {
 		s.logger.ErrorWith("can't decode request", "error", err)
 		ctx.Error(fmt.Sprintf("bad request - %s", err), http.StatusBadRequest)
 		return
+	}
+	request := &frames.ExecRequest{
+		Proto: requestInner,
 	}
 
 	s.httpAuth(ctx, request.Proto.Session)

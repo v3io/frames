@@ -70,11 +70,11 @@ func ExampleClient() {
 	}
 
 	fmt.Println(">>> reading")
-	readReq := &frames.ReadRequest{Proto: &pb.ReadRequest{
+	readReq := &pb.ReadRequest{
 		Backend:      "weather",
 		Table:        tableName,
 		MessageLimit: 100,
-	}}
+	}
 
 	it, err := client.Read(readReq)
 	if err != nil {

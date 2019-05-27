@@ -173,7 +173,7 @@ func (s *OldV3ioSchema) UpdateSchema(container v3io.Container, tablePath string,
 		if err != nil {
 			return errors.Wrap(err, "failed to marshal schema")
 		}
-		err = container.PutObjectSync(&v3io.PutObjectInput{Path: tablePath + ".%23schema", Body: body})
+		err = container.PutObjectSync(&v3io.PutObjectInput{Path: tablePath + ".#schema", Body: body})
 		if err != nil {
 			if strings.Contains(err.Error(), "status 401") {
 				return errors.New("unauthorized update (401), may be caused by wrong password or credentials")
