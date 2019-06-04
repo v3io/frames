@@ -13,3 +13,5 @@ require (
 	golang.org/x/net v0.0.0-20181114220301-adae6a3d119a
 	google.golang.org/grpc v1.17.0
 )
+
+replace github.com/xwb1989/sqlparser => github.com/v3io/sqlparser v0.0.0-20190306105200-4d7273501871
