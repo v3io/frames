@@ -21,17 +21,15 @@ such restriction.
 package v3ioutils
 
 import (
-	"encoding/binary"
-	"github.com/v3io/v3io-tsdb/pkg/utils"
 	"strings"
-	"time"
 
+	"encoding/binary"
 	"github.com/nuclio/logger"
 	"github.com/pkg/errors"
-	v3iohttp "github.com/v3io/v3io-go/pkg/dataplane/http"
-
 	"github.com/v3io/frames"
 	v3io "github.com/v3io/v3io-go/pkg/dataplane"
+	v3iohttp "github.com/v3io/v3io-go/pkg/dataplane/http"
+	"github.com/v3io/v3io-tsdb/pkg/utils"
 )
 
 const v3ioUsersContainer = "users"
@@ -115,7 +113,7 @@ func DeleteTable(logger logger.Logger, container v3io.Container, path, filter st
 	fileNameChan := make(chan string, 1024)
 	getItemsTerminationChan := make(chan error, workers)
 	deleteTerminationChan := make(chan error, workers)
-	terminationChan := make(chan struct{}, 2*workers)
+	onErrorTerminationChannel := make(chan struct{}, 2*workers)
 
 	for i := 0; i < workers; i++ {
 		input := &v3io.GetItemsInput{
@@ -125,8 +123,8 @@ func DeleteTable(logger logger.Logger, container v3io.Container, path, filter st
 			Segment:        i,
 			TotalSegments:  workers,
 		}
-		go getItemsWorker(container, input, fileNameChan, getItemsTerminationChan, terminationChan)
-		go deleteObjectWorker(path, container, fileNameChan, deleteTerminationChan, terminationChan)
+		go getItemsWorker(container, input, fileNameChan, getItemsTerminationChan, onErrorTerminationChannel)
+		go deleteObjectWorker(path, container, fileNameChan, deleteTerminationChan, onErrorTerminationChannel)
 	}
 
 	var getItemsTerminated, deletesTerminated int
@@ -135,7 +133,7 @@ func DeleteTable(logger logger.Logger, container v3io.Container, path, filter st
 		case err := <-getItemsTerminationChan:
 			if err != nil {
 				for i := 0; i < 2*workers; i++ {
-					terminationChan <- struct{}{}
+					onErrorTerminationChannel <- struct{}{}
 				}
 				return errors.Wrapf(err, "GetItems failed during recursive delete of '%s'.", path)
 			}
@@ -146,7 +144,7 @@ func DeleteTable(logger logger.Logger, container v3io.Container, path, filter st
 		case err := <-deleteTerminationChan:
 			if err != nil {
 				for i := 0; i < 2*workers; i++ {
-					terminationChan <- struct{}{}
+					onErrorTerminationChannel <- struct{}{}
 				}
 				return errors.Wrapf(err, "Delete failed during recursive delete of '%s'.", path)
 			}
@@ -208,50 +206,6 @@ func deleteObjectWorker(tablePath string, container v3io.Container, fileNameChan
 			return
 		}
 	}
-}
-
-func respWaitLoop(logger logger.Logger, comm chan int, responseChan chan *v3io.Response, timeout time.Duration) chan bool {
-	responses := 0
-	requests := -1
-	done := make(chan bool)
-
-	go func() {
-		active := false
-		for {
-			select {
-
-			case resp := <-responseChan:
-				responses++
-				active = true
-
-				if resp.Error != nil {
-					logger.ErrorWith("failed Delete response", "error", resp.Error)
-					// TODO: signal done and return?
-				}
-
-				if requests == responses {
-					done <- true
-					return
-				}
-
-			case requests = <-comm:
-				if requests <= responses {
-					done <- true
-					return
-				}
-
-			case <-time.After(timeout):
-				if !active {
-					logger.ErrorWith("Resp loop timed out!", "requests", requests, "response", responses)
-					done <- true
-					return
-				}
-				active = false
-			}
-		}
-	}()
-
-	return done
 }
 
 func ProcessPaths(session *frames.Session, path string, addSlash bool) (string, string, error) {
