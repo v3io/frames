@@ -30,7 +30,7 @@ Creates a new table for the wanted backend. Not all backends require a table to 
 client.create(backend=<backend>, table=<table>, attrs=<backend_specefic_attributes>)
 ```
 
-#### backend specific params
+#### backend specific parameters
 ##### TSDB
 * rate 
 * aggregates (optional)
@@ -85,7 +85,7 @@ Common read parameters:
 * max_in_message: int - Maximal number of rows per message
 * marker: string - Query marker (can't be used with query)
 
-#### backend specific params
+#### backend specific parameters
 ##### TSDB
 * start: string
 * end: string
@@ -118,7 +118,7 @@ For detailed info on these parameters please visit Stream docs.
 ### Delete
 Deletes a table of a specific backend.
 
-#### backend specific params
+#### backend specific parameters
 ##### TSDB
 * start: string - delete since start
 * end: string - delete since start
