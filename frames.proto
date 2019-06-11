@@ -160,7 +160,7 @@ message WriteRequest {
     }
 }
 
-message WriteRespose {
+message WriteResponse {
     int64 frames = 1;
     int64 rows = 2;
 }
@@ -210,10 +210,31 @@ message ExecResponse {
     Frame frame = 1;
 }
 
+message ShmReadRequest {
+    string db_path = 1;
+    ReadRequest request = 2;
+}
+
+message ShmReadResponse {
+    string db_path = 1;
+    bytes object_id = 2;
+    repeated string index_columns = 3;
+    string error = 4;
+}
+
+message ShmWriteRequest {
+    string db_path = 1;
+    bytes object_id = 2;
+    repeated string index_columns = 3;
+    InitialWriteRequest request = 4;
+};
+
 service Frames {
     rpc Read(ReadRequest) returns (stream Frame) {}
-    rpc Write(stream WriteRequest) returns (WriteRespose) {}
+    rpc Write(stream WriteRequest) returns (WriteResponse) {}
     rpc Create(CreateRequest) returns (CreateResponse) {}
     rpc Delete(DeleteRequest) returns (DeleteResponse) {}
     rpc Exec(ExecRequest) returns (ExecResponse) {}
+    rpc ShmRead(ShmReadRequest) returns (ShmReadResponse) {}
+    rpc ShmWrite(ShmWriteRequest) returns (WriteResponse) {}
 }

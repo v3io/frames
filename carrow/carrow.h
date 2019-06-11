@@ -1,3 +1,5 @@
+// +build carrow
+
 #ifndef _CARROW_H_
 #define _CARROW_H_
 

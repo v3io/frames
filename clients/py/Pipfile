@@ -8,6 +8,7 @@ googleapis-common-protos = ">=1.5.3"
 grpcio-tools = ">=1.16.0"
 pandas = "==0.23.*"
 requests = ">=2.19.1"
+pyarrow = "==0.13.0"
 
 [dev-packages]
 flake8 = "*"

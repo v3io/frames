@@ -26,14 +26,13 @@ import (
 	"io"
 	"net"
 
-	"github.com/v3io/frames"
-	"github.com/v3io/frames/api"
-
 	"github.com/nuclio/logger"
 	"github.com/pkg/errors"
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/reflection"
 
+	"github.com/v3io/frames"
+	"github.com/v3io/frames/api"
 	"github.com/v3io/frames/pb"
 )
 
@@ -224,7 +223,7 @@ func (s *Server) Write(stream pb.Frames_WriteServer) error {
 		return writeError
 	}
 
-	resp := &pb.WriteRespose{
+	resp := &pb.WriteResponse{
 		Frames: int64(nFrames),
 		Rows:   int64(nRows),
 	}

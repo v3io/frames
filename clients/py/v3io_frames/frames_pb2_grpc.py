@@ -22,7 +22,7 @@ class FramesStub(object):
     self.Write = channel.stream_unary(
         '/pb.Frames/Write',
         request_serializer=frames__pb2.WriteRequest.SerializeToString,
-        response_deserializer=frames__pb2.WriteRespose.FromString,
+        response_deserializer=frames__pb2.WriteResponse.FromString,
         )
     self.Create = channel.unary_unary(
         '/pb.Frames/Create',
@@ -38,6 +38,16 @@ class FramesStub(object):
         '/pb.Frames/Exec',
         request_serializer=frames__pb2.ExecRequest.SerializeToString,
         response_deserializer=frames__pb2.ExecResponse.FromString,
+        )
+    self.ShmRead = channel.unary_unary(
+        '/pb.Frames/ShmRead',
+        request_serializer=frames__pb2.ShmReadRequest.SerializeToString,
+        response_deserializer=frames__pb2.ShmReadResponse.FromString,
+        )
+    self.ShmWrite = channel.unary_unary(
+        '/pb.Frames/ShmWrite',
+        request_serializer=frames__pb2.ShmWriteRequest.SerializeToString,
+        response_deserializer=frames__pb2.WriteResponse.FromString,
         )
 
 
@@ -80,6 +90,20 @@ class FramesServicer(object):
     context.set_details('Method not implemented!')
     raise NotImplementedError('Method not implemented!')
 
+  def ShmRead(self, request, context):
+    # missing associated documentation comment in .proto file
+    pass
+    context.set_code(grpc.StatusCode.UNIMPLEMENTED)
+    context.set_details('Method not implemented!')
+    raise NotImplementedError('Method not implemented!')
+
+  def ShmWrite(self, request, context):
+    # missing associated documentation comment in .proto file
+    pass
+    context.set_code(grpc.StatusCode.UNIMPLEMENTED)
+    context.set_details('Method not implemented!')
+    raise NotImplementedError('Method not implemented!')
+
 
 def add_FramesServicer_to_server(servicer, server):
   rpc_method_handlers = {
@@ -91,7 +115,7 @@ def add_FramesServicer_to_server(servicer, server):
       'Write': grpc.stream_unary_rpc_method_handler(
           servicer.Write,
           request_deserializer=frames__pb2.WriteRequest.FromString,
-          response_serializer=frames__pb2.WriteRespose.SerializeToString,
+          response_serializer=frames__pb2.WriteResponse.SerializeToString,
       ),
       'Create': grpc.unary_unary_rpc_method_handler(
           servicer.Create,
@@ -107,6 +131,16 @@ def add_FramesServicer_to_server(servicer, server):
           servicer.Exec,
           request_deserializer=frames__pb2.ExecRequest.FromString,
           response_serializer=frames__pb2.ExecResponse.SerializeToString,
+      ),
+      'ShmRead': grpc.unary_unary_rpc_method_handler(
+          servicer.ShmRead,
+          request_deserializer=frames__pb2.ShmReadRequest.FromString,
+          response_serializer=frames__pb2.ShmReadResponse.SerializeToString,
+      ),
+      'ShmWrite': grpc.unary_unary_rpc_method_handler(
+          servicer.ShmWrite,
+          request_deserializer=frames__pb2.ShmWriteRequest.FromString,
+          response_serializer=frames__pb2.WriteResponse.SerializeToString,
       ),
   }
   generic_handler = grpc.method_handlers_generic_handler(

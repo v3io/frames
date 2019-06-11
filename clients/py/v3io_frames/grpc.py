@@ -12,20 +12,24 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+import json
 from datetime import datetime
 from functools import wraps
 
-import grpc
 import pandas as pd
+import pyarrow as pa
+from pyarrow import plasma
+
+import grpc
 
 from . import frames_pb2 as fpb  # noqa
 from . import frames_pb2_grpc as fgrpc  # noqa
+from .client import ClientBase
 from .errors import (CreateError, DeleteError, ExecuteError, ReadError,
                      WriteError)
 from .http import format_go_time
-from .pbutils import msg2df, pb_map, df2msg
+from .pbutils import df2msg, msg2df, pb_map
 from .pdutils import concat_dfs
-from .client import ClientBase
 
 IGNORE, FAIL = fpb.IGNORE, fpb.FAIL
 _scheme_prefix = 'grpc://'
@@ -145,6 +149,73 @@ class Client(ClientBase):
             resp = stub.Exec(request)
             if resp.frame:
                 return msg2df(resp.frame, self.frame_factory)
+
+    @grpc_raise(WriteError)
+    def shm_write(self, request, db_path, df, obj_id=None):
+        obj_id, index_cols = plasma_write_df(db_path, df, obj_id)
+        req = fpb.ShmReadRequest(
+            db_path=db_path,
+            object_id=obj_id.binary(),
+            index_columns=index_cols,
+            request=request,
+        )
+        with new_channel(self.address) as channel:
+            stub = fgrpc.FramesStub(channel)
+            stub.ShmWrite(req)
+
+    def shm_read(self):
+        pass
+
+
+def plasma_write_df(db_path, df, obj_id=None):
+    if obj_id is None:
+        obj_id = plasma.ObjectID.from_random()
+    elif isinstance(obj_id, bytes):
+        obj_id = plasma.ObjectID(obj_id)
+    elif isinstance(obj_id, str):
+        obj_id = plasma.ObjectID(obj_id.encode('ascii'))
+
+    client = plasma.connect(db_path, '', 0)
+    record_batch = pa.RecordBatch.from_pandas(df)
+
+    # Create the Plasma object from the PyArrow RecordBatch. Most of the work
+    # here is done to determine the size of buffer to request from the object
+    # store.
+    mock_sink = pa.MockOutputStream()
+    stream_writer = pa.RecordBatchStreamWriter(mock_sink, record_batch.schema)
+    stream_writer.write_batch(record_batch)
+    stream_writer.close()
+    data_size = mock_sink.size()
+    buf = client.create(obj_id, data_size)
+
+    stream = pa.FixedSizeBufferWriter(buf)
+    stream_writer = pa.RecordBatchStreamWriter(stream, record_batch.schema)
+    stream_writer.write_batch(record_batch)
+    stream_writer.close()
+    client.seal(obj_id)
+
+    meta = json.loads(record_batch.schema.metadata[b'pandas'])
+    return obj_id, meta['index_columns']
+
+
+def plasma_read_df(db_path, obj_id, index_columns=None):
+    if isinstance(obj_id, bytes):
+        obj_id = plasma.ObjectID(obj_id)
+    elif isinstance(obj_id, str):
+        obj_id = plasma.ObjectID(obj_id.encode('ascii'))
+
+    client = plasma.connect(db_path, '', 0)
+    data, = client.get_buffers([obj_id])
+    buf = pa.BufferReader(data)
+    reader = pa.RecordBatchStreamReader(buf)
+    record_batch = reader.read_next_batch()
+    df = record_batch.to_pandas()
+    if index_columns:
+        if len(index_columns) == 1:
+            df.index = df.pop(index_columns[0])
+        else:
+            raise ReadError('MultiIndex not supported')  # FIXME
+    return df
 
 
 def new_channel(address):

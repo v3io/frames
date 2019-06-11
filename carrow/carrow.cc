@@ -1,3 +1,5 @@
+// +build carrow
+
 #include <arrow/api.h>
 #include <arrow/io/api.h>
 #include <arrow/ipc/api.h>

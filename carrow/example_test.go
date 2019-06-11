@@ -1,3 +1,5 @@
+// +build carrow
+
 // Tentative API
 package carrow_test
 
