@@ -1,0 +1,7 @@
+*.a
+*.o
+.idea
+.vscode
+carrow
+plasmac
+wtr
