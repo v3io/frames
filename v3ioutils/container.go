@@ -188,18 +188,18 @@ func getItemsWorker(container v3io.Container, input *v3io.GetItemsInput, fileNam
 	}
 }
 
-func deleteObjectWorker(tablePath string, container v3io.Container, fileNameChan <-chan string, outgoingTerminationChan chan<- error, onErrorTerminationChannel <-chan struct{}) {
+func deleteObjectWorker(tablePath string, container v3io.Container, fileNameChan <-chan string, terminationChan chan<- error, onErrorTerminationChannel <-chan struct{}) {
 	for {
 		select {
 		case fileName, ok := <-fileNameChan:
 			if !ok {
-				outgoingTerminationChan <- nil
+				terminationChan <- nil
 				return
 			}
 			input := &v3io.DeleteObjectInput{Path: tablePath + "/" + fileName}
 			err := container.DeleteObjectSync(input)
 			if err != nil {
-				outgoingTerminationChan <- err
+				terminationChan <- err
 				return
 			}
 		case _ = <-onErrorTerminationChannel:
