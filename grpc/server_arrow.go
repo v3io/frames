@@ -5,8 +5,10 @@ package grpc
 import (
 	"context"
 
-	"github.com/v3io/frames/carrow"
-	"github.com/v3io/frames/carrow/plasma"
+	/*
+		"github.com/v3io/frames/carrow"
+		"github.com/v3io/frames/carrow/plasma"
+	*/
 	"github.com/v3io/frames/pb"
 )
 

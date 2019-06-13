@@ -5,4 +5,5 @@
 .ignore
 .pytest_cache
 _t
+framesd
 framesd-*-amd64*
