@@ -1,7 +1,8 @@
+*.o
 .benchmarks
 .envrc
+.idea
 .ignore
 .pytest_cache
 _t
 framesd-*-amd64*
-.idea
