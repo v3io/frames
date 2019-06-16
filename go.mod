@@ -7,7 +7,7 @@ require (
 	github.com/nuclio/zap v0.0.2
 	github.com/pkg/errors v0.8.1
 	github.com/v3io/v3io-go v0.0.0-20190526000000-99f1b77b1592ed16f3e65be03a9fde54e408cb8b
-	github.com/v3io/v3io-tsdb v0.9.3
+	github.com/v3io/v3io-tsdb v0.9.4
 	github.com/valyala/fasthttp v1.2.0
 	github.com/xwb1989/sqlparser v0.0.0-20180606152119-120387863bf2
 	golang.org/x/net v0.0.0-20181114220301-adae6a3d119a
