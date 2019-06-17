@@ -20,12 +20,13 @@ Supported Backends:
 All of frames operations are executed via the `client` object. To create a client object simply provide the Iguazio web-api endpoint and optional credentials.
 ```python
 import v3io_frames as v3f
-client = v3f.Client('web-api:8081')
+client = v3f.Client('web-api:8081', user='user1', password='pass')
 ```
+Note: When running from within the managed jupyter notebook on the iguazio platform there is no need to add credentials as this is handled by the platform.  
 Next, for every operation we need to provide a `backend`, and a `table` parameters and optionally other function specific arguments.
 
 ### Create
-Creates a new table for the wanted backend. Not all backends require a table to be created prior to ingestion. For example KV table will be created while ingesting new data, on the other hand since TSDB tables have mandatory fields we need to create a table before ingesting new data.  
+Creates a new table for the desired backend. Not all backends require a table to be created prior to ingestion. For example KV table will be created while ingesting new data, on the other hand since TSDB tables have mandatory fields we need to create a table before ingesting new data.  
 ```python
 client.create(backend=<backend>, table=<table>, attrs=<backend_specefic_attributes>)
 ```
@@ -36,17 +37,17 @@ client.create(backend=<backend>, table=<table>, attrs=<backend_specefic_attribut
 * aggregates (optional)
 * aggregation-granularity (optional)
 
-For detailed info on these parameters please visit [TSDB](https://github.com/v3io/v3io-tsdb) docs.  
+For detailed info on these parameters please visit [TSDB](https://github.com/v3io/v3io-tsdb#v3io-tsdb) docs.  
 Example:
 ```python
 client.create('tsdb', '/mytable', attrs={'rate': '1/m'})
 ```
 
 ##### Stream
-* shards (optional)
-* retention_hours (optional)
+* shards=1 (optional)
+* retention_hours=24 (optional)
 
-For detailed info on these parameters please visit Stream docs.  
+For detailed info on these parameters please visit [Stream](https://www.iguazio.com/docs/concepts/latest-release/streams) docs.  
 Example:
 ```python
 client.create('stream', '/mystream', attrs={'shards': '6'})
@@ -57,8 +58,6 @@ Writes a Dataframe into one of the supported backends.
 Common write parameters:
 * dfs - list of Dataframes to write
 * index_cols=None (optional) - specify specific index columns, by default Dataframe's index columns will be used.
-* expression=' ' (optional)
-* condition=' ' (optional)
 * labels=None (optional)
 * max_in_message=0 (optional)
 * partition_keys=None (optional)
@@ -71,6 +70,11 @@ df.set_index('name')
 client.write(backend='kv', table='mytable', dfs=df)
 ```
 
+#### backend specific parameters
+##### KV
+* expression=' ' (optional) - for detailed information on update expressions see [docs](https://www.iguazio.com/docs/reference/latest-release/expressions/update-expression/)
+* condition=' ' (optional) - for detailed information on condition expressions see [docs](https://www.iguazio.com/docs/reference/latest-release/expressions/condition-expression/)
+
 ### Read
 Reads data from a backend.  
 Common read parameters:
@@ -80,10 +84,11 @@ Common read parameters:
 * group_by: string - Query group by (can't be used with query)
 * columns: []str - List of columns to pass (can't be used with query)
 * limit: int - Maximal number of rows to return
-* data_format: string - Data format
 * row_layout: bool - Weather to use row layout (vs the default column layout)
 * max_in_message: int - Maximal number of rows per message
-* marker: string - Query marker (can't be used with query)
+* data_format: string - Data format (Not yet supported)
+* marker: string - Query marker (Not yet supported)
+
 
 #### backend specific parameters
 ##### TSDB
@@ -93,7 +98,7 @@ Common read parameters:
 * aggragators: string
 * aggregationWindow: string
 
-For detailed info on these parameters please visit [TSDB](https://github.com/v3io/v3io-tsdb) docs.  
+For detailed info on these parameters please visit [TSDB](https://github.com/v3io/v3io-tsdb#v3io-tsdb) docs.  
 Example:
 ```python
 df = client.read(backend='tsdb', query="select avg(cpu) as cpu, avg(diskio), avg(network)from mytable", start='now-1d', end='now', step='2h')
@@ -108,26 +113,51 @@ df = client.read(backend='tsdb', query="select avg(cpu) as cpu, avg(diskio), avg
 
 For detailed info on these parameters please visit KV docs.
 
-##### Stream
-* seek: string
-* shard_id: string
-* sequence: int64 
+Example:
+```python
+df = client.read(backend='tsdb', table='mytable', filter='col1>666')
+```
 
-For detailed info on these parameters please visit Stream docs.
+##### Stream
+* seek: string - excepted values:  time | seq/sequence | latest | earliest.  
+if `seq` seek type is requested, need to provide the desired sequence id via `sequence` parameter.  
+if `time` seek type is requested, need to provide the desired start time via `start` parameter.
+* shard_id: string
+* sequence: int64 (optional)
+
+For detailed info on these parameters please visit [Stream](https://www.iguazio.com/docs/concepts/latest-release/streams) docs.
+
+Example:
+```python
+df = client.read(backend='tsdb', table='mytable', seek='latest', shard_id='5')
+```
 
 ### Delete
 Deletes a table of a specific backend.
+
+Example:
+```python
+df = client.delete(backend='<backend>', table='mytable')
+```
 
 #### backend specific parameters
 ##### TSDB
 * start: string - delete since start
 * end: string - delete since start
 
- 
-For detailed info on these parameters please visit [TSDB](https://github.com/v3io/v3io-tsdb) docs.  
- 
+Note: if both `start` and `end` are not specified **all** the TSDB table will be deleted.  
+For detailed info on these parameters please visit [TSDB](https://github.com/v3io/v3io-tsdb#v3io-tsdb) docs.  
+Example:
+```python
+df = client.delete(backend='tsdb', table='mytable', start='now-1d', end='now-5h')
+```
 ##### KV
 * filter: string - Filter for selective delete
+
+Example:
+```python
+df = client.delete(backend='kv', table='mytable', filter='age>40')
+```
 
 ### Execute
 Provides additional functions that are not covered in the basic CRUD functionality.
