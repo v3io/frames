@@ -75,6 +75,14 @@ client.write(backend='kv', table='mytable', dfs=df)
 * expression=' ' (optional) - for detailed information on update expressions see [docs](https://www.iguazio.com/docs/reference/latest-release/expressions/update-expression/)
 * condition=' ' (optional) - for detailed information on condition expressions see [docs](https://www.iguazio.com/docs/reference/latest-release/expressions/condition-expression/)
 
+Example:
+```python
+data = [['tom', 10, 'TLV'], ['nick', 15, 'Berlin'], ['juli', 14, 'NY']] 
+df = pd.DataFrame(data, columns = ['name', 'age', 'city'])
+df.set_index('name')
+v3c.write(backend='kv', table='mytable', dfs=tsdf, expression='city="NY"', condition='age>14')
+```
+
 ### Read
 Reads data from a backend.  
 Common read parameters:
