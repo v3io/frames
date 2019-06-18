@@ -123,7 +123,7 @@ For detailed info on these parameters please visit KV docs.
 
 Example:
 ```python
-df = client.read(backend='tsdb', table='mytable', filter='col1>666')
+df = client.read(backend='kv', table='mytable', filter='col1>666')
 ```
 
 ##### Stream
@@ -137,7 +137,7 @@ For detailed info on these parameters please visit [Stream](https://www.iguazio.
 
 Example:
 ```python
-df = client.read(backend='tsdb', table='mytable', seek='latest', shard_id='5')
+df = client.read(backend='stream', table='mytable', seek='latest', shard_id='5')
 ```
 
 ### Delete
