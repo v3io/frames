@@ -21,17 +21,14 @@ such restriction.
 package v3ioutils
 
 import (
-	"encoding/binary"
-	"net/url"
 	"strings"
-	"time"
 
+	"encoding/binary"
 	"github.com/nuclio/logger"
 	"github.com/pkg/errors"
-	v3iohttp "github.com/v3io/v3io-go/pkg/dataplane/http"
-
 	"github.com/v3io/frames"
 	v3io "github.com/v3io/v3io-go/pkg/dataplane"
+	v3iohttp "github.com/v3io/v3io-go/pkg/dataplane/http"
 	"github.com/v3io/v3io-tsdb/pkg/utils"
 )
 
@@ -113,39 +110,49 @@ func AsInt64Array(val []byte) []uint64 {
 // DeleteTable deletes a table
 func DeleteTable(logger logger.Logger, container v3io.Container, path, filter string, workers int) error {
 
-	input := v3io.GetItemsInput{Path: path, AttributeNames: []string{"__name"}, Filter: filter}
-	iter, err := NewAsyncItemsCursor(container, &input, workers, []string{}, logger, 0)
-	//iter, err := container.Sync.GetItemsCursor(&input)
-	if err != nil {
-		return err
-	}
+	fileNameChan := make(chan string, 1024)
+	getItemsTerminationChan := make(chan error, workers)
+	deleteTerminationChan := make(chan error, workers)
+	onErrorTerminationChannel := make(chan struct{}, 2*workers)
 
-	responseChan := make(chan *v3io.Response, 1000)
-	commChan := make(chan int, 2)
-	doneChan := respWaitLoop(logger, commChan, responseChan, 10*time.Second)
-	reqMap := map[uint64]bool{}
-
-	i := 0
-	for iter.Next() {
-		name := iter.GetField("__name").(string)
-		req, err := container.DeleteObject(&v3io.DeleteObjectInput{
-			Path: path + "/" + url.QueryEscape(name)}, nil, responseChan)
-		if err != nil {
-			commChan <- i
-			return errors.Wrap(err, "failed to delete object "+name)
+	for i := 0; i < workers; i++ {
+		input := &v3io.GetItemsInput{
+			Path:           path,
+			AttributeNames: []string{"__name"},
+			Filter:         filter,
+			Segment:        i,
+			TotalSegments:  workers,
 		}
-		reqMap[req.ID] = true
-		i++
+		go getItemsWorker(container, input, fileNameChan, getItemsTerminationChan, onErrorTerminationChannel)
+		go deleteObjectWorker(path, container, fileNameChan, deleteTerminationChan, onErrorTerminationChannel)
 	}
 
-	commChan <- i
-	if iter.Err() != nil {
-		return errors.Wrap(iter.Err(), "failed to delete object ")
+	var getItemsTerminated, deletesTerminated int
+	for deletesTerminated < workers {
+		select {
+		case err := <-getItemsTerminationChan:
+			if err != nil {
+				for i := 0; i < 2*workers; i++ {
+					onErrorTerminationChannel <- struct{}{}
+				}
+				return errors.Wrapf(err, "GetItems failed during recursive delete of '%s'.", path)
+			}
+			getItemsTerminated++
+			if getItemsTerminated == workers {
+				close(fileNameChan)
+			}
+		case err := <-deleteTerminationChan:
+			if err != nil {
+				for i := 0; i < 2*workers; i++ {
+					onErrorTerminationChannel <- struct{}{}
+				}
+				return errors.Wrapf(err, "Delete failed during recursive delete of '%s'.", path)
+			}
+			deletesTerminated++
+		}
 	}
 
-	<-doneChan
-
-	err = container.DeleteObjectSync(&v3io.DeleteObjectInput{Path: path})
+	err := container.DeleteObjectSync(&v3io.DeleteObjectInput{Path: path})
 	if err != nil {
 		if !utils.IsNotExistsError(err) {
 			return errors.Wrapf(err, "Failed to delete table object '%s'.", path)
@@ -155,48 +162,50 @@ func DeleteTable(logger logger.Logger, container v3io.Container, path, filter st
 	return nil
 }
 
-func respWaitLoop(logger logger.Logger, comm chan int, responseChan chan *v3io.Response, timeout time.Duration) chan bool {
-	responses := 0
-	requests := -1
-	done := make(chan bool)
-
-	go func() {
-		active := false
-		for {
-			select {
-
-			case resp := <-responseChan:
-				responses++
-				active = true
-
-				if resp.Error != nil {
-					logger.ErrorWith("failed Delete response", "error", resp.Error)
-					// TODO: signal done and return?
-				}
-
-				if requests == responses {
-					done <- true
-					return
-				}
-
-			case requests = <-comm:
-				if requests <= responses {
-					done <- true
-					return
-				}
-
-			case <-time.After(timeout):
-				if !active {
-					logger.ErrorWith("Resp loop timed out!", "requests", requests, "response", responses)
-					done <- true
-					return
-				}
-				active = false
-			}
+func getItemsWorker(container v3io.Container, input *v3io.GetItemsInput, fileNameChan chan<- string, terminationChan chan<- error, onErrorTerminationChannel <-chan struct{}) {
+	for {
+		select {
+		case _ = <-onErrorTerminationChannel:
+			terminationChan <- nil
+			return
+		default:
 		}
-	}()
+		resp, err := container.GetItemsSync(input)
+		if err != nil {
+			terminationChan <- err
+			return
+		}
+		resp.Release()
+		output := resp.Output.(*v3io.GetItemsOutput)
+		for _, item := range output.Items {
+			fileNameChan <- item.GetField("__name").(string)
+		}
+		if output.Last {
+			terminationChan <- nil
+			return
+		}
+		input.Marker = output.NextMarker
+	}
+}
 
-	return done
+func deleteObjectWorker(tablePath string, container v3io.Container, fileNameChan <-chan string, terminationChan chan<- error, onErrorTerminationChannel <-chan struct{}) {
+	for {
+		select {
+		case fileName, ok := <-fileNameChan:
+			if !ok {
+				terminationChan <- nil
+				return
+			}
+			input := &v3io.DeleteObjectInput{Path: tablePath + "/" + fileName}
+			err := container.DeleteObjectSync(input)
+			if err != nil {
+				terminationChan <- err
+				return
+			}
+		case _ = <-onErrorTerminationChannel:
+			return
+		}
+	}
 }
 
 func ProcessPaths(session *frames.Session, path string, addSlash bool) (string, string, error) {
