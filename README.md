@@ -6,7 +6,186 @@
 
 V3IO Frames is a high-speed server and client library for accessing time-series (TSDB), NoSQL, and streaming data in the [Iguazio Continuous Data Platform](https://www.iguazio.com).
 
-## Components
+## Documentation
+
+Frames currently supports 3 backends and basic CRUD functionality for each.
+
+Supported Backends:
+1. TSDB
+2. KV
+3. Stream
+4. CSV - for testing purposes
+
+
+All of frames operations are executed via the `client` object. To create a client object simply provide the Iguazio web-api endpoint and optional credentials.
+```python
+import v3io_frames as v3f
+client = v3f.Client('web-api:8081', user='user1', password='pass')
+```
+Note: When running from within the managed jupyter notebook on the iguazio platform there is no need to add credentials as this is handled by the platform.  
+Next, for every operation we need to provide a `backend`, and a `table` parameters and optionally other function specific arguments.
+
+### Create
+Creates a new table for the desired backend. Not all backends require a table to be created prior to ingestion. For example KV table will be created while ingesting new data, on the other hand since TSDB tables have mandatory fields we need to create a table before ingesting new data.  
+```python
+client.create(backend=<backend>, table=<table>, attrs=<backend_specefic_attributes>)
+```
+
+#### backend specific parameters
+##### TSDB
+* rate 
+* aggregates (optional)
+* aggregation-granularity (optional)
+
+For detailed info on these parameters please visit [TSDB](https://github.com/v3io/v3io-tsdb#v3io-tsdb) docs.  
+Example:
+```python
+client.create('tsdb', '/mytable', attrs={'rate': '1/m'})
+```
+
+##### Stream
+* shards=1 (optional)
+* retention_hours=24 (optional)
+
+For detailed info on these parameters please visit [Stream](https://www.iguazio.com/docs/concepts/latest-release/streams) docs.  
+Example:
+```python
+client.create('stream', '/mystream', attrs={'shards': '6'})
+```
+
+### Write
+Writes a Dataframe into one of the supported backends.  
+Common write parameters:
+* dfs - list of Dataframes to write
+* index_cols=None (optional) - specify specific index columns, by default Dataframe's index columns will be used.
+* labels=None (optional)
+* max_in_message=0 (optional)
+* partition_keys=None (optional)
+
+Example:
+```python
+data = [['tom', 10], ['nick', 15], ['juli', 14]] 
+df = pd.DataFrame(data, columns = ['name', 'age'])
+df.set_index('name')
+client.write(backend='kv', table='mytable', dfs=df)
+```
+
+#### backend specific parameters
+##### KV
+* expression=' ' (optional) - for detailed information on update expressions see [docs](https://www.iguazio.com/docs/reference/latest-release/expressions/update-expression/)
+* condition=' ' (optional) - for detailed information on condition expressions see [docs](https://www.iguazio.com/docs/reference/latest-release/expressions/condition-expression/)
+
+Example:
+```python
+data = [['tom', 10, 'TLV'], ['nick', 15, 'Berlin'], ['juli', 14, 'NY']] 
+df = pd.DataFrame(data, columns = ['name', 'age', 'city'])
+df.set_index('name')
+v3c.write(backend='kv', table='mytable', dfs=tsdf, expression='city="NY"', condition='age>14')
+```
+
+### Read
+Reads data from a backend.  
+Common read parameters:
+* query: string - Query in SQL format
+* iterator: bool - Return iterator of DataFrames or (if False) just one DataFrame
+* filter: string - Query filter (can't be used with query)
+* group_by: string - Query group by (can't be used with query)
+* columns: []str - List of columns to pass (can't be used with query)
+* limit: int - Maximal number of rows to return
+* row_layout: bool - Weather to use row layout (vs the default column layout)
+* max_in_message: int - Maximal number of rows per message
+* data_format: string - Data format (Not yet supported)
+* marker: string - Query marker (Not yet supported)
+
+
+#### backend specific parameters
+##### TSDB
+* start: string
+* end: string
+* step: string
+* aggragators: string
+* aggregationWindow: string
+
+For detailed info on these parameters please visit [TSDB](https://github.com/v3io/v3io-tsdb#v3io-tsdb) docs.  
+Example:
+```python
+df = client.read(backend='tsdb', query="select avg(cpu) as cpu, avg(diskio), avg(network)from mytable", start='now-1d', end='now', step='2h')
+```
+
+##### KV
+* sharding_keys: []string - list of specific sharding keys to query. For range scan formatted tables only.
+* segments: []int64 (Not yet supported)
+* total_segments: int64 (Not yet supported)
+* sort_key_range_start: string (Not yet supported)
+* sort_key_range_end: string (Not yet supported)
+
+For detailed info on these parameters please visit KV docs.
+
+Example:
+```python
+df = client.read(backend='kv', table='mytable', filter='col1>666')
+```
+
+##### Stream
+* seek: string - excepted values:  time | seq/sequence | latest | earliest.  
+if `seq` seek type is requested, need to provide the desired sequence id via `sequence` parameter.  
+if `time` seek type is requested, need to provide the desired start time via `start` parameter.
+* shard_id: string
+* sequence: int64 (optional)
+
+For detailed info on these parameters please visit [Stream](https://www.iguazio.com/docs/concepts/latest-release/streams) docs.
+
+Example:
+```python
+df = client.read(backend='stream', table='mytable', seek='latest', shard_id='5')
+```
+
+### Delete
+Deletes a table of a specific backend.
+
+Example:
+```python
+df = client.delete(backend='<backend>', table='mytable')
+```
+
+#### backend specific parameters
+##### TSDB
+* start: string - delete since start
+* end: string - delete since start
+
+Note: if both `start` and `end` are not specified **all** the TSDB table will be deleted.  
+For detailed info on these parameters please visit [TSDB](https://github.com/v3io/v3io-tsdb#v3io-tsdb) docs.  
+Example:
+```python
+df = client.delete(backend='tsdb', table='mytable', start='now-1d', end='now-5h')
+```
+##### KV
+* filter: string - Filter for selective delete
+
+Example:
+```python
+df = client.delete(backend='kv', table='mytable', filter='age>40')
+```
+
+### Execute
+Provides additional functions that are not covered in the basic CRUD functionality.
+
+##### TSDB
+Currently no `execute` commands are available for the TSDB backend.
+
+##### KV
+* infer, inferschema - inferring and creating a schema file for a given kv table.
+Example: `client.execute(backend='kv', table='mytable', command='infer')`
+* update - perform an update expression for a specific key.
+Example: `client.execute(backend='kv', table='mytable', command='update', args={'key': 'somekey', 'expression': 'col2=30', 'condition': 'col3>15'})`
+
+##### Stream
+* put - putting a new object to a stream.
+Example: `client.execute(backend='stream', table='mystream', command='put', args={'data': 'this a record', 'clientinfo': 'some_info', 'partition': 'partition_key'})`
+
+## Contributing
+
+### Components
 
 - Go server with support for both the gRPC and HTTP protocols
 - Go client

@@ -49,12 +49,12 @@ class ClientBase:
     def read(self, backend='', table='', query='', columns=None, filter='',
              group_by='', limit=0, data_format='', row_layout=False,
              max_in_message=0, marker='', iterator=False, **kw):
-        """Run a query in nuclio
+        """Run a query
 
-        Parameters
+        Common Parameters
         ----------
         backend : str
-            Backend name
+            Backend name ('kv', 'tsdb', 'stream')
         table : str
             Table to query (can't be used with query)
         query : str
@@ -123,7 +123,6 @@ class ClientBase:
             Columns to use as indices
         partition_keys : list of str
             Partition keys
-
         Returns:
             Write result
         """
