@@ -110,25 +110,13 @@ func (b *sliceColumBuilder) Delete(index int) error {
 }
 
 func (b *sliceColumBuilder) setInt(index int, value interface{}) error {
-	switch value.(type) {
-	case int64:
-		b.values[index] = value.(int64)
-		return nil
-	case int:
-		b.values[index] = int64(value.(int))
-		return nil
-	case int8:
-		b.values[index] = int64(value.(int8))
-		return nil
-	case int16:
-		b.values[index] = int64(value.(int16))
-		return nil
-	case int32:
-		b.values[index] = int64(value.(int32))
-		return nil
+	ival, err := asInt64(value)
+	if err != nil {
+		return b.typeError(value)
 	}
 
-	return b.typeError(value)
+	b.values[index] = ival
+	return nil
 }
 
 func (b *sliceColumBuilder) setTime(index int, value interface{}) error {
@@ -148,17 +136,24 @@ func (b *sliceColumBuilder) typeError(value interface{}) error {
 	return fmt.Errorf("unsupported type for %s slice column - %T", b.msg.Dtype, value)
 }
 
-func (b *sliceColumBuilder) setFloat(index int, value interface{}) error {
+func asFloat64(value interface{}) (float64, error) {
 	switch value.(type) {
 	case float64:
-		b.values[index] = value.(float64)
-		return nil
+		return value.(float64), nil
 	case float32:
-		b.values[index] = float64(value.(float32))
-		return nil
+		return float64(value.(float32)), nil
+	}
+	return 0, fmt.Errorf("can't convert %v (%T) to float", value, value)
+}
+
+func (b *sliceColumBuilder) setFloat(index int, value interface{}) error {
+	fval, err := asFloat64(value)
+	if err != nil {
+		return b.typeError(value)
 	}
 
-	return b.typeError(value)
+	b.values[index] = fval
+	return nil
 }
 
 func (b *sliceColumBuilder) setString(index int, value interface{}) error {
@@ -322,20 +317,26 @@ func (b *labelColumBuilder) Delete(index int) error {
 	return nil
 }
 
-func (b *labelColumBuilder) setInt(index int, value interface{}) error {
-	var ival int64
+func asInt64(value interface{}) (int64, error) {
 	switch value.(type) {
 	case int64:
-		ival = value.(int64)
+		return value.(int64), nil
 	case int:
-		ival = int64(value.(int))
+		return int64(value.(int)), nil
 	case int8:
-		ival = int64(value.(int8))
+		return int64(value.(int8)), nil
 	case int16:
-		ival = int64(value.(int16))
+		return int64(value.(int16)), nil
 	case int32:
-		ival = int64(value.(int32))
-	default:
+		return int64(value.(int32)), nil
+	}
+
+	return 0, fmt.Errorf("can't convert %v (%T) to int64", value, value)
+}
+
+func (b *labelColumBuilder) setInt(index int, value interface{}) error {
+	ival, err := asInt64(value)
+	if err != nil {
 		return b.typeError(value)
 	}
 
@@ -352,13 +353,8 @@ func (b *labelColumBuilder) setInt(index int, value interface{}) error {
 }
 
 func (b *labelColumBuilder) setFloat(index int, value interface{}) error {
-	var fval float64
-	switch value.(type) {
-	case float64:
-		fval = value.(float64)
-	case float32:
-		fval = float64(value.(float32))
-	default:
+	fval, err := asFloat64(value)
+	if err != nil {
 		return b.typeError(value)
 	}
 
