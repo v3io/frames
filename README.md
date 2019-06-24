@@ -4,7 +4,7 @@
 [![GoDoc](https://godoc.org/github.com/v3io/frames?status.svg)](https://godoc.org/github.com/v3io/frames)
 [![License](https://img.shields.io/badge/License-Apache%202.0-blue.svg)](https://opensource.org/licenses/Apache-2.0)
 
-V3IO Frames is a high-speed server and client library for accessing time-series (TSDB), NoSQL, and streaming data in the [Iguazio Continuous Data Platform](https://www.iguazio.com).
+V3IO Frames is a high-speed server and client library for accessing time-series (TSDB), NoSQL, and streaming data in the [Iguazio Data Science Platform](https://www.iguazio.com).
 
 ## Documentation
 
@@ -218,7 +218,7 @@ The following environment variables are defined in the [Travis settings](https:/
 - Python Package Index ([PyPI](https://pypi.org/))
     - `V3IO_PYPI_PASSWORD` &mdash; Password for pushing a new release to PyPi.
     - `V3IO_PYPI_USER` &mdash; Username for pushing a new release to PyPi.
-- Iguazio Container Data Platform
+- Iguazio Data Science Platform
     - `V3IO_SESSION` &mdash; A JSON encoded map with session information for running tests.
       For example:
 
