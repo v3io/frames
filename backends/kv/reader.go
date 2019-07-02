@@ -100,10 +100,15 @@ func (ki *Iterator) Next() bool {
 			numOfSchemaFiles++
 			continue
 		}
+		// Indicates whether the key column is save as an attribute in addition to the object name (__name)
+		_, hasKeyColumnAttribute := row[ki.keyColumnName]
 
 		for name, field := range row {
 			colName := name
 			if colName == indexColKey { // convert `__name` attribute name to the key column
+				if hasKeyColumnAttribute{
+					continue
+				}
 				colName = ki.keyColumnName
 			}
 
