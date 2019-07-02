@@ -20,7 +20,7 @@ Supported Backends:
 All of frames operations are executed via the `client` object. To create a client object simply provide the Iguazio web-api endpoint and optional credentials.
 ```python
 import v3io_frames as v3f
-client = v3f.Client('web-api:8081', user='user1', password='pass')
+client = v3f.Client('framesd:8081', user='user1', password='pass')
 ```
 Note: When running from within the managed jupyter notebook on the iguazio platform there is no need to add credentials as this is handled by the platform.  
 Next, for every operation we need to provide a `backend`, and a `table` parameters and optionally other function specific arguments.
@@ -60,7 +60,7 @@ Common write parameters:
 * index_cols=None (optional) - specify specific index columns, by default Dataframe's index columns will be used.
 * labels=None (optional)
 * max_in_message=0 (optional)
-* partition_keys=None (optional)
+* partition_keys=None (Not yet supported)
 
 Example:
 ```python
