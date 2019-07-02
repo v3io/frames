@@ -50,13 +50,25 @@ func (kv *Backend) Read(request *frames.ReadRequest) (frames.FrameIterator, erro
 		return nil, err
 	}
 
-	input := v3io.GetItemsInput{Path: tablePath, Filter: request.Proto.Filter, AttributeNames: columns}
-	kv.logger.DebugWith("read input", "input", input, "request", request)
-
-	iter, err := v3ioutils.NewAsyncItemsCursor(
-		container, &input, kv.numWorkers, request.Proto.ShardingKeys, kv.logger, 0)
+	partitions, err := kv.getPartitions(tablePath, container, "")
 	if err != nil {
 		return nil, err
+	}
+	if len(partitions) == 0 {
+		partitions = []string{tablePath}
+	}
+
+	var iterators []*v3ioutils.AsyncItemsCursor
+	for _, partition := range partitions {
+		input := v3io.GetItemsInput{Path: partition, Filter: request.Proto.Filter, AttributeNames: columns}
+		kv.logger.DebugWith("read input", "input", input, "request", request)
+
+		iter, err := v3ioutils.NewAsyncItemsCursor(
+			container, &input, kv.numWorkers, request.Proto.ShardingKeys, kv.logger, 0)
+		if err != nil {
+			return nil, err
+		}
+		iterators = append(iterators, iter)
 	}
 
 	// Get Schema
@@ -70,29 +82,48 @@ func (kv *Backend) Read(request *frames.ReadRequest) (frames.FrameIterator, erro
 		return nil, err
 	}
 
-	newKVIter := Iterator{request: request, iter: iter, keyColumnName: schema.Key}
+	newKVIter := Iterator{request: request, iters: iterators, keyColumnName: schema.Key}
 	return &newKVIter, nil
 }
 
 // Iterator is key/value iterator
 type Iterator struct {
-	request       *frames.ReadRequest
-	iter          *v3ioutils.AsyncItemsCursor
-	err           error
-	currFrame     frames.Frame
-	keyColumnName string
+	request          *frames.ReadRequest
+	iters            []*v3ioutils.AsyncItemsCursor
+	currentIterIndex int
+	err              error
+	currFrame        frames.Frame
+	keyColumnName    string
+}
+
+func (ki *Iterator) internalNext() bool {
+	if !ki.iters[ki.currentIterIndex].Next() {
+		ki.currentIterIndex++
+		if ki.currentIterIndex >= len(ki.iters) {
+			return false
+		}
+		return ki.internalNext()
+	}
+	return true
 }
 
 // Next advances the iterator to next frame
 func (ki *Iterator) Next() bool {
+	if ki.currentIterIndex >= len(ki.iters) {
+		return false
+	}
 	var columns []frames.Column
 	byName := map[string]frames.Column{}
 
 	rowNum := 0
 	numOfSchemaFiles := 0
 
-	for ; rowNum < int(ki.request.Proto.MessageLimit) && ki.iter.Next(); rowNum++ {
-		row := ki.iter.GetFields()
+	currentIter := ki.iters[ki.currentIterIndex]
+
+	for ; rowNum < int(ki.request.Proto.MessageLimit) && ki.internalNext(); rowNum++ {
+		currentIter = ki.iters[ki.currentIterIndex]
+
+		row := currentIter.GetFields()
 
 		// Skip table schema object
 		rowIndex, ok := row[indexColKey]
@@ -149,8 +180,8 @@ func (ki *Iterator) Next() bool {
 		}
 	}
 
-	if ki.iter.Err() != nil {
-		ki.err = ki.iter.Err()
+	if currentIter.Err() != nil {
+		ki.err = currentIter.Err()
 		return false
 	}
 
@@ -222,4 +253,63 @@ func init() {
 	if err := backends.Register("kv", NewBackend); err != nil {
 		panic(err)
 	}
+}
+
+func (kv *Backend) getPartitions(path string, container v3io.Container, marker string) ([]string, error) {
+	var partitions []string
+	input := &v3io.GetContainerContentsInput{Path: path, DirectoriesOnly: true, Marker: marker}
+	res, err := container.GetContainerContentsSync(input)
+	if err != nil {
+		return nil, err
+	}
+	out := res.Output.(*v3io.GetContainerContentsOutput)
+	if len(out.CommonPrefixes) > 0 {
+		for _, partition := range out.CommonPrefixes {
+			partitions = append(partitions, partition.Prefix)
+			parts, err := kv.getPartitions(partition.Prefix, container, "")
+			if err != nil {
+				return nil, err
+			}
+			partitions = append(partitions, parts...)
+		}
+	}
+
+	if out.NextMarker != "" {
+		parts, err := kv.getPartitions(path, container, out.NextMarker)
+		if err != nil {
+			return nil, err
+		}
+		partitions = append(partitions, parts...)
+	}
+
+	return partitions, nil
+}
+
+func (kv *Backend) internalGetPartitions(path string, container v3io.Container, marker string) ([]string, error) {
+	var partitions []string
+	input := &v3io.GetContainerContentsInput{Path: path, DirectoriesOnly: true, Marker: marker}
+	res, err := container.GetContainerContentsSync(input)
+	if err != nil {
+		return nil, err
+	}
+	out := res.Output.(*v3io.GetContainerContentsOutput)
+	for _, partition := range out.CommonPrefixes {
+		parts, err := kv.getPartitions(partition.Prefix, container, "")
+		if err != nil {
+			return nil, err
+		}
+		partitions = append(partitions, parts...)
+	}
+
+	if out.NextMarker != "" {
+		parts, err := kv.getPartitions(path, container, out.NextMarker)
+		if err != nil {
+			return nil, err
+		}
+		partitions = append(partitions, parts...)
+	} else {
+		partitions = append(partitions, path)
+	}
+
+	return partitions, nil
 }
