@@ -100,7 +100,7 @@ func (ki *Iterator) Next() bool {
 			numOfSchemaFiles++
 			continue
 		}
-		// Indicates whether the key column is save as an attribute in addition to the object name (__name)
+		// Indicates whether the key column exists as an attribute in addition to the object name (__name)
 		_, hasKeyColumnAttribute := row[ki.keyColumnName]
 
 		for name, field := range row {
