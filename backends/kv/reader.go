@@ -106,14 +106,13 @@ func (ki *Iterator) Next() bool {
 		for name, field := range row {
 			colName := name
 			if colName == indexColKey { // convert `__name` attribute name to the key column
-				if hasKeyColumnAttribute{
+				if hasKeyColumnAttribute {
 					continue
 				}
 				colName = ki.keyColumnName
 			}
 
 			col, ok := byName[colName]
-			field = maybeFloat(field) // Make all number floats
 			if !ok {
 				data, err := utils.NewColumn(field, rowNum-numOfSchemaFiles)
 				if err != nil {
@@ -189,38 +188,6 @@ func (ki *Iterator) Err() error {
 // At return the current frames
 func (ki *Iterator) At() frames.Frame {
 	return ki.currFrame
-}
-
-// maybeFloat converts numberical numbers to float64. Will leave other types unchanged
-func maybeFloat(val interface{}) interface{} {
-	switch val.(type) {
-	case int:
-		return float64(val.(int))
-	case int8:
-		return float64(val.(int8))
-	case int16:
-		return float64(val.(int16))
-	case int32:
-		return float64(val.(int32))
-	case int64:
-		return float64(val.(int64))
-	case uint:
-		return float64(val.(uint))
-	case uint8:
-		return float64(val.(uint8))
-	case uint16:
-		return float64(val.(uint16))
-	case uint32:
-		return float64(val.(uint32))
-	case uint64:
-		return float64(val.(uint64))
-	case float64:
-		return val
-	case float32:
-		return float64(val.(float32))
-	}
-
-	return val
 }
 
 func init() {
