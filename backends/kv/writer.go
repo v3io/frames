@@ -272,7 +272,6 @@ func (a *Appender) WaitForComplete(timeout time.Duration) error {
 
 func (a *Appender) indexValFunc(frame frames.Frame) (func(int) interface{}, error) {
 	var indexCol frames.Column
-	var fn func(int) interface{}
 
 	if indices := frame.Indices(); len(indices) > 0 {
 		if len(indices) != 1 {
@@ -287,6 +286,7 @@ func (a *Appender) indexValFunc(frame frames.Frame) (func(int) interface{}, erro
 		}, nil
 	}
 
+	var fn func(int) interface{}
 	switch indexCol.DType() {
 	// strconv.Format* is about twice as fast as fmt.Sprintf
 	case frames.IntType:
