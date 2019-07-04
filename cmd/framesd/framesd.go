@@ -49,7 +49,7 @@ func main() {
 		showVersion bool
 	}
 
-	flag.StringVar(&config.file, "config", "cfg.yaml", "path to configuration file (YAML)")
+	flag.StringVar(&config.file, "config", "", "path to configuration file (YAML)")
 	flag.StringVar(&config.httpAddr, "httpAddr", ":8080", "address to listen on HTTP")
 	flag.StringVar(&config.grpcAddr, "grpcAddr", ":8081", "address to listen on gRPC")
 	flag.BoolVar(&config.showVersion, "version", false, "show version and exit")
