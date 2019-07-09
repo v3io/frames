@@ -168,7 +168,7 @@ class Client(ClientBase):
         if resp.error:
             raise ReadError(resp.error)
 
-        client = plasma.connect(resp.db_path, '', 0)
+        client = plasma.connect(resp.db_path)
         oid = plasma.ObjectID(resp.object_id)
         buf, = client.get_buffers([oid])
         reader = pa.RecordBatchStreamReader(buf)
