@@ -24,7 +24,7 @@ package carrow
 
 import (
 	"fmt"
-	"runtime"
+	//"runtime"
 	"time"
 	"unsafe"
 )
@@ -86,10 +86,11 @@ func NewField(name string, dtype DType) (*Field, error) {
 	}
 
 	field := &Field{ptr}
-
-	runtime.SetFinalizer(field, func(f *Field) {
-		C.field_free(f.ptr)
-	})
+	/*
+		runtime.SetFinalizer(field, func(f *Field) {
+			C.field_free(f.ptr)
+		})
+	*/
 	return field, nil
 }
 
@@ -106,10 +107,11 @@ func NewFieldList() (*FieldList, error) {
 	}
 
 	fieldList := &FieldList{ptr}
-
-	runtime.SetFinalizer(fieldList, func(f *FieldList) {
-		C.field_free(f.ptr)
-	})
+	/*
+		runtime.SetFinalizer(fieldList, func(f *FieldList) {
+			C.fields_free(f.ptr)
+		})
+	*/
 	return fieldList, nil
 }
 
@@ -144,9 +146,11 @@ func NewSchema(fields []*Field) (*Schema, error) {
 		return nil, fmt.Errorf("can't create schema")
 	}
 	schema := &Schema{ptr}
-	runtime.SetFinalizer(schema, func(s *Schema) {
-		C.schema_free(schema.ptr)
-	})
+	/*
+		runtime.SetFinalizer(schema, func(s *Schema) {
+			C.schema_free(schema.ptr)
+		})
+	*/
 
 	return schema, nil
 }

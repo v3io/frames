@@ -184,7 +184,7 @@ func NewArrowColumnBuilder(name string, dtype DType, size int) (*ArrowColumnBuil
 		typ = carrow.TimestampType
 		bld.tsBuilder = carrow.NewTimestampArrayBuilder()
 	default:
-		return nil, fmt.Errorf("unsupported dtype - %s", dtype.String())
+		return nil, fmt.Errorf("unsupported dtype - %s", dtype)
 	}
 
 	var err error
