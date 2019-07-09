@@ -1,6 +1,7 @@
 *.a
 *.o
 .benchmarks
+.clang_complete
 .envrc
 .idea
 .ignore
