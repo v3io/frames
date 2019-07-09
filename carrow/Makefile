@@ -5,9 +5,10 @@ PLASMA_DB = /tmp/plasma.db
 CXXOPT := -O2
 LD_LIBRARY_PATH := /miniconda/lib
 PKG_CONFIG_PATH := /miniconda/lib/pkgconfig
+GOTAGS=-tags=carrow
 
 all: libcarrow.a
-	go build ./...
+	go build $(GOTAGS) ./...
 
 libcarrow.a: carrow.o
 	ar r $@ $^
@@ -18,19 +19,8 @@ libcarrow.a: carrow.o
 clean:
 	rm -f *.o *.a
 
-get-arrow:
-		git clone git://github.com/apache/arrow.git ../arrow
-		(cd ../arrow && git checkout apache-arrow-0.13.0)
-
-build-docker:
-	docker build . -t carrow:builder
-	docker run \
-		-v $(PWD):/src/carrow \
-		-it --workdir=/src/carrow/ \
-		carrow:builder
-
 test:
-	go test -v ./...
+	go test $(GOTAGS) -v ./...
 
 circleci:
 	docker build -f Dockerfile.test .

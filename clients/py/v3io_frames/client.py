@@ -213,6 +213,78 @@ class ClientBase:
         self._validate_request(backend, table, ExecuteError)
         return self._execute(backend, table, command, args, expression)
 
+    def read_shm(self, db_path, backend='', table='', query='', columns=None,
+                 filter='', group_by='', limit=0, data_format='',
+                 row_layout=False, max_in_message=0, marker='',
+                 iterator=False, **kw):
+        """Run a query in frames, get data via shared memory/arrow
+
+        Parameters
+        ----------
+        db_path : str
+            Path to database (plasma)
+        backend : str
+            Backend name
+        table : str
+            Table to query (can't be used with query)
+        query : str
+            Query in SQL format
+        columns : []str
+            List of columns to pass (can't be used with query)
+        filter : str
+            Query filter (can't be used with query)
+        group_by : str
+            Query group by (can't be used with query)
+        limit: int
+            Maximal number of rows to return
+        data_format : str
+            Data format
+        row_layout : bool
+            Weather to use row layout (vs the default column layout)
+        max_in_message : int
+            Maximal number of rows per message
+        marker : str
+            Query marker (can't be used with query)
+        iterator : bool
+            Return iterator of DataFrames or (if False) just one DataFrame
+        **kw
+            Extra parameter for specific backends
+
+        Returns:
+            A pandas DataFrame iterator. Each DataFrame will have "labels"
+            attribute. If `iterator` is False will return a single DataFrame.
+        """
+        if not backend:
+            raise ReadError('no backend')
+        if not (table or query):
+            raise ReadError('missing data')
+        # TODO: More validation
+
+        # TODO: For some reason this is an error
+        # if max_in_message > 0:
+        #    iterator = True
+
+        request = fpb.ReadRequest(
+            session=self.session,
+            backend=backend,
+            query=query,
+            table=table,
+            columns=columns,
+            filter=filter,
+            group_by=group_by,
+            message_limit=max_in_message,
+            limit=limit,
+            row_layout=row_layout,
+            marker=marker,
+            **kw,
+        )
+
+        shm_req = fpb.ShmReadRequest(
+            db_path=db_path,
+            request=request,
+        )
+        return self._read_shm(shm_req)
+
     def _fix_address(self, address):
         return address
 

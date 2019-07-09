@@ -38,6 +38,10 @@ var (
 	TimeType   = DType(pb.DType_TIME)
 )
 
+func (dt DType) String() string {
+	return pb.DType(dt).String()
+}
+
 // Column is a data column
 type Column interface {
 	Len() int                                 // Number of elements

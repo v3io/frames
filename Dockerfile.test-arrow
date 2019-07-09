@@ -12,14 +12,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-# Docker container for framesd with arrow support, to run
-#   docker run -p8080:8080 -p8081:8081 -v /path/to/config.yaml:/etc/framesd.yaml
-# 
-# You can also use -e V3IO_GRPC_PORT=9999 and -e V3IO_HTTP_PORT=9998 to set ports
-# (don't forget to update the -p accordingly)
 
-
-# TODO: Multi stage build without Go SDK
 FROM golang:1.12-stretch
 
 RUN apt-get update && apt-get install -y curl bzip2 g++ make
@@ -30,18 +23,6 @@ ENV LD_LIBRARY_PATH=/miniconda/lib
 RUN conda install -y -c conda-forge pyarrow=0.14 pkg-config
 
 WORKDIR /frames
-
 COPY . .
-ARG FRAMES_VERSION=unknown
 RUN cd carrow && make fresh
-RUN go build \
-    -tags=carrow \
-    -ldflags="-X main.Version=${FRAMES_VERSION}" \
-    ./cmd/framesd
-RUN mv framesd /usr/local/bin
-
-VOLUME /etc/framesd
-ENV V3IO_GRPC_PORT 8081
-ENV V3IO_HTTP_PORT 8080
-
-CMD framesd -grpcAddr :${V3IO_GRPC_PORT} -httpAddr :${V3IO_HTTP_PORT} -config /etc/framesd.yaml
+RUN go test -tags=carrow ./...

@@ -17,13 +17,19 @@ from datetime import datetime
 from functools import wraps
 
 import pandas as pd
-import pyarrow as pa
-from pyarrow import plasma
+
+try:
+    import pyarrow as pa
+    from pyarrow import plasma
+
+    has_arrow = True
+except ImportError:
+    has_arrow = False
 
 import grpc
 
-from . import frames_pb2 as fpb  # noqa
-from . import frames_pb2_grpc as fgrpc  # noqa
+from . import frames_pb2 as fpb
+from . import frames_pb2_grpc as fgrpc
 from .client import ClientBase
 from .errors import (CreateError, DeleteError, ExecuteError, ReadError,
                      WriteError)
@@ -150,21 +156,34 @@ class Client(ClientBase):
             if resp.frame:
                 return msg2df(resp.frame, self.frame_factory)
 
-    @grpc_raise(WriteError)
-    def shm_write(self, request, db_path, df, obj_id=None):
-        obj_id, index_cols = plasma_write_df(db_path, df, obj_id)
-        req = fpb.ShmReadRequest(
-            db_path=db_path,
-            object_id=obj_id.binary(),
-            index_columns=index_cols,
-            request=request,
-        )
+    @grpc_raise(ReadError)
+    def _read_shm(self, req):
+        if not has_arrow:
+            raise ReadError('pyarrow not found')
+
         with new_channel(self.address) as channel:
             stub = fgrpc.FramesStub(channel)
-            stub.ShmWrite(req)
+            resp = stub.ShmRead(req)
 
-    def shm_read(self):
-        pass
+        if resp.error:
+            raise ReadError(resp.error)
+
+        client = plasma.connect(resp.db_path, '', 0)
+        oid = plasma.ObjectID(resp.object_id)
+        buf, = client.get_buffers([oid])
+        reader = pa.RecordBatchStreamReader(buf)
+        record_batch = reader.read_next_batch()
+
+        if self.frame_factory is pd.DataFrame:
+            return record_batch.to_pandas()
+
+        # cudf
+        table = pa.Table.from_batches([record_batch])
+        return self.frame_factory.from_arrow(table)
+
+    @grpc_raise(WriteError)
+    def _shm_write(self, request, db_path, df, obj_id=None):
+        raise NotImplementedError
 
 
 def plasma_write_df(db_path, df, obj_id=None):
