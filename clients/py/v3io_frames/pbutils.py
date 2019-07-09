@@ -106,7 +106,8 @@ def msg2df(frame, frame_factory, columns=None):
         df = df.reindex(sorted(df.columns), axis=1)
         for name in df.columns:
             try:
-                if name.startswith('column_') and int(name[len('column_'):]) == i:
+                col_index = int(name[len('column_'):])
+                if name.startswith('column_') and col_index == i:
                     i += 1
                     continue
             except ValueError:
