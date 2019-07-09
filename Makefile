@@ -109,6 +109,13 @@ frames:
 		golang:1.12 \
 		make frames-bin
 
+
+# Make sure pkg-config knows where to find arrow & plasma, you can set
+#	export PKG_CONFIG_PATH=/opt/miniconda/lib/pkgconfig
+arrow:
+	go build -tags carrow ./cmd/framesd
+
+
 .PHONY: ensure-gopath
 ensure-gopath:
 ifndef GOPATH

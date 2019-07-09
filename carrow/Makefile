@@ -13,7 +13,7 @@ libcarrow.a: carrow.o
 	ar r $@ $^
 
 %.o: %.cc
-	g++ -Wall -g $(CXXOPT) -std=c++11 -I$(ARROW_INC) -o $@ -c $^
+	g++ -Wall -g $(CXXOPT) -std=c++11 $(ARROW_INC) -o $@ -c $^
 
 clean:
 	rm -f *.o *.a

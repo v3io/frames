@@ -9,11 +9,12 @@ import (
 	"unsafe"
 )
 
+// Make sure pkg-config knows where to find arrow & plasma, you can set
+//	export PKG_CONFIG_PATH=/opt/miniconda/lib/pkgconfig
+
 /*
 #cgo pkg-config: arrow plasma
 #cgo LDFLAGS: -lcarrow -L.
-#cgo CXXFLAGS: -I/src/arrow/cpp/src
-// FIXME: plasma headers
 
 #include "carrow.h"
 #include <stdlib.h>

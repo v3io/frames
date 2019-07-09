@@ -28,6 +28,6 @@ RUN conda install -c conda-forge -y \
     ipython \
     numpy \
     pkg-config \
-    pyarrow=0.13.0
+    pyarrow=0.14.0
 
-WORKDIR /src/carrow
+WORKDIR /src/frames

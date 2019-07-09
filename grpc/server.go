@@ -113,21 +113,12 @@ func (s *Server) Start() error {
 
 func (s *Server) Read(request *pb.ReadRequest, stream pb.Frames_ReadServer) error {
 	ch := make(chan frames.Frame)
-
-	password := frames.InitSecretString(request.Session.Password)
-	token := frames.InitSecretString(request.Session.Token)
-	request.Session.Password = ""
-	request.Session.Token = ""
-	req := frames.ReadRequest{
-		Proto:    request,
-		Password: password,
-		Token:    token,
-	}
+	req := s.prepareRequest(request)
 
 	var apiError error
 	go func() {
 		defer close(ch)
-		apiError = s.api.Read(&req, ch)
+		apiError = s.api.Read(req, ch)
 		if apiError != nil {
 			s.logger.ErrorWith("API error reading", "error", apiError)
 		}
@@ -146,6 +137,19 @@ func (s *Server) Read(request *pb.ReadRequest, stream pb.Frames_ReadServer) erro
 	}
 
 	return apiError
+}
+
+func (s *Server) prepareRequest(request *pb.ReadRequest) *frames.ReadRequest {
+	password := frames.InitSecretString(request.Session.Password)
+	token := frames.InitSecretString(request.Session.Token)
+	request.Session.Password = ""
+	request.Session.Token = ""
+	return &frames.ReadRequest{
+		Proto:    request,
+		Password: password,
+		Token:    token,
+	}
+
 }
 
 // Write write data to table

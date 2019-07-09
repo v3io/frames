@@ -140,6 +140,9 @@ message ReadRequest {
     string seek = 25;
     string shard_id = 26;
     int64 sequence = 27;
+
+    // Arrow
+    bool use_arrow = 29;
 }
 
 message InitialWriteRequest {

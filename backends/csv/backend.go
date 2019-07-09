@@ -128,6 +128,7 @@ func (b *Backend) Read(request *frames.ReadRequest) (frames.FrameIterator, error
 		columnNames: columns,
 		limit:       int(request.Proto.Limit),
 		frameLimit:  int(request.Proto.MessageLimit),
+		useArrow:    request.Proto.UseArrow,
 	}
 
 	return it, nil
@@ -208,6 +209,7 @@ type FrameIterator struct {
 	nRows       int
 	limit       int
 	frameLimit  int
+	useArrow    bool
 }
 
 // Next reads the next frame, return true of succeeded
@@ -358,13 +360,22 @@ func (it *FrameIterator) buildFrame(rows [][]string) (frames.Frame, error) {
 			return nil, fmt.Errorf("%s - unknown type %T", colName, val0)
 		}
 
-		col, err = frames.NewSliceColumn(colName, data)
+		if it.useArrow {
+			col, err = frames.NewArrowColumn(colName, data)
+		} else {
+			col, err = frames.NewSliceColumn(colName, data)
+		}
+
 		if err != nil {
 			it.logger.ErrorWith("can't build column", "error", err, "column", colName)
 			return nil, errors.Wrapf(err, "can't build column %s", colName)
 		}
 
 		columns[c] = col
+	}
+
+	if it.useArrow {
+		return frames.NewArrowFrame(columns)
 	}
 
 	return frames.NewFrame(columns, nil, nil)

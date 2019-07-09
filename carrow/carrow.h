@@ -8,6 +8,7 @@ extern "C" {
 #endif
 
 #include <stdint.h>
+#include <stddef.h>
 
 extern const int BOOL_DTYPE;
 extern const int FLOAT64_DTYPE;
