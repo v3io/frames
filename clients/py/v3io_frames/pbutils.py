@@ -81,7 +81,7 @@ def pb2py(obj):
     return obj
 
 
-def msg2df(frame, frame_factory):
+def msg2df(frame, frame_factory, columns=None):
     indices = [col2series(idx, None) for idx in frame.indices]
     if len(indices) == 1:
         index = indices[0]
@@ -98,21 +98,24 @@ def msg2df(frame, frame_factory):
         warnings.simplefilter('ignore')
         df.labels = pb2py(frame.labels)
 
-    i = 0
-    is_range = True
-    df = df.reindex(sorted(df.columns), axis=1)
-    for name in df.columns:
-        try:
-            if name.startswith('column_') and int(name[len('column_'):]) == i:
-                i += 1
-                continue
-        except ValueError:
-            pass
-        is_range = False
-        break
+    if columns:
+        df = df.reindex(columns=columns)
+    else:
+        i = 0
+        is_range = True
+        df = df.reindex(sorted(df.columns), axis=1)
+        for name in df.columns:
+            try:
+                if name.startswith('column_') and int(name[len('column_'):]) == i:
+                    i += 1
+                    continue
+            except ValueError:
+                pass
+            is_range = False
+            break
 
-    if is_range:
-        df.columns = pd.RangeIndex(start=0, step=1, stop=len(df.columns))
+        if is_range:
+            df.columns = pd.RangeIndex(start=0, step=1, stop=len(df.columns))
 
     return df
 
