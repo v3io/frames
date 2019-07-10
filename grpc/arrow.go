@@ -24,13 +24,18 @@ package grpc
 
 import (
 	"context"
-	"fmt"
+	"time"
 
 	"github.com/pkg/errors"
 
 	"github.com/v3io/frames"
 	"github.com/v3io/frames/carrow/plasma"
 	"github.com/v3io/frames/pb"
+)
+
+const (
+	// ReadTimeout is timeout reading from Plasma
+	ReadTimeout = 100 * time.Millisecond
 )
 
 // ShmRead executes a read via shared memory
@@ -61,10 +66,10 @@ func (s *Server) ShmRead(ctx context.Context, req *pb.ShmReadRequest) (*pb.ShmRe
 	frame := <-ch // TODO: timeout
 	af, ok := frame.(*frames.ArrowFrame)
 	if !ok {
-		return nil, fmt.Errorf("backend returned a non-arrow frame")
+		return nil, errors.Errorf("backend returned a non-arrow frame")
 	}
 
-	err = client.WriteTable(af.Table, id)
+	err = client.WriteTable(af.Table(), id)
 	if err != nil {
 		return nil, errors.Wrapf(err, "can't write table to %s:%s", req.DbPath, id)
 	}
@@ -79,5 +84,67 @@ func (s *Server) ShmRead(ctx context.Context, req *pb.ShmReadRequest) (*pb.ShmRe
 
 // ShmWrite executes a write via shared memory
 func (s *Server) ShmWrite(ctx context.Context, req *pb.ShmWriteRequest) (*pb.WriteResponse, error) {
-	return nil, fmt.Errorf("not implemented... yet")
+	client, err := plasma.Connect(req.DbPath)
+	if err != nil {
+		return nil, errors.Wrapf(err, "can't connect to %q", req.DbPath)
+	}
+	defer client.Disconnect()
+
+	oid, err := plasma.IDFromBytes(req.ObjectId)
+	if err != nil {
+		return nil, errors.Wrap(err, "id")
+	}
+
+	table, err := client.ReadTable(oid, ReadTimeout)
+	if err != nil {
+		return nil, errors.Wrap(err, "read table")
+	}
+
+	defer func() {
+		if err := client.Release(oid); err != nil {
+			s.logger.WarnWith("delete error", "error", err)
+		}
+	}()
+
+	pbReq := req.Request
+	password := frames.InitSecretString(pbReq.Session.Password)
+	token := frames.InitSecretString(pbReq.Session.Token)
+	pbReq.Session.Password = ""
+	pbReq.Session.Token = ""
+
+	freq := &frames.WriteRequest{
+		Session:    pbReq.Session,
+		Password:   password,
+		Token:      token,
+		Backend:    pbReq.Backend,
+		Expression: pbReq.Expression,
+		Condition:  pbReq.Condition,
+		HaveMore:   pbReq.More,
+		Table:      pbReq.Table,
+	}
+
+	frame, err := frames.ArrowFrameFromTable(table)
+	if err != nil {
+		return nil, errors.Wrap(err, "frame")
+	}
+
+	ch := make(chan frames.Frame)
+	go func() {
+		ch <- frame
+		close(ch)
+	}()
+
+	// TODO: timeout
+	nFrames, nRows, err := s.api.Write(freq, ch)
+	if err != nil {
+		s.logger.ErrorWith("write error", "error", err)
+		return nil, errors.Wrap(err, "can't write")
+	}
+
+	resp := &pb.WriteResponse{
+		Frames: int64(nFrames),
+		Rows:   int64(nRows),
+	}
+
+	return resp, nil
 }

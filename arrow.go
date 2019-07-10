@@ -35,6 +35,14 @@ import (
 var (
 	// HasArrow signals we have arrow
 	HasArrow = true
+
+	dtype2dtype = map[carrow.DType]DType{
+		carrow.BoolType:      BoolType,
+		carrow.Float64Type:   FloatType,
+		carrow.Integer64Type: IntType,
+		carrow.StringType:    StringType,
+		carrow.TimestampType: TimeType,
+	}
 )
 
 // NewArrowColumn returns a new arrow backed column
@@ -310,17 +318,19 @@ type ArrowColumn struct {
 	col *carrow.Column
 }
 
-// Colum interface implementation
+// Len returns the lengh of the column
 func (a *ArrowColumn) Len() int {
-	panic("not implemented")
+	return a.col.Len()
 }
 
+// Name returns the column name
 func (a *ArrowColumn) Name() string {
-	panic("not implemented")
+	return a.col.Field().Name()
 }
 
+// DType returns the data type
 func (a *ArrowColumn) DType() DType {
-	panic("not implemented")
+	return dtype2dtype[a.col.Field().DType()]
 }
 
 func (a *ArrowColumn) Ints() ([]int64, error) {
@@ -369,37 +379,75 @@ func (a *ArrowColumn) Slice(start int, end int) (Column, error) {
 
 // ArrowFrame is an arrow backed frame
 type ArrowFrame struct {
-	Table *carrow.Table
+	table *carrow.Table
 }
 
+// ArrowFrameFromTable returns ArrowFrame from underlying carrow.Table
+func ArrowFrameFromTable(table *carrow.Table) (*ArrowFrame, error) {
+	if table == nil {
+		return nil, errors.Errorf("nil table")
+	}
+	return &ArrowFrame{table}, nil
+}
+
+// Labels returns frame lables
 func (a *ArrowFrame) Labels() map[string]interface{} {
-	panic("not implemented")
+	// TODO: table metadata
+	return nil
 }
 
+// Names return the column names
 func (a *ArrowFrame) Names() []string {
-	panic("not implemented")
+	n := a.table.NumCols()
+	names := make([]string, n)
+	for i := 0; i < n; i++ {
+		col, err := a.table.ColByIndex(i)
+		if err != nil {
+			// TODO: Log or changes frames API
+			return nil
+		}
+		names[i] = col.Field().Name()
+	}
+
+	return names
 }
 
+// Indices returns nil since arrow don't have indices
 func (a *ArrowFrame) Indices() []Column {
-	panic("not implemented")
+	return nil
 }
 
+// Len returns number of rows
 func (a *ArrowFrame) Len() int {
-	panic("not implemented")
+	return a.table.NumRows()
 }
 
+// Column returns a column by name
 func (a *ArrowFrame) Column(name string) (Column, error) {
-	panic("not implemented")
+	col, err := a.table.ColByName(name)
+	if err != nil {
+		return nil, errors.Wrap(err, "col")
+	}
+
+	return &ArrowColumn{col}, nil
 }
 
+// Slice return a slice from the frame
 func (a *ArrowFrame) Slice(start int, end int) (Frame, error) {
 	panic("not implemented")
 }
 
+// IterRows returns an iterator over rows
 func (a *ArrowFrame) IterRows(includeIndex bool) RowIterator {
 	panic("not implemented")
 }
 
+// Table returns the underlying arrow table
+func (a *ArrowFrame) Table() *carrow.Table {
+	return a.table
+}
+
+// NewArrowFrame returns a new Frame
 func NewArrowFrame(columns []Column) (Frame, error) {
 	acols := make([]*carrow.Column, len(columns))
 	for i, col := range columns {

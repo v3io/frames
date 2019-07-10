@@ -4,11 +4,12 @@ package plasma
 
 import (
 	"encoding/hex"
-	"fmt"
 	"math/rand"
 	"runtime"
 	"time"
 	"unsafe"
+
+	"github.com/pkg/errors"
 
 	"github.com/v3io/frames/carrow"
 )
@@ -43,7 +44,7 @@ type ObjectID [IDLength]byte
 
 // TODO: United with one in carrow (internal?)
 func errFromResult(r C.result_t) error {
-	err := fmt.Errorf(C.GoString(r.err))
+	err := errors.Errorf(C.GoString(r.err))
 	C.free(unsafe.Pointer(r.err))
 	return err
 }
@@ -58,7 +59,8 @@ func Connect(path string) (*Client, error) {
 		return nil, errFromResult(r)
 	}
 
-	client := &Client{r.ptr}
+	ptr := C.result_ptr(r)
+	client := &Client{ptr}
 	runtime.SetFinalizer(client, func(c *Client) {
 		c.Disconnect()
 	})
@@ -91,7 +93,8 @@ func (c *Client) ReadTable(id ObjectID, timeout time.Duration) (*carrow.Table, e
 		return nil, errFromResult(r)
 	}
 
-	return carrow.NewTableFromPtr(r.ptr), nil
+	ptr := C.result_ptr(r)
+	return carrow.NewTableFromPtr(ptr), nil
 }
 
 // Release releases (deletes) object from plasma store
@@ -138,13 +141,13 @@ func RandomID() (ObjectID, error) {
 	return oid, nil
 }
 
-// IDFromString converts a string to ObjectID
-func IDFromString(s string) (ObjectID, error) {
-	data := s[:]
+// IDFromBytes converts a []byte to ObjectID
+func IDFromBytes(data []byte) (ObjectID, error) {
 	var oid ObjectID
 	if len(data) != IDLength {
-		return oid, fmt.Errorf("wrong length, expected %d, got %d", IDLength, len(data))
+		return oid, errors.Errorf("wrong length, expected %d, got %d", IDLength, len(data))
 	}
+
 	copy(oid[:], data)
 	return oid, nil
 }

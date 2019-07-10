@@ -38,8 +38,19 @@ extern const int TIMESTAMP_DTYPE;
 
 typedef struct {
   const char *err;
-  void *ptr;
+  union {
+      void *ptr;
+      char *cp;
+      int64_t i;
+      double f;
+  };
 } result_t;
+
+// Allow access from Go
+void *result_ptr(result_t r);
+char *result_cp(result_t r);
+int64_t result_i(result_t r);
+double result_f(result_t r);
 
 void *field_new(char *name, int type);
 const char *field_name(void *field);
@@ -56,9 +67,9 @@ void schema_free(void *vp);
 result_t array_builder_new(int dtype);
 result_t array_builder_append_bool(void *vp, int value);
 result_t array_builder_append_float(void *vp, double value);
-result_t array_builder_append_int(void *vp, long long value);
+result_t array_builder_append_int(void *vp, int64_t value);
 result_t array_builder_append_string(void *vp, char *value, size_t length);
-result_t array_builder_append_timestamp(void *vp, long long value);
+result_t array_builder_append_timestamp(void *vp, int64_t value);
 result_t array_builder_finish(void *vp);
 
 int64_t array_length(void *vp);
@@ -66,7 +77,13 @@ void array_free(void *vp);
 
 void *column_new(void *field, void *array);
 void *column_field(void *vp);
-int  column_dtype(void *vp);
+int column_dtype(void *vp);
+int64_t column_len(void *vp);
+int column_bool_at(void *vp, long long i);
+int64_t column_int_at(void *vp, long long i);
+double column_float_at(void *vp, long long i);
+const char *column_string_at(void *vp, long long i);
+int64_t column_timestamp_at(void *vp, long long i);
 void column_free(void *vp);
 
 void *columns_new();
@@ -76,6 +93,8 @@ void columns_free(void *vp);
 void *table_new(void *sp, void *cp);
 long long table_num_cols(void *vp);
 long long table_num_rows(void *vp);
+result_t table_col_by_index(void *vp, long long i);
+result_t table_col_by_name(void *vp, const char *name);
 void table_free(void *vp);
 
 result_t plasma_connect(char *path);

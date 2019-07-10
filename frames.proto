@@ -228,8 +228,9 @@ message ShmReadResponse {
 message ShmWriteRequest {
     string db_path = 1;
     bytes object_id = 2;
-    repeated string index_columns = 3;
-    InitialWriteRequest request = 4;
+    bool keep_object = 3;
+    repeated string index_columns = 4;
+    InitialWriteRequest request = 5;
 };
 
 service Frames {

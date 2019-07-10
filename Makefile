@@ -109,18 +109,16 @@ frames:
 		golang:1.12 \
 		make frames-bin
 
-
 # Make sure pkg-config knows where to find arrow & plasma, you can set
 #	export PKG_CONFIG_PATH=/opt/miniconda/lib/pkgconfig
+# See cmd/framesd/Dockerfile.arrow
 arrow:
 	cd carrow && make libcarrow.a
 	go build -tags carrow ./cmd/framesd
 
-
 clean:
 	cd carrow && make clean
 	rm -f framesd
-
 
 .PHONY: ensure-gopath
 ensure-gopath:
