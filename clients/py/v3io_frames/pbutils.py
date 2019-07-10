@@ -100,6 +100,7 @@ def msg2df(frame, frame_factory):
 
     i = 0
     is_range = True
+    df = df.reindex(sorted(df.columns), axis=1)
     for name in df.columns:
         try:
             if name.startswith('column_') and int(name[len('column_'):]) == i:
