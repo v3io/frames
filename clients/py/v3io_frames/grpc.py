@@ -175,11 +175,13 @@ class Client(ClientBase):
         record_batch = reader.read_next_batch()
 
         if self.frame_factory is pd.DataFrame:
-            return record_batch.to_pandas()
+            df = record_batch.to_pandas()
+        else: # cudf
+            table = pa.Table.from_batches([record_batch])
+            df = self.frame_factory.from_arrow(table)
 
-        # cudf
-        table = pa.Table.from_batches([record_batch])
-        return self.frame_factory.from_arrow(table)
+        client.delete([oid])
+        return df
 
     @grpc_raise(WriteError)
     def _shm_write(self, request, db_path, df, obj_id=None):
