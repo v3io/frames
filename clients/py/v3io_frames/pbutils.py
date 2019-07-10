@@ -84,15 +84,15 @@ def pb2py(obj):
 def msg2df(frame, frame_factory, columns=None):
     indices = [col2series(idx, None) for idx in frame.indices]
     if len(indices) == 1:
-        index = indices[0]
+        new_index = indices[0]
     elif len(indices) > 1:
-        index = pd.MultiIndex.from_arrays(indices)
+        new_index = pd.MultiIndex.from_arrays(indices)
     else:
-        index = None
+        new_index = None
 
-    data = {col.name: col2series(col, index) for col in frame.columns}
+    data = {col.name: col2series(col, new_index) for col in frame.columns}
 
-    df = frame_factory(data, index)
+    df = frame_factory(data, new_index)
 
     with warnings.catch_warnings():
         warnings.simplefilter('ignore')
@@ -101,22 +101,29 @@ def msg2df(frame, frame_factory, columns=None):
     if columns:
         df = df.reindex(columns=columns)
     else:
-        i = 0
         is_range = True
-        df = df.reindex(sorted(df.columns), axis=1)
+        indices = [False] * len(df.columns)
         for name in df.columns:
             try:
-                col_index = int(name[len('column_'):])
-                if name.startswith('column_') and col_index == i:
-                    i += 1
-                    continue
+                if name.startswith('column_'):
+                    col_index = int(name[len('column_'):])
+                    if col_index < len(indices):
+                        indices[col_index] = True
+                        continue
             except ValueError:
                 pass
             is_range = False
             break
 
-        if is_range:
-            df.columns = pd.RangeIndex(start=0, step=1, stop=len(df.columns))
+        if is_range and all(elem for elem in indices):
+            renameDict = {}
+            for i in range(len(df.columns)):
+                renameDict['column_' + str(i)] = i
+            df.rename(columns=renameDict, inplace=True)
+            new_index = pd.RangeIndex(start=0, step=1, stop=len(df.columns))
+            df = df.reindex(columns=new_index)
+        else:
+            df = df.reindex(columns=sorted(df.columns))
 
     return df
 
