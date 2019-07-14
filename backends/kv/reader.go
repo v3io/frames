@@ -137,7 +137,7 @@ func (ki *Iterator) Next() bool {
 
 		// fill columns with nil if there was no value
 		for name, col := range byName {
-			if name == ki.keyColumnName {
+			if name == ki.keyColumnName && !hasKeyColumnAttribute {
 				name = indexColKey
 			}
 			if _, ok := row[name]; ok {
@@ -163,11 +163,16 @@ func (ki *Iterator) Next() bool {
 	}
 
 	var indices []frames.Column
-	indexCol, ok := byName[ki.keyColumnName]
-	if ok {
-		delete(byName, ki.keyColumnName)
-		indices = []frames.Column{indexCol}
-		columns = utils.RemoveColumn(ki.keyColumnName, columns)
+
+	// If the only column that was requested is the key-column don't set it as an index.
+	// Otherwise, set the key column (if requested) to be the index or not depending on the `ResetIndex` value.
+	if !ki.request.Proto.ResetIndex && (len(columns) > 1 || columns[0].Name() != ki.keyColumnName) {
+		indexCol, ok := byName[ki.keyColumnName]
+		if ok {
+			delete(byName, ki.keyColumnName)
+			indices = []frames.Column{indexCol}
+			columns = utils.RemoveColumn(ki.keyColumnName, columns)
+		}
 	}
 
 	var err error

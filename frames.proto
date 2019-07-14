@@ -122,6 +122,7 @@ message ReadRequest {
     int64 message_limit = 14;
     string marker = 15;
 
+    bool reset_index = 29;
     // NoSQL
     repeated int64 segments = 16;
     int64 total_segments = 17;
