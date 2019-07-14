@@ -30,6 +30,7 @@ such restriction.
 #include <vector>
 
 #include "carrow.h"
+#include <string.h>
 
 #ifdef __cplusplus
 extern "C" {
@@ -254,78 +255,111 @@ int64_t column_len(void *vp) {
   return column->ptr->length();
 }
 
-static std::shared_ptr<arrow::Array> get_chunk(void *vp, long long i, int type) {
-  auto column = (Column *)vp;
-  if (column == nullptr) {
-    return nullptr;
-  }
+typedef struct {
+	std::shared_ptr<arrow::Array> chunk;
+	int64_t offset;
+	const char *error;
+} chunk_t;
 
-  if (column->ptr->type()->id() != type) {
-    return nullptr;
+chunk_t find_chunk(void *vp, long long i, int typ) {
+	chunk_t ct = {nullptr, 0, nullptr};
+
+  auto column = (Column *)vp;
+	if (column == nullptr) {
+		ct.error = "null pointer";
+		return ct;
+	}
+
+  if (column->ptr->type()->id() != typ) {
+		ct.error = "wrong type";
+		return ct;
   }
 
   if ((i < 0) || (i >= column->ptr->length())) {
-      return nullptr;
+		ct.error = "index out of range";
+		return ct;
   }
 
   auto chunks = column->ptr->data();
-  int index = i;
+	ct.offset = i;
 
-  for (int c = 0; c < chunks->num_chunks(); c++) {
-      auto chunk = chunks->chunk(c);
-      if (index < chunk->length()) {
-	  return chunk;
-      }
-      index -= chunk->length();
-  }
+	for (int c = 0; c < chunks->num_chunks(); c++) {
+		auto chunk = chunks->chunk(c);
+		if (ct.offset < chunk->length()) {
+			ct.chunk = chunk;
+			return ct;
+		}
+		ct.offset -= chunk->length();
+	}
 
-  return nullptr;
+	ct.error = "can't get here";
+	return ct;
+}	
+
+result_t column_bool_at(void *vp, long long i) {
+	auto res = new_result();
+	auto cr = find_chunk(vp, i, BOOL_DTYPE);
+	if (cr.error != nullptr) {
+		res.err = cr.error;
+		return res;
+	}
+
+	auto arr = (arrow::BooleanArray *)(cr.chunk.get());
+  res.i = arr->Value(cr.offset);
+	return res;
 }
 
+result_t column_int_at(void *vp, long long i) {
+	auto res = new_result();
+	auto cr = find_chunk(vp, i, INTEGER64_DTYPE);
+	if (cr.error != nullptr) {
+		res.err = cr.error;
+		return res;
+	}
 
-int column_bool_at(void *vp, long long i) {
-  auto chunk = get_chunk(vp, i, BOOL_DTYPE);
-  if (chunk == nullptr) {
-      return -1;
-  }
-  auto column = (Column *)vp;
-  if (column == nullptr) {
-    return -1;
-  }
-
-  if (column->ptr->type()->id() != BOOL_DTYPE) {
-    return -1;
-  }
-
-  if ((i < 0) || (i >= column->ptr->length())) {
-      return -1;
-  }
-
-  auto chunks = column->ptr->data();
-  int index = i;
-
-  for (int c = 0; c < chunks->num_chunks(); c++) {
-      auto chunk = chunks->chunk(c);
-      if (index < chunk->length()) {
-	  bool b = chunk->data()->GetValues<bool>(i)[0];
-	  return b;
-      }
-      index -= chunk->length();
-  }
-
-  return -1;
+	auto arr = (arrow::Int64Array *)(cr.chunk.get());
+  res.i = arr->Value(cr.offset);
+	return res;
 }
-int64_t column_int_at(void *vp, long long i) {
-    return 2;
+
+result_t column_float_at(void *vp, long long i) {
+	auto res = new_result();
+	auto cr = find_chunk(vp, i, FLOAT64_DTYPE);
+	if (cr.error != nullptr) {
+		res.err = cr.error;
+		return res;
+	}
+
+	auto arr = (arrow::DoubleArray *)(cr.chunk.get());
+  res.f = arr->Value(cr.offset);
+	return res;
 }
-double column_float_at(void *vp, long long i) {
-    return 3.0;
+
+result_t column_string_at(void *vp, long long i) {
+	auto res = new_result();
+	auto cr = find_chunk(vp, i, STRING_DTYPE);
+	if (cr.error != nullptr) {
+		res.err = cr.error;
+		return res;
+	}
+
+
+	auto arr = (arrow::StringArray *)(cr.chunk.get());
+	auto str = arr->GetString(cr.offset);
+	res.cp = strdup(str.c_str());
+	return res;
 }
-const char *column_string_at(void *vp, long long i) {
-    return nullptr;
-}
-int64_t column_timestamp_at(void *vp, long long i) {
-    return 7;
+
+result_t column_timestamp_at(void *vp, long long i) {
+	auto res = new_result();
+	auto cr = find_chunk(vp, i, TIMESTAMP_DTYPE);
+	if (cr.error != nullptr) {
+		res.err = cr.error;
+		return res;
+	}
+	auto arr = (arrow::TimestampArray *)(cr.chunk.get());
+	res.i = arr->Value(cr.offset);
+	return res;
 }
 
 void column_free(void *vp) {

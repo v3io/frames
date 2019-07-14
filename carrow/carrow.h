@@ -79,11 +79,12 @@ void *column_new(void *field, void *array);
 void *column_field(void *vp);
 int column_dtype(void *vp);
 int64_t column_len(void *vp);
-int column_bool_at(void *vp, long long i);
-int64_t column_int_at(void *vp, long long i);
-double column_float_at(void *vp, long long i);
-const char *column_string_at(void *vp, long long i);
-int64_t column_timestamp_at(void *vp, long long i);
+
+result_t column_bool_at(void *vp, long long i);
+result_t column_int_at(void *vp, long long i);
+result_t column_float_at(void *vp, long long i);
+result_t column_string_at(void *vp, long long i);
+result_t column_timestamp_at(void *vp, long long i);
 void column_free(void *vp);
 
 void *columns_new();

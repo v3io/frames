@@ -6,6 +6,7 @@ require (
 	github.com/nuclio/logger v0.0.1
 	github.com/nuclio/zap v0.0.2
 	github.com/pkg/errors v0.8.1
+	github.com/stretchr/testify v1.3.0
 	github.com/v3io/v3io-go v0.0.0-20190606000000-9441f7c028db0b9642b541b07f30e35a1b812c58
 	github.com/v3io/v3io-tsdb v0.9.5
 	github.com/valyala/fasthttp v1.2.0

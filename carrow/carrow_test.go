@@ -23,6 +23,7 @@ such restriction.
 package carrow
 
 import (
+	"fmt"
 	"testing"
 	"time"
 
@@ -80,4 +81,146 @@ func TestTimestampBuilder(t *testing.T) {
 	b := NewTimestampArrayBuilder()
 	require.NotNil(b.ptr, "create")
 	b.Append(time.Now())
+}
+
+func TestColumnBoolGet(t *testing.T) {
+	require := require.New(t)
+	b := NewBoolArrayBuilder()
+	require.NotNil(b.ptr, "create")
+
+	const size = 137
+	const mod = 7
+	for i := 0; i < size; i++ {
+		b.Append(i%mod == 0)
+	}
+
+	arr, err := b.Finish()
+	require.NoError(err, "finish")
+
+	name, dtype := "field-1", BoolType
+	field, err := NewField(name, dtype)
+	require.NoError(err, "field")
+
+	col, err := NewColumn(field, arr)
+	require.NoError(err, "column")
+	for i := 0; i < size; i++ {
+		v, err := col.BoolAt(i)
+		require.NoError(err, "bool at %d - error", i)
+		require.Equalf(i%mod == 0, v, "bool at %d", i)
+	}
+}
+
+func TestColumnIntGet(t *testing.T) {
+	require := require.New(t)
+	b := NewInt64ArrayBuilder()
+	require.NotNil(b.ptr, "create")
+
+	const size = 137
+	for i := int64(0); i < size; i++ {
+		b.Append(i)
+	}
+
+	arr, err := b.Finish()
+	require.NoError(err, "finish")
+
+	name, dtype := "field-1", Integer64Type
+	field, err := NewField(name, dtype)
+	require.NoError(err, "field")
+
+	col, err := NewColumn(field, arr)
+	require.NoError(err, "column")
+	for i := 0; i < size; i++ {
+		v, err := col.Int64At(i)
+		require.NoError(err, "int at %d - error", i)
+		require.Equalf(int64(i), v, "int at %d", i)
+	}
+}
+
+func TestColumnFloatGet(t *testing.T) {
+	require := require.New(t)
+	b := NewFloat64ArrayBuilder()
+	require.NotNil(b.ptr, "create")
+
+	const size = 137
+	for i := 0; i < size; i++ {
+		b.Append(float64(i))
+	}
+
+	arr, err := b.Finish()
+	require.NoError(err, "finish")
+
+	name, dtype := "field-1", Float64Type
+	field, err := NewField(name, dtype)
+	require.NoError(err, "field")
+
+	col, err := NewColumn(field, arr)
+	require.NoError(err, "column")
+	for i := 0; i < size; i++ {
+		v, err := col.Float64At(i)
+		require.NoError(err, "float at %d - error", i)
+		require.Equalf(float64(i), v, "float at %d", i)
+	}
+}
+
+func TestColumnStringGet(t *testing.T) {
+	require := require.New(t)
+	b := NewStringArrayBuilder()
+	require.NotNil(b.ptr, "create")
+
+	ival := func(i int) string {
+		return fmt.Sprintf("value %d", i)
+	}
+
+	const size = 137
+	for i := 0; i < size; i++ {
+		b.Append(ival(i))
+	}
+
+	arr, err := b.Finish()
+	require.NoError(err, "finish")
+
+	name, dtype := "field-1", StringType
+	field, err := NewField(name, dtype)
+	require.NoError(err, "field")
+
+	col, err := NewColumn(field, arr)
+	require.NoError(err, "column")
+	for i := 0; i < size; i++ {
+		v, err := col.StringAt(i)
+		require.NoError(err, "string at %d - error", i)
+		require.Equalf(ival(i), v, "string at %d", i)
+	}
+}
+
+func TestColumnTimeGet(t *testing.T) {
+	require := require.New(t)
+	b := NewTimestampArrayBuilder()
+	require.NotNil(b.ptr, "create")
+
+	start := time.Now()
+
+	tval := func(i int) time.Time {
+		return start.Add(time.Duration(i) * 17 * time.Millisecond)
+	}
+
+	const size = 137
+	for i := 0; i < size; i++ {
+		b.Append(tval(i))
+	}
+
+	arr, err := b.Finish()
+	require.NoError(err, "finish")
+
+	name, dtype := "field-1", TimestampType
+	field, err := NewField(name, dtype)
+	require.NoError(err, "field")
+
+	col, err := NewColumn(field, arr)
+	require.NoError(err, "column")
+	for i := 0; i < size; i++ {
+		v, err := col.TimeAt(i)
+		require.NoError(err, "time at %d - error", i)
+		// Use .Equal to ignore monotinic clock
+		require.True(v.Equal(tval(i)), "time at %d", i)
+	}
 }

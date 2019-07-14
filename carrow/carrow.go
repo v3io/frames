@@ -186,8 +186,19 @@ func (r result) Str() string {
 	return C.GoString(cp)
 }
 
-func (r result) Int() int {
-	return int(C.result_i(r.r))
+func (r result) FreeStr() string {
+	cp := C.result_cp(r.r)
+	if cp == nil {
+		return ""
+	}
+
+	s := C.GoString(cp)
+	C.free(unsafe.Pointer(cp))
+	return s
+}
+
+func (r result) Int() int64 {
+	return int64(C.result_i(r.r))
 }
 
 func (r result) Float() float64 {
@@ -358,6 +369,58 @@ func (c *Column) Field() *Field {
 // Len return the column length (-1 on error)
 func (c *Column) Len() int {
 	return int(C.column_len(c.ptr))
+}
+
+// BoolAt returns bool value at i
+func (c *Column) BoolAt(i int) (bool, error) {
+	r := result{C.column_bool_at(c.ptr, C.longlong(i))}
+	if err := r.Err(); err != nil {
+		return false, err
+	}
+
+	return r.Int() != 0, nil
+}
+
+// Int64At returns int64 value at i
+func (c *Column) Int64At(i int) (int64, error) {
+	r := result{C.column_int_at(c.ptr, C.longlong(i))}
+	if err := r.Err(); err != nil {
+		return 0, err
+	}
+
+	return r.Int(), nil
+}
+
+// Float64At returns float64 value at i
+func (c *Column) Float64At(i int) (float64, error) {
+	r := result{C.column_float_at(c.ptr, C.longlong(i))}
+	if err := r.Err(); err != nil {
+		return 0, err
+	}
+
+	return r.Float(), nil
+}
+
+// StringAt returns string value at i
+func (c *Column) StringAt(i int) (string, error) {
+	r := result{C.column_string_at(c.ptr, C.longlong(i))}
+	if err := r.Err(); err != nil {
+		return "", err
+	}
+
+	return r.FreeStr(), nil
+}
+
+// TimeAt returns time value at i
+func (c *Column) TimeAt(i int) (time.Time, error) {
+	r := result{C.column_timestamp_at(c.ptr, C.longlong(i))}
+	if err := r.Err(); err != nil {
+		return time.Time{}, err
+	}
+
+	epochNano := r.Int()
+	t := time.Unix(epochNano/1e9, epochNano%1e9)
+	return t, nil
 }
 
 // Table is arrow table
