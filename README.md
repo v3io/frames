@@ -105,7 +105,7 @@ When set to `true`, the index will be reset to a range index.
 * start: string
 * end: string
 * step: string
-* aggragators: string
+* aggregators: string
 * aggregationWindow: string
 
 For detailed info on these parameters please visit [TSDB](https://github.com/v3io/v3io-tsdb#v3io-tsdb) docs.  

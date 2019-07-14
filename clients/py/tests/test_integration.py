@@ -94,7 +94,7 @@ test_config = {
         },
         'read': {
             'step': '10m',
-            'aggragators': 'avg,max,count',
+            'aggregators': 'avg,max,count',
             'start': 'now-{}h'.format(tsdb_span),
             'end': 'now',
         },

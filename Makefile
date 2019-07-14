@@ -36,7 +36,7 @@ grpc-go:
 .PHONY: grpc-py
 grpc-py:
 	cd clients/py && \
-	pipenv run python -m grpc_tools.protoc \
+	python -m grpc_tools.protoc \
 		-I../.. --python_out=v3io_frames\
 		--grpc_python_out=v3io_frames \
 		../../frames.proto
