@@ -345,6 +345,7 @@ result_t column_string_at(void *vp, long long i) {
 
 
 	auto arr = (arrow::StringArray *)(cr.chunk.get());
+	// TODO: Use arr->GetView or arr->GetValue to avoid another malloc
 	auto str = arr->GetString(cr.offset);
 	res.cp = strdup(str.c_str());
 	return res;

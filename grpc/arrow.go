@@ -113,14 +113,15 @@ func (s *Server) ShmWrite(ctx context.Context, req *pb.ShmWriteRequest) (*pb.Wri
 	pbReq.Session.Token = ""
 
 	freq := &frames.WriteRequest{
-		Session:    pbReq.Session,
-		Password:   password,
-		Token:      token,
-		Backend:    pbReq.Backend,
-		Expression: pbReq.Expression,
-		Condition:  pbReq.Condition,
-		HaveMore:   pbReq.More,
-		Table:      pbReq.Table,
+		Session:       pbReq.Session,
+		Password:      password,
+		Token:         token,
+		Backend:       pbReq.Backend,
+		Expression:    pbReq.Expression,
+		Condition:     pbReq.Condition,
+		HaveMore:      pbReq.More,
+		Table:         pbReq.Table,
+		ImmidiateData: nil,
 	}
 
 	frame, err := frames.ArrowFrameFromTable(table)
