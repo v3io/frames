@@ -193,7 +193,11 @@ func (b *Backend) Delete(request *frames.DeleteRequest) error {
 
 	adapter, err := b.GetAdapter(request.Proto.Session, request.Password.Get(), request.Token.Get(), request.Proto.Table)
 	if err != nil {
-		return err
+		if request.Proto.IfMissing == frames.IgnoreError && b.isSchemaNotFoundError(err) {
+			return nil
+		} else {
+			return err
+		}
 	}
 
 	err = adapter.DeleteDB(delAll, false, start, end)
@@ -201,9 +205,6 @@ func (b *Backend) Delete(request *frames.DeleteRequest) error {
 		return err
 	}
 
-	if tsdbutils.IsNotExistsError(err) && request.Proto.IfMissing == frames.IgnoreError {
-		return nil
-	}
 	return err
 
 }
@@ -220,6 +221,13 @@ func (b *Backend) ignoreCreateExists(request *frames.CreateRequest, err error) b
 
 	// TODO: Ask tsdb to return specific error value, this is brittle
 	return strings.Contains(err.Error(), "A TSDB table already exists")
+}
+
+func (b *Backend) isSchemaNotFoundError(err error) bool {
+	errMsg := err.Error()
+
+	return strings.Contains(errMsg, "No TSDB schema file found") ||
+		strings.Contains(errMsg, "Failed to read a TSDB schema")
 }
 
 func init() {
