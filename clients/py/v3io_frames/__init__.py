@@ -68,7 +68,8 @@ def Client(address='', data_url='', container='', path='', user='',
     if protocol not in _known_protocols:
         raise ValueError('unknown protocol - {}'.format(protocol))
     if user != "" and password != "" and token != "":
-        raise ValueError('both basic username-password and access-key authentication were provided')
+        raise ValueError('both basic username-password and '
+                         'access-key authentication were provided')
 
     env = session_from_env()
 
