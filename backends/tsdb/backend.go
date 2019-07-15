@@ -224,10 +224,7 @@ func (b *Backend) ignoreCreateExists(request *frames.CreateRequest, err error) b
 }
 
 func (b *Backend) isSchemaNotFoundError(err error) bool {
-	errMsg := err.Error()
-
-	return strings.Contains(errMsg, "No TSDB schema file found") ||
-		strings.Contains(errMsg, "Failed to read a TSDB schema")
+	return strings.Contains(err.Error(), "No TSDB schema file found")
 }
 
 func init() {
