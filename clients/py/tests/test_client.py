@@ -54,7 +54,7 @@ def test_client_wrong_params(proto, cls):
     }
 
     try:
-        client = v3f.Client(address, **session_params)
+        v3f.Client(address, **session_params)
         raise ValueError('expected fail but finished successfully')
     except ValueError:
         return
