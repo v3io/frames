@@ -67,6 +67,8 @@ def Client(address='', data_url='', container='', path='', user='',
     protocol = urlparse(address).scheme or 'grpc'
     if protocol not in _known_protocols:
         raise ValueError('unknown protocol - {}'.format(protocol))
+    if user != "" and password != "" and token != "":
+        raise ValueError('both basic username-password and access-key authentication were provided')
 
     env = session_from_env()
 
@@ -79,6 +81,9 @@ def Client(address='', data_url='', container='', path='', user='',
         token=token or env.token or environ.get('V3IO_ACCESS_KEY'),
         id=session_id or env.id,
     )
+
+    if session.user == user and session.password == password:
+        session.token = ""
 
     cls = gRPCClient if protocol == 'grpc' else HTTPClient
     return cls(address, session, frame_factory=frame_factory, concat=concat)
