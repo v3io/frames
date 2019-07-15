@@ -16,19 +16,16 @@
 
 __version__ = '0.4.1'
 
-from os import environ
 import json
+import pandas as pd
+from os import environ
 from urllib.parse import urlparse
 
-import pandas as pd
-
-
-from .http import Client as HTTPClient  # noqa
-from .grpc import Client as gRPCClient  # noqa
 from .errors import *  # noqa
 from .frames_pb2 import TableSchema as Schema, SchemaKey, FAIL, IGNORE, Session  # noqa
-from .pbutils import SchemaField # noqa
-
+from .grpc import Client as gRPCClient  # noqa
+from .http import Client as HTTPClient  # noqa
+from .pbutils import SchemaField  # noqa
 
 SESSION_ENV_KEY = 'V3IO_SESSION'
 
@@ -67,7 +64,7 @@ def Client(address='', data_url='', container='', path='', user='',
     protocol = urlparse(address).scheme or 'grpc'
     if protocol not in _known_protocols:
         raise ValueError('unknown protocol - {}'.format(protocol))
-    if user != "" and password != "" and token != "":
+    if (user != "" or password != "") and token != "":
         raise ValueError('both basic username-password and '
                          'access-key authentication were provided')
 
@@ -79,12 +76,11 @@ def Client(address='', data_url='', container='', path='', user='',
         path=path or env.path,
         user=user or env.user or environ.get('V3IO_USERNAME'),
         password=password or env.password or environ.get('V3IO_PASSWORD'),
-        token=token or env.token or environ.get('V3IO_ACCESS_KEY'),
         id=session_id or env.id,
     )
 
-    if session.user == user and session.password == password:
-        session.token = ""
+    if user == "" and password == "":
+        session.token = token or env.token or environ.get('V3IO_ACCESS_KEY'),
 
     cls = gRPCClient if protocol == 'grpc' else HTTPClient
     return cls(address, session, frame_factory=frame_factory, concat=concat)
