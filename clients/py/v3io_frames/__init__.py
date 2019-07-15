@@ -80,7 +80,8 @@ def Client(address='', data_url='', container='', path='', user='',
     )
 
     if user == "" and password == "":
-        session.token = token or env.token or environ.get('V3IO_ACCESS_KEY')
+        session.token = token or env.token or \
+                        environ.get('V3IO_ACCESS_KEY') or ''
 
     cls = gRPCClient if protocol == 'grpc' else HTTPClient
     return cls(address, session, frame_factory=frame_factory, concat=concat)
