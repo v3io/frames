@@ -54,6 +54,7 @@ type Column interface {
 	Bools() ([]bool, error)                   // Data as []bool
 	BoolAt(i int) (bool, error)               // bool value at index i
 	Slice(start int, end int) (Column, error) // Slice of data
+	CopyWithName(newName string) Column       // Create a copy of the current column
 }
 
 // Frame is a collection of columns

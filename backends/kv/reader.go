@@ -22,6 +22,8 @@ package kv
 
 import (
 	"encoding/json"
+	"fmt"
+
 	"github.com/v3io/frames"
 	"github.com/v3io/frames/backends"
 	"github.com/v3io/frames/backends/utils"
@@ -78,17 +80,18 @@ func (kv *Backend) Read(request *frames.ReadRequest) (frames.FrameIterator, erro
 		return nil, err
 	}
 
-	newKVIter := Iterator{request: request, iter: iter, keyColumnName: schema.Key}
+	newKVIter := Iterator{request: request, iter: iter, keyColumnName: schema.Key, shouldDuplicateIndex: containsString(columns, schema.Key)}
 	return &newKVIter, nil
 }
 
 // Iterator is key/value iterator
 type Iterator struct {
-	request       *frames.ReadRequest
-	iter          *v3ioutils.AsyncItemsCursor
-	err           error
-	currFrame     frames.Frame
-	keyColumnName string
+	request              *frames.ReadRequest
+	iter                 *v3ioutils.AsyncItemsCursor
+	err                  error
+	currFrame            frames.Frame
+	keyColumnName        string
+	shouldDuplicateIndex bool
 }
 
 // Next advances the iterator to next frame
@@ -178,8 +181,16 @@ func (ki *Iterator) Next() bool {
 		indexCol, ok := byName[ki.keyColumnName]
 		if ok {
 			delete(byName, ki.keyColumnName)
-			indices = []frames.Column{indexCol}
-			columns = utils.RemoveColumn(ki.keyColumnName, columns)
+
+			// If a user requested specific columns containing the index, duplicate the index column
+			// to be an index and a column
+			if ki.shouldDuplicateIndex {
+				dupIndex := indexCol.CopyWithName(fmt.Sprintf("_%v", ki.keyColumnName))
+				indices = []frames.Column{dupIndex}
+			} else {
+				indices = []frames.Column{indexCol}
+				columns = utils.RemoveColumn(ki.keyColumnName, columns)
+			}
 		}
 	}
 
@@ -266,4 +277,14 @@ func (kv *Backend) internalGetPartitions(path string, container v3io.Container, 
 	}
 
 	return partitions, nil
+}
+
+func containsString(s []string, subString string) bool {
+	for _, str := range s {
+		if str == subString {
+			return true
+		}
+	}
+
+	return false
 }
