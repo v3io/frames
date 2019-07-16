@@ -94,6 +94,8 @@ Common read parameters:
 * limit: int - Maximal number of rows to return
 * row_layout: bool - Weather to use row layout (vs the default column layout)
 * max_in_message: int - Maximal number of rows per message
+* reset_index: bool - Reset the index. When set to `false` (default), the dataframe will have the key column of the v3io kv as the index column.
+When set to `true`, the index will be reset to a range index.
 * data_format: string - Data format (Not yet supported)
 * marker: string - Query marker (Not yet supported)
 
@@ -103,7 +105,7 @@ Common read parameters:
 * start: string
 * end: string
 * step: string
-* aggragators: string
+* aggregators: string
 * aggregationWindow: string
 
 For detailed info on these parameters please visit [TSDB](https://github.com/v3io/v3io-tsdb#v3io-tsdb) docs.  

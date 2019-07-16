@@ -22,6 +22,8 @@ package kv
 
 import (
 	"encoding/json"
+	"fmt"
+
 	"github.com/v3io/frames"
 	"github.com/v3io/frames/backends"
 	"github.com/v3io/frames/backends/utils"
@@ -70,17 +72,18 @@ func (kv *Backend) Read(request *frames.ReadRequest) (frames.FrameIterator, erro
 		return nil, err
 	}
 
-	newKVIter := Iterator{request: request, iter: iter, keyColumnName: schema.Key}
+	newKVIter := Iterator{request: request, iter: iter, keyColumnName: schema.Key, shouldDuplicateIndex: containsString(columns, schema.Key)}
 	return &newKVIter, nil
 }
 
 // Iterator is key/value iterator
 type Iterator struct {
-	request       *frames.ReadRequest
-	iter          *v3ioutils.AsyncItemsCursor
-	err           error
-	currFrame     frames.Frame
-	keyColumnName string
+	request              *frames.ReadRequest
+	iter                 *v3ioutils.AsyncItemsCursor
+	err                  error
+	currFrame            frames.Frame
+	keyColumnName        string
+	shouldDuplicateIndex bool
 }
 
 // Next advances the iterator to next frame
@@ -106,14 +109,13 @@ func (ki *Iterator) Next() bool {
 		for name, field := range row {
 			colName := name
 			if colName == indexColKey { // convert `__name` attribute name to the key column
-				if hasKeyColumnAttribute{
+				if hasKeyColumnAttribute {
 					continue
 				}
 				colName = ki.keyColumnName
 			}
 
 			col, ok := byName[colName]
-			field = maybeFloat(field) // Make all number floats
 			if !ok {
 				data, err := utils.NewColumn(field, rowNum-numOfSchemaFiles)
 				if err != nil {
@@ -138,7 +140,7 @@ func (ki *Iterator) Next() bool {
 
 		// fill columns with nil if there was no value
 		for name, col := range byName {
-			if name == ki.keyColumnName {
+			if name == ki.keyColumnName && !hasKeyColumnAttribute {
 				name = indexColKey
 			}
 			if _, ok := row[name]; ok {
@@ -164,11 +166,24 @@ func (ki *Iterator) Next() bool {
 	}
 
 	var indices []frames.Column
-	indexCol, ok := byName[ki.keyColumnName]
-	if ok {
-		delete(byName, ki.keyColumnName)
-		indices = []frames.Column{indexCol}
-		columns = utils.RemoveColumn(ki.keyColumnName, columns)
+
+	// If the only column that was requested is the key-column don't set it as an index.
+	// Otherwise, set the key column (if requested) to be the index or not depending on the `ResetIndex` value.
+	if !ki.request.Proto.ResetIndex && (len(columns) > 1 || columns[0].Name() != ki.keyColumnName) {
+		indexCol, ok := byName[ki.keyColumnName]
+		if ok {
+			delete(byName, ki.keyColumnName)
+
+			// If a user requested specific columns containing the index, duplicate the index column
+			// to be an index and a column
+			if ki.shouldDuplicateIndex {
+				dupIndex := indexCol.CopyWithName(fmt.Sprintf("_%v", ki.keyColumnName))
+				indices = []frames.Column{dupIndex}
+			} else {
+				indices = []frames.Column{indexCol}
+				columns = utils.RemoveColumn(ki.keyColumnName, columns)
+			}
+		}
 	}
 
 	var err error
@@ -191,40 +206,18 @@ func (ki *Iterator) At() frames.Frame {
 	return ki.currFrame
 }
 
-// maybeFloat converts numberical numbers to float64. Will leave other types unchanged
-func maybeFloat(val interface{}) interface{} {
-	switch val.(type) {
-	case int:
-		return float64(val.(int))
-	case int8:
-		return float64(val.(int8))
-	case int16:
-		return float64(val.(int16))
-	case int32:
-		return float64(val.(int32))
-	case int64:
-		return float64(val.(int64))
-	case uint:
-		return float64(val.(uint))
-	case uint8:
-		return float64(val.(uint8))
-	case uint16:
-		return float64(val.(uint16))
-	case uint32:
-		return float64(val.(uint32))
-	case uint64:
-		return float64(val.(uint64))
-	case float64:
-		return val
-	case float32:
-		return float64(val.(float32))
-	}
-
-	return val
-}
-
 func init() {
 	if err := backends.Register("kv", NewBackend); err != nil {
 		panic(err)
 	}
+}
+
+func containsString(s []string, subString string) bool {
+	for _, str := range s {
+		if str == subString {
+			return true
+		}
+	}
+
+	return false
 }

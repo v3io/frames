@@ -122,6 +122,7 @@ message ReadRequest {
     int64 message_limit = 14;
     string marker = 15;
 
+    bool reset_index = 29;
     // NoSQL
     repeated int64 segments = 16;
     int64 total_segments = 17;
@@ -133,7 +134,7 @@ message ReadRequest {
     string start = 21;
     string end = 22;
     string step = 23;
-    string aggragators = 24;
+    string aggregators = 24;
     string aggregationWindow = 28;
 
     // Stream
