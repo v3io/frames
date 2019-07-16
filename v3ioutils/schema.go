@@ -70,7 +70,7 @@ type OldV3ioSchema struct {
 type OldSchemaField struct {
 	Name     string `json:"name"`
 	Type     string `json:"type"`
-	Nullable bool   `json:"nullable,omitempty"`
+	Nullable bool   `json:"nullable"`
 }
 
 // AddColumn adds a column

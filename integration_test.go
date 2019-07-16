@@ -574,7 +574,7 @@ func init() {
 			},
 			read: func(req *pb.ReadRequest) {
 				req.Step = "10m"
-				req.Aggragators = "avg,max,count"
+				req.Aggregators = "avg,max,count"
 				req.Start = "now-5h"
 				req.End = "now"
 			},

@@ -78,7 +78,7 @@ func (b *Backend) Read(request *frames.ReadRequest) (frames.FrameIterator, error
 	}
 
 	b.logger.DebugWith("Query", "from", from, "to", to, "table", request.Proto.Table,
-		"filter", request.Proto.Filter, "functions", request.Proto.Aggragators, "step", step)
+		"filter", request.Proto.Filter, "functions", request.Proto.Aggregators, "step", step)
 
 	table := request.Proto.Table
 	var selectParams *pquerier.SelectParams
@@ -115,7 +115,7 @@ func (b *Backend) Read(request *frames.ReadRequest) (frames.FrameIterator, error
 			From:              from,
 			To:                to,
 			Step:              step,
-			Functions:         request.Proto.Aggragators,
+			Functions:         request.Proto.Aggregators,
 			Filter:            request.Proto.Filter,
 			GroupBy:           request.Proto.GroupBy,
 			AggregationWindow: aggregationWindow}
@@ -142,7 +142,7 @@ func oldQuery(adapter *tsdb.V3ioAdapter, request *frames.ReadRequest, from, to, 
 		iter.withColumns = true
 	}
 
-	iter.set, err = qry.Select(name, request.Proto.Aggragators, step, request.Proto.Filter)
+	iter.set, err = qry.Select(name, request.Proto.Aggregators, step, request.Proto.Filter)
 	if err != nil {
 		return nil, errors.Wrap(err, "Failed on TSDB Select")
 	}

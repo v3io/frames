@@ -131,15 +131,19 @@ func (ki *Iterator) Next() bool {
 			numOfSchemaFiles++
 			continue
 		}
+		// Indicates whether the key column exists as an attribute in addition to the object name (__name)
+		_, hasKeyColumnAttribute := row[ki.keyColumnName]
 
 		for name, field := range row {
 			colName := name
 			if colName == indexColKey { // convert `__name` attribute name to the key column
+				if hasKeyColumnAttribute {
+					continue
+				}
 				colName = ki.keyColumnName
 			}
 
 			col, ok := byName[colName]
-			field = maybeFloat(field) // Make all number floats
 			if !ok {
 				data, err := utils.NewColumn(field, rowNum-numOfSchemaFiles)
 				if err != nil {
@@ -164,7 +168,7 @@ func (ki *Iterator) Next() bool {
 
 		// fill columns with nil if there was no value
 		for name, col := range byName {
-			if name == ki.keyColumnName {
+			if name == ki.keyColumnName && !hasKeyColumnAttribute {
 				name = indexColKey
 			}
 			if _, ok := row[name]; ok {
@@ -190,11 +194,16 @@ func (ki *Iterator) Next() bool {
 	}
 
 	var indices []frames.Column
-	indexCol, ok := byName[ki.keyColumnName]
-	if ok {
-		delete(byName, ki.keyColumnName)
-		indices = []frames.Column{indexCol}
-		columns = utils.RemoveColumn(ki.keyColumnName, columns)
+
+	// If the only column that was requested is the key-column don't set it as an index.
+	// Otherwise, set the key column (if requested) to be the index or not depending on the `ResetIndex` value.
+	if !ki.request.Proto.ResetIndex && (len(columns) > 1 || columns[0].Name() != ki.keyColumnName) {
+		indexCol, ok := byName[ki.keyColumnName]
+		if ok {
+			delete(byName, ki.keyColumnName)
+			indices = []frames.Column{indexCol}
+			columns = utils.RemoveColumn(ki.keyColumnName, columns)
+		}
 	}
 
 	var err error
@@ -215,38 +224,6 @@ func (ki *Iterator) Err() error {
 // At return the current frames
 func (ki *Iterator) At() frames.Frame {
 	return ki.currFrame
-}
-
-// maybeFloat converts numberical numbers to float64. Will leave other types unchanged
-func maybeFloat(val interface{}) interface{} {
-	switch val.(type) {
-	case int:
-		return float64(val.(int))
-	case int8:
-		return float64(val.(int8))
-	case int16:
-		return float64(val.(int16))
-	case int32:
-		return float64(val.(int32))
-	case int64:
-		return float64(val.(int64))
-	case uint:
-		return float64(val.(uint))
-	case uint8:
-		return float64(val.(uint8))
-	case uint16:
-		return float64(val.(uint16))
-	case uint32:
-		return float64(val.(uint32))
-	case uint64:
-		return float64(val.(uint64))
-	case float64:
-		return val
-	case float32:
-		return float64(val.(float32))
-	}
-
-	return val
 }
 
 func init() {

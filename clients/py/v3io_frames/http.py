@@ -85,7 +85,7 @@ class Client(ClientBase):
         if not resp.ok:
             raise Error('cannot call API - {}'.format(resp.text))
 
-        dfs = self._iter_dfs(resp.raw)
+        dfs = self._iter_dfs(resp.raw, columns)
 
         if not iterator:
             return concat_dfs(dfs, self.frame_factory, self.concat)
@@ -180,17 +180,17 @@ class Client(ClientBase):
         return self.address + '/' + action
 
     def _headers(self, json=False):
-        headers = {}
+        headers = {'Accept-Encoding': ''}
         if json:
             headers['Content-Type'] = 'application/json'
 
         return headers
 
-    def _iter_dfs(self, resp):
+    def _iter_dfs(self, resp, columns):
         for msg in iter(partial(self._read_msg, resp), None):
             if msg.error:
                 raise ReadError(msg.error)
-            yield msg2df(msg, self.frame_factory)
+            yield msg2df(msg, self.frame_factory, columns)
 
     def _read_msg(self, resp):
         data = resp.read(header_fmt_size)
