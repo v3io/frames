@@ -320,9 +320,8 @@ func (c *colImpl) Append(value interface{}) error {
 }
 
 func (c *colImpl) CopyWithName(newName string) Column {
-	var newCol Column
 	newColImpl := *c
-	newCol = &newColImpl
+	newCol := &newColImpl
 	newMsg := *c.msg
 	newColImpl.msg = &newMsg
 	newColImpl.msg.Name = newName
