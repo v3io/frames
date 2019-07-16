@@ -58,17 +58,13 @@ func (kv *Backend) Read(request *frames.ReadRequest) (frames.FrameIterator, erro
 		partitions = []string{tablePath}
 	}
 
-	var iterators []*v3ioutils.AsyncItemsCursor
-	for _, partition := range partitions {
-		input := v3io.GetItemsInput{Path: partition, Filter: request.Proto.Filter, AttributeNames: columns}
-		kv.logger.DebugWith("read input", "input", input, "request", request)
+	input := v3io.GetItemsInput{Path: "", Filter: request.Proto.Filter, AttributeNames: columns}
+	kv.logger.DebugWith("read input", "input", input, "request", request)
 
-		iter, err := v3ioutils.NewAsyncItemsCursor(
-			container, &input, kv.numWorkers, request.Proto.ShardingKeys, kv.logger, 0)
-		if err != nil {
-			return nil, err
-		}
-		iterators = append(iterators, iter)
+	iter, err := v3ioutils.NewAsyncItemsCursor(
+		container, &input, kv.numWorkers, request.Proto.ShardingKeys, kv.logger, 0, partitions)
+	if err != nil {
+		return nil, err
 	}
 
 	// Get Schema
@@ -82,48 +78,29 @@ func (kv *Backend) Read(request *frames.ReadRequest) (frames.FrameIterator, erro
 		return nil, err
 	}
 
-	newKVIter := Iterator{request: request, iters: iterators, keyColumnName: schema.Key}
+	newKVIter := Iterator{request: request, iter: iter, keyColumnName: schema.Key}
 	return &newKVIter, nil
 }
 
 // Iterator is key/value iterator
 type Iterator struct {
-	request          *frames.ReadRequest
-	iters            []*v3ioutils.AsyncItemsCursor
-	currentIterIndex int
-	err              error
-	currFrame        frames.Frame
-	keyColumnName    string
-}
-
-func (ki *Iterator) internalNext() bool {
-	if !ki.iters[ki.currentIterIndex].Next() {
-		ki.currentIterIndex++
-		if ki.currentIterIndex >= len(ki.iters) {
-			return false
-		}
-		return ki.internalNext()
-	}
-	return true
+	request       *frames.ReadRequest
+	iter          *v3ioutils.AsyncItemsCursor
+	err           error
+	currFrame     frames.Frame
+	keyColumnName string
 }
 
 // Next advances the iterator to next frame
 func (ki *Iterator) Next() bool {
-	if ki.currentIterIndex >= len(ki.iters) {
-		return false
-	}
 	var columns []frames.Column
 	byName := map[string]frames.Column{}
 
 	rowNum := 0
 	numOfSchemaFiles := 0
 
-	currentIter := ki.iters[ki.currentIterIndex]
-
-	for ; rowNum < int(ki.request.Proto.MessageLimit) && ki.internalNext(); rowNum++ {
-		currentIter = ki.iters[ki.currentIterIndex]
-
-		row := currentIter.GetFields()
+	for ; rowNum < int(ki.request.Proto.MessageLimit) && ki.iter.Next(); rowNum++ {
+		row := ki.iter.GetFields()
 
 		// Skip table schema object
 		rowIndex, ok := row[indexColKey]
@@ -184,8 +161,8 @@ func (ki *Iterator) Next() bool {
 		}
 	}
 
-	if currentIter.Err() != nil {
-		ki.err = currentIter.Err()
+	if ki.iter.Err() != nil {
+		ki.err = ki.iter.Err()
 		return false
 	}
 
