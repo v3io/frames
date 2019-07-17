@@ -250,35 +250,6 @@ func (kv *Backend) getPartitions(path string, container v3io.Container, marker s
 	return partitions, nil
 }
 
-func (kv *Backend) internalGetPartitions(path string, container v3io.Container, marker string) ([]string, error) {
-	var partitions []string
-	input := &v3io.GetContainerContentsInput{Path: path, DirectoriesOnly: true, Marker: marker}
-	res, err := container.GetContainerContentsSync(input)
-	if err != nil {
-		return nil, err
-	}
-	out := res.Output.(*v3io.GetContainerContentsOutput)
-	for _, partition := range out.CommonPrefixes {
-		parts, err := kv.getPartitions(partition.Prefix, container, "")
-		if err != nil {
-			return nil, err
-		}
-		partitions = append(partitions, parts...)
-	}
-
-	if out.NextMarker != "" {
-		parts, err := kv.getPartitions(path, container, out.NextMarker)
-		if err != nil {
-			return nil, err
-		}
-		partitions = append(partitions, parts...)
-	} else {
-		partitions = append(partitions, path)
-	}
-
-	return partitions, nil
-}
-
 func containsString(s []string, subString string) bool {
 	for _, str := range s {
 		if str == subString {
