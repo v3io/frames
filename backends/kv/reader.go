@@ -56,9 +56,6 @@ func (kv *Backend) Read(request *frames.ReadRequest) (frames.FrameIterator, erro
 	if err != nil {
 		return nil, err
 	}
-	if len(partitions) == 0 {
-		partitions = []string{tablePath}
-	}
 
 	input := v3io.GetItemsInput{Path: "", Filter: request.Proto.Filter, AttributeNames: columns}
 	kv.logger.DebugWith("read input", "input", input, "request", request)
@@ -230,13 +227,14 @@ func (kv *Backend) getPartitions(path string, container v3io.Container, marker s
 	out := res.Output.(*v3io.GetContainerContentsOutput)
 	if len(out.CommonPrefixes) > 0 {
 		for _, partition := range out.CommonPrefixes {
-			partitions = append(partitions, partition.Prefix)
 			parts, err := kv.getPartitions(partition.Prefix, container, "")
 			if err != nil {
 				return nil, err
 			}
 			partitions = append(partitions, parts...)
 		}
+	} else if input.Marker == "" { // Add a partition to the list if the folder does not have other directories
+		partitions = append(partitions, path)
 	}
 
 	if out.NextMarker != "" {
