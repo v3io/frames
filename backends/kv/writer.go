@@ -36,16 +36,17 @@ import (
 
 // Appender is key/value appender
 type Appender struct {
-	request      *frames.WriteRequest
-	container    v3io.Container
-	tablePath    string
-	responseChan chan *v3io.Response
-	commChan     chan int
-	doneChan     chan bool
-	sent         int
-	logger       logger.Logger
-	schema       v3ioutils.V3ioSchema
-	asyncErr     error
+	request       *frames.WriteRequest
+	container     v3io.Container
+	tablePath     string
+	responseChan  chan *v3io.Response
+	commChan      chan int
+	doneChan      chan bool
+	sent          int
+	logger        logger.Logger
+	schema        v3ioutils.V3ioSchema
+	asyncErr      error
+	rowsProcessed int
 }
 
 // Write support writing to backend
@@ -63,7 +64,7 @@ func (kv *Backend) Write(request *frames.WriteRequest) (frames.FrameAppender, er
 		responseChan: make(chan *v3io.Response, 1000),
 		commChan:     make(chan int, 2),
 		logger:       kv.logger,
-		schema:       v3ioutils.NewSchema("index"),
+		schema:       v3ioutils.NewSchema("idx"),
 	}
 	go appender.respWaitLoop(time.Minute)
 
@@ -90,10 +91,16 @@ func (a *Appender) Add(frame frames.Frame) error {
 
 	columns := make(map[string]frames.Column)
 	indexName := ""
+	var newSchema v3ioutils.V3ioSchema
 	if indices := frame.Indices(); len(indices) > 0 {
 		indexName = indices[0].Name()
+		newSchema = v3ioutils.NewSchema(indexName)
+		newSchema.AddColumn(indexName, indices[0], false)
+	} else {
+		indexName = a.schema.(*v3ioutils.OldV3ioSchema).Key
+		newSchema = v3ioutils.NewSchema(indexName)
+		newSchema.AddField(indexName, 0, false)
 	}
-	newSchema := v3ioutils.NewSchema(indexName)
 
 	for _, name := range frame.Names() {
 		col, err := frame.Column(name)
@@ -142,7 +149,10 @@ func (a *Appender) Add(frame frames.Frame) error {
 		}
 
 		key := indexVal(r)
-		input := v3io.PutItemInput{Path: a.tablePath + key, Attributes: row}
+
+		// Add key column as an attribute
+		row[indexName] = key
+		input := v3io.PutItemInput{Path: a.tablePath + fmt.Sprintf("%v", key), Attributes: row}
 		a.logger.DebugWith("write", "input", input)
 		_, err := a.container.PutItem(&input, r, a.responseChan)
 		if err != nil {
@@ -153,6 +163,7 @@ func (a *Appender) Add(frame frames.Frame) error {
 		a.sent++
 	}
 
+	a.rowsProcessed += frame.Len()
 	return nil
 }
 
@@ -190,7 +201,7 @@ func (a *Appender) update(frame frames.Frame) error {
 		}
 
 		key := indexVal(r)
-		input := v3io.UpdateItemInput{Path: a.tablePath + key, Expression: expr, Condition: cond}
+		input := v3io.UpdateItemInput{Path: a.tablePath + fmt.Sprintf("%v", key), Expression: expr, Condition: cond}
 		a.logger.DebugWith("write update", "input", input)
 		_, err = a.container.UpdateItem(&input, r, a.responseChan)
 		if err != nil {
@@ -259,7 +270,7 @@ func (a *Appender) WaitForComplete(timeout time.Duration) error {
 	return a.asyncErr
 }
 
-func (a *Appender) indexValFunc(frame frames.Frame) (func(int) string, error) {
+func (a *Appender) indexValFunc(frame frames.Frame) (func(int) interface{}, error) {
 	var indexCol frames.Column
 
 	if indices := frame.Indices(); len(indices) > 0 {
@@ -269,44 +280,37 @@ func (a *Appender) indexValFunc(frame frames.Frame) (func(int) string, error) {
 
 		indexCol = indices[0]
 	} else {
-		names := frame.Names()
-		if len(names) == 0 {
-			return nil, fmt.Errorf("no index and no columns")
-		}
-
-		// Use first column as index
-		var err error
-		indexCol, err = frame.Column(names[0])
-		if err != nil {
-			return nil, err
-		}
+		// If no index column exist use range index
+		return func(i int) interface{} {
+			return a.rowsProcessed + i
+		}, nil
 	}
 
-	var fn func(int) string
+	var fn func(int) interface{}
 	switch indexCol.DType() {
 	// strconv.Format* is about twice as fast as fmt.Sprintf
 	case frames.IntType:
-		fn = func(i int) string {
+		fn = func(i int) interface{} {
 			ival, _ := indexCol.IntAt(i)
 			return strconv.FormatInt(int64(ival), 10)
 		}
 	case frames.FloatType:
-		fn = func(i int) string {
+		fn = func(i int) interface{} {
 			fval, _ := indexCol.FloatAt(i)
 			return strconv.FormatFloat(fval, 'f', -1, 64)
 		}
 	case frames.StringType:
-		fn = func(i int) string {
+		fn = func(i int) interface{} {
 			sval, _ := indexCol.StringAt(i)
 			return sval
 		}
 	case frames.TimeType:
-		fn = func(i int) string {
+		fn = func(i int) interface{} {
 			tval, _ := indexCol.TimeAt(i)
 			return tval.Format(time.RFC3339Nano)
 		}
 	case frames.BoolType:
-		fn = func(i int) string {
+		fn = func(i int) interface{} {
 			bval, _ := indexCol.BoolAt(i)
 			if bval {
 				return "true"

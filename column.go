@@ -319,6 +319,15 @@ func (c *colImpl) Append(value interface{}) error {
 	return c.appendSlice(value)
 }
 
+func (c *colImpl) CopyWithName(newName string) Column {
+	newColImpl := *c
+	newCol := &newColImpl
+	newMsg := *c.msg
+	newColImpl.msg = &newMsg
+	newColImpl.msg.Name = newName
+	return newCol
+}
+
 // NewSliceColumn returns a new slice column
 func NewSliceColumn(name string, data interface{}) (Column, error) {
 	msg := &pb.Column{

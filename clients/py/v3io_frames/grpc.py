@@ -88,7 +88,7 @@ class Client(ClientBase):
                 **kw
             )
             for frame in stub.Read(request):
-                yield msg2df(frame, self.frame_factory)
+                yield msg2df(frame, self.frame_factory, columns)
 
     # We need to write "read" since once you have a yield in a function
     # (do_read) it'll always return a generator

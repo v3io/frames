@@ -28,6 +28,7 @@ import (
 	"fmt"
 	"io"
 	"net/http"
+	"path"
 
 	"github.com/v3io/frames"
 	"github.com/v3io/frames/api"
@@ -124,7 +125,11 @@ func (s *Server) Start() error {
 }
 
 func (s *Server) handler(ctx *fasthttp.RequestCtx) {
-	fn, ok := s.routes[string(ctx.Path())]
+	// Avoid something like a double slash causing a misroute to status due to the fact that ctx.URI() and ctx.Path()
+	// translate a path like //read to /, which in turn causes the plaintext status being returned to a client that is
+	// expecteing a binary response (which currently results in a Python MemoryError on the client side).
+	canonicalPath := path.Clean(string(ctx.Request.Header.RequestURI()))
+	fn, ok := s.routes[canonicalPath]
 	if !ok {
 		ctx.Error(fmt.Sprintf("unknown path - %q", string(ctx.Path())), http.StatusNotFound)
 		return
