@@ -96,6 +96,7 @@ long long table_num_cols(void *vp);
 long long table_num_rows(void *vp);
 result_t table_col_by_index(void *vp, long long i);
 result_t table_col_by_name(void *vp, const char *name);
+result_t table_slice(void *vp, int64_t offset, int64_t length);
 void table_free(void *vp);
 
 result_t plasma_connect(char *path);

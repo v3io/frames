@@ -461,16 +461,7 @@ func NewTableFromColumns(columns []*Column) (*Table, error) {
 		return nil, err
 	}
 	ptr := C.table_new(schema.ptr, cptr)
-	table := &Table{ptr}
-
-	/* FIXME
-	   if err := table.validate(); err != nil {
-	       C.table_free(ptr)
-	       return nil, err
-	   }
-	*/
-
-	return table, nil
+	return &Table{ptr}, nil
 }
 
 // NewTableFromPtr creates a new table from underlying C pointer
@@ -515,6 +506,20 @@ func (t *Table) ColByIndex(i int) (*Column, error) {
 	}
 
 	return &Column{r.Ptr()}, nil
+}
+
+// Slice returns a slice from the table
+func (t *Table) Slice(offset, length int) (*Table, error) {
+	if offset < 0 || length < 0 || offset+length > t.NumRows() {
+		return nil, fmt.Errorf("bad slice: [%d:%d]", offset, offset+length)
+	}
+
+	r := result{C.table_slice(t.ptr, C.int64_t(offset), C.int64_t(length))}
+	if err := r.Err(); err != nil {
+		return nil, err
+	}
+
+	return &Table{r.Ptr()}, nil
 }
 
 // Ptr returns the underlying C++ pointer

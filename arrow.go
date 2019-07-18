@@ -243,17 +243,17 @@ func (b *ArrowColumnBuilder) Append(value interface{}) error {
 
 // At return value at
 func (b *ArrowColumnBuilder) At(index int) (interface{}, error) {
-	return nil, fmt.Errorf("not implemented")
+	return nil, fmt.Errorf("not supported")
 }
 
 // Set sets a value
 func (b *ArrowColumnBuilder) Set(index int, value interface{}) error {
-	return fmt.Errorf("not implemented")
+	return fmt.Errorf("not supported")
 }
 
 // Delete deletes a value
 func (b *ArrowColumnBuilder) Delete(index int) error {
-	return fmt.Errorf("not implemented")
+	return fmt.Errorf("not supported")
 }
 
 // Finish create the colum
@@ -335,7 +335,16 @@ func (a *ArrowColumn) DType() DType {
 
 // Ints returns data as []int64
 func (a *ArrowColumn) Ints() ([]int64, error) {
-	return nil, fmt.Errorf("not implmented")
+	// TODO: Find a more efficient way, also cache?
+	data := make([]int64, a.Len())
+	for i := 0; i < a.Len(); i++ {
+		val, err := a.IntAt(i)
+		if err != nil {
+			return nil, err
+		}
+		data[i] = val
+	}
+	return data, nil
 }
 
 // IntAt returns int value at i
@@ -345,7 +354,16 @@ func (a *ArrowColumn) IntAt(i int) (int64, error) {
 
 // Floats returns data as []float64
 func (a *ArrowColumn) Floats() ([]float64, error) {
-	return nil, fmt.Errorf("not implmented")
+	// TODO: Find a more efficient way, also cache?
+	data := make([]float64, a.Len())
+	for i := 0; i < a.Len(); i++ {
+		val, err := a.FloatAt(i)
+		if err != nil {
+			return nil, err
+		}
+		data[i] = val
+	}
+	return data, nil
 }
 
 // FloatAt returns float value at i
@@ -355,7 +373,16 @@ func (a *ArrowColumn) FloatAt(i int) (float64, error) {
 
 // Strings return data as []string
 func (a *ArrowColumn) Strings() []string {
-	return nil // TODO
+	// TODO: Find a more efficient way, also cache?
+	data := make([]string, a.Len())
+	for i := 0; i < a.Len(); i++ {
+		val, err := a.StringAt(i)
+		if err != nil {
+			return nil, err
+		}
+		data[i] = val
+	}
+	return data, nil
 }
 
 // StringAt returns string at i
@@ -365,7 +392,16 @@ func (a *ArrowColumn) StringAt(i int) (string, error) {
 
 // Times return data as []time.Time
 func (a *ArrowColumn) Times() ([]time.Time, error) {
-	return nil, fmt.Errorf("not implmented")
+	// TODO: Find a more efficient way, also cache?
+	data := make([]time.Time, a.Len())
+	for i := 0; i < a.Len(); i++ {
+		val, err := a.TimeAt(i)
+		if err != nil {
+			return nil, err
+		}
+		data[i] = val
+	}
+	return data, nil
 }
 
 // TimeAt returns time value at i
@@ -375,7 +411,16 @@ func (a *ArrowColumn) TimeAt(i int) (time.Time, error) {
 
 // Bools returns data as []bool
 func (a *ArrowColumn) Bools() ([]bool, error) {
-	return nil, fmt.Errorf("not implmented")
+	// TODO: Find a more efficient way, also cache?
+	data := make([]bool, a.Len())
+	for i := 0; i < a.Len(); i++ {
+		val, err := a.TimeAt(i)
+		if err != nil {
+			return nil, err
+		}
+		data[i] = val
+	}
+	return data, nil
 }
 
 // BoolAt at returns bool value at i
@@ -451,7 +496,13 @@ func (a *ArrowFrame) Column(name string) (Column, error) {
 
 // Slice return a slice from the frame
 func (a *ArrowFrame) Slice(start int, end int) (Frame, error) {
-	return nil, fmt.Errorf("not implemented")
+	length := end - start
+	t, err := a.table.Slice(start, length)
+	if err != nil {
+		return nil, err
+	}
+
+	return &ArrowFrame{t}, nil
 }
 
 // IterRows returns an iterator over rows

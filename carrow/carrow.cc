@@ -377,9 +377,9 @@ result_t column_slice(void *vp, int64_t offset, int64_t length) {
 		return res;
 	}
 
-  auto col = new Column;
-  col->ptr = ptr;
-	res.ptr = col;
+  auto slice = new Column;
+  slice->ptr = ptr;
+	res.ptr = slice;
 	return res;
 }
 
@@ -482,6 +482,26 @@ result_t table_col_by_index(void *vp, long long i) {
 long long table_num_rows(void *vp) {
   auto table = (Table *)vp;
   return table->ptr->num_rows();
+}
+
+result_t table_slice(void *vp, int64_t offset, int64_t length) {
+	auto res = new_result();
+  auto table = (Table *)vp;
+	if (table == nullptr) {
+		res.err = strdup("null pointer");
+		return res;
+	}
+
+	auto ptr = table->ptr->Slice(offset, length);
+	if (ptr == nullptr) {
+		res.err = strdup("can't slice");
+		return res;
+	}
+
+  auto slice = new Table;
+  slice->ptr = ptr;
+	res.ptr = slice;
+	return res;
 }
 
 void table_free(void *vp) {
