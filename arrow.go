@@ -441,7 +441,12 @@ func (a *ArrowColumn) Slice(start int, end int) (Column, error) {
 
 // CopyWithName create a copy of the column with a new name
 func (a *ArrowColumn) CopyWithName(newName string) Column {
-	return nil
+	c, err := a.col.CopyWithName(newName)
+	if err != nil {
+		return nil
+	}
+
+	return &ArrowColumn{c}
 }
 
 // ArrowFrame is an arrow backed frame

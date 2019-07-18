@@ -437,6 +437,19 @@ func (c *Column) Slice(offset, length int) (*Column, error) {
 	return &Column{r.Ptr()}, nil
 }
 
+// CopyWithName creates a copy with new name
+func (c *Column) CopyWithName(name string) (*Column, error) {
+	cp := C.CString(name)
+	res := result{C.column_copy_name(c.ptr, cp)}
+	C.free(unsafe.Pointer(cp))
+
+	if err := res.Err(); err != nil {
+		return nil, err
+	}
+
+	return &Column{res.Ptr()}, nil
+}
+
 // Table is arrow table
 type Table struct {
 	ptr unsafe.Pointer

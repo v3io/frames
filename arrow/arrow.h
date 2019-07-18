@@ -85,6 +85,7 @@ result_t column_float_at(void *vp, long long i);
 result_t column_string_at(void *vp, long long i);
 result_t column_timestamp_at(void *vp, long long i);
 result_t column_slice(void *vp, int64_t offset, int64_t length);
+result_t column_copy_name(void *vp, const char *name);
 void column_free(void *vp);
 
 void *columns_new();

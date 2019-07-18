@@ -383,6 +383,24 @@ result_t column_slice(void *vp, int64_t offset, int64_t length) {
 	return res;
 }
 
+result_t column_copy_name(void *vp, const char *name) {
+	auto res = new_result();
+	auto column = (Column *)vp;
+	if (column == nullptr) {
+		res.err = strdup("null pointer");
+		return res;
+	}
+
+	auto f = column->ptr->field();
+	auto field = std::make_shared<arrow::Field>(f->name(), f->type());
+
+	auto ptr = std::make_shared<arrow::Column>(field, column->ptr->data());
+  auto wrapper = new Column;
+  wrapper->ptr = ptr;
+	res.ptr = wrapper;
+	return res;
+}
+
 void column_free(void *vp) {
   if (vp == nullptr) {
     return;
