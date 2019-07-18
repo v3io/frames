@@ -334,47 +334,47 @@ func (a *ArrowColumn) DType() DType {
 }
 
 func (a *ArrowColumn) Ints() ([]int64, error) {
-	panic("not implemented")
+	return nil, fmt.Errorf("not implmented")
 }
 
 func (a *ArrowColumn) IntAt(i int) (int64, error) {
-	panic("not implemented")
+	return a.col.Int64At(i)
 }
 
 func (a *ArrowColumn) Floats() ([]float64, error) {
-	panic("not implemented")
+	return nil, fmt.Errorf("not implmented")
 }
 
 func (a *ArrowColumn) FloatAt(i int) (float64, error) {
-	panic("not implemented")
+	return a.col.Float64At(i)
 }
 
 func (a *ArrowColumn) Strings() []string {
-	panic("not implemented")
+	return nil // TODO
 }
 
 func (a *ArrowColumn) StringAt(i int) (string, error) {
-	panic("not implemented")
+	return a.col.StringAt(i)
 }
 
 func (a *ArrowColumn) Times() ([]time.Time, error) {
-	panic("not implemented")
+	return nil, fmt.Errorf("not implmented")
 }
 
 func (a *ArrowColumn) TimeAt(i int) (time.Time, error) {
-	panic("not implemented")
+	return a.col.TimeAt(i)
 }
 
 func (a *ArrowColumn) Bools() ([]bool, error) {
-	panic("not implemented")
+	return nil, fmt.Errorf("not implmented")
 }
 
 func (a *ArrowColumn) BoolAt(i int) (bool, error) {
-	panic("not implemented")
+	return a.col.BoolAt(i)
 }
 
 func (a *ArrowColumn) Slice(start int, end int) (Column, error) {
-	panic("not implemented")
+	return nil, fmt.Errorf("not implmented")
 }
 
 // ArrowFrame is an arrow backed frame
@@ -434,12 +434,12 @@ func (a *ArrowFrame) Column(name string) (Column, error) {
 
 // Slice return a slice from the frame
 func (a *ArrowFrame) Slice(start int, end int) (Frame, error) {
-	panic("not implemented")
+	return nil, fmt.Errorf("not implemented")
 }
 
 // IterRows returns an iterator over rows
 func (a *ArrowFrame) IterRows(includeIndex bool) RowIterator {
-	panic("not implemented")
+	return nil // TODO
 }
 
 // Table returns the underlying arrow table

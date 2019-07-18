@@ -284,6 +284,42 @@ class ClientBase:
         )
         return self._read_shm(shm_req)
 
+    def write_shm(self, db_path, backend, table, df, expression='',
+                  condition='', labels=None, max_in_message=0,
+                  index_cols=None, partition_keys=None):
+        """Write to table
+
+        Parameters
+        ----------
+        db_path : str
+            Path to database (plasma)
+        backend : str
+            Backend name
+        table : str
+            Table to write to
+        df : A DataFrame
+            Frames to write
+        expression : str
+            Write expression
+        condition : str
+            Write condition
+        labels : dict
+            Set of lables
+        max_in_message : int
+            Maximal number of rows to send per message
+        index_cols : list of str
+            Columns to use as indices
+        partition_keys : list of str
+            Partition keys
+        Returns:
+            Write result
+        """
+        self._validate_request(backend, table, WriteError)
+
+        request = self._encode_write(
+            backend, table, expression, condition, partition_keys)
+        return self._write_shm(request, db_path, df)
+
     def _fix_address(self, address):
         return address
 

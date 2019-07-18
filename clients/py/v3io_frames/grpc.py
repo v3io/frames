@@ -176,7 +176,7 @@ class Client(ClientBase):
 
         if self.frame_factory is pd.DataFrame:
             df = record_batch.to_pandas()
-        else: # cudf
+        else:  # cudf
             table = pa.Table.from_batches([record_batch])
             df = self.frame_factory.from_arrow(table)
 
@@ -184,8 +184,19 @@ class Client(ClientBase):
         return df
 
     @grpc_raise(WriteError)
-    def _shm_write(self, request, db_path, df, obj_id=None):
-        raise NotImplementedError
+    def _write_shm(self, req, db_path, df, obj_id=None):
+        obj_id, index_cols = plasma_write_df(db_path, df, obj_id)
+
+        wreq = fpb.ShmWriteRequest(
+            db_path=db_path,
+            object_id=obj_id.binary(),
+            keep_object=False,  # TODO: In API?
+            index_columns=index_cols,
+            request=req,
+        )
+        with new_channel(self.address) as channel:
+            stub = fgrpc.FramesStub(channel)
+            return stub.ShmWrite(wreq)
 
 
 def plasma_write_df(db_path, df, obj_id=None):
@@ -196,7 +207,7 @@ def plasma_write_df(db_path, df, obj_id=None):
     elif isinstance(obj_id, str):
         obj_id = plasma.ObjectID(obj_id.encode('ascii'))
 
-    client = plasma.connect(db_path, '', 0)
+    client = plasma.connect(db_path)
     record_batch = pa.RecordBatch.from_pandas(df)
 
     # Create the Plasma object from the PyArrow RecordBatch. Most of the work
@@ -225,7 +236,7 @@ def plasma_read_df(db_path, obj_id, index_columns=None):
     elif isinstance(obj_id, str):
         obj_id = plasma.ObjectID(obj_id.encode('ascii'))
 
-    client = plasma.connect(db_path, '', 0)
+    client = plasma.connect(db_path)
     data, = client.get_buffers([obj_id])
     buf = pa.BufferReader(data)
     reader = pa.RecordBatchStreamReader(buf)
