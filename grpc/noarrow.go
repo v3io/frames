@@ -1,4 +1,4 @@
-// +build !carrow
+// +build !arrow
 
 /*
 Copyright 2018 Iguazio Systems Ltd.

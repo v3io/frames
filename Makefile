@@ -112,12 +112,12 @@ frames:
 # Make sure pkg-config knows where to find arrow & plasma, you can set
 #	export PKG_CONFIG_PATH=/opt/miniconda/lib/pkgconfig
 # See cmd/framesd/Dockerfile.arrow
-arrow:
-	cd carrow && make libcarrow.a
-	go build -tags carrow ./cmd/framesd
+frames-arrow:
+	cd arrow && make fresh
+	go build -tags arrow ./cmd/framesd
 
 clean:
-	cd carrow && make clean
+	cd arrow && make clean
 	rm -f framesd
 
 .PHONY: ensure-gopath

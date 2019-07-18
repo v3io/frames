@@ -1,4 +1,4 @@
-// +build carrow
+// +build arrow
 
 /*
 Copyright 2018 Iguazio Systems Ltd.
@@ -29,7 +29,7 @@ import (
 	"github.com/pkg/errors"
 
 	"github.com/v3io/frames"
-	"github.com/v3io/frames/carrow/plasma"
+	"github.com/v3io/frames/arrow/plasma"
 	"github.com/v3io/frames/pb"
 )
 

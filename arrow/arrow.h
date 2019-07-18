@@ -1,4 +1,4 @@
-// +build carrow
+// +build arrow
 
 /*
 Copyright 2018 Iguazio Systems Ltd.
@@ -20,8 +20,8 @@ under the Apache 2.0 license is conditioned upon your compliance with
 such restriction.
 */
 
-#ifndef _CARROW_H_
-#define _CARROW_H_
+#ifndef _ARROW_H_
+#define _ARROW_H_
 
 #ifdef __cplusplus
 extern "C" {
@@ -109,4 +109,4 @@ result_t plasma_disconnect(void *vp);
 }
 #endif // extern "C"
 
-#endif // #ifdef _CARROW_H_
+#endif // #ifdef _ARROW_H_

@@ -1,4 +1,4 @@
-// +build carrow
+// +build arrow
 
 /*
 Copyright 2018 Iguazio Systems Ltd.
@@ -29,7 +29,7 @@ such restriction.
 #include <sstream>
 #include <vector>
 
-#include "carrow.h"
+#include "arrow.h"
 #include <string.h>
 
 #ifdef __cplusplus
@@ -55,7 +55,7 @@ char *result_cp(result_t r) { return r.cp; }
 int64_t result_i(result_t r) { return r.i; }
 double result_f(result_t r) { return r.f; }
 
-#define CARROW_RETURN_IF_ERROR(status)             \
+#define RETURN_IF_ERROR(status)             \
   do {                                             \
     if (!status.ok()) {                            \
       return new_result(status.message().c_str()); \
@@ -163,35 +163,35 @@ result_t array_builder_new(int dtype) {
 result_t array_builder_append_bool(void *vp, int value) {
   auto builder = (arrow::BooleanBuilder *)vp;
   auto status = builder->Append(bool(value));
-  CARROW_RETURN_IF_ERROR(status);
+  RETURN_IF_ERROR(status);
   return new_result();
 }
 
 result_t array_builder_append_float(void *vp, double value) {
   auto builder = (arrow::DoubleBuilder *)vp;
   auto status = builder->Append(value);
-  CARROW_RETURN_IF_ERROR(status);
+  RETURN_IF_ERROR(status);
   return new_result();
 }
 
 result_t array_builder_append_int(void *vp, int64_t value) {
   auto builder = (arrow::Int64Builder *)vp;
   auto status = builder->Append(value);
-  CARROW_RETURN_IF_ERROR(status);
+  RETURN_IF_ERROR(status);
   return new_result();
 }
 
 result_t array_builder_append_string(void *vp, char *cp, size_t length) {
   auto builder = (arrow::StringBuilder *)vp;
   auto status = builder->Append(cp, length);
-  CARROW_RETURN_IF_ERROR(status);
+  RETURN_IF_ERROR(status);
   return result_t{nullptr};
 }
 
 result_t array_builder_append_timestamp(void *vp, int64_t value) {
   auto builder = (arrow::TimestampBuilder *)vp;
   auto status = builder->Append(value);
-  CARROW_RETURN_IF_ERROR(status);
+  RETURN_IF_ERROR(status);
   return result_t{nullptr};
 }
 
@@ -204,7 +204,7 @@ result_t array_builder_finish(void *vp) {
   auto builder = (arrow::ArrayBuilder *)vp;
   std::shared_ptr<arrow::Array> array;
   auto status = builder->Finish(&array);
-  CARROW_RETURN_IF_ERROR(status);
+  RETURN_IF_ERROR(status);
   delete builder;
 
   auto wrapper = new Array;
@@ -520,7 +520,7 @@ result_t plasma_connect(char *path) {
     delete client;
   }
 
-  CARROW_RETURN_IF_ERROR(status);
+  RETURN_IF_ERROR(status);
   return result_t{nullptr, client};
 }
 
@@ -557,11 +557,11 @@ result_t table_size(std::shared_ptr<arrow::Table> table) {
   std::shared_ptr<arrow::ipc::RecordBatchWriter> writer;
   auto status = arrow::ipc::RecordBatchStreamWriter::Open(
       &stream, table->schema(), &writer);
-  CARROW_RETURN_IF_ERROR(status);
+  RETURN_IF_ERROR(status);
   status = write_table(table, writer);
-  CARROW_RETURN_IF_ERROR(status);
+  RETURN_IF_ERROR(status);
   status = writer->Close();
-  CARROW_RETURN_IF_ERROR(status);
+  RETURN_IF_ERROR(status);
 
   auto num_written = stream.GetExtentBytesWritten();
   return result_t{nullptr, (void *)num_written};
@@ -585,18 +585,18 @@ result_t plasma_write(void *cp, void *tp, char *oid) {
   std::shared_ptr<arrow::Buffer> buf;
   // TODO: Check padding
   auto status = client->Create(id, size, nullptr, 0, &buf);
-  CARROW_RETURN_IF_ERROR(status);
+  RETURN_IF_ERROR(status);
 
   arrow::io::FixedSizeBufferWriter bw(buf);
   std::shared_ptr<arrow::ipc::RecordBatchWriter> writer;
   status =
       arrow::ipc::RecordBatchStreamWriter::Open(&bw, table->ptr->schema(), &writer);
-  CARROW_RETURN_IF_ERROR(status);
+  RETURN_IF_ERROR(status);
 
   status = write_table(table->ptr, writer);
-  CARROW_RETURN_IF_ERROR(status);
+  RETURN_IF_ERROR(status);
   status = client->Seal(id);
-  CARROW_RETURN_IF_ERROR(status);
+  RETURN_IF_ERROR(status);
 
   return result_t{nullptr, (void *)size};
 }
@@ -608,7 +608,7 @@ result_t plasma_disconnect(void *vp) {
 
   auto client = (plasma::PlasmaClient *)(vp);
   auto status = client->Disconnect();
-  CARROW_RETURN_IF_ERROR(status);
+  RETURN_IF_ERROR(status);
   delete client;
   return result_t{nullptr, nullptr};
 }
@@ -627,7 +627,7 @@ result_t plasma_read(void *cp, char *oid, int64_t timeout_ms) {
   std::vector<plasma::ObjectBuffer> buffers;
 
   auto status = client->Get(ids, timeout_ms, &buffers);
-  CARROW_RETURN_IF_ERROR(status);
+  RETURN_IF_ERROR(status);
 
   // TODO: Support multiple buffers
   if (buffers.size() != 1) {
@@ -639,13 +639,13 @@ result_t plasma_read(void *cp, char *oid, int64_t timeout_ms) {
   auto buf_reader = std::make_shared<arrow::io::BufferReader>(buffers[0].data);
   std::shared_ptr<arrow::ipc::RecordBatchReader> reader;
   status = arrow::ipc::RecordBatchStreamReader::Open(buf_reader, &reader);
-  CARROW_RETURN_IF_ERROR(status);
+  RETURN_IF_ERROR(status);
 
   std::vector<std::shared_ptr<arrow::RecordBatch>> batches;
   while (true) {
     std::shared_ptr<arrow::RecordBatch> batch;
     status = reader->ReadNext(&batch);
-    CARROW_RETURN_IF_ERROR(status);
+    RETURN_IF_ERROR(status);
     if (batch == nullptr) {
       break;
     }
@@ -654,7 +654,7 @@ result_t plasma_read(void *cp, char *oid, int64_t timeout_ms) {
 
   std::shared_ptr<arrow::Table> table;
   status = arrow::Table::FromRecordBatches(batches, &table);
-  CARROW_RETURN_IF_ERROR(status);
+  RETURN_IF_ERROR(status);
 
   auto wrapper = new Table;
   wrapper->ptr = table;
@@ -669,7 +669,7 @@ result_t plasma_release(void *cp, char *oid) {
   auto client = (plasma::PlasmaClient *)(cp);
   plasma::ObjectID id = plasma::ObjectID::from_binary(oid);
   auto status = client->Release(id);
-  CARROW_RETURN_IF_ERROR(status);
+  RETURN_IF_ERROR(status);
   return result_t{nullptr, nullptr};
 }
 

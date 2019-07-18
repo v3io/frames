@@ -1,4 +1,4 @@
-// +build carrow
+// +build arrow
 
 /*
 Copyright 2018 Iguazio Systems Ltd.
@@ -29,38 +29,38 @@ import (
 
 	"github.com/pkg/errors"
 
-	"github.com/v3io/frames/carrow"
+	"github.com/v3io/frames/arrow"
 )
 
 var (
 	// HasArrow signals we have arrow
 	HasArrow = true
 
-	dtype2dtype = map[carrow.DType]DType{
-		carrow.BoolType:      BoolType,
-		carrow.Float64Type:   FloatType,
-		carrow.Integer64Type: IntType,
-		carrow.StringType:    StringType,
-		carrow.TimestampType: TimeType,
+	dtype2dtype = map[arrow.DType]DType{
+		arrow.BoolType:      BoolType,
+		arrow.Float64Type:   FloatType,
+		arrow.Integer64Type: IntType,
+		arrow.StringType:    StringType,
+		arrow.TimestampType: TimeType,
 	}
 )
 
 // NewArrowColumn returns a new arrow backed column
 func NewArrowColumn(name string, data interface{}) (Column, error) {
 	var (
-		arr   *carrow.Array
-		field *carrow.Field
+		arr   *arrow.Array
+		field *arrow.Field
 		err   error
 	)
 
 	switch data.(type) {
 	case []bool:
-		field, err = carrow.NewField(name, carrow.BoolType)
+		field, err = arrow.NewField(name, arrow.BoolType)
 		if err != nil {
 			return nil, errors.Wrap(err, "bool: can't create field")
 		}
 		typedData := data.([]bool)
-		bld := carrow.NewBoolArrayBuilder()
+		bld := arrow.NewBoolArrayBuilder()
 		if bld == nil {
 			return nil, fmt.Errorf("bool: can't create builder")
 		}
@@ -74,12 +74,12 @@ func NewArrowColumn(name string, data interface{}) (Column, error) {
 			return nil, errors.Wrap(err, "bool: can't create array")
 		}
 	case []float64:
-		field, err = carrow.NewField(name, carrow.Float64Type)
+		field, err = arrow.NewField(name, arrow.Float64Type)
 		if err != nil {
 			return nil, errors.Wrap(err, "float64: can't create field")
 		}
 		typedData := data.([]float64)
-		bld := carrow.NewFloat64ArrayBuilder()
+		bld := arrow.NewFloat64ArrayBuilder()
 		if bld == nil {
 			return nil, fmt.Errorf("float64: can't create builder")
 		}
@@ -93,12 +93,12 @@ func NewArrowColumn(name string, data interface{}) (Column, error) {
 			return nil, errors.Wrap(err, "float64: can't create array")
 		}
 	case []int64:
-		field, err = carrow.NewField(name, carrow.Integer64Type)
+		field, err = arrow.NewField(name, arrow.Integer64Type)
 		if err != nil {
 			return nil, errors.Wrap(err, "int64: can't create field")
 		}
 		typedData := data.([]int64)
-		bld := carrow.NewInt64ArrayBuilder()
+		bld := arrow.NewInt64ArrayBuilder()
 		if bld == nil {
 			return nil, fmt.Errorf("int64: can't create builder")
 		}
@@ -112,12 +112,12 @@ func NewArrowColumn(name string, data interface{}) (Column, error) {
 			return nil, errors.Wrap(err, "int64: can't create array")
 		}
 	case []string:
-		field, err = carrow.NewField(name, carrow.StringType)
+		field, err = arrow.NewField(name, arrow.StringType)
 		if err != nil {
 			return nil, errors.Wrap(err, "string: can't create field")
 		}
 		typedData := data.([]string)
-		bld := carrow.NewStringArrayBuilder()
+		bld := arrow.NewStringArrayBuilder()
 		if bld == nil {
 			return nil, fmt.Errorf("string: can't create builder")
 		}
@@ -131,12 +131,12 @@ func NewArrowColumn(name string, data interface{}) (Column, error) {
 			return nil, errors.Wrap(err, "int64: can't create array")
 		}
 	case []time.Time:
-		field, err = carrow.NewField(name, carrow.TimestampType)
+		field, err = arrow.NewField(name, arrow.TimestampType)
 		if err != nil {
 			return nil, errors.Wrap(err, "timestamp: can't create field")
 		}
 		typedData := data.([]time.Time)
-		bld := carrow.NewTimestampArrayBuilder()
+		bld := arrow.NewTimestampArrayBuilder()
 		if bld == nil {
 			return nil, fmt.Errorf("timestamp: can't create builder")
 		}
@@ -153,7 +153,7 @@ func NewArrowColumn(name string, data interface{}) (Column, error) {
 		return nil, fmt.Errorf("unkown data type - %T", data)
 	}
 
-	col, err := carrow.NewColumn(field, arr)
+	col, err := arrow.NewColumn(field, arr)
 	if err != nil {
 		return nil, errors.Wrap(err, "can't create column")
 	}
@@ -163,40 +163,40 @@ func NewArrowColumn(name string, data interface{}) (Column, error) {
 
 // ArrowColumnBuilder builds arrow based columns
 type ArrowColumnBuilder struct {
-	field        *carrow.Field
-	boolBuilder  *carrow.BoolArrayBuilder
-	floatBuilder *carrow.Float64ArrayBuilder
-	intBuilder   *carrow.Int64ArrayBuilder
-	strBuilder   *carrow.StringArrayBuilder
-	tsBuilder    *carrow.TimestampArrayBuilder
+	field        *arrow.Field
+	boolBuilder  *arrow.BoolArrayBuilder
+	floatBuilder *arrow.Float64ArrayBuilder
+	intBuilder   *arrow.Int64ArrayBuilder
+	strBuilder   *arrow.StringArrayBuilder
+	tsBuilder    *arrow.TimestampArrayBuilder
 }
 
 // NewArrowColumnBuilder return new ArrowColumnBuilder
 func NewArrowColumnBuilder(name string, dtype DType, size int) (*ArrowColumnBuilder, error) {
-	var typ carrow.DType
+	var typ arrow.DType
 	bld := &ArrowColumnBuilder{}
 	switch dtype {
 	case BoolType:
-		typ = carrow.BoolType
-		bld.boolBuilder = carrow.NewBoolArrayBuilder()
+		typ = arrow.BoolType
+		bld.boolBuilder = arrow.NewBoolArrayBuilder()
 	case FloatType:
-		typ = carrow.Float64Type
-		bld.floatBuilder = carrow.NewFloat64ArrayBuilder()
+		typ = arrow.Float64Type
+		bld.floatBuilder = arrow.NewFloat64ArrayBuilder()
 	case IntType:
-		typ = carrow.Integer64Type
-		bld.intBuilder = carrow.NewInt64ArrayBuilder()
+		typ = arrow.Integer64Type
+		bld.intBuilder = arrow.NewInt64ArrayBuilder()
 	case StringType:
-		typ = carrow.StringType
-		bld.strBuilder = carrow.NewStringArrayBuilder()
+		typ = arrow.StringType
+		bld.strBuilder = arrow.NewStringArrayBuilder()
 	case TimeType:
-		typ = carrow.TimestampType
-		bld.tsBuilder = carrow.NewTimestampArrayBuilder()
+		typ = arrow.TimestampType
+		bld.tsBuilder = arrow.NewTimestampArrayBuilder()
 	default:
 		return nil, fmt.Errorf("unsupported dtype - %s", dtype)
 	}
 
 	var err error
-	bld.field, err = carrow.NewField(name, typ)
+	bld.field, err = arrow.NewField(name, typ)
 	if err != nil {
 		return nil, err
 	}
@@ -207,31 +207,31 @@ func NewArrowColumnBuilder(name string, dtype DType, size int) (*ArrowColumnBuil
 // Append appends a value
 func (b *ArrowColumnBuilder) Append(value interface{}) error {
 	switch b.field.DType() {
-	case carrow.BoolType:
+	case arrow.BoolType:
 		bval, ok := value.(bool)
 		if !ok {
 			return typeError(value, "bool")
 		}
 		b.boolBuilder.Append(bval)
-	case carrow.Float64Type:
+	case arrow.Float64Type:
 		fval, err := asFloat64(value)
 		if err != nil {
 			return err
 		}
 		return b.floatBuilder.Append(fval)
-	case carrow.Integer64Type:
+	case arrow.Integer64Type:
 		ival, err := asInt64(value)
 		if err != nil {
 			return err
 		}
 		return b.intBuilder.Append(ival)
-	case carrow.StringType:
+	case arrow.StringType:
 		sval, ok := value.(string)
 		if !ok {
 			return typeError(value, "string")
 		}
 		return b.strBuilder.Append(sval)
-	case carrow.TimestampType:
+	case arrow.TimestampType:
 		tval, ok := value.(time.Time)
 		if !ok {
 			return typeError(value, "time.Time")
@@ -259,37 +259,37 @@ func (b *ArrowColumnBuilder) Delete(index int) error {
 // Finish create the colum
 func (b *ArrowColumnBuilder) Finish() Column {
 	var (
-		arr *carrow.Array
+		arr *arrow.Array
 		err error
 	)
 
 	switch b.field.DType() {
-	case carrow.BoolType:
+	case arrow.BoolType:
 		arr, err = b.boolBuilder.Finish()
 		if err != nil {
 			// TODO: Error in builder interface?
 			log.Printf("bool build error: %s", err)
 			return nil
 		}
-	case carrow.Float64Type:
+	case arrow.Float64Type:
 		arr, err = b.floatBuilder.Finish()
 		if err != nil {
 			log.Printf("float build error: %s", err)
 			return nil
 		}
-	case carrow.Integer64Type:
+	case arrow.Integer64Type:
 		arr, err = b.intBuilder.Finish()
 		if err != nil {
 			log.Printf("int64 build error: %s", err)
 			return nil
 		}
-	case carrow.StringType:
+	case arrow.StringType:
 		arr, err = b.strBuilder.Finish()
 		if err != nil {
 			log.Printf("string build error: %s", err)
 			return nil
 		}
-	case carrow.TimestampType:
+	case arrow.TimestampType:
 		arr, err = b.tsBuilder.Finish()
 		if err != nil {
 			log.Printf("time build error: %s", err)
@@ -300,7 +300,7 @@ func (b *ArrowColumnBuilder) Finish() Column {
 		return nil
 	}
 
-	col, err := carrow.NewColumn(b.field, arr)
+	col, err := arrow.NewColumn(b.field, arr)
 	if err != nil {
 		log.Printf("can't create column: %s", err)
 		return nil
@@ -315,7 +315,7 @@ func typeError(value interface{}, typ string) error {
 
 // ArrowColumn is an arrow backed column
 type ArrowColumn struct {
-	col *carrow.Column
+	col *arrow.Column
 }
 
 // Len returns the lengh of the column
@@ -378,11 +378,11 @@ func (a *ArrowColumn) Strings() []string {
 	for i := 0; i < a.Len(); i++ {
 		val, err := a.StringAt(i)
 		if err != nil {
-			return nil, err
+			return nil
 		}
 		data[i] = val
 	}
-	return data, nil
+	return data
 }
 
 // StringAt returns string at i
@@ -414,7 +414,7 @@ func (a *ArrowColumn) Bools() ([]bool, error) {
 	// TODO: Find a more efficient way, also cache?
 	data := make([]bool, a.Len())
 	for i := 0; i < a.Len(); i++ {
-		val, err := a.TimeAt(i)
+		val, err := a.BoolAt(i)
 		if err != nil {
 			return nil, err
 		}
@@ -439,13 +439,18 @@ func (a *ArrowColumn) Slice(start int, end int) (Column, error) {
 	return &ArrowColumn{c}, nil
 }
 
-// ArrowFrame is an arrow backed frame
-type ArrowFrame struct {
-	table *carrow.Table
+// CopyWithName create a copy of the column with a new name
+func (a *ArrowColumn) CopyWithName(newName string) Column {
+	return nil
 }
 
-// ArrowFrameFromTable returns ArrowFrame from underlying carrow.Table
-func ArrowFrameFromTable(table *carrow.Table) (*ArrowFrame, error) {
+// ArrowFrame is an arrow backed frame
+type ArrowFrame struct {
+	table *arrow.Table
+}
+
+// ArrowFrameFromTable returns ArrowFrame from underlying arrow.Table
+func ArrowFrameFromTable(table *arrow.Table) (*ArrowFrame, error) {
 	if table == nil {
 		return nil, errors.Errorf("nil table")
 	}
@@ -511,13 +516,13 @@ func (a *ArrowFrame) IterRows(includeIndex bool) RowIterator {
 }
 
 // Table returns the underlying arrow table
-func (a *ArrowFrame) Table() *carrow.Table {
+func (a *ArrowFrame) Table() *arrow.Table {
 	return a.table
 }
 
 // NewArrowFrame returns a new Frame
 func NewArrowFrame(columns []Column) (Frame, error) {
-	acols := make([]*carrow.Column, len(columns))
+	acols := make([]*arrow.Column, len(columns))
 	for i, col := range columns {
 		acol, ok := col.(*ArrowColumn)
 		if !ok {
@@ -526,7 +531,7 @@ func NewArrowFrame(columns []Column) (Frame, error) {
 		acols[i] = acol.col
 	}
 
-	tbl, err := carrow.NewTableFromColumns(acols)
+	tbl, err := arrow.NewTableFromColumns(acols)
 	if err != nil {
 		return nil, errors.Wrap(err, "can't create arrow table")
 	}

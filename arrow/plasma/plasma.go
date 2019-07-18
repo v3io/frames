@@ -1,4 +1,4 @@
-// +build carrow
+// +build arrow
 
 package plasma
 
@@ -11,16 +11,15 @@ import (
 
 	"github.com/pkg/errors"
 
-	"github.com/v3io/frames/carrow"
+	"github.com/v3io/frames/arrow"
 )
 
 /*
 #cgo pkg-config: arrow plasma
-#cgo LDFLAGS: -lcarrow -L..
+#cgo LDFLAGS: -lframesarrow -L..
 #cgo CFLAGS: -I..
-// FIXME: plasma headers
 
-#include "carrow.h"
+#include "arrow.h"
 #include <stdlib.h>
 */
 import "C"
@@ -42,7 +41,7 @@ type Client struct {
 // ObjectID is store ID for an object
 type ObjectID [IDLength]byte
 
-// TODO: United with one in carrow (internal?)
+// TODO: United with one in arrow (internal?)
 func errFromResult(r C.result_t) error {
 	err := errors.Errorf(C.GoString(r.err))
 	C.free(unsafe.Pointer(r.err))
@@ -70,7 +69,7 @@ func Connect(path string) (*Client, error) {
 
 // WriteTable write a table to plasma store
 // If id is empty, a new random id will be generated
-func (c *Client) WriteTable(t *carrow.Table, id ObjectID) error {
+func (c *Client) WriteTable(t *arrow.Table, id ObjectID) error {
 	cID := C.CString(string(id[:]))
 	r := C.plasma_write(c.ptr, t.Ptr(), cID)
 	C.free(unsafe.Pointer(cID))
@@ -83,7 +82,7 @@ func (c *Client) WriteTable(t *carrow.Table, id ObjectID) error {
 }
 
 // ReadTable reads a table from plasma store
-func (c *Client) ReadTable(id ObjectID, timeout time.Duration) (*carrow.Table, error) {
+func (c *Client) ReadTable(id ObjectID, timeout time.Duration) (*arrow.Table, error) {
 	cID := C.CString(string(id[:]))
 	msec := C.int64_t(timeout / time.Millisecond)
 	r := C.plasma_read(c.ptr, cID, msec)
@@ -94,7 +93,7 @@ func (c *Client) ReadTable(id ObjectID, timeout time.Duration) (*carrow.Table, e
 	}
 
 	ptr := C.result_ptr(r)
-	return carrow.NewTableFromPtr(ptr), nil
+	return arrow.NewTableFromPtr(ptr), nil
 }
 
 // Release releases (deletes) object from plasma store

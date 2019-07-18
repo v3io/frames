@@ -6,8 +6,8 @@ import (
 	"os"
 	"time"
 
-	"github.com/v3io/frames/carrow"
-	"github.com/v3io/frames/carrow/plasma"
+	"github.com/v3io/frames/arrow"
+	"github.com/v3io/frames/arrow/plasma"
 )
 
 func main() {
@@ -37,7 +37,7 @@ func main() {
 
 	fmt.Println("oid", oid)
 
-	bld := carrow.NewInt64ArrayBuilder()
+	bld := arrow.NewInt64ArrayBuilder()
 	for i := int64(0); i < 10; i++ {
 		bld.Append(i)
 	}
@@ -48,14 +48,14 @@ func main() {
 	}
 	fmt.Println("arr", arr)
 
-	field, err := carrow.NewField("i", carrow.Integer64Type)
+	field, err := arrow.NewField("i", arrow.Integer64Type)
 	if err != nil {
 		fmt.Println("error field", err)
 		os.Exit(1)
 	}
 	fmt.Println("field", field)
 
-	col, err := carrow.NewColumn(field, arr)
+	col, err := arrow.NewColumn(field, arr)
 	if err != nil {
 		fmt.Println("error column", err)
 		os.Exit(1)
@@ -63,7 +63,7 @@ func main() {
 
 	fmt.Println("column", col)
 
-	table, err := carrow.NewTableFromColumns([]*carrow.Column{col})
+	table, err := arrow.NewTableFromColumns([]*arrow.Column{col})
 	if err != nil {
 		fmt.Println("error table", err)
 		os.Exit(1)

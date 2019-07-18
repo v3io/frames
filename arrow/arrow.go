@@ -1,4 +1,4 @@
-// +build carrow
+// +build arrow
 
 /*
 Copyright 2018 Iguazio Systems Ltd.
@@ -20,7 +20,7 @@ under the Apache 2.0 license is conditioned upon your compliance with
 such restriction.
 */
 
-package carrow
+package arrow
 
 import (
 	"fmt"
@@ -34,9 +34,9 @@ import (
 
 /*
 #cgo pkg-config: arrow plasma
-#cgo LDFLAGS: -lcarrow -L.
+#cgo LDFLAGS: -lframesarrow -L.
 
-#include "carrow.h"
+#include "arrow.h"
 #include <stdlib.h>
 */
 import "C"

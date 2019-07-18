@@ -1,4 +1,4 @@
-// +build !carrow
+// +build !arrow
 
 /*
 Copyright 2018 Iguazio Systems Ltd.
@@ -27,7 +27,7 @@ import (
 )
 
 var (
-	// HasArrow signals we don't have arrow (when building without carrow tag)
+	// HasArrow signals we don't have arrow (when building without arrow tag)
 	HasArrow = false
 )
 
