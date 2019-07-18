@@ -363,6 +363,26 @@ result_t column_timestamp_at(void *vp, long long i) {
 	return res;
 }
 
+result_t column_slice(void *vp, int64_t offset, int64_t length) {
+	auto res = new_result();
+  auto column = (Column *)vp;
+	if (column == nullptr) {
+		res.err = strdup("null pointer");
+		return res;
+	}
+
+	auto ptr = column->ptr->Slice(offset, length);
+	if (ptr == nullptr) {
+		res.err = strdup("can't slice");
+		return res;
+	}
+
+  auto col = new Column;
+  col->ptr = ptr;
+	res.ptr = col;
+	return res;
+}
+
 void column_free(void *vp) {
   if (vp == nullptr) {
     return;

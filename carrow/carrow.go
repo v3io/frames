@@ -423,6 +423,20 @@ func (c *Column) TimeAt(i int) (time.Time, error) {
 	return t, nil
 }
 
+// Slice returns a slice from the column
+func (c *Column) Slice(offset, length int) (*Column, error) {
+	if offset < 0 || length < 0 || offset+length > c.Len() {
+		return nil, fmt.Errorf("bad slice: [%d:%d]", offset, offset+length)
+	}
+
+	r := result{C.column_slice(c.ptr, C.int64_t(offset), C.int64_t(length))}
+	if err := r.Err(); err != nil {
+		return nil, err
+	}
+
+	return &Column{r.Ptr()}, nil
+}
+
 // Table is arrow table
 type Table struct {
 	ptr unsafe.Pointer

@@ -224,3 +224,34 @@ func TestColumnTimeGet(t *testing.T) {
 		require.True(v.Equal(tval(i)), "time at %d", i)
 	}
 }
+
+func TestColumnSlice(t *testing.T) {
+	require := require.New(t)
+	b := NewInt64ArrayBuilder()
+	require.NotNil(b.ptr, "create")
+
+	const size = 137
+	for i := int64(0); i < size; i++ {
+		b.Append(i)
+	}
+
+	arr, err := b.Finish()
+	require.NoError(err, "finish")
+
+	name, dtype := "field-1", Integer64Type
+	field, err := NewField(name, dtype)
+	require.NoError(err, "field")
+
+	col, err := NewColumn(field, arr)
+	require.NoError(err, "column")
+
+	offset, n := 29, 44
+	s, err := col.Slice(offset, n)
+	require.NoError(err, "slice")
+	require.Equal(n, s.Len(), "slice len")
+	for i := 0; i < n; i++ {
+		v, err := s.Int64At(i)
+		require.NoError(err, "int at %d - error", i)
+		require.Equalf(int64(i+offset), v, "int at %d", i)
+	}
+}

@@ -333,48 +333,65 @@ func (a *ArrowColumn) DType() DType {
 	return dtype2dtype[a.col.Field().DType()]
 }
 
+// Ints returns data as []int64
 func (a *ArrowColumn) Ints() ([]int64, error) {
 	return nil, fmt.Errorf("not implmented")
 }
 
+// IntAt returns int value at i
 func (a *ArrowColumn) IntAt(i int) (int64, error) {
 	return a.col.Int64At(i)
 }
 
+// Floats returns data as []float64
 func (a *ArrowColumn) Floats() ([]float64, error) {
 	return nil, fmt.Errorf("not implmented")
 }
 
+// FloatAt returns float value at i
 func (a *ArrowColumn) FloatAt(i int) (float64, error) {
 	return a.col.Float64At(i)
 }
 
+// Strings return data as []string
 func (a *ArrowColumn) Strings() []string {
 	return nil // TODO
 }
 
+// StringAt returns string at i
 func (a *ArrowColumn) StringAt(i int) (string, error) {
 	return a.col.StringAt(i)
 }
 
+// Times return data as []time.Time
 func (a *ArrowColumn) Times() ([]time.Time, error) {
 	return nil, fmt.Errorf("not implmented")
 }
 
+// TimeAt returns time value at i
 func (a *ArrowColumn) TimeAt(i int) (time.Time, error) {
 	return a.col.TimeAt(i)
 }
 
+// Bools returns data as []bool
 func (a *ArrowColumn) Bools() ([]bool, error) {
 	return nil, fmt.Errorf("not implmented")
 }
 
+// BoolAt at returns bool value at i
 func (a *ArrowColumn) BoolAt(i int) (bool, error) {
 	return a.col.BoolAt(i)
 }
 
+// Slice returns a slice of the column
 func (a *ArrowColumn) Slice(start int, end int) (Column, error) {
-	return nil, fmt.Errorf("not implmented")
+	length := end - start
+	c, err := a.col.Slice(start, length)
+	if err != nil {
+		return nil, err
+	}
+
+	return &ArrowColumn{c}, nil
 }
 
 // ArrowFrame is an arrow backed frame
@@ -439,7 +456,7 @@ func (a *ArrowFrame) Slice(start int, end int) (Frame, error) {
 
 // IterRows returns an iterator over rows
 func (a *ArrowFrame) IterRows(includeIndex bool) RowIterator {
-	return nil // TODO
+	return newRowIterator(a, includeIndex)
 }
 
 // Table returns the underlying arrow table
