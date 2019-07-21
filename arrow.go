@@ -23,6 +23,7 @@ such restriction.
 package frames
 
 import (
+	"encoding/json"
 	"fmt"
 	"log"
 	"time"
@@ -30,6 +31,11 @@ import (
 	"github.com/pkg/errors"
 
 	"github.com/v3io/frames/arrow"
+)
+
+const (
+	// LabelsMetaKey is key in table metadata
+	LabelsMetaKey = "frames"
 )
 
 var (
@@ -525,8 +531,27 @@ func (a *ArrowFrame) Table() *arrow.Table {
 	return a.table
 }
 
+func encodeLables(labels map[string]interface{}) (map[string]string, error) {
+	data, err := json.Marshal(labels)
+	if err != nil {
+		return nil, err
+	}
+
+	return map[string]string{LabelsMetaKey: string(data)}, nil
+}
+
 // NewArrowFrame returns a new Frame
-func NewArrowFrame(columns []Column) (Frame, error) {
+func NewArrowFrame(columns []Column, labels map[string]interface{}) (Frame, error) {
+
+	var meta map[string]string
+	var err error
+	if labels != nil {
+		meta, err = encodeLables(labels)
+		if err != nil {
+			return nil, err
+		}
+	}
+
 	acols := make([]*arrow.Column, len(columns))
 	for i, col := range columns {
 		acol, ok := col.(*ArrowColumn)
@@ -536,7 +561,7 @@ func NewArrowFrame(columns []Column) (Frame, error) {
 		acols[i] = acol.col
 	}
 
-	tbl, err := arrow.NewTableFromColumns(acols)
+	tbl, err := arrow.NewTableFromColumns(acols, meta)
 	if err != nil {
 		return nil, errors.Wrap(err, "can't create arrow table")
 	}

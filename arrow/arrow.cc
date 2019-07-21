@@ -54,6 +54,9 @@ void *result_ptr(result_t r) { return r.ptr; }
 char *result_cp(result_t r) { return r.cp; }
 int64_t result_i(result_t r) { return r.i; }
 double result_f(result_t r) { return r.f; }
+void set_result_err(result_t *r, const char *err) {
+	r->err = strdup(err);
+}
 
 #define RETURN_IF_ERROR(status)             \
   do {                                             \
@@ -103,6 +106,64 @@ void field_free(void *vp) {
   delete field;
 }
 
+struct KeyValue {
+	std::shared_ptr<arrow::KeyValueMetadata> ptr;
+};
+
+void *meta_new() {
+	auto kv = new KeyValue;
+	kv->ptr = std::make_shared<arrow::KeyValueMetadata>();
+
+	return kv;
+}
+
+result_t meta_set(void *vp, const char *key, const char *value) {
+  auto res = new_result();
+	auto kv = (KeyValue *)vp;
+	if (kv == nullptr) {
+		set_result_err(&res, "null pointer");
+		return res;
+	}
+
+	kv->ptr->Append(key, value);
+	return res;
+}
+
+result_t meta_size(void *vp) {
+  auto res = new_result();
+	auto kv = (KeyValue *)vp;
+	if (kv == nullptr) {
+		set_result_err(&res, "null pointer");
+		return res;
+	}
+	res.i = kv->ptr->size();
+	return res;
+}
+
+result_t meta_key(void *vp, int64_t i) {
+  auto res = new_result();
+	auto kv = (KeyValue *)vp;
+	if (kv == nullptr) {
+		set_result_err(&res, "null pointer");
+		return res;
+	}
+
+	res.cp = strdup(kv->ptr->key(i).c_str());
+	return res;
+}
+
+result_t meta_value(void *vp, int64_t i) {
+  auto res = new_result();
+	auto kv = (KeyValue *)vp;
+	if (kv == nullptr) {
+		set_result_err(&res, "null pointer");
+		return res;
+	}
+
+	res.cp = strdup(kv->ptr->value(i).c_str());
+	return res;
+}
+
 void *fields_new() { return new std::vector<std::shared_ptr<arrow::Field>>(); }
 
 void fields_append(void *vp, void *fp) {
@@ -118,11 +179,19 @@ void fields_free(void *vp) {
   delete (std::vector<std::shared_ptr<arrow::Field>> *)vp;
 }
 
-void *schema_new(void *vp) {
+void *schema_new(void *vp, void *meta) {
   auto fields = (std::vector<std::shared_ptr<arrow::Field>> *)vp;
-  auto schema = new arrow::Schema(*fields);
+	arrow::Schema *schema;
+
+	if (meta == nullptr) {
+		schema = new arrow::Schema(*fields);
+	} else {
+		auto kv = (KeyValue *)meta;
+		schema = new arrow::Schema(*fields, kv->ptr);
+	}
   return (void *)schema;
 }
+
 
 void schema_free(void *vp) {
   if (vp == nullptr) {
@@ -153,7 +222,7 @@ result_t array_builder_new(int dtype) {
   default:
     std::ostringstream oss;
     oss << "unknown dtype: " << dtype;
-    res.err = oss.str().c_str();
+		set_result_err(&res, oss.str().c_str());
   }
 
   return res;
@@ -367,13 +436,13 @@ result_t column_slice(void *vp, int64_t offset, int64_t length) {
 	auto res = new_result();
   auto column = (Column *)vp;
 	if (column == nullptr) {
-		res.err = strdup("null pointer");
+		set_result_err(&res, "null pointer");
 		return res;
 	}
 
 	auto ptr = column->ptr->Slice(offset, length);
 	if (ptr == nullptr) {
-		res.err = strdup("can't slice");
+		set_result_err(&res, "can't slice");
 		return res;
 	}
 
@@ -387,7 +456,7 @@ result_t column_copy_name(void *vp, const char *name) {
 	auto res = new_result();
 	auto column = (Column *)vp;
 	if (column == nullptr) {
-		res.err = strdup("null pointer");
+		set_result_err(&res, "null pointer");
 		return res;
 	}
 
@@ -506,19 +575,37 @@ result_t table_slice(void *vp, int64_t offset, int64_t length) {
 	auto res = new_result();
   auto table = (Table *)vp;
 	if (table == nullptr) {
-		res.err = strdup("null pointer");
+		set_result_err(&res, "null pointer");
 		return res;
 	}
 
 	auto ptr = table->ptr->Slice(offset, length);
 	if (ptr == nullptr) {
-		res.err = strdup("can't slice");
+		set_result_err(&res, "can't slice");
 		return res;
 	}
 
   auto slice = new Table;
   slice->ptr = ptr;
 	res.ptr = slice;
+	return res;
+}
+
+result_t table_meta(void *vp) {
+	auto res = new_result();
+	auto table = (Table *)vp;
+	if (table == nullptr) {
+		set_result_err(&res, "null pointer");
+		return res;
+	}
+	
+	if (!table->ptr->schema()->HasMetadata()) {
+		return res;
+	}
+
+	auto meta = new KeyValue;
+	meta->ptr = table->ptr->schema()->metadata()->Copy();
+	res.ptr = meta;
 	return res;
 }
 
@@ -632,7 +719,7 @@ result_t plasma_disconnect(void *vp) {
 }
 
 // TODO: Do we want allowing multiple IDs? (like the client Get)
-result_t plasma_read(void *cp, char *oid, int64_t timeout_ms) {
+result_t plasma_read(void *cp, const char *oid, int64_t timeout_ms) {
   if ((cp == nullptr) || (oid == nullptr)) {
     return result_t{"null pointer", nullptr};
   }
@@ -649,9 +736,11 @@ result_t plasma_read(void *cp, char *oid, int64_t timeout_ms) {
 
   // TODO: Support multiple buffers
   if (buffers.size() != 1) {
-    std::ostringstream oss;
-    oss << "more than one buffer for " << oid;
-    return result_t{oss.str().c_str(), nullptr};
+		std::string err = "more than one buffer for";
+		err += oid;
+		result_t res;
+		set_result_err(&res, err.c_str());
+    return res;
   }
 
   auto buf_reader = std::make_shared<arrow::io::BufferReader>(buffers[0].data);

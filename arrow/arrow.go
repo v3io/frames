@@ -130,8 +130,23 @@ type Schema struct {
 	ptr unsafe.Pointer
 }
 
+// MetaData is schema (Column, Table ...) metadata
+type MetaData map[string]string
+
+func toMetadata(meta MetaData) unsafe.Pointer {
+	md := C.meta_new()
+	for key, value := range meta {
+		ck, cv := C.CString(key), C.CString(value)
+		C.meta_set(md, ck, cv)
+		C.free(unsafe.Pointer(ck))
+		C.free(unsafe.Pointer(cv))
+	}
+
+	return unsafe.Pointer(md)
+}
+
 // NewSchema creates a new schema
-func NewSchema(fields []*Field) (*Schema, error) {
+func NewSchema(fields []*Field, meta MetaData) (*Schema, error) {
 	fieldsList, err := NewFieldList()
 	if err != nil {
 		return nil, fmt.Errorf("can't create schema,failed creating fields list")
@@ -141,7 +156,13 @@ func NewSchema(fields []*Field) (*Schema, error) {
 	for _, f := range fields {
 		C.fields_append(cf, f.ptr)
 	}
-	ptr := C.schema_new(cf)
+
+	var md unsafe.Pointer
+
+	if meta != nil {
+		md = toMetadata(meta)
+	}
+	ptr := C.schema_new(cf, md)
 	if ptr == nil {
 		return nil, fmt.Errorf("can't create schema")
 	}
@@ -455,8 +476,24 @@ type Table struct {
 	ptr unsafe.Pointer
 }
 
+// MetaData returns the table metadata
+func (t *Table) MetaData() MetaData {
+	res := result{C.table_meta(t.ptr)}
+	if err := res.Err(); err != nil {
+		// TODO: API change?
+		return nil
+	}
+
+	if res.Ptr() == nil {
+		return nil
+	}
+
+	// FIXME
+	return nil
+}
+
 // NewTableFromColumns creates new Table from slice of columns
-func NewTableFromColumns(columns []*Column) (*Table, error) {
+func NewTableFromColumns(columns []*Column, meta MetaData) (*Table, error) {
 	fields := make([]*Field, len(columns))
 	cptr := C.columns_new()
 	defer func() {
@@ -469,7 +506,7 @@ func NewTableFromColumns(columns []*Column) (*Table, error) {
 		C.columns_append(cptr, col.ptr)
 	}
 
-	schema, err := NewSchema(fields)
+	schema, err := NewSchema(fields, meta)
 	if err != nil {
 		return nil, err
 	}

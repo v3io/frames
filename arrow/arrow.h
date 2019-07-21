@@ -61,7 +61,7 @@ void *fields_new();
 void fields_append(void *vp, void *fp);
 void fields_free(void *vp);
 
-void *schema_new(void *vp);
+void *schema_new(void *vp, void *metadata);
 void schema_free(void *vp);
 
 result_t array_builder_new(int dtype);
@@ -98,11 +98,18 @@ long long table_num_rows(void *vp);
 result_t table_col_by_index(void *vp, long long i);
 result_t table_col_by_name(void *vp, const char *name);
 result_t table_slice(void *vp, int64_t offset, int64_t length);
+result_t table_meta(void *vp);
 void table_free(void *vp);
+
+void *meta_new();
+result_t meta_set(void *vp, const char *key, const char *value); 
+result_t meta_size(void *vp);
+result_t meta_key(void *vp, int64_t i);
+result_t meta_value(void *vp, int64_t i);
 
 result_t plasma_connect(char *path);
 result_t plasma_write(void *cp, void *tp, char *oid);
-result_t plasma_read(void *cp, char *oid, int64_t timeout_ms);
+result_t plasma_read(void *cp, const char *oid, int64_t timeout_ms);
 result_t plasma_release(void *cp, char *oid);
 result_t plasma_disconnect(void *vp);
 
