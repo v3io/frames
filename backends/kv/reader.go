@@ -233,16 +233,26 @@ func (kv *Backend) getPartitions(path string, container v3io.Container, marker s
 			}
 			partitions = append(partitions, parts...)
 		}
-	} else if input.Marker == "" { // Add a partition to the list if the folder does not have other directories
+	} else { // Add a partition to the list if this is a leaf folder
 		partitions = append(partitions, path)
 	}
 
-	if out.NextMarker != "" {
-		parts, err := kv.getPartitions(path, container, out.NextMarker)
+	for out.IsTruncated {
+		input := &v3io.GetContainerContentsInput{Path: path, DirectoriesOnly: true, Marker: out.NextMarker}
+		res, err := container.GetContainerContentsSync(input)
 		if err != nil {
 			return nil, err
 		}
-		partitions = append(partitions, parts...)
+		out = res.Output.(*v3io.GetContainerContentsOutput)
+		if len(out.CommonPrefixes) > 0 {
+			for _, partition := range out.CommonPrefixes {
+				parts, err := kv.getPartitions(partition.Prefix, container, "")
+				if err != nil {
+					return nil, err
+				}
+				partitions = append(partitions, parts...)
+			}
+		}
 	}
 
 	return partitions, nil
