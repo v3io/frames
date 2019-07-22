@@ -80,13 +80,7 @@ github.com/v3io/v3io-go v0.0.0-20190606000000-9441f7c028db0b9642b541b07f30e35a1b
 github.com/v3io/v3io-go-http v0.0.0-20190221115935-53e2b487c9a2 h1:NJc63wM25iS+ci5z7LVwjWD4QM0QpTQw/fovKzatss0=
 github.com/v3io/v3io-go-http v0.0.0-20190221115935-53e2b487c9a2/go.mod h1:GXYcR9MxgfbE3BJdkXki5EclvtS8Nxu2RQNLA8hMMog=
 github.com/v3io/v3io-tsdb v0.0.0-20190328071546-4e85f3df2d205fc7368d54184bb2ceff949ab4bd/go.mod h1:A+5yKC16QxLf+Fy5v7VvIxSw+jwsKHLhUS7dCYFDLAA=
-github.com/v3io/v3io-tsdb v0.9.3 h1:GHnQ1deelC5riYNuQsmQhN7Bzj/SWRv02WE3mGOobQA=
-github.com/v3io/v3io-tsdb v0.9.3/go.mod h1:cPLq5KvhxzdvRaVzy8HTDxousSFUaSRBRdhtd131JgU=
-github.com/v3io/v3io-tsdb v0.9.4 h1:s1gI+WVOHj4GoY6dt/yfvUldBLcQPWwPhP1wiOxIz2M=
-github.com/v3io/v3io-tsdb v0.9.4/go.mod h1:cPLq5KvhxzdvRaVzy8HTDxousSFUaSRBRdhtd131JgU=
-github.com/v3io/v3io-tsdb v0.9.5 h1:+Guispgcl7VEdZDQl7cKjB9E/mxvVv+PVPr7uPMidlQ=
-github.com/v3io/v3io-tsdb v0.9.5/go.mod h1:cPLq5KvhxzdvRaVzy8HTDxousSFUaSRBRdhtd131JgU=
-github.com/v3io/v3io-tsdb v0.9.6 h1:TgWR3SYlImzAFhcAcgzrn/Aa/vJCyl3+vhb21o3XSbE=
+github.com/v3io/v3io-tsdb v0.9.6 h1:N1IMo+Fk+B/afWcytseCjixhK3X674voI6b5o1VmaFY=
 github.com/v3io/v3io-tsdb v0.9.6/go.mod h1:cPLq5KvhxzdvRaVzy8HTDxousSFUaSRBRdhtd131JgU=
 github.com/valyala/bytebufferpool v1.0.0 h1:GqA5TC/0021Y/b9FG4Oi9Mr3q7XYx6KllzawFIhcdPw=
 github.com/valyala/bytebufferpool v1.0.0/go.mod h1:6bBcMArwyJ5K/AmCkWv1jt77kVWyCJ6HpOuEn7z0Csc=
