@@ -52,12 +52,12 @@ func (kv *Backend) Read(request *frames.ReadRequest) (frames.FrameIterator, erro
 		return nil, err
 	}
 
-	partitions, err := kv.getPartitions(tablePath, container, "")
+	partitions, err := kv.getPartitions(tablePath, container)
 	if err != nil {
 		return nil, err
 	}
 
-	input := v3io.GetItemsInput{Path: "", Filter: request.Proto.Filter, AttributeNames: columns}
+	input := v3io.GetItemsInput{Filter: request.Proto.Filter, AttributeNames: columns}
 	kv.logger.DebugWith("read input", "input", input, "request", request)
 
 	iter, err := v3ioutils.NewAsyncItemsCursor(
@@ -217,42 +217,31 @@ func init() {
 	}
 }
 
-func (kv *Backend) getPartitions(path string, container v3io.Container, marker string) ([]string, error) {
+func (kv *Backend) getPartitions(path string, container v3io.Container) ([]string, error) {
 	var partitions []string
-	input := &v3io.GetContainerContentsInput{Path: path, DirectoriesOnly: true, Marker: marker}
-	res, err := container.GetContainerContentsSync(input)
-	if err != nil {
-		return nil, err
-	}
-	out := res.Output.(*v3io.GetContainerContentsOutput)
-	if len(out.CommonPrefixes) > 0 {
-		for _, partition := range out.CommonPrefixes {
-			parts, err := kv.getPartitions(partition.Prefix, container, "")
-			if err != nil {
-				return nil, err
-			}
-			partitions = append(partitions, parts...)
-		}
-	} else { // Add a partition to the list if this is a leaf folder
-		partitions = append(partitions, path)
-	}
-
-	for out.IsTruncated {
-		input := &v3io.GetContainerContentsInput{Path: path, DirectoriesOnly: true, Marker: out.NextMarker}
+	var done bool
+	var marker string
+	for !done {
+		input := &v3io.GetContainerContentsInput{Path: path, DirectoriesOnly: true, Marker: marker}
 		res, err := container.GetContainerContentsSync(input)
+		res.Release() // Releasing underlying fasthttp response
 		if err != nil {
 			return nil, err
 		}
-		out = res.Output.(*v3io.GetContainerContentsOutput)
+		out := res.Output.(*v3io.GetContainerContentsOutput)
 		if len(out.CommonPrefixes) > 0 {
 			for _, partition := range out.CommonPrefixes {
-				parts, err := kv.getPartitions(partition.Prefix, container, "")
+				parts, err := kv.getPartitions(partition.Prefix, container)
 				if err != nil {
 					return nil, err
 				}
 				partitions = append(partitions, parts...)
 			}
+		} else if marker == "" { // Add a partition to the list if this is a leaf folder
+			partitions = append(partitions, path)
 		}
+		marker = out.NextMarker
+		done = !out.IsTruncated
 	}
 
 	return partitions, nil
