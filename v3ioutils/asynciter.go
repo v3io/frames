@@ -168,7 +168,7 @@ func (ic *AsyncItemsCursor) NextItem() (v3io.Item, error) {
 
 	// Read response from channel
 	resp := <-ic.responseChan
-	defer resp.Release()
+	resp.Release()
 
 	// Ignore 404s
 	if e, hasErrorCode := resp.Error.(v3ioerrors.ErrorWithStatusCode); hasErrorCode && e.StatusCode() == http.StatusNotFound {
