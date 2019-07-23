@@ -237,7 +237,8 @@ func (kv *Backend) getPartitions(path string, container v3io.Container) ([]strin
 				}
 				partitions = append(partitions, parts...)
 			}
-		} else if marker == "" { // Add a partition to the list if this is a leaf folder
+			// Add a partition to the list if this is a leaf folder and it's the first time we query the folder
+		} else if marker == "" {
 			partitions = append(partitions, path)
 		}
 		marker = out.NextMarker
