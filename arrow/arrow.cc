@@ -179,17 +179,54 @@ void fields_free(void *vp) {
   delete (std::vector<std::shared_ptr<arrow::Field>> *)vp;
 }
 
+struct Schema {
+	std::shared_ptr<arrow::Schema> ptr;
+};
+
 void *schema_new(void *vp, void *meta) {
   auto fields = (std::vector<std::shared_ptr<arrow::Field>> *)vp;
-	arrow::Schema *schema;
+	auto schema = new Schema;
 
 	if (meta == nullptr) {
-		schema = new arrow::Schema(*fields);
+		schema->ptr = std::make_shared<arrow::Schema>(*fields);
 	} else {
 		auto kv = (KeyValue *)meta;
-		schema = new arrow::Schema(*fields, kv->ptr);
+		schema->ptr = std::make_shared<arrow::Schema>(*fields, kv->ptr);
 	}
-  return (void *)schema;
+
+  return schema;
+}
+
+result_t schema_meta(void *vp) {
+  auto res = new_result();
+	auto schema = (Schema *)vp;
+	if (schema == nullptr) {
+		set_result_err(&res, "null pointer");
+		return res;
+	}
+
+	auto kv = new KeyValue;
+	kv->ptr = schema->ptr->metadata()->Copy();
+	res.ptr = kv;
+	return res;
+}
+
+result_t schema_set_meta(void *vp, void *mp) {
+	auto res = new_result();
+	auto schema = (Schema *)vp;
+	if (schema == nullptr) {
+		set_result_err(&res, "null schema");
+		return res;
+	}
+
+	auto kv = (KeyValue *)mp;
+	if (kv == nullptr) {
+		set_result_err(&res, "null metadata");
+		return res;
+	}
+
+	schema->ptr->AddMetadata(kv->ptr);
+	return res;
 }
 
 
@@ -197,7 +234,7 @@ void schema_free(void *vp) {
   if (vp == nullptr) {
     return;
   }
-  auto schema = (arrow::Schema *)vp;
+  auto schema = (Schema *)vp;
   delete schema;
 }
 
@@ -513,10 +550,10 @@ struct Table {
 };
 
 void *table_new(void *sp, void *cp) {
-  std::shared_ptr<arrow::Schema> schema((arrow::Schema *)sp);
+	auto schema = (Schema *)sp;
   auto columns = (std::vector<std::shared_ptr<arrow::Column>> *)cp;
 
-  auto ptr = arrow::Table::Make(schema, *columns);
+  auto ptr = arrow::Table::Make(schema->ptr, *columns);
   if (ptr == nullptr) {
     return nullptr;
   }
@@ -532,20 +569,23 @@ long long table_num_cols(void *vp) {
 }
 
 result_t table_col_by_name(void *vp, const char *name) {
+	auto res = new_result();
   if (vp == nullptr) {
-    return result_t{"null pointer", nullptr};
+		set_result_err(&res, "null pointer");
+		return res;
   }
   auto table = (Table *)vp;
 
   auto ptr = table->ptr->GetColumnByName(name);
   if (ptr == nullptr) {
-    return result_t{"not found", nullptr};
+		set_result_err(&res, "not found");
+		return res;
   }
 
   auto column = new Column;
   column->ptr = ptr;
-
-  return result_t{nullptr, column};
+	res.ptr = column;
+	return res;
 }
 
 result_t table_col_by_index(void *vp, long long i) {
@@ -591,21 +631,17 @@ result_t table_slice(void *vp, int64_t offset, int64_t length) {
 	return res;
 }
 
-result_t table_meta(void *vp) {
+result_t table_schema(void *vp) {
 	auto res = new_result();
 	auto table = (Table *)vp;
 	if (table == nullptr) {
 		set_result_err(&res, "null pointer");
 		return res;
 	}
-	
-	if (!table->ptr->schema()->HasMetadata()) {
-		return res;
-	}
 
-	auto meta = new KeyValue;
-	meta->ptr = table->ptr->schema()->metadata()->Copy();
-	res.ptr = meta;
+	auto schema = new Schema;
+	schema->ptr = table->ptr->schema();
+	res.ptr = schema;
 	return res;
 }
 

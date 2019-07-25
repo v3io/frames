@@ -37,6 +37,6 @@ func NewArrowColumn(name string, data interface{}) (Column, error) {
 }
 
 // NewArrowFrame returns an error
-func NewArrowFrame(columns []Column) (Frame, error) {
+func NewArrowFrame(columns []Column, labels map[string]interface{}) (Frame, error) {
 	return nil, fmt.Errorf("no arrow")
 }

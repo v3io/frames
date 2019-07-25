@@ -26,7 +26,6 @@ import (
 	"fmt"
 	"time"
 	"unsafe"
-	// "runtime"  // until we figure out crashes
 )
 
 // Make sure pkg-config knows where to find arrow & plasma, you can set
@@ -86,11 +85,6 @@ func NewField(name string, dtype DType) (*Field, error) {
 	}
 
 	field := &Field{ptr}
-	/*
-		runtime.SetFinalizer(field, func(f *Field) {
-			C.field_free(f.ptr)
-		})
-	*/
 	return field, nil
 }
 
@@ -107,11 +101,6 @@ func NewFieldList() (*FieldList, error) {
 	}
 
 	fieldList := &FieldList{ptr}
-	/*
-		runtime.SetFinalizer(fieldList, func(f *FieldList) {
-			C.fields_free(f.ptr)
-		})
-	*/
 	return fieldList, nil
 }
 
@@ -130,10 +119,10 @@ type Schema struct {
 	ptr unsafe.Pointer
 }
 
-// MetaData is schema (Column, Table ...) metadata
-type MetaData map[string]string
+// Metadata is schema (Column, Table ...) metadata
+type Metadata map[string]string
 
-func toMetadata(meta MetaData) unsafe.Pointer {
+func toMetadata(meta Metadata) unsafe.Pointer {
 	md := C.meta_new()
 	for key, value := range meta {
 		ck, cv := C.CString(key), C.CString(value)
@@ -146,7 +135,7 @@ func toMetadata(meta MetaData) unsafe.Pointer {
 }
 
 // NewSchema creates a new schema
-func NewSchema(fields []*Field, meta MetaData) (*Schema, error) {
+func NewSchema(fields []*Field, meta Metadata) (*Schema, error) {
 	fieldsList, err := NewFieldList()
 	if err != nil {
 		return nil, fmt.Errorf("can't create schema,failed creating fields list")
@@ -167,13 +156,38 @@ func NewSchema(fields []*Field, meta MetaData) (*Schema, error) {
 		return nil, fmt.Errorf("can't create schema")
 	}
 	schema := &Schema{ptr}
-	/*
-		runtime.SetFinalizer(schema, func(s *Schema) {
-			C.schema_free(schema.ptr)
-		})
-	*/
-
 	return schema, nil
+}
+
+// Metadata returns the schema metadata
+func (s *Schema) Metadata() (Metadata, error) {
+	r := newResult(C.schema_meta(s.ptr))
+	if err := r.Err(); err != nil {
+		return nil, err
+	}
+
+	meta := make(Metadata)
+	sr := newResult(C.meta_size(r.Ptr()))
+	if err := sr.Err(); err != nil {
+		return nil, err
+	}
+
+	for i := int64(0); i < sr.Int(); i++ {
+		r := newResult(C.meta_key(r.Ptr(), C.long(i)))
+		if err := r.Err(); err != nil {
+			return nil, err
+		}
+		key := r.FreeStr()
+
+		r = newResult(C.meta_value(r.Ptr(), C.long(i)))
+		if err := r.Err(); err != nil {
+			return nil, err
+		}
+		value := r.FreeStr()
+		meta[key] = value
+	}
+
+	return meta, nil
 }
 
 type builder struct {
@@ -181,17 +195,26 @@ type builder struct {
 }
 
 type result struct {
-	r C.result_t
+	r   C.result_t
+	err error
+}
+
+func newResult(r C.result_t) *result {
+	return &result{r: r}
 }
 
 func (r result) Err() error {
+	if r.err != nil {
+		return r.err
+	}
+
 	if r.r.err == nil {
 		return nil
 	}
 
-	err := fmt.Errorf(C.GoString(r.r.err))
+	r.err = fmt.Errorf(C.GoString(r.r.err))
 	C.free(unsafe.Pointer(r.r.err))
-	return err
+	return r.err
 }
 
 func (r result) Ptr() unsafe.Pointer {
@@ -233,7 +256,7 @@ type BoolArrayBuilder struct {
 
 // NewBoolArrayBuilder returns a new BoolArrayBuilder
 func NewBoolArrayBuilder() *BoolArrayBuilder {
-	r := result{C.array_builder_new(C.int(BoolType))}
+	r := newResult(C.array_builder_new(C.int(BoolType)))
 	// TODO: Do we want to change the New function to return *type, error?
 	if r.Err() != nil {
 		return nil
@@ -244,7 +267,7 @@ func NewBoolArrayBuilder() *BoolArrayBuilder {
 // Finish returns array from builder
 // You can't use the builder after calling Finish
 func (b *builder) Finish() (*Array, error) {
-	r := &result{C.array_builder_finish(b.ptr)}
+	r := newResult(C.array_builder_finish(b.ptr))
 	if err := r.Err(); err != nil {
 		return nil, err
 	}
@@ -258,7 +281,7 @@ func (b *BoolArrayBuilder) Append(val bool) error {
 	if val {
 		ival = 1
 	}
-	r := result{C.array_builder_append_bool(b.ptr, C.int(ival))}
+	r := newResult(C.array_builder_append_bool(b.ptr, C.int(ival)))
 	return r.Err()
 }
 
@@ -269,7 +292,7 @@ type Float64ArrayBuilder struct {
 
 // NewFloat64ArrayBuilder returns a new Float64ArrayBuilder
 func NewFloat64ArrayBuilder() *Float64ArrayBuilder {
-	r := result{C.array_builder_new(C.int(Float64Type))}
+	r := newResult(C.array_builder_new(C.int(Float64Type)))
 	if r.Err() != nil {
 		return nil
 	}
@@ -278,7 +301,7 @@ func NewFloat64ArrayBuilder() *Float64ArrayBuilder {
 
 // Append appends an integer
 func (b *Float64ArrayBuilder) Append(val float64) error {
-	r := result{C.array_builder_append_float(b.ptr, C.double(val))}
+	r := newResult(C.array_builder_append_float(b.ptr, C.double(val)))
 	return r.Err()
 }
 
@@ -289,7 +312,7 @@ type Int64ArrayBuilder struct {
 
 // NewInt64ArrayBuilder returns a new Int64ArrayBuilder
 func NewInt64ArrayBuilder() *Int64ArrayBuilder {
-	r := result{C.array_builder_new(C.int(Integer64Type))}
+	r := newResult(C.array_builder_new(C.int(Integer64Type)))
 	if r.Err() != nil {
 		return nil
 	}
@@ -298,7 +321,7 @@ func NewInt64ArrayBuilder() *Int64ArrayBuilder {
 
 // Append appends an integer
 func (b *Int64ArrayBuilder) Append(val int64) error {
-	r := result{C.array_builder_append_int(b.ptr, C.long(val))}
+	r := newResult(C.array_builder_append_int(b.ptr, C.long(val)))
 	return r.Err()
 }
 
@@ -309,7 +332,7 @@ type StringArrayBuilder struct {
 
 // NewStringArrayBuilder returns a new StringArrayBuilder
 func NewStringArrayBuilder() *StringArrayBuilder {
-	r := result{C.array_builder_new(C.int(StringType))}
+	r := newResult(C.array_builder_new(C.int(StringType)))
 	if r.Err() != nil {
 		return nil
 	}
@@ -321,7 +344,7 @@ func (b *StringArrayBuilder) Append(val string) error {
 	cStr := C.CString(val)
 	defer C.free(unsafe.Pointer(cStr))
 	length := C.ulong(len(val)) // len is in bytes
-	r := result{C.array_builder_append_string(b.ptr, cStr, length)}
+	r := newResult(C.array_builder_append_string(b.ptr, cStr, length))
 	return r.Err()
 }
 
@@ -332,7 +355,7 @@ type TimestampArrayBuilder struct {
 
 // NewTimestampArrayBuilder returns a new TimestampArrayBuilder
 func NewTimestampArrayBuilder() *TimestampArrayBuilder {
-	r := result{C.array_builder_new(C.int(TimestampType))}
+	r := newResult(C.array_builder_new(C.int(TimestampType)))
 	if r.Err() != nil {
 		return nil
 	}
@@ -341,7 +364,7 @@ func NewTimestampArrayBuilder() *TimestampArrayBuilder {
 
 // Append appends a timestamp
 func (b *TimestampArrayBuilder) Append(val time.Time) error {
-	r := result{C.array_builder_append_timestamp(b.ptr, C.long(val.UnixNano()))}
+	r := newResult(C.array_builder_append_timestamp(b.ptr, C.long(val.UnixNano())))
 	return r.Err()
 }
 
@@ -394,7 +417,7 @@ func (c *Column) Len() int {
 
 // BoolAt returns bool value at i
 func (c *Column) BoolAt(i int) (bool, error) {
-	r := result{C.column_bool_at(c.ptr, C.longlong(i))}
+	r := newResult(C.column_bool_at(c.ptr, C.longlong(i)))
 	if err := r.Err(); err != nil {
 		return false, err
 	}
@@ -404,7 +427,7 @@ func (c *Column) BoolAt(i int) (bool, error) {
 
 // Int64At returns int64 value at i
 func (c *Column) Int64At(i int) (int64, error) {
-	r := result{C.column_int_at(c.ptr, C.longlong(i))}
+	r := newResult(C.column_int_at(c.ptr, C.longlong(i)))
 	if err := r.Err(); err != nil {
 		return 0, err
 	}
@@ -414,7 +437,7 @@ func (c *Column) Int64At(i int) (int64, error) {
 
 // Float64At returns float64 value at i
 func (c *Column) Float64At(i int) (float64, error) {
-	r := result{C.column_float_at(c.ptr, C.longlong(i))}
+	r := newResult(C.column_float_at(c.ptr, C.longlong(i)))
 	if err := r.Err(); err != nil {
 		return 0, err
 	}
@@ -424,7 +447,7 @@ func (c *Column) Float64At(i int) (float64, error) {
 
 // StringAt returns string value at i
 func (c *Column) StringAt(i int) (string, error) {
-	r := result{C.column_string_at(c.ptr, C.longlong(i))}
+	r := newResult(C.column_string_at(c.ptr, C.longlong(i)))
 	if err := r.Err(); err != nil {
 		return "", err
 	}
@@ -434,7 +457,7 @@ func (c *Column) StringAt(i int) (string, error) {
 
 // TimeAt returns time value at i
 func (c *Column) TimeAt(i int) (time.Time, error) {
-	r := result{C.column_timestamp_at(c.ptr, C.longlong(i))}
+	r := newResult(C.column_timestamp_at(c.ptr, C.longlong(i)))
 	if err := r.Err(); err != nil {
 		return time.Time{}, err
 	}
@@ -450,7 +473,7 @@ func (c *Column) Slice(offset, length int) (*Column, error) {
 		return nil, fmt.Errorf("bad slice: [%d:%d]", offset, offset+length)
 	}
 
-	r := result{C.column_slice(c.ptr, C.int64_t(offset), C.int64_t(length))}
+	r := newResult(C.column_slice(c.ptr, C.int64_t(offset), C.int64_t(length)))
 	if err := r.Err(); err != nil {
 		return nil, err
 	}
@@ -461,7 +484,7 @@ func (c *Column) Slice(offset, length int) (*Column, error) {
 // CopyWithName creates a copy with new name
 func (c *Column) CopyWithName(name string) (*Column, error) {
 	cp := C.CString(name)
-	res := result{C.column_copy_name(c.ptr, cp)}
+	res := newResult(C.column_copy_name(c.ptr, cp))
 	C.free(unsafe.Pointer(cp))
 
 	if err := res.Err(); err != nil {
@@ -476,24 +499,21 @@ type Table struct {
 	ptr unsafe.Pointer
 }
 
-// MetaData returns the table metadata
-func (t *Table) MetaData() MetaData {
-	res := result{C.table_meta(t.ptr)}
+// Schema returns the table schema
+func (t *Table) Schema() (*Schema, error) {
+	res := newResult(C.table_schema(t.ptr))
 	if err := res.Err(); err != nil {
-		// TODO: API change?
-		return nil
+		return nil, err
 	}
 
 	if res.Ptr() == nil {
-		return nil
+		return nil, fmt.Errorf("nil schema")
 	}
-
-	// FIXME
-	return nil
+	return &Schema{res.Ptr()}, nil
 }
 
 // NewTableFromColumns creates new Table from slice of columns
-func NewTableFromColumns(columns []*Column, meta MetaData) (*Table, error) {
+func NewTableFromColumns(columns []*Column, meta Metadata) (*Table, error) {
 	fields := make([]*Field, len(columns))
 	cptr := C.columns_new()
 	defer func() {
@@ -533,7 +553,7 @@ func (t *Table) NumCols() int {
 // ColByName returns column by name
 func (t *Table) ColByName(name string) (*Column, error) {
 	cStr := C.CString(name)
-	r := result{C.table_col_by_name(t.ptr, cStr)}
+	r := newResult(C.table_col_by_name(t.ptr, cStr))
 	C.free(unsafe.Pointer(cStr))
 
 	if err := r.Err(); err != nil {
@@ -550,7 +570,7 @@ func (t *Table) ColByIndex(i int) (*Column, error) {
 		return nil, fmt.Errorf("col %d out of bounds [0:%d]", i, n-1)
 	}
 
-	r := result{C.table_col_by_index(t.ptr, C.longlong(i))}
+	r := newResult(C.table_col_by_index(t.ptr, C.longlong(i)))
 	if err := r.Err(); err != nil {
 		return nil, err
 	}
@@ -564,7 +584,7 @@ func (t *Table) Slice(offset, length int) (*Table, error) {
 		return nil, fmt.Errorf("bad slice: [%d:%d]", offset, offset+length)
 	}
 
-	r := result{C.table_slice(t.ptr, C.int64_t(offset), C.int64_t(length))}
+	r := newResult(C.table_slice(t.ptr, C.int64_t(offset), C.int64_t(length)))
 	if err := r.Err(); err != nil {
 		return nil, err
 	}

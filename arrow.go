@@ -470,8 +470,28 @@ func ArrowFrameFromTable(table *arrow.Table) (*ArrowFrame, error) {
 
 // Labels returns frame lables
 func (a *ArrowFrame) Labels() map[string]interface{} {
-	// TODO: table metadata
-	return nil
+	schema, err := a.table.Schema()
+	if err != nil {
+		// TODO: API change?
+		return nil
+	}
+
+	meta, err := schema.Metadata()
+	if err != nil {
+		return nil
+	}
+
+	data := meta[LabelsMetaKey]
+	if data == "" {
+		return nil
+	}
+
+	var labels map[string]interface{}
+	if err := json.Unmarshal([]byte(data), &labels); err != nil {
+		return nil
+	}
+
+	return labels
 }
 
 // Names return the column names
