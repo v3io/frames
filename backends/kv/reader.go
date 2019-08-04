@@ -52,11 +52,16 @@ func (kv *Backend) Read(request *frames.ReadRequest) (frames.FrameIterator, erro
 		return nil, err
 	}
 
-	input := v3io.GetItemsInput{Path: tablePath, Filter: request.Proto.Filter, AttributeNames: columns}
+	partitions, err := kv.getPartitions(tablePath, container)
+	if err != nil {
+		return nil, err
+	}
+
+	input := v3io.GetItemsInput{Filter: request.Proto.Filter, AttributeNames: columns}
 	kv.logger.DebugWith("read input", "input", input, "request", request)
 
 	iter, err := v3ioutils.NewAsyncItemsCursor(
-		container, &input, kv.numWorkers, request.Proto.ShardingKeys, kv.logger, 0)
+		container, &input, kv.numWorkers, request.Proto.ShardingKeys, kv.logger, 0, partitions)
 	if err != nil {
 		return nil, err
 	}
@@ -210,6 +215,37 @@ func init() {
 	if err := backends.Register("kv", NewBackend); err != nil {
 		panic(err)
 	}
+}
+
+func (kv *Backend) getPartitions(path string, container v3io.Container) ([]string, error) {
+	var partitions []string
+	var done bool
+	var marker string
+	for !done {
+		input := &v3io.GetContainerContentsInput{Path: path, DirectoriesOnly: true, Marker: marker}
+		res, err := container.GetContainerContentsSync(input)
+		res.Release() // Releasing underlying fasthttp response
+		if err != nil {
+			return nil, err
+		}
+		out := res.Output.(*v3io.GetContainerContentsOutput)
+		if len(out.CommonPrefixes) > 0 {
+			for _, partition := range out.CommonPrefixes {
+				parts, err := kv.getPartitions(partition.Prefix, container)
+				if err != nil {
+					return nil, err
+				}
+				partitions = append(partitions, parts...)
+			}
+			// Add a partition to the list if this is a leaf folder and it's the first time we query the folder
+		} else if marker == "" {
+			partitions = append(partitions, path)
+		}
+		marker = out.NextMarker
+		done = !out.IsTruncated
+	}
+
+	return partitions, nil
 }
 
 func containsString(s []string, subString string) bool {

@@ -85,7 +85,7 @@ func (a *Appender) Add(frame frames.Frame) error {
 		return fmt.Errorf("empty frame")
 	}
 
-	if a.request.Expression != "" || a.request.Condition != "" {
+	if a.request.Expression != ""{
 		return a.update(frame)
 	}
 
@@ -152,7 +152,17 @@ func (a *Appender) Add(frame frames.Frame) error {
 
 		// Add key column as an attribute
 		row[indexName] = key
-		input := v3io.PutItemInput{Path: a.tablePath + fmt.Sprintf("%v", key), Attributes: row}
+
+		var condition string
+		if a.request.Condition != "" {
+			condition, err = genExpr(a.request.Condition, frame, r)
+			if err != nil {
+				a.logger.ErrorWith("error generating condition", "error", err)
+				return err
+			}
+		}
+
+		input := v3io.PutItemInput{Path: a.tablePath + fmt.Sprintf("%v", key), Attributes: row, Condition: condition}
 		a.logger.DebugWith("write", "input", input)
 		_, err := a.container.PutItem(&input, r, a.responseChan)
 		if err != nil {
