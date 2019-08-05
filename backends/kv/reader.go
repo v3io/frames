@@ -123,7 +123,7 @@ func (ki *Iterator) Next() bool {
 			col, ok := byName[colName]
 			if !ok {
 				f, err := ki.schema.GetField(name)
-				if err!=nil{
+				if err != nil {
 					ki.err = err
 					return false
 				}

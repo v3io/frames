@@ -85,7 +85,7 @@ func (a *Appender) Add(frame frames.Frame) error {
 		return fmt.Errorf("empty frame")
 	}
 
-	if a.request.Expression != ""{
+	if a.request.Expression != "" {
 		return a.update(frame)
 	}
 
