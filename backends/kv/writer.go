@@ -94,6 +94,9 @@ func (a *Appender) Add(frame frames.Frame) error {
 	var newSchema v3ioutils.V3ioSchema
 	if indices := frame.Indices(); len(indices) > 0 {
 		indexName = indices[0].Name()
+		if indexName == "" {
+			indexName = a.schema.(*v3ioutils.OldV3ioSchema).Key
+		}
 		newSchema = v3ioutils.NewSchema(indexName)
 		newSchema.AddColumn(indexName, indices[0], false)
 	} else {
@@ -148,7 +151,7 @@ func (a *Appender) Add(frame frames.Frame) error {
 			row[name] = val
 		}
 
-		key := indexVal(r)
+		key, stringKey := indexVal(r)
 
 		// Add key column as an attribute
 		row[indexName] = key
@@ -162,7 +165,7 @@ func (a *Appender) Add(frame frames.Frame) error {
 			}
 		}
 
-		input := v3io.PutItemInput{Path: a.tablePath + fmt.Sprintf("%v", key), Attributes: row, Condition: condition}
+		input := v3io.PutItemInput{Path: a.tablePath + stringKey, Attributes: row, Condition: condition}
 		a.logger.DebugWith("write", "input", input)
 		_, err := a.container.PutItem(&input, r, a.responseChan)
 		if err != nil {
@@ -210,8 +213,8 @@ func (a *Appender) update(frame frames.Frame) error {
 			}
 		}
 
-		key := indexVal(r)
-		input := v3io.UpdateItemInput{Path: a.tablePath + fmt.Sprintf("%v", key), Expression: expr, Condition: cond}
+		_, stringKey := indexVal(r)
+		input := v3io.UpdateItemInput{Path: a.tablePath + stringKey, Expression: expr, Condition: cond}
 		a.logger.DebugWith("write update", "input", input)
 		_, err = a.container.UpdateItem(&input, r, a.responseChan)
 		if err != nil {
@@ -280,7 +283,7 @@ func (a *Appender) WaitForComplete(timeout time.Duration) error {
 	return a.asyncErr
 }
 
-func (a *Appender) indexValFunc(frame frames.Frame) (func(int) interface{}, error) {
+func (a *Appender) indexValFunc(frame frames.Frame) (func(int) (interface{}, string), error) {
 	var indexCol frames.Column
 
 	if indices := frame.Indices(); len(indices) > 0 {
@@ -291,41 +294,42 @@ func (a *Appender) indexValFunc(frame frames.Frame) (func(int) interface{}, erro
 		indexCol = indices[0]
 	} else {
 		// If no index column exist use range index
-		return func(i int) interface{} {
-			return a.rowsProcessed + i
+		return func(i int) (interface{}, string) {
+			res := a.rowsProcessed + i
+			return res, strconv.FormatInt(int64(res), 10)
 		}, nil
 	}
 
-	var fn func(int) interface{}
+	var fn func(int) (interface{}, string)
 	switch indexCol.DType() {
 	// strconv.Format* is about twice as fast as fmt.Sprintf
 	case frames.IntType:
-		fn = func(i int) interface{} {
+		fn = func(i int) (interface{}, string) {
 			ival, _ := indexCol.IntAt(i)
-			return strconv.FormatInt(int64(ival), 10)
+			return ival, strconv.FormatInt(int64(ival), 10)
 		}
 	case frames.FloatType:
-		fn = func(i int) interface{} {
+		fn = func(i int) (interface{}, string) {
 			fval, _ := indexCol.FloatAt(i)
-			return strconv.FormatFloat(fval, 'f', -1, 64)
+			return fval, strconv.FormatFloat(fval, 'f', -1, 64)
 		}
 	case frames.StringType:
-		fn = func(i int) interface{} {
+		fn = func(i int) (interface{}, string) {
 			sval, _ := indexCol.StringAt(i)
-			return sval
+			return sval, sval
 		}
 	case frames.TimeType:
-		fn = func(i int) interface{} {
+		fn = func(i int) (interface{}, string) {
 			tval, _ := indexCol.TimeAt(i)
-			return tval.Format(time.RFC3339Nano)
+			return tval, tval.Format(time.RFC3339Nano)
 		}
 	case frames.BoolType:
-		fn = func(i int) interface{} {
+		fn = func(i int) (interface{}, string) {
 			bval, _ := indexCol.BoolAt(i)
 			if bval {
-				return "true"
+				return true, "true"
 			}
-			return "false"
+			return false, "false"
 		}
 	default:
 		return nil, fmt.Errorf("unknown column type - %v", indexCol.DType())
