@@ -24,7 +24,7 @@ from .errors import (CreateError, DeleteError, ExecuteError, ReadError,
                      WriteError)
 from .http import format_go_time
 from .pbutils import msg2df, pb_map, df2msg
-from .pdutils import concat_dfs
+from .pdutils import concat_dfs, should_reorder_columns
 from .client import ClientBase
 
 IGNORE, FAIL = fpb.IGNORE, fpb.FAIL
@@ -77,8 +77,9 @@ class Client(ClientBase):
                 marker=marker,
                 **kw
             )
+            do_reorder=should_reorder_columns(backend, query, columns)
             for frame in stub.Read(request):
-                yield msg2df(frame, self.frame_factory, columns)
+                yield msg2df(frame, self.frame_factory, columns, do_reorder=do_reorder)
 
     # We need to write "read" since once you have a yield in a function
     # (do_read) it'll always return a generator

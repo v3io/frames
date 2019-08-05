@@ -69,3 +69,7 @@ def align_categories(dfs):
         for col in df.columns:
             if is_categorical_dtype(df[col].dtype):
                 df[col] = df[col].cat.set_categories(all_cats)
+
+def should_reorder_columns(backend, query, columns):
+    # Currently TSDB sorts the columns by itself, unless no columns were provided (either via columns or query).
+    return backend != 'tsdb' or (not query and not columns)
