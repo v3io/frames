@@ -28,7 +28,7 @@ from .client import ClientBase
 from .errors import (CreateError, DeleteError, Error, ExecuteError, ReadError,
                      WriteError)
 from .pbutils import df2msg, msg2df, pb2py
-from .pdutils import concat_dfs
+from .pdutils import concat_dfs, should_sort_columns
 from .frames_pb2 import Frame
 
 header_fmt = '<q'
@@ -85,7 +85,8 @@ class Client(ClientBase):
         if not resp.ok:
             raise Error('cannot call API - {}'.format(resp.text))
 
-        dfs = self._iter_dfs(resp.raw, columns)
+        do_sort=should_sort_columns(backend, query, columns)
+        dfs = self._iter_dfs(resp.raw, columns, do_sort=do_sort)
 
         if not iterator:
             return concat_dfs(dfs, self.frame_factory, self.concat)
@@ -186,11 +187,11 @@ class Client(ClientBase):
 
         return headers
 
-    def _iter_dfs(self, resp, columns):
+    def _iter_dfs(self, resp, columns, do_sort=True):
         for msg in iter(partial(self._read_msg, resp), None):
             if msg.error:
                 raise ReadError(msg.error)
-            yield msg2df(msg, self.frame_factory, columns)
+            yield msg2df(msg, self.frame_factory, columns, do_sort)
 
     def _read_msg(self, resp):
         data = resp.read(header_fmt_size)
