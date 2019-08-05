@@ -77,7 +77,7 @@ func (kv *Backend) Read(request *frames.ReadRequest) (frames.FrameIterator, erro
 		return nil, err
 	}
 
-	newKVIter := Iterator{request: request, iter: iter, keyColumnName: schema.Key, shouldDuplicateIndex: containsString(columns, schema.Key)}
+	newKVIter := Iterator{request: request, iter: iter, schema: schema, shouldDuplicateIndex: containsString(columns, schema.Key)}
 	return &newKVIter, nil
 }
 
@@ -87,8 +87,8 @@ type Iterator struct {
 	iter                 *v3ioutils.AsyncItemsCursor
 	err                  error
 	currFrame            frames.Frame
-	keyColumnName        string
 	shouldDuplicateIndex bool
+	schema               *v3ioutils.OldV3ioSchema
 }
 
 // Next advances the iterator to next frame
@@ -109,7 +109,7 @@ func (ki *Iterator) Next() bool {
 			continue
 		}
 		// Indicates whether the key column exists as an attribute in addition to the object name (__name)
-		_, hasKeyColumnAttribute := row[ki.keyColumnName]
+		_, hasKeyColumnAttribute := row[ki.schema.Key]
 
 		for name, field := range row {
 			colName := name
@@ -117,12 +117,17 @@ func (ki *Iterator) Next() bool {
 				if hasKeyColumnAttribute {
 					continue
 				}
-				colName = ki.keyColumnName
+				colName = ki.schema.Key
 			}
 
 			col, ok := byName[colName]
 			if !ok {
-				data, err := utils.NewColumn(field, rowNum-numOfSchemaFiles)
+				f, err := ki.schema.GetField(name)
+				if err!=nil{
+					ki.err = err
+					return false
+				}
+				data, err := utils.NewColumnFromType(f.Type, rowNum-numOfSchemaFiles)
 				if err != nil {
 					ki.err = err
 					return false
@@ -145,7 +150,7 @@ func (ki *Iterator) Next() bool {
 
 		// fill columns with nil if there was no value
 		for name, col := range byName {
-			if name == ki.keyColumnName && !hasKeyColumnAttribute {
+			if name == ki.schema.Key && !hasKeyColumnAttribute {
 				name = indexColKey
 			}
 			if _, ok := row[name]; ok {
@@ -174,19 +179,19 @@ func (ki *Iterator) Next() bool {
 
 	// If the only column that was requested is the key-column don't set it as an index.
 	// Otherwise, set the key column (if requested) to be the index or not depending on the `ResetIndex` value.
-	if !ki.request.Proto.ResetIndex && (len(columns) > 1 || columns[0].Name() != ki.keyColumnName) {
-		indexCol, ok := byName[ki.keyColumnName]
+	if !ki.request.Proto.ResetIndex && (len(columns) > 1 || columns[0].Name() != ki.schema.Key) {
+		indexCol, ok := byName[ki.schema.Key]
 		if ok {
-			delete(byName, ki.keyColumnName)
+			delete(byName, ki.schema.Key)
 
 			// If a user requested specific columns containing the index, duplicate the index column
 			// to be an index and a column
 			if ki.shouldDuplicateIndex {
-				dupIndex := indexCol.CopyWithName(fmt.Sprintf("_%v", ki.keyColumnName))
+				dupIndex := indexCol.CopyWithName(fmt.Sprintf("_%v", ki.schema.Key))
 				indices = []frames.Column{dupIndex}
 			} else {
 				indices = []frames.Column{indexCol}
-				columns = utils.RemoveColumn(ki.keyColumnName, columns)
+				columns = utils.RemoveColumn(ki.schema.Key, columns)
 			}
 		}
 	}
