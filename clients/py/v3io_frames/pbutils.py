@@ -81,7 +81,7 @@ def pb2py(obj):
     return obj
 
 
-def msg2df(frame, frame_factory, columns=None, do_sort=True):
+def msg2df(frame, frame_factory, columns=None, do_reorder=True):
     indices = [col2series(idx, None) for idx in frame.indices]
     if len(indices) == 1:
         new_index = indices[0]
@@ -98,7 +98,7 @@ def msg2df(frame, frame_factory, columns=None, do_sort=True):
         warnings.simplefilter('ignore')
         df.labels = pb2py(frame.labels)
 
-    if do_sort:
+    if do_reorder:
         if columns:
             df = df.reindex(columns=columns)
         else:
