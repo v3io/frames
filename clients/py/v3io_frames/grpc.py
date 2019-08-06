@@ -12,32 +12,32 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+import pandas as pd
 from datetime import datetime
 from functools import wraps
 
 import grpc
-import pandas as pd
-
 from . import frames_pb2 as fpb  # noqa
 from . import frames_pb2_grpc as fgrpc  # noqa
+from .client import ClientBase
 from .errors import (CreateError, DeleteError, ExecuteError, ReadError,
                      WriteError)
 from .http import format_go_time
 from .pbutils import msg2df, pb_map, df2msg
 from .pdutils import concat_dfs, should_reorder_columns
-from .client import ClientBase
 
 IGNORE, FAIL = fpb.IGNORE, fpb.FAIL
 _scheme_prefix = 'grpc://'
 GRPC_MESSAGE_SIZE = 128 * (1 << 20)  # 128MB
 channel_options = [
-  ('grpc.max_send_message_length', GRPC_MESSAGE_SIZE),
-  ('grpc.max_receive_message_length', GRPC_MESSAGE_SIZE),
+    ('grpc.max_send_message_length', GRPC_MESSAGE_SIZE),
+    ('grpc.max_receive_message_length', GRPC_MESSAGE_SIZE),
 ]
 
 
 def grpc_raise(err_cls):
     """Re-raise a different type of exception from grpc.RpcError"""
+
     def decorator(fn):
         @wraps(fn)
         def wrapper(*args, **kw):
@@ -47,7 +47,9 @@ def grpc_raise(err_cls):
                 err = err_cls('error in {}: {}'.format(fn.__name__, gerr))
                 err.cause = gerr
                 raise err
+
         return wrapper
+
     return decorator
 
 
@@ -77,9 +79,10 @@ class Client(ClientBase):
                 marker=marker,
                 **kw
             )
-            do_reorder=should_reorder_columns(backend, query, columns)
+            do_reorder = should_reorder_columns(backend, query, columns)
             for frame in stub.Read(request):
-                yield msg2df(frame, self.frame_factory, columns, do_reorder=do_reorder)
+                yield msg2df(frame, self.frame_factory,
+                             columns, do_reorder=do_reorder)
 
     # We need to write "read" since once you have a yield in a function
     # (do_read) it'll always return a generator
