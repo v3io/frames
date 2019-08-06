@@ -294,8 +294,7 @@ func (a *Appender) indexValFunc(frame frames.Frame) (func(int) interface{}, erro
 	} else {
 		// If no index column exist use range index
 		return func(i int) interface{} {
-			res := a.rowsProcessed + i
-			return res
+			return a.rowsProcessed + i
 		}, nil
 	}
 
