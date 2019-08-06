@@ -170,10 +170,12 @@ func (b *Backend) Create(request *frames.CreateRequest) error {
 	}
 
 	err = tsdb.CreateTSDB(cfg, dbSchema)
-	if b.ignoreCreateExists(request, err) {
-		return nil
+	if err != nil {
+		if !b.ignoreCreateExists(request, err) {
+			return err
+		}
 	}
-	return err
+	return nil
 }
 
 // Delete deletes a table or part of it
