@@ -121,7 +121,8 @@ def msg2df(frame, frame_factory, columns=None, do_reorder=True):
                 for i in range(len(df.columns)):
                     renameDict['column_' + str(i)] = i
                 df.rename(columns=renameDict, inplace=True)
-                new_index = pd.RangeIndex(start=0, step=1, stop=len(df.columns))
+                new_index = pd.RangeIndex(start=0, step=1,
+                                          stop=len(df.columns))
                 df = df.reindex(columns=new_index)
             else:
                 df = df.reindex(columns=sorted(df.columns))
