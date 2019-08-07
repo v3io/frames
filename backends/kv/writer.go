@@ -22,7 +22,6 @@ package kv
 
 import (
 	"fmt"
-	"strconv"
 	"strings"
 	"time"
 
@@ -94,6 +93,9 @@ func (a *Appender) Add(frame frames.Frame) error {
 	var newSchema v3ioutils.V3ioSchema
 	if indices := frame.Indices(); len(indices) > 0 {
 		indexName = indices[0].Name()
+		if indexName == "" {
+			indexName = a.schema.(*v3ioutils.OldV3ioSchema).Key
+		}
 		newSchema = v3ioutils.NewSchema(indexName)
 		newSchema.AddColumn(indexName, indices[0], false)
 	} else {
@@ -302,12 +304,12 @@ func (a *Appender) indexValFunc(frame frames.Frame) (func(int) interface{}, erro
 	case frames.IntType:
 		fn = func(i int) interface{} {
 			ival, _ := indexCol.IntAt(i)
-			return strconv.FormatInt(int64(ival), 10)
+			return ival
 		}
 	case frames.FloatType:
 		fn = func(i int) interface{} {
 			fval, _ := indexCol.FloatAt(i)
-			return strconv.FormatFloat(fval, 'f', -1, 64)
+			return fval
 		}
 	case frames.StringType:
 		fn = func(i int) interface{} {
@@ -317,15 +319,15 @@ func (a *Appender) indexValFunc(frame frames.Frame) (func(int) interface{}, erro
 	case frames.TimeType:
 		fn = func(i int) interface{} {
 			tval, _ := indexCol.TimeAt(i)
-			return tval.Format(time.RFC3339Nano)
+			return tval
 		}
 	case frames.BoolType:
 		fn = func(i int) interface{} {
 			bval, _ := indexCol.BoolAt(i)
 			if bval {
-				return "true"
+				return true
 			}
-			return "false"
+			return false
 		}
 	default:
 		return nil, fmt.Errorf("unknown column type - %v", indexCol.DType())

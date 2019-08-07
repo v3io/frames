@@ -13,13 +13,12 @@
 # limitations under the License.
 
 import json
+import requests
 import struct
 from base64 import b64decode
 from datetime import datetime
 from functools import partial, wraps
 from itertools import chain
-
-import requests
 from requests.exceptions import RequestException
 from urllib3.exceptions import HTTPError
 
@@ -27,9 +26,9 @@ from . import frames_pb2 as fpb
 from .client import ClientBase
 from .errors import (CreateError, DeleteError, Error, ExecuteError, ReadError,
                      WriteError)
+from .frames_pb2 import Frame
 from .pbutils import df2msg, msg2df, pb2py
 from .pdutils import concat_dfs, should_reorder_columns
-from .frames_pb2 import Frame
 
 header_fmt = '<q'
 header_fmt_size = struct.calcsize(header_fmt)
@@ -37,6 +36,7 @@ header_fmt_size = struct.calcsize(header_fmt)
 
 def connection_error(error_cls):
     """Re-raise v3f Exceptions from connection errors"""
+
     def decorator(fn):
         @wraps(fn)
         def wrapper(*args, **kw):
@@ -44,12 +44,15 @@ def connection_error(error_cls):
                 return fn(*args, **kw)
             except (RequestException, HTTPError) as err:
                 raise error_cls(str(err))
+
         return wrapper
+
     return decorator
 
 
 class Client(ClientBase):
     """Client is a nuclio stream HTTP client"""
+
     def _fix_address(self, address):
         if '://' not in address:
             return 'http://{}'.format(address)
@@ -85,7 +88,7 @@ class Client(ClientBase):
         if not resp.ok:
             raise Error('cannot call API - {}'.format(resp.text))
 
-        do_reorder=should_reorder_columns(backend, query, columns)
+        do_reorder = should_reorder_columns(backend, query, columns)
         dfs = self._iter_dfs(resp.raw, columns, do_reorder=do_reorder)
 
         if not iterator:
