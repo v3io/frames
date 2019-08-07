@@ -229,9 +229,11 @@ func (kv *Backend) getPartitions(path string, container v3io.Container) ([]strin
 	for !done {
 		input := &v3io.GetContainerContentsInput{Path: path, DirectoriesOnly: true, Marker: marker}
 		res, err := container.GetContainerContentsSync(input)
-		res.Release() // Releasing underlying fasthttp response
 		if err != nil {
 			return nil, err
+		}
+		if res != nil {
+			res.Release() // Releasing underlying fasthttp response
 		}
 		out := res.Output.(*v3io.GetContainerContentsOutput)
 		if len(out.CommonPrefixes) > 0 {
