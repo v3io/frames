@@ -170,12 +170,10 @@ func (b *Backend) Create(request *frames.CreateRequest) error {
 	}
 
 	err = tsdb.CreateTSDB(cfg, dbSchema)
-	if err != nil {
-		if !b.ignoreCreateExists(request, err) {
-			return err
-		}
+	if b.ignoreCreateExists(request, err) {
+		return nil
 	}
-	return nil
+	return err
 }
 
 // Delete deletes a table or part of it
@@ -222,7 +220,7 @@ func (b *Backend) ignoreCreateExists(request *frames.CreateRequest, err error) b
 	}
 
 	// TODO: Ask tsdb to return specific error value, this is brittle
-	return strings.Contains(err.Error(), "A TSDB table already exists")
+	return err == nil || strings.Contains(err.Error(), "A TSDB table already exists")
 }
 
 func (b *Backend) isSchemaNotFoundError(err error) bool {
