@@ -36,7 +36,7 @@ const (
 	LongType   = "long"
 	DoubleType = "double"
 	StringType = "string"
-	TimeType   = "time"
+	TimeType   = "timestamp"
 	BoolType   = "boolean"
 )
 

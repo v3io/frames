@@ -151,13 +151,8 @@ func ColAt(col frames.Column, i int) (interface{}, error) {
 		return col.FloatAt(i)
 	case frames.StringType:
 		return col.StringAt(i)
-	case frames.TimeType: // TODO: Does v3io support time.Time?
-		asTime, err := col.TimeAt(i)
-		if err != nil {
-			return nil, err
-		}
-		return asTime.Format(time.RFC3339Nano), nil // store as time string since v3io doesnt have native time format
-		//return col.TimeAt(i), nil
+	case frames.TimeType:
+		return col.TimeAt(i)
 	case frames.BoolType:
 		return col.BoolAt(i)
 	default:
