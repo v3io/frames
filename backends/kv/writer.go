@@ -83,7 +83,7 @@ func (a *Appender) Add(frame frames.Frame) error {
 	if len(names) == 0 {
 		return fmt.Errorf("empty frame")
 	}
-	if len(frame.Indices()) != 1 {
+	if len(frame.Indices()) > 1 {
 		return fmt.Errorf("can't set key from multi-index frame")
 	}
 
