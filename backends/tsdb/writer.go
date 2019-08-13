@@ -197,9 +197,11 @@ func (a *tsdbAppender) Add(frame frames.Frame) error {
 		indexCols := make([][]string, 0, indexLen)
 		indexNames := make([]string, 0, indexLen)
 		for i, idx := range frame.Indices() {
-			if i != timeColIndex {
+			indexLabelName := idx.Name()
+			// Use the index label only if a label with the same name was not passed specifically as a label.
+			if _, ok := frame.Labels()[indexLabelName]; i != timeColIndex && !ok {
 				indexCols = append(indexCols, idx.Strings())
-				indexNames = append(indexNames, idx.Name())
+				indexNames = append(indexNames, indexLabelName)
 			}
 		}
 
