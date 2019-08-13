@@ -83,6 +83,9 @@ func (a *Appender) Add(frame frames.Frame) error {
 	if len(names) == 0 {
 		return fmt.Errorf("empty frame")
 	}
+	if len(frame.Indices()) > 1 {
+		return fmt.Errorf("can't set key from multi-index frame")
+	}
 
 	if a.request.Expression != "" {
 		return a.update(frame)
@@ -181,11 +184,6 @@ func (a *Appender) Add(frame frames.Frame) error {
 
 // update updates rows from a frame
 func (a *Appender) update(frame frames.Frame) error {
-	names := frame.Names()
-	if len(names) == 0 {
-		return fmt.Errorf("empty frame")
-	}
-
 	indexVal, err := a.indexValFunc(frame)
 	if err != nil {
 		return err
@@ -286,10 +284,6 @@ func (a *Appender) indexValFunc(frame frames.Frame) (func(int) interface{}, erro
 	var indexCol frames.Column
 
 	if indices := frame.Indices(); len(indices) > 0 {
-		if len(indices) != 1 {
-			return nil, fmt.Errorf("can't set key from multi-index frame")
-		}
-
 		indexCol = indices[0]
 	} else {
 		// If no index column exist use range index
