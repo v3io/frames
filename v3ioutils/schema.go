@@ -75,21 +75,8 @@ type OldSchemaField struct {
 
 // AddColumn adds a column
 func (s *OldV3ioSchema) AddColumn(name string, col frames.Column, nullable bool) error {
-	var ftype string
-	switch col.DType() {
-	case frames.IntType:
-		ftype = LongType
-	case frames.FloatType:
-		ftype = DoubleType
-	case frames.StringType:
-		ftype = StringType
-	case frames.TimeType:
-		ftype = TimeType
-	case frames.BoolType:
-		ftype = BoolType
-	}
 
-	field := OldSchemaField{Name: name, Type: ftype, Nullable: nullable}
+	field := OldSchemaField{Name: name, Type: ConvertDTypeToString(col.DType()), Nullable: nullable}
 	s.Fields = append(s.Fields, field)
 	return nil
 }
@@ -193,4 +180,30 @@ func (s *OldV3ioSchema) UpdateSchema(container v3io.Container, tablePath string,
 	}
 
 	return nil
+}
+
+func ConvertDTypeToString(dType frames.DType) string {
+	switch dType {
+	case frames.IntType:
+		return LongType
+	case frames.FloatType:
+		return DoubleType
+	case frames.StringType:
+		return StringType
+	case frames.TimeType:
+		return TimeType
+	case frames.BoolType:
+		return BoolType
+	}
+	return ""
+}
+
+func ContainsField(fields []OldSchemaField, fieldName string) (bool, OldSchemaField) {
+	for _, f := range fields {
+		if f.Name == fieldName {
+			return true, f
+		}
+	}
+
+	return false, OldSchemaField{}
 }

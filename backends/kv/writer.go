@@ -87,6 +87,12 @@ func (a *Appender) Add(frame frames.Frame) error {
 		return fmt.Errorf("can't set key from multi-index frame")
 	}
 
+	// In case we are getting several frames to update, validate they all have the same schema
+	err := a.validateSchema(frame)
+	if err != nil {
+		return err
+	}
+
 	if a.request.Expression != "" {
 		return a.update(frame)
 	}
@@ -126,7 +132,7 @@ func (a *Appender) Add(frame frames.Frame) error {
 		}
 	}
 
-	err := a.schema.UpdateSchema(a.container, a.tablePath, newSchema)
+	err = a.schema.UpdateSchema(a.container, a.tablePath, newSchema)
 	if err != nil {
 		return err
 	}
@@ -373,4 +379,49 @@ func (a *Appender) respWaitLoop(timeout time.Duration) {
 			active = false
 		}
 	}
+}
+
+func (a *Appender) validateSchema(frame frames.Frame) error {
+	prevSchema := a.schema.(*v3ioutils.OldV3ioSchema)
+
+	// Assume that no fields means it's the first frame to save, so no validation is required
+	if len(prevSchema.Fields) == 0 {
+		return nil
+	}
+
+	indexes := frame.Indices()
+	if len(indexes) == 1 && indexes[0].Name() != prevSchema.Key {
+		return fmt.Errorf("index name mismatch. previous frame index was '%v', current frame index is '%v'",
+			prevSchema.Key, indexes[0].Name())
+	}
+	// Number of columns should be the same (schema fields contains also an index field
+	numberOfPreviousFields, numberOfCurrentFields := len(prevSchema.Fields)-1, len(frame.Names())
+	if numberOfCurrentFields != numberOfPreviousFields {
+		var fieldsList []string
+		for _, f := range prevSchema.Fields {
+			if f.Name != prevSchema.Key {
+				fieldsList = append(fieldsList, f.Name)
+			}
+		}
+		return fmt.Errorf("columns number mismatch. previous frames had %v columns %v while current have %v columns %v",
+			len(prevSchema.Fields), fieldsList, len(frame.Names()), frame.Names())
+	}
+
+	for _, fieldName := range frame.Names() {
+		found, field := v3ioutils.ContainsField(prevSchema.Fields, fieldName)
+
+		if !found {
+			return fmt.Errorf("columns mismatch. "+
+				"column '%v' exist in current frame and did not existed in previous frames",
+				fieldName)
+		}
+		col, _ := frame.Column(fieldName)
+		currentType := v3ioutils.ConvertDTypeToString(col.DType())
+		if field.Type != currentType {
+			return fmt.Errorf("column type mismatch. column '%v' expected type '%v' but got type '%v'",
+				fieldName, field.Type, currentType)
+		}
+	}
+
+	return nil
 }
