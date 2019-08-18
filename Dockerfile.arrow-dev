@@ -15,14 +15,11 @@
 
 FROM golang:1.12-stretch
 
-RUN apt-get update && apt-get install -y curl bzip2 g++ make
+RUN apt-get update && apt-get install -y curl bzip2 make
 RUN curl -LO https://repo.anaconda.com/miniconda/Miniconda3-latest-Linux-x86_64.sh
 RUN bash Miniconda3-latest-Linux-x86_64.sh -b -p /miniconda
 ENV PATH=/miniconda/bin:${PATH}
 ENV LD_LIBRARY_PATH=/miniconda/lib
-RUN conda install -y  conda-forge::pyarrow=0.14 conda-forge::compilers pkg-config
+RUN conda install -y conda-forge::pyarrow=0.14 conda-forge::compilers pkg-config
 
 WORKDIR /frames
-COPY . .
-RUN cd arrow && make fresh
-RUN go test -tags=arrow ./...

@@ -42,7 +42,7 @@ func TestSchema(t *testing.T) {
 	require := require.New(t)
 	name, dtype := "field-1", Integer64Type
 	field, _ := NewField(name, dtype)
-	schema, _ := NewSchema([]*Field{field})
+	schema, _ := NewSchema([]*Field{field}, nil)
 	require.Equal(field.Name(), name, "field name")
 	require.Equal(field.DType(), dtype, "field dtype")
 	require.NotNil(schema)
