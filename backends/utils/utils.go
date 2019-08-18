@@ -26,6 +26,7 @@ import (
 	"time"
 
 	"github.com/v3io/frames"
+	"github.com/v3io/frames/v3ioutils"
 )
 
 // AppendValue appends a value to data
@@ -91,6 +92,29 @@ func NewColumn(value interface{}, size int) (interface{}, error) {
 	return nil, fmt.Errorf("unknown type - %T", value)
 }
 
+// NewColumn creates a new column from type of value
+func NewColumnFromType(t string, size int) (interface{}, error) {
+	switch t {
+	case v3ioutils.LongType:
+		return make([]int64, size), nil
+	case v3ioutils.DoubleType:
+		data := make([]float64, size)
+		for i := range data {
+			data[i] = math.NaN()
+		}
+
+		return data, nil
+	case v3ioutils.StringType:
+		return make([]string, size), nil
+	case v3ioutils.TimeType:
+		return make([]time.Time, size), nil
+	case v3ioutils.BoolType:
+		return make([]bool, size), nil
+	}
+
+	return nil, fmt.Errorf("unknown type - %T", t)
+}
+
 // AppendNil appends an empty value to data
 func AppendNil(col frames.Column) error {
 	var value interface{}
@@ -127,13 +151,8 @@ func ColAt(col frames.Column, i int) (interface{}, error) {
 		return col.FloatAt(i)
 	case frames.StringType:
 		return col.StringAt(i)
-	case frames.TimeType: // TODO: Does v3io support time.Time?
-		asTime, err := col.TimeAt(i)
-		if err != nil {
-			return nil, err
-		}
-		return asTime.Format(time.RFC3339Nano), nil // store as time string since v3io doesnt have native time format
-		//return col.TimeAt(i), nil
+	case frames.TimeType:
+		return col.TimeAt(i)
 	case frames.BoolType:
 		return col.BoolAt(i)
 	default:

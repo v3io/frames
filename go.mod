@@ -5,9 +5,11 @@ require (
 	github.com/golang/protobuf v1.2.0
 	github.com/nuclio/logger v0.0.1
 	github.com/nuclio/zap v0.0.2
+	github.com/philhofer/fwd v1.0.0 // indirect
 	github.com/pkg/errors v0.8.1
 	github.com/stretchr/testify v1.3.0
-	github.com/v3io/v3io-go v0.0.0-20190606000000-9441f7c028db0b9642b541b07f30e35a1b812c58
+	github.com/tinylib/msgp v1.1.0 // indirect
+	github.com/v3io/v3io-go v0.0.0-20190708180000-beb22c4a945d8f1d9765639a06b2116756146b15
 	github.com/v3io/v3io-tsdb v0.9.6
 	github.com/valyala/fasthttp v1.2.0
 	github.com/xwb1989/sqlparser v0.0.0-20180606152119-120387863bf2

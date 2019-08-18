@@ -86,18 +86,13 @@ v3c.write(backend='kv', table='mytable', dfs=tsdf, expression='city="NY"', condi
 ### Read
 Reads data from a backend.  
 Common read parameters:
-* query: string - Query in SQL format
 * iterator: bool - Return iterator of DataFrames or (if False) just one DataFrame
 * filter: string - Query filter (can't be used with query)
-* group_by: string - Query group by (can't be used with query)
 * columns: []str - List of columns to pass (can't be used with query)
-* limit: int - Maximal number of rows to return
-* row_layout: bool - Weather to use row layout (vs the default column layout)
-* max_in_message: int - Maximal number of rows per message
-* reset_index: bool - Reset the index. When set to `false` (default), the dataframe will have the key column of the v3io kv as the index column.
-When set to `true`, the index will be reset to a range index.
 * data_format: string - Data format (Not yet supported)
 * marker: string - Query marker (Not yet supported)
+* limit: int - Maximal number of rows to return (Not yet supported)
+* row_layout: bool - Weather to use row layout (vs the default column layout) (Not yet supported)
 
 
 #### backend specific parameters
@@ -107,6 +102,10 @@ When set to `true`, the index will be reset to a range index.
 * step: string
 * aggregators: string
 * aggregationWindow: string
+* query: string - Query in SQL format
+* group_by: string - Query group by (can't be used with query)
+* multi_index: bool - Get the results as a multi index data frame where the labels are used as indexes
+ in addition to the timestamp, or if `False` (default behavior) only the timestamp will function as the index.
 
 For detailed info on these parameters please visit [TSDB](https://github.com/v3io/v3io-tsdb#v3io-tsdb) docs.  
 Example:
@@ -115,7 +114,10 @@ df = client.read(backend='tsdb', query="select avg(cpu) as cpu, avg(diskio), avg
 ```
 
 ##### KV
-* sharding_keys: []string - list of specific sharding keys to query. For range scan formatted tables only.
+* reset_index: bool - Reset the index. When set to `false` (default), the dataframe will have the key column of the v3io kv as the index column.
+When set to `true`, the index will be reset to a range index.
+* max_in_message: int - Maximal number of rows per message
+* sharding_keys: []string (Experimental)- list of specific sharding keys to query. For range scan formatted tables only.
 * segments: []int64 (Not yet supported)
 * total_segments: int64 (Not yet supported)
 * sort_key_range_start: string (Not yet supported)

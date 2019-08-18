@@ -18,14 +18,6 @@ from functools import wraps
 
 import pandas as pd
 
-try:
-    import pyarrow as pa
-    from pyarrow import plasma
-
-    has_arrow = True
-except ImportError:
-    has_arrow = False
-
 import grpc
 
 from . import frames_pb2 as fpb
@@ -35,19 +27,29 @@ from .errors import (CreateError, DeleteError, ExecuteError, ReadError,
                      WriteError)
 from .http import format_go_time
 from .pbutils import df2msg, msg2df, pb_map
-from .pdutils import concat_dfs
+from .pdutils import concat_dfs, should_reorder_columns
+
+try:
+    import pyarrow as pa
+    from pyarrow import plasma
+
+    has_arrow = True
+except ImportError:
+    has_arrow = False
+
 
 IGNORE, FAIL = fpb.IGNORE, fpb.FAIL
 _scheme_prefix = 'grpc://'
 GRPC_MESSAGE_SIZE = 128 * (1 << 20)  # 128MB
 channel_options = [
-  ('grpc.max_send_message_length', GRPC_MESSAGE_SIZE),
-  ('grpc.max_receive_message_length', GRPC_MESSAGE_SIZE),
+    ('grpc.max_send_message_length', GRPC_MESSAGE_SIZE),
+    ('grpc.max_receive_message_length', GRPC_MESSAGE_SIZE),
 ]
 
 
 def grpc_raise(err_cls):
     """Re-raise a different type of exception from grpc.RpcError"""
+
     def decorator(fn):
         @wraps(fn)
         def wrapper(*args, **kw):
@@ -57,7 +59,9 @@ def grpc_raise(err_cls):
                 err = err_cls('error in {}: {}'.format(fn.__name__, gerr))
                 err.cause = gerr
                 raise err
+
         return wrapper
+
     return decorator
 
 
@@ -87,8 +91,10 @@ class Client(ClientBase):
                 marker=marker,
                 **kw
             )
+            do_reorder = should_reorder_columns(backend, query, columns)
             for frame in stub.Read(request):
-                yield msg2df(frame, self.frame_factory, columns)
+                yield msg2df(frame, self.frame_factory,
+                             columns, do_reorder=do_reorder)
 
     # We need to write "read" since once you have a yield in a function
     # (do_read) it'll always return a generator
