@@ -1,13 +1,19 @@
 # arrow development
 
-
-
 ## Docker Development
-    $ docker build -f Dockerfile.arrow-dev -t arrow-dev .
-    $ docker run -v ${PWD}:/frames --rm -it
+
+### Build Docker Image
+
+Run this if environment changes
+    $ docker build -f Dockerfile.arrow-dev -t frames-arrow-dev .
+
+### Run Docker Image
+    $ docker run -v ${PWD}:/frames --rm -it frames-arrow-dev
 
 
 ## Local Environment
+
+**Note: This currently does not work on OSX**
 
 What's you'll need for working with arrow:
 - c++ compiler
