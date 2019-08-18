@@ -187,6 +187,10 @@ class Client(ClientBase):
             df = self.frame_factory.from_arrow(table)
 
         client.delete([oid])
+
+        if req.index_columns:
+            df = df.set_index(req.index_columns)
+
         return df
 
     @grpc_raise(WriteError)
