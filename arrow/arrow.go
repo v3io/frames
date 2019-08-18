@@ -406,7 +406,6 @@ func NewColumn(field *Field, arr *Array) (*Column, error) {
 
 // Field returns the column field
 func (c *Column) Field() *Field {
-	fmt.Println("<DGB>", c.ptr)
 	ptr := C.column_field(c.ptr)
 	return &Field{ptr}
 }
