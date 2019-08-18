@@ -74,9 +74,15 @@ func (s *Server) ShmRead(ctx context.Context, req *pb.ShmReadRequest) (*pb.ShmRe
 		return nil, errors.Wrapf(err, "can't write table to %s:%s", req.DbPath, id)
 	}
 
+	var indexCols []string
+	for _, col := range frame.Indices() {
+		indexCols = append(indexCols, col.Name())
+	}
+
 	resp := &pb.ShmReadResponse{
-		DbPath:   req.DbPath,
-		ObjectId: id[:],
+		DbPath:       req.DbPath,
+		ObjectId:     id[:],
+		IndexColumns: indexCols,
 	}
 
 	return resp, err
@@ -124,7 +130,7 @@ func (s *Server) ShmWrite(ctx context.Context, req *pb.ShmWriteRequest) (*pb.Wri
 		ImmidiateData: nil,
 	}
 
-	frame, err := frames.ArrowFrameFromTable(table)
+	frame, err := frames.ArrowFrameFromTable(table, req.IndexColumns)
 	if err != nil {
 		return nil, errors.Wrap(err, "frame")
 	}

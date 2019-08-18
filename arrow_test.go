@@ -1,4 +1,4 @@
-// +build !arrow
+// +build arrow
 
 /*
 Copyright 2018 Iguazio Systems Ltd.
@@ -23,20 +23,29 @@ such restriction.
 package frames
 
 import (
-	"fmt"
+	"testing"
+
+	"github.com/stretchr/testify/require"
 )
 
-var (
-	// HasArrow signals we don't have arrow (when building without arrow tag)
-	HasArrow = false
-)
+func TestColumns(t *testing.T) {
+	require := require.New(t)
 
-// NewArrowColumn returns an error
-func NewArrowColumn(name string, data interface{}) (Column, error) {
-	return nil, fmt.Errorf("no arrow")
-}
+	col1, err := NewArrowColumn("col1", []int64{1, 2, 3, 4})
+	require.NoError(err, "col1")
+	col2, err := NewArrowColumn("col2", []float64{1, 2, 3, 4})
+	require.NoError(err, "col2")
+	idx, err := NewArrowColumn("idx1", []string{"a", "b", "c", "d"})
+	require.NoError(err, "idx1")
 
-// NewArrowFrame returns an error
-func NewArrowFrame(columns []Column, indices []Column, labels map[string]interface{}) (Frame, error) {
-	return nil, fmt.Errorf("no arrow")
+	cols := []Column{col1, col2}
+	idxs := []Column{idx}
+
+	frame, err := NewArrowFrame(cols, idxs, nil)
+	require.NoError(err, "new frame")
+	require.Equal(2, len(frame.Names()))
+
+	idxs2 := frame.Indices()
+	require.Equal(1, len(idxs2), "indices")
+	require.Equal(idx.Name(), idxs2[0].Name(), "index name")
 }

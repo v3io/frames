@@ -457,15 +457,16 @@ func (a *ArrowColumn) CopyWithName(newName string) Column {
 
 // ArrowFrame is an arrow backed frame
 type ArrowFrame struct {
-	table *arrow.Table
+	table   *arrow.Table
+	indices []string
 }
 
 // ArrowFrameFromTable returns ArrowFrame from underlying arrow.Table
-func ArrowFrameFromTable(table *arrow.Table) (*ArrowFrame, error) {
+func ArrowFrameFromTable(table *arrow.Table, indices []string) (*ArrowFrame, error) {
 	if table == nil {
 		return nil, errors.Errorf("nil table")
 	}
-	return &ArrowFrame{table}, nil
+	return &ArrowFrame{table, indices}, nil
 }
 
 // Labels returns frame lables
@@ -473,11 +474,13 @@ func (a *ArrowFrame) Labels() map[string]interface{} {
 	schema, err := a.table.Schema()
 	if err != nil {
 		// TODO: API change?
+		log.Printf("can't get labels - %s", err)
 		return nil
 	}
 
 	meta, err := schema.Metadata()
 	if err != nil {
+		log.Printf("can't get metadata - %s", err)
 		return nil
 	}
 
@@ -488,23 +491,40 @@ func (a *ArrowFrame) Labels() map[string]interface{} {
 
 	var labels map[string]interface{}
 	if err := json.Unmarshal([]byte(data), &labels); err != nil {
+		log.Printf("can't unmarshal metadata - %s", err)
 		return nil
 	}
 
 	return labels
 }
 
+func (a *ArrowFrame) isIndex(name string) bool {
+	for _, iname := range a.indices {
+		if name == iname {
+			return true
+		}
+	}
+
+	return false
+}
+
 // Names return the column names
 func (a *ArrowFrame) Names() []string {
 	n := a.table.NumCols()
-	names := make([]string, n)
+	names := make([]string, 0, n)
 	for i := 0; i < n; i++ {
 		col, err := a.table.ColByIndex(i)
 		if err != nil {
-			// TODO: Log or changes frames API
+			// TODO: Change frames API?
+			log.Printf("can't get column at index %d", i)
 			return nil
 		}
-		names[i] = col.Field().Name()
+		name := col.Field().Name()
+		if a.isIndex(name) {
+			continue
+		}
+
+		names = append(names, name)
 	}
 
 	return names
@@ -512,7 +532,16 @@ func (a *ArrowFrame) Names() []string {
 
 // Indices returns nil since arrow don't have indices
 func (a *ArrowFrame) Indices() []Column {
-	return nil
+	cols := make([]Column, 0, len(a.indices))
+	for _, name := range a.indices {
+		col, err := a.table.ColByName(name)
+		if err != nil {
+			log.Printf("unknown index column name - %q", name)
+			continue
+		}
+		cols = append(cols, &ArrowColumn{col})
+	}
+	return cols
 }
 
 // Len returns number of rows
@@ -538,7 +567,7 @@ func (a *ArrowFrame) Slice(start int, end int) (Frame, error) {
 		return nil, err
 	}
 
-	return &ArrowFrame{t}, nil
+	return &ArrowFrame{t, a.indices}, nil
 }
 
 // IterRows returns an iterator over rows
@@ -561,7 +590,15 @@ func encodeLables(labels map[string]interface{}) (map[string]string, error) {
 }
 
 // NewArrowFrame returns a new Frame
-func NewArrowFrame(columns []Column, labels map[string]interface{}) (Frame, error) {
+func NewArrowFrame(columns []Column, indices []Column, labels map[string]interface{}) (Frame, error) {
+	// Arrow tables don't have indices, we combine the columns
+	allCols := make([]Column, len(columns)+len(indices))
+	copy(allCols, columns)
+	copy(allCols[len(columns):], indices)
+	indexNames := make([]string, 0, len(indices))
+	for _, col := range indices {
+		indexNames = append(indexNames, col.Name())
+	}
 
 	var meta map[string]string
 	var err error
@@ -572,8 +609,8 @@ func NewArrowFrame(columns []Column, labels map[string]interface{}) (Frame, erro
 		}
 	}
 
-	acols := make([]*arrow.Column, len(columns))
-	for i, col := range columns {
+	acols := make([]*arrow.Column, len(allCols))
+	for i, col := range allCols {
 		acol, ok := col.(*ArrowColumn)
 		if !ok {
 			return nil, fmt.Errorf("%d of %T - not *ArrowColumn", i, col)
@@ -586,5 +623,5 @@ func NewArrowFrame(columns []Column, labels map[string]interface{}) (Frame, erro
 		return nil, errors.Wrap(err, "can't create arrow table")
 	}
 
-	return &ArrowFrame{tbl}, nil
+	return &ArrowFrame{tbl, indexNames}, nil
 }

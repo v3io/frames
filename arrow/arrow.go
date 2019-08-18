@@ -406,6 +406,7 @@ func NewColumn(field *Field, arr *Array) (*Column, error) {
 
 // Field returns the column field
 func (c *Column) Field() *Field {
+	fmt.Println("<DGB>", c.ptr)
 	ptr := C.column_field(c.ptr)
 	return &Field{ptr}
 }
@@ -516,10 +517,6 @@ func (t *Table) Schema() (*Schema, error) {
 func NewTableFromColumns(columns []*Column, meta Metadata) (*Table, error) {
 	fields := make([]*Field, len(columns))
 	cptr := C.columns_new()
-	defer func() {
-		// FIXME
-		// C.columns_free(cptr)
-	}()
 
 	for i, col := range columns {
 		fields[i] = col.Field()

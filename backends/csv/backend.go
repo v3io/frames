@@ -375,7 +375,7 @@ func (it *FrameIterator) buildFrame(rows [][]string) (frames.Frame, error) {
 	}
 
 	if it.useArrow {
-		return frames.NewArrowFrame(columns, nil)
+		return frames.NewArrowFrame(columns, nil, nil)
 	}
 
 	return frames.NewFrame(columns, nil, nil)
