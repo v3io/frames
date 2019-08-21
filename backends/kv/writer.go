@@ -22,11 +22,10 @@ package kv
 
 import (
 	"fmt"
-	"strings"
-	"time"
-
 	"github.com/nuclio/logger"
 	v3io "github.com/v3io/v3io-go/pkg/dataplane"
+	"strings"
+	"time"
 
 	"github.com/v3io/frames"
 	"github.com/v3io/frames/backends/utils"
@@ -47,6 +46,12 @@ type Appender struct {
 	asyncErr      error
 	rowsProcessed int
 }
+
+const (
+	errorCodeString              = "ErrorCode"
+	falseConditionOuterErrorCode = "184549378"
+	falseConditionInnerErrorCode = "385876025"
+)
 
 // Write support writing to backend
 func (kv *Backend) Write(request *frames.WriteRequest) (frames.FrameAppender, error) {
@@ -354,8 +359,13 @@ func (a *Appender) respWaitLoop(timeout time.Duration) {
 			timer.Reset(timeout)
 
 			if resp.Error != nil {
-				a.logger.ErrorWith("failed write response", "error", resp.Error)
-				a.asyncErr = resp.Error
+				// If condition was evaluated as false log this and discard error.
+				if isFalseConditionError(resp.Error) {
+					a.logger.Info("condition was evaluated to false for item %v", resp.Request().Input)
+				} else {
+					a.logger.ErrorWith("failed write response", "error", resp.Error)
+					a.asyncErr = resp.Error
+				}
 			}
 
 			if requests == responses {
@@ -424,4 +434,17 @@ func (a *Appender) validateSchema(frame frames.Frame) error {
 	}
 
 	return nil
+}
+
+// Check if the current error was caused specifically because the condition was evaluated to false.
+func isFalseConditionError(err error) bool {
+	errString := err.Error()
+
+	if strings.Count(errString, errorCodeString) == 2 &&
+		strings.Contains(errString, falseConditionOuterErrorCode) &&
+		strings.Contains(errString, falseConditionInnerErrorCode) {
+		return true
+	}
+
+	return false
 }
