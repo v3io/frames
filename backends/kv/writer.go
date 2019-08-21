@@ -22,14 +22,14 @@ package kv
 
 import (
 	"fmt"
-	"github.com/nuclio/logger"
-	v3io "github.com/v3io/v3io-go/pkg/dataplane"
 	"strings"
 	"time"
 
+	"github.com/nuclio/logger"
 	"github.com/v3io/frames"
 	"github.com/v3io/frames/backends/utils"
 	"github.com/v3io/frames/v3ioutils"
+	v3io "github.com/v3io/v3io-go/pkg/dataplane"
 )
 
 // Appender is key/value appender
