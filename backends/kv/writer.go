@@ -22,16 +22,14 @@ package kv
 
 import (
 	"fmt"
-	"strconv"
 	"strings"
 	"time"
 
 	"github.com/nuclio/logger"
-	v3io "github.com/v3io/v3io-go/pkg/dataplane"
-
 	"github.com/v3io/frames"
 	"github.com/v3io/frames/backends/utils"
 	"github.com/v3io/frames/v3ioutils"
+	v3io "github.com/v3io/v3io-go/pkg/dataplane"
 )
 
 // Appender is key/value appender
@@ -48,6 +46,12 @@ type Appender struct {
 	asyncErr      error
 	rowsProcessed int
 }
+
+const (
+	errorCodeString              = "ErrorCode"
+	falseConditionOuterErrorCode = "184549378"
+	falseConditionInnerErrorCode = "385876025"
+)
 
 // Write support writing to backend
 func (kv *Backend) Write(request *frames.WriteRequest) (frames.FrameAppender, error) {
@@ -84,8 +88,17 @@ func (a *Appender) Add(frame frames.Frame) error {
 	if len(names) == 0 {
 		return fmt.Errorf("empty frame")
 	}
+	if len(frame.Indices()) > 1 {
+		return fmt.Errorf("can't set key from multi-index frame")
+	}
 
-	if a.request.Expression != ""{
+	// In case we are getting several frames to update, validate they all have the same schema
+	err := a.validateSchema(frame)
+	if err != nil {
+		return err
+	}
+
+	if a.request.Expression != "" {
 		return a.update(frame)
 	}
 
@@ -94,6 +107,9 @@ func (a *Appender) Add(frame frames.Frame) error {
 	var newSchema v3ioutils.V3ioSchema
 	if indices := frame.Indices(); len(indices) > 0 {
 		indexName = indices[0].Name()
+		if indexName == "" {
+			indexName = a.schema.(*v3ioutils.OldV3ioSchema).Key
+		}
 		newSchema = v3ioutils.NewSchema(indexName)
 		newSchema.AddColumn(indexName, indices[0], false)
 	} else {
@@ -121,7 +137,7 @@ func (a *Appender) Add(frame frames.Frame) error {
 		}
 	}
 
-	err := a.schema.UpdateSchema(a.container, a.tablePath, newSchema)
+	err = a.schema.UpdateSchema(a.container, a.tablePath, newSchema)
 	if err != nil {
 		return err
 	}
@@ -179,11 +195,6 @@ func (a *Appender) Add(frame frames.Frame) error {
 
 // update updates rows from a frame
 func (a *Appender) update(frame frames.Frame) error {
-	names := frame.Names()
-	if len(names) == 0 {
-		return fmt.Errorf("empty frame")
-	}
-
 	indexVal, err := a.indexValFunc(frame)
 	if err != nil {
 		return err
@@ -284,10 +295,6 @@ func (a *Appender) indexValFunc(frame frames.Frame) (func(int) interface{}, erro
 	var indexCol frames.Column
 
 	if indices := frame.Indices(); len(indices) > 0 {
-		if len(indices) != 1 {
-			return nil, fmt.Errorf("can't set key from multi-index frame")
-		}
-
 		indexCol = indices[0]
 	} else {
 		// If no index column exist use range index
@@ -302,12 +309,12 @@ func (a *Appender) indexValFunc(frame frames.Frame) (func(int) interface{}, erro
 	case frames.IntType:
 		fn = func(i int) interface{} {
 			ival, _ := indexCol.IntAt(i)
-			return strconv.FormatInt(int64(ival), 10)
+			return ival
 		}
 	case frames.FloatType:
 		fn = func(i int) interface{} {
 			fval, _ := indexCol.FloatAt(i)
-			return strconv.FormatFloat(fval, 'f', -1, 64)
+			return fval
 		}
 	case frames.StringType:
 		fn = func(i int) interface{} {
@@ -317,15 +324,15 @@ func (a *Appender) indexValFunc(frame frames.Frame) (func(int) interface{}, erro
 	case frames.TimeType:
 		fn = func(i int) interface{} {
 			tval, _ := indexCol.TimeAt(i)
-			return tval.Format(time.RFC3339Nano)
+			return tval
 		}
 	case frames.BoolType:
 		fn = func(i int) interface{} {
 			bval, _ := indexCol.BoolAt(i)
 			if bval {
-				return "true"
+				return true
 			}
-			return "false"
+			return false
 		}
 	default:
 		return nil, fmt.Errorf("unknown column type - %v", indexCol.DType())
@@ -352,8 +359,13 @@ func (a *Appender) respWaitLoop(timeout time.Duration) {
 			timer.Reset(timeout)
 
 			if resp.Error != nil {
-				a.logger.ErrorWith("failed write response", "error", resp.Error)
-				a.asyncErr = resp.Error
+				// If condition was evaluated as false log this and discard error.
+				if isFalseConditionError(resp.Error) {
+					a.logger.Info("condition was evaluated to false for item %v", resp.Request().Input)
+				} else {
+					a.logger.ErrorWith("failed write response", "error", resp.Error)
+					a.asyncErr = resp.Error
+				}
 			}
 
 			if requests == responses {
@@ -377,4 +389,62 @@ func (a *Appender) respWaitLoop(timeout time.Duration) {
 			active = false
 		}
 	}
+}
+
+func (a *Appender) validateSchema(frame frames.Frame) error {
+	prevSchema := a.schema.(*v3ioutils.OldV3ioSchema)
+
+	// Assume that no fields means it's the first frame to save, so no validation is required
+	if len(prevSchema.Fields) == 0 {
+		return nil
+	}
+
+	indexes := frame.Indices()
+	if len(indexes) == 1 && indexes[0].Name() != prevSchema.Key {
+		return fmt.Errorf("index name mismatch. previous frame index was '%v', current frame index is '%v'",
+			prevSchema.Key, indexes[0].Name())
+	}
+	// Number of columns should be the same (schema fields contains also an index field
+	numberOfPreviousFields, numberOfCurrentFields := len(prevSchema.Fields)-1, len(frame.Names())
+	if numberOfCurrentFields != numberOfPreviousFields {
+		var fieldsList []string
+		for _, f := range prevSchema.Fields {
+			if f.Name != prevSchema.Key {
+				fieldsList = append(fieldsList, f.Name)
+			}
+		}
+		return fmt.Errorf("columns number mismatch. previous frames had %v columns %v while current have %v columns %v",
+			len(prevSchema.Fields), fieldsList, len(frame.Names()), frame.Names())
+	}
+
+	for _, fieldName := range frame.Names() {
+		found, field := v3ioutils.ContainsField(prevSchema.Fields, fieldName)
+
+		if !found {
+			return fmt.Errorf("columns mismatch. "+
+				"column '%v' exist in current frame and did not existed in previous frames",
+				fieldName)
+		}
+		col, _ := frame.Column(fieldName)
+		currentType := v3ioutils.ConvertDTypeToString(col.DType())
+		if field.Type != currentType {
+			return fmt.Errorf("column type mismatch. column '%v' expected type '%v' but got type '%v'",
+				fieldName, field.Type, currentType)
+		}
+	}
+
+	return nil
+}
+
+// Check if the current error was caused specifically because the condition was evaluated to false.
+func isFalseConditionError(err error) bool {
+	errString := err.Error()
+
+	if strings.Count(errString, errorCodeString) == 2 &&
+		strings.Contains(errString, falseConditionOuterErrorCode) &&
+		strings.Contains(errString, falseConditionInnerErrorCode) {
+		return true
+	}
+
+	return false
 }
