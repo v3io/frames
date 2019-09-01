@@ -74,7 +74,7 @@ class Client(ClientBase):
             'limit': limit,
             'data_format': data_format,
             'row_layout': row_layout,
-            'max_in_message': max_in_message,
+            'message_limit': max_in_message,
             'marker': marker,
         }
 
