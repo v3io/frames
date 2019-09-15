@@ -126,7 +126,10 @@ func (s *OldV3ioSchema) merge(new *OldV3ioSchema) (bool, error) {
 			}
 		}
 
-		if index >= 0 && field.Type != s.Fields[index].Type {
+		if index < 0 {
+			s.Fields = append(s.Fields, field)
+			changed = true
+		} else if field.Type != s.Fields[index].Type {
 			if field.Type == StringType {
 				s.Fields[index].Type = StringType
 				changed = true
@@ -143,9 +146,6 @@ func (s *OldV3ioSchema) merge(new *OldV3ioSchema) (bool, error) {
 				return changed, fmt.Errorf(
 					"Schema change from %s to %s is not allowed", s.Fields[index].Type, field.Type)
 			}
-		} else {
-			s.Fields = append(s.Fields, field)
-			changed = true
 		}
 	}
 
