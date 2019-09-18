@@ -21,6 +21,7 @@ such restriction.
 package v3ioutils
 
 import (
+	"net/http"
 	"strings"
 
 	"encoding/binary"
@@ -29,6 +30,7 @@ import (
 	"github.com/v3io/frames"
 	v3io "github.com/v3io/v3io-go/pkg/dataplane"
 	v3iohttp "github.com/v3io/v3io-go/pkg/dataplane/http"
+	v3ioerrors "github.com/v3io/v3io-go/pkg/errors"
 	"github.com/v3io/v3io-tsdb/pkg/utils"
 )
 
@@ -108,7 +110,7 @@ func AsInt64Array(val []byte) []uint64 {
 }
 
 // DeleteTable deletes a table
-func DeleteTable(logger logger.Logger, container v3io.Container, path, filter string, workers int) error {
+func DeleteTable(logger logger.Logger, container v3io.Container, path, filter string, workers int, ignoreMissing bool) error {
 
 	fileNameChan := make(chan string, 1024)
 	getItemsTerminationChan := make(chan error, workers)
@@ -132,10 +134,13 @@ func DeleteTable(logger logger.Logger, container v3io.Container, path, filter st
 		select {
 		case err := <-getItemsTerminationChan:
 			if err != nil {
-				for i := 0; i < 2*workers; i++ {
-					onErrorTerminationChannel <- struct{}{}
+				// If requested to ignore non-existing tables do not return error.
+				if !ignoreMissing || err.(v3ioerrors.ErrorWithStatusCode).StatusCode() != http.StatusNotFound {
+					for i := 0; i < 2*workers; i++ {
+						onErrorTerminationChannel <- struct{}{}
+					}
+					return errors.Wrapf(err, "GetItems failed during recursive delete of '%s'.", path)
 				}
-				return errors.Wrapf(err, "GetItems failed during recursive delete of '%s'.", path)
 			}
 			getItemsTerminated++
 			if getItemsTerminated == workers {
