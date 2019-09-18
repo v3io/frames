@@ -135,8 +135,7 @@ func DeleteTable(logger logger.Logger, container v3io.Container, path, filter st
 		case err := <-getItemsTerminationChan:
 			if err != nil {
 				// If requested to ignore non-existing tables do not return error.
-				if errorWithStatusCode, ok := err.(v3ioerrors.ErrorWithStatusCode);
-					!ok || !ignoreMissing || errorWithStatusCode.StatusCode() != http.StatusNotFound {
+				if errorWithStatusCode, ok := err.(v3ioerrors.ErrorWithStatusCode); !ok || !ignoreMissing || errorWithStatusCode.StatusCode() != http.StatusNotFound {
 					for i := 0; i < 2*workers; i++ {
 						onErrorTerminationChannel <- struct{}{}
 					}
