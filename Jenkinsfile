@@ -16,7 +16,7 @@ podTemplate(label: "${git_project}-${label}", inheritFrom: "jnlp-docker-golang-p
             withCredentials([
                     string(credentialsId: git_deploy_user_token, variable: 'GIT_TOKEN'),
                     string(credentialsId: 'frames-ci-url', variable: 'FRAMES_CI_URL'),
-                    usernamePassword(credentialsId: 'frames-ci-user', passwordVariable: 'FRAMES_CI_PASSWORD', usernameVariable: 'FRAMES_CI_USERNAME'),
+                    usernamePassword(credentialsId: 'frames-ci-user-credentials', passwordVariable: 'FRAMES_CI_PASSWORD', usernameVariable: 'FRAMES_CI_USERNAME'),
             ]) {
                 github.branch(git_deploy_user, git_project, git_project_user, git_project_upstream_user, true, GIT_TOKEN) {
                     parallel(
