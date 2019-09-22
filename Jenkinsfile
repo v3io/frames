@@ -50,7 +50,8 @@ podTemplate(label: "${git_project}-${label}", inheritFrom: "jnlp-docker-golang-p
                             'test-go': {
                                 container('golang') {
                                     dir("${github.BUILD_FOLDER}/src/github.com/${git_project_upstream_user}/${git_project}") {
-                                        common.shellc("make test-go")
+                                        session='{"url":"192.168.224.147:8081","container":"bigdata","user":"iguazio","password":"datal@ke!"}'
+                                        common.shellc("V3IO_SESSION='${session}' make test-go")
                                     }
                                 }
                             },
