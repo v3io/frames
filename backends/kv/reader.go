@@ -57,6 +57,13 @@ func (kv *Backend) Read(request *frames.ReadRequest) (frames.FrameIterator, erro
 		return nil, err
 	}
 
+	container, tablePath, err = kv.newConnectionWithRequestChannelLength(request.Proto.Session,
+		request.Password.Get(),
+		request.Token.Get(),
+		request.Proto.Table,
+		true,
+		len(partitions)*kv.numWorkers)
+
 	input := v3io.GetItemsInput{Filter: request.Proto.Filter, AttributeNames: columns}
 	kv.logger.DebugWith("read input", "input", input, "request", request)
 
