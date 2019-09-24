@@ -72,7 +72,11 @@ client.write(backend='kv', table='mytable', dfs=df)
 
 #### backend specific parameters
 ##### KV
+<!--
 * expression=' ' (optional) - for detailed information on update expressions see [docs](https://www.iguazio.com/docs/reference/latest-release/expressions/update-expression/)
+-->
+  <!-- [IntInfo] [c-no-update-expression-support] (24.9.19) See Bug IG-12510,
+    Requirement IG-5339, & DOC IG-12272. -->
 * condition=' ' (optional) - for detailed information on condition expressions see [docs](https://www.iguazio.com/docs/reference/latest-release/expressions/condition-expression/)
 
 Example:
@@ -179,9 +183,12 @@ Currently no `execute` commands are available for the TSDB backend.
 
 ##### KV
 * infer, inferschema - inferring and creating a schema file for a given kv table.
-Example: `client.execute(backend='kv', table='mytable', command='infer')`
+  Example: `client.execute(backend='kv', table='mytable', command='infer')`
+<!--
 * update - perform an update expression for a specific key.
 Example: `client.execute(backend='kv', table='mytable', command='update', args={'key': 'somekey', 'expression': 'col2=30', 'condition': 'col3>15'})`
+-->
+  <!-- [IntInfo] [c-no-update-expression-support] -->
 
 ##### Stream
 * put - putting a new object to a stream.
