@@ -94,6 +94,7 @@ All Frames operations are executed via an object of the `Client` class.
 
 - [Syntax](#client-constructor-syntax)
 - [Parameters and Data Members](#client-constructor-parameters)
+- [Return Value](#client-constructor-return-value)
 - [Example](#client-constructor-example)
 
 <a id="client-constructor-syntax"></a>
@@ -142,6 +143,11 @@ Client(address='', container='', user='', password='', token='')
   - **Type:** `str`
   - **Requirement:** Required when neither the [`user`](#client-param-user) or [`password`](#client-param-password) parameters or the authentication environment variables are set.
     See [User Authentication](#user-authentication).
+
+<a id="client-constructor-return-value"></a>
+#### Return Value
+
+Returns a new Frames `Client` data object.
 
 <a id="client-constructor-example"></a>
 #### Example
