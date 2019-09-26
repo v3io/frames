@@ -60,11 +60,12 @@ class ClientBase:
         backend : str
             Backend name ('kv', 'tsdb', 'stream')
         table : str
-            Table to query; ignored when `query` is set to a query on a specific table
+            Table to query; ignored when `query` references a specific table
         query : str
             Query string, in SQL format
         columns : []str
-            List of item attributes (columns) to return; can't be used with `query`
+            List of item attributes (columns) to return;
+            can't be used with `query`
         filter : str
             Query filter; can't be used with `query`
         group_by : str
@@ -118,11 +119,11 @@ class ClientBase:
             Backend name
         table : str
             Table to write to
-        dfs : a single DataFrame, a list of DataFrames, or a DataFrames iterator
+        dfs : a single DataFrame, a DataFrames list, or a DataFrames iterator
             DataFrames to write
         expression : str
-            A platform update expression that determines how to update the table
-            for all items in the DataFrame [Not supported in this version]
+            A platform update expression that determines the update logic for
+            all items in the DataFrame [Not supported in this version]
         condition : str
             A platform condition expression that defines a condition for
             performing the write operation
