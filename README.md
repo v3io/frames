@@ -109,10 +109,14 @@ Client(address='', container='', user='', password='', token='')
 
 - <a id="client-param-address"></a>**address** &mdash; The address of the Frames service (`framesdb`).
   <br/>
-  When running locally on the platform (for example, from a Jupyter Notebook service), set this parameter to `framesd:8081`.
+  When running locally on the platform (for example, from a Jupyter Notebook service), set this parameter to `framesd:8081` to use the gRPC (recommended) or to `framesd:8080` to use HTTP.
   <br/>
   When connecting to the platform remotely, set this parameter to the API address of Frames platform service of the parent tenant.
   You can copy this address from the **API** column of the V3IO Frames service on the **Services** platform dashboard page.
+  <!-- [IntInfo] In platform command-line environments, such as Jupyter
+    Notebook, the local-execution Frames port numbers are saved in
+    FRAMESD_SERVICE_PORT_GRPC and FRAMESD_SERVICE_PORT environment variables.
+  -->
 
   - **Type:** `str`
   - **Requirement:** Required 
@@ -200,6 +204,8 @@ create(backend, table, attrs=None)
 <!--
 create(backend, table, attrs=None, schema=None)
 -->
+<!-- [IntInfo] (26.9.19) The `schema` parameter is used only with the `csv`
+ test backend. -->
 
 <a id="method-create-common-params"></a>
 #### Common create Parameters
