@@ -25,18 +25,22 @@ FAIL = fpb.FAIL
 class ClientBase:
     def __init__(self, address, session, frame_factory=pd.DataFrame,
                  concat=pd.concat):
-        """Create new client
+        """Creates a new Frames client object
 
         Parameters
         ----------
         address : str
-            framesd server address
+            Address of the Frames service (framesd)
         session : Session
             Session object
         frame_factory : class
-            DataFrame factory (currencly pandas and cudf supported)
+            DataFrame factory; currently, pandas and cuDF are supported
         concat : function
-            Function to concat DataFrames
+            Function for concatenating DataFrames; default: pandas concat
+
+        Return Value
+        ----------
+        A new `Client` object
         """
         address = address or environ.get('V3IO_FRAMESD')
         if not address:
@@ -49,40 +53,45 @@ class ClientBase:
     def read(self, backend='', table='', query='', columns=None, filter='',
              group_by='', limit=0, data_format='', row_layout=False,
              max_in_message=0, marker='', iterator=False, **kw):
-        """Run a query
+        """Reads data from a table or stream (run a data query)
 
         Common Parameters
         ----------
         backend : str
             Backend name ('kv', 'tsdb', 'stream')
         table : str
-            Table to query (can't be used with query)
+            Table to query; ignored when `query` is set to a query on a specific table
         query : str
-            Query in SQL format
+            Query string, in SQL format
         columns : []str
-            List of columns to pass (can't be used with query)
+            List of item attributes (columns) to return; can't be used with `query`
         filter : str
-            Query filter (can't be used with query)
+            Query filter; can't be used with `query`
         group_by : str
-            Query group by (can't be used with query)
+            A group-by query string; can't be used with `query`
         limit: int
-            Maximal number of rows to return
+            Maximum number of rows to return
         data_format : str
             Data format
         row_layout : bool
-            Weather to use row layout (vs the default column layout)
+            True to use a row layout; False (default) to use a column layout
+            [Not supported in this version]
         max_in_message : int
-            Maximal number of rows per message
+            Maximum number of rows per message
         marker : str
-            Query marker (can't be used with query)
+            Query marker; can't be used with the `query` parameter
         iterator : bool
-            Return iterator of DataFrames or (if False) just one DataFrame
+            True - return a DataFrames iterator;
+            False (default) - return a single DataFrame
         **kw
             Extra parameter for specific backends
 
-        Returns:
-            A pandas DataFrame iterator. Each DataFrame will have "labels"
-            attribute. If `iterator` is False will return a single DataFrame.
+        Return Value
+        ----------
+            - When `iterator` is False (default) - returns a single DataFrame.
+            - When `iterator` is True - returns a DataFrames iterator.
+            The returned DataFrames include a "labels" DataFrame attribute with
+            backend-specific data, if applicable.
         """
         if not backend:
             raise ReadError('no backend')
@@ -101,7 +110,7 @@ class ClientBase:
     def write(self, backend, table, dfs, expression='', condition='',
               labels=None, max_in_message=0, index_cols=None,
               partition_keys=None):
-        """Write to table
+        """Writes data to a table or stream
 
         Parameters
         ----------
@@ -109,21 +118,26 @@ class ClientBase:
             Backend name
         table : str
             Table to write to
-        dfs : iterable of DataFrame or a single data frame
-            Frames to write
+        dfs : a single DataFrame, a list of DataFrames, or a DataFrames iterator
+            DataFrames to write
         expression : str
-            Write expression
+            A platform update expression that determines how to update the table
+            for all items in the DataFrame [Not supported in this version]
         condition : str
-            Write condition
+            A platform condition expression that defines a condition for
+            performing the write operation
         labels : dict
-            Set of lables
+            Dictionary of labels; currently, used only with the "tsdb" backend
         max_in_message : int
-            Maximal number of rows to send per message
-        index_cols : list of str
-            Columns to use as indices
-        partition_keys : list of str
-            Partition keys
-        Returns:
+            Maximum number of rows to send per message
+        index_cols : []str
+            List of column names to be used as the index columns for the write
+            operation; by default, the DataFrame's index columns are used
+        partition_keys : []str
+            Partition keys [Not supported in this version]
+
+        Return Value
+        ----------
             Write result
         """
         self._validate_request(backend, table, WriteError)
@@ -138,7 +152,7 @@ class ClientBase:
         return self._write(request, dfs, labels, index_cols)
 
     def create(self, backend, table, attrs=None, schema=None, if_exists=FAIL):
-        """Create a table
+        """Creates a new TSDB table or a stream
 
         Parameters
         ----------
@@ -147,7 +161,7 @@ class ClientBase:
         table : str
             Table to create
         attrs : dict
-            Table attributes
+            A dictionary of backend-specific parameters (arguments)
         schema: Schema or None
             Table schema
         if_exists : int
@@ -163,7 +177,7 @@ class ClientBase:
 
     def delete(self, backend, table, filter='', start='', end='',
                if_missing=FAIL):
-        """Delete a table
+        """Deletes a table or stream or specific table items
 
         Parameters
         ----------
@@ -174,9 +188,17 @@ class ClientBase:
         filter : str
             Filter for selective delete
         start : string
-            Delete since start (TSDB/Stream)
+             (`tsdb` backend only) Start (minimum) metric-sample time for the
+             delete operation, as a string containing an RFC 3339 time, a Unix
+             timestamp in milliseconds, a relative time (`"now"` or
+             `"now-[0-9]+[mhd]"`, where `m` = minutes, `h` = hours, and `'d'` =
+             days), or 0 for the earliest time; the default is <end time> - 1h
         end : string
-            Delete up to end (TSDB/Stream)
+             (`tsdb` backend only) End (maximum) metric-sample time for the
+             delete operation, as a string containing an RFC 3339 time, a Unix
+             timestamp in milliseconds, a relative time (`"now"` or
+             `"now-[0-9]+[mhd]"`, where `m` = minutes, `h` = hours, and `'d'` =
+             days), or 0 for the earliest time; the default is "now"
         if_missing : int
             One of IGNORE or FAIL
 
@@ -189,7 +211,7 @@ class ClientBase:
         return self._delete(backend, table, filter, start, end, if_missing)
 
     def execute(self, backend, table, command='', args=None, expression=''):
-        """Execute a command
+        """Executes a custom command on a table or stream
 
         Parameters
         ----------
@@ -200,7 +222,7 @@ class ClientBase:
         command : str
             Command to execute
         args : dict
-            Command arguments
+            A dictionary of command-specific parameters (arguments)
         expression : str
             Command expression
 
