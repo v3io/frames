@@ -184,7 +184,6 @@ The `create` method is supported by the `tsdb` and `stream` backends, but not by
 - [Common parameters](#method-create-common-params)
 - [`tsdb` backend `create` parameters](#method-create-params-tsdb)
 - [`stream` backend `create` parameters](#method-create-params-stream)
-- [Return Value](#method-create-return-value)
 
 <a id="method-create-syntax"></a>
 #### Syntax
@@ -249,11 +248,6 @@ Example:
 ```python
 client.create("stream", "/mystream", attrs={"shards": 6})
 ```
-
-<a id="method-create-return-value"></a>
-#### Return Value
-
-Returns a new Frames `Client` data object.
 
 <a id="method-write"></a>
 ### write Method
