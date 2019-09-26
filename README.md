@@ -19,11 +19,11 @@ V3IO Frames (**"Frames"**) is a multi-model open-source data-access library, dev
 - [User Authentication](#user-authentication)
 - [Client Constructor](#client-constructor)
 - [Common Client Method Parameters](#client-common-method-params)
-- [The create Method](#method-create)
-- [The write Method](#method-write)
-- [The read Method](#method-read)
-- [The delete Method](#method-delete)
-- [The execute Method](#method-execute)
+- [create Method](#method-create)
+- [write Method](#method-write)
+- [read Method](#method-read)
+- [delete Method](#method-delete)
+- [execute Method](#method-execute)
 
 <a id="api-reference-overview"></a>
 ### Overview
@@ -41,11 +41,12 @@ You can then use the client methods to perform different data operations on the 
 
 The `Client` class features the following methods for supporting basic data operations:
 
-- [`create`](#method-create) &mdash; create a new NoSQL or TSDB table or a stream ("the backend").
-- [`delete`](#method-delete) &mdash; delete the backend.
-- [`read`](#method-read) &mdash; read data from the backend (as a pandas DataFrame or DataFrame iterator).
-- [`write`](#method-write) &mdash; write one or more DataFrames to the backend.
-- [`execute`](#method-execute) &mdash; execute a command on the backend. Each backend may support multiple commands.
+- [`create`](#method-create) &mdash; creates a new TSDB table or a stream ("backend data").
+- [`delete`](#method-delete) &mdash; deletes a table or stream or specific table items
+- [`read`](#method-read) &mdash; reads data from a table or stream into pandas DataFrames.
+- [`write`](#method-write) &mdash; writes data from pandas DataFrames to a table or stream.
+- [`execute`](#method-execute) &mdash; executes a custom command on a table or stream.
+  Each backend may support multiple commands.
 
 <a id="backend-types"></a>
 #### Backend Types
@@ -99,46 +100,46 @@ All Frames operations are executed via an object of the `Client` class.
 #### Syntax
 
 ```python
-Client(address, user, password, token, container)
+Client(address='', container='', user='', password='', token='')
 ```
 
 <a id="client-constructor-parameters"></a>
 #### Parameters and Data Members
 
-- <a id="client-param-address"></a>**address** &mdash; the address of the Frames service (`framesdb`).
+- <a id="client-param-address"></a>**address** &mdash; The address of the Frames service (`framesdb`).
   <br/>
   When running locally on the platform (for example, from a Jupyter Notebook service), set this parameter to `framesd:8081`.
   <br/>
   When connecting to the platform remotely, set this parameter to the API address of Frames platform service of the parent tenant.
   You can copy this address from the **API** column of the V3IO Frames service on the **Services** platform dashboard page.
 
-  - **Type:** String
+  - **Type:** `str`
   - **Requirement:** Required 
 
-- <a id="client-param-container"></a>**container** &mdash; the name of the platform data container that contains the backend data.
+- <a id="client-param-container"></a>**container** &mdash; The name of the platform data container that contains the backend data.
   For example, `"bigdata"` or `"users"`.
 
-  - **Type:** String
+  - **Type:** `str`
   - **Requirement:** Required
 
-- <a id="client-param-user"></a>**user** &mdash; the username of a platform user with permissions to access the backend data.
+- <a id="client-param-user"></a>**user** &mdash; The username of a platform user with permissions to access the backend data.
 
-  - **Type:** String
+  - **Type:** `str`
   - **Requirement:** Required when neither the [`token`](#client-param-token) parameter or the authentication environment variables are set.
     See [User Authentication](#user-authentication).
     <br/>
     When the `user` parameter is set, the [`password`](#client-param-password) parameter must also be set to a matching user password.
 
-- <a id="client-param-password"></a>**password** &mdash; a platform password for the user configured in the [`user`](#client-param-user) parameter.
+- <a id="client-param-password"></a>**password** &mdash; A platform password for the user configured in the [`user`](#client-param-user) parameter.
 
-  - **Type:** String
+  - **Type:** `str`
   - **Requirement:** Required when the [`user`](#client-param-user) parameter is set.
     See [User Authentication](#user-authentication).
 
-- <a id="client-param-token"></a>**token** &mdash; a valid platform access key that allows access to the backend data.
+- <a id="client-param-token"></a>**token** &mdash; A valid platform access key that allows access to the backend data.
   To get this access key, select the user profile icon on any platform dashboard page, select **Access Tokens**, and copy an existing access key or create a new key.
 
-  - **Type:** String
+  - **Type:** `str`
   - **Requirement:** Required when neither the [`user`](#client-param-user) or [`password`](#client-param-password) parameters or the authentication environment variables are set.
     See [User Authentication](#user-authentication).
 
@@ -157,46 +158,75 @@ client = v3f.Client("framesd:8081", user="iguazio", password="mypass", container
 
 All client methods receive the following common parameters:
 
-- <a id="client-method-param-backend"></a>**backend** &mdash; the backend data type for the operation.
+- <a id="client-method-param-backend"></a>**backend** &mdash; The backend data type for the operation.
   See the backend-types descriptions in the [overview](#backend-types).
 
-  - **Type:** String
+  - **Type:** `str`
   - **Valid Values:** `"csv"` | `"kv"` | `"stream"` | `"tsdb"`
   - **Requirement:** Required
 
-- <a id="client-method-param-table"></a>**table** &mdash; the relative path to the backend data &mdash; a directory in the target platform data container (as configured for the client object) that represents a platform data collection, such as a TSDB or NoSQL table or a stream.
+- <a id="client-method-param-table"></a>**table** &mdash; The relative path to the backend data &mdash; A directory in the target platform data container (as configured for the client object) that represents a TSDB or NoSQL table or a data stream.
   For example, `"mytable"` or `"examples/tsdb/my_metrics"`.
 
-  - **Type:** String
-  - **Requirement:** Required
+  - **Type:** `str`
+  - **Requirement:** Required unless otherwise specified in the method-specific documentation
 
 Additional method-specific parameters are described for each method.
 
 <a id="method-create"></a>
 ### create Method
 
-Creates a new data collection (table/stream) in a platform data container according to the configured backend.
+Creates a new TSDB table or a stream in a platform data container, according to the specified backend type.
 
 The `create` method is supported by the `tsdb` and `stream` backends, but not by the `kv` backend, because NoSQL tables in the platform don't need to be created prior to ingestion; when ingesting data into a table that doesn't exist, the table is automatically created.
 
 - [Syntax](#method-create-syntax)
+- [Common parameters](#method-create-common-params)
 - [`tsdb` backend `create` parameters](#method-create-params-tsdb)
 - [`stream` backend `create` parameters](#method-create-params-stream)
+- [Return Value](#method-create-return-value)
 
 <a id="method-create-syntax"></a>
 #### Syntax
 
 ```python
-create(backend=<backend>, table=<table or stream>, attrs=<backend-specific parameters>)
+create(backend, table, attrs=None)
 ```
+<!--
+create(backend, table, attrs=None, schema=None)
+-->
+
+<a id="method-create-common-params"></a>
+#### Common create Parameters
+
+All Frames backends that support the `create` method support the following common parameters:
+
+- <a id="method-create-param-attrs"></a>**attrs** &mdash; A dictionary of `<argument name>: <value>` pairs for passing additional backend-specific parameters (arguments).
+
+  - **Type:** dict
+  - **Requirement:** Optional
+  - **Default Value:** `None`
 
 <a id="method-create-params-tsdb"></a>
 #### tsdb Backend create Parameters
 
-- <a id="method-create-tsdb-param-rate"></a>**rate** (Required) &mdash; `string` &mdash; the ingestion rate TSDB's metric-samples, as `"[0-9]+/[smh]"` (where `s` = seconds, `m` = minutes, and `h` = hours); for example, `"1/s"` (one sample per minute).
+The following `tsdb` backend parameters are passed via the [`attrs`](#method-create-param-attrs) parameter of the  `create` method:
+
+- <a id="method-create-tsdb-param-rate"></a>**rate** &mdash; The ingestion rate TSDB's metric-samples, as `"[0-9]+/[smh]"` (where `s` = seconds, `m` = minutes, and `h` = hours); for example, `"1/s"` (one sample per minute).
   The rate should be calculated according to the slowest expected ingestion rate.
-- <a id="method-create-tsdb-param-aggregates"></a>**aggregates** (Optional)
-- <a id="method-create-tsdb-param-aggregation"></a>**aggregation-granularity** (Optional)
+
+  - **Type:** `str`
+  - **Requirement:** Required
+
+- <a id="method-create-tsdb-param-aggregates"></a>**aggregates** &mdash; Default aggregates to calculate in real time during the samples ingestion, as a comma-separated list of supported aggregation functions.
+
+  - **Type:** `str`
+  - **Requirement:** Optional
+
+- <a id="method-create-tsdb-param-aggregation"></a>**aggregation-granularity** &mdash; Aggregation granularity; i.e., a time interval for applying the aggregation functions, if configured in the [`aggregates`](#method-create-tsdb-param-aggregates) parameter.
+
+  - **Type:** `str`
+  - **Requirement:** Optional
 
 For detailed information about these parameters, refer to the [V3IO TSDB documentation](https://github.com/v3io/v3io-tsdb#v3io-tsdb).
 
@@ -208,8 +238,10 @@ client.create("tsdb", "/mytable", attrs={"rate": "1/m"})
 <a id="method-create-params-stream"></a>
 #### stream Backend create Parameters
 
-- <a id="method-create-stream-param-shards"></a>**shards** (Optional) (default: `1`) &mdash; `int` &mdash; the number of stream shards to create.
-- <a id="method-create-stream-param-retention_hours"></a>**retention_hours** (Optional) (default: `24`) &mdash; `int` &mdash; the stream's retention period, in hours.
+The following `stream` backend parameters are passed via the [`attrs`](#method-create-param-attrs) parameter of the  `create` method:
+
+- <a id="method-create-stream-param-shards"></a>**shards** (Optional) (default: `1`) &mdash; `int` &mdash; The number of stream shards to create.
+- <a id="method-create-stream-param-retention_hours"></a>**retention_hours** (Optional) (default: `24`) &mdash; `int` &mdash; The stream's retention period, in hours.
 
 For detailed information about these parameters, refer to the [platform streams documentation](https://www.iguazio.com/docs/concepts/latest-release/streams).
 
@@ -218,32 +250,55 @@ Example:
 client.create("stream", "/mystream", attrs={"shards": 6})
 ```
 
+<a id="method-create-return-value"></a>
+#### Return Value
+
+Returns a new Frames `Client` data object.
+
 <a id="method-write"></a>
 ### write Method
 
-Writes data from a DataFrame to a data collection (table/stream) in a platform data container according to the configured backend.
+Writes data from a DataFrame to a table or stream in a platform data container, according to the specified backend type.
 
 - [Syntax](#method-write-syntax)
-- [Common parameters](#method-write-backend-common-params)
+- [Common parameters](#method-write-common-params)
+- [`tsdb` backend `write` parameters](#method-write-params-tsdb)
 - [`kv` backend `write` parameters](#method-write-params-kv)
 
 <a id="method-write-syntax"></a>
 #### Syntax
 
+<!--
 ```python
-write(backend=<backend>, table=<table>, attrs=<backend-specific parameters>)
+write(backend, table, dfs, expression='', condition='', labels=None,
+    max_in_message=0, index_cols=None, partition_keys=None)
+```
+-->
+<!-- [c-no-update-expression-support] -->
+```python
+write(backend, table, dfs, condition='', labels=None, max_in_message=0,
+    index_cols=None, partition_keys=None)
 ```
 
-<a id="method-write-backend-common-params"></a>
+- When the value of the [`iterator`](#method-read-param-iterator) parameter is `False` (default) &mdash; returns a single DataFrame.
+- When the value of the `iterator` parameter is `True` &mdash; returns a
+  DataFrames iterator.
+  The returned DataFrames include a `"labels"` DataFrame attribute with backend-specific data, if applicable; for example, for the `stream` backend, this attribute holds the sequence number of the last stream record that was read.
+
+<a id="method-write-common-params"></a>
 #### Common write Parameters
 
-All Frames backends that support the `write` method support the following common parameters, which can be set in the `attrs` method parameter:
+All Frames backends that support the `write` method support the following common parameters:
 
-- <a id="method-write-param-dfs"></a>**dfs** &mdash; list of DataFrames to write.
-- <a id="method-write-param-index_cols"></a>**index_cols** (Optional) (default: none) &mdash; specify specific index columns, by default DataFrame's index columns will be used.
-- <a id="method-write-param-labels"></a>**labels** (Optional) (default: none)
+- <a id="method-write-param-dfs"></a>**dfs** (Required) &mdash; A single DataFrame, a list of DataFrames, or a DataFrames iterator &mdash; One or more DataFrames containing the data to write.
+- <a id="method-write-param-index_cols"></a>**index_cols** (Optional) (default: `None`) &mdash; `[]str` &mdash; A list of column (attribute) names to be used as index columns for the write operation, regardless of any index-column definitions in the DataFrame.
+  By default, the DataFrame's index columns are used.
+  <br/>
+  > **Note:** The significance and supported number of index columns is backend specific.
+  > For example, the `kv` backend supports only a single index column for the primary-key item attribute, while the `tsdb` backend supports additional index columns for metric labels.
+- <a id="method-write-param-labels"></a>**labels** (Optional) (default: `None`) &mdash; This parameter is currently defined for all backends but is used only for the TSDB backend, therefore it's documented as part of the `write` method's [`tsdb` backend parameters](#method-write-params-tsdb).
 - <a id="method-write-param-max_in_message"></a>**max_in_message** (Optional) (default: `0`)
-- <a id="method-write-param-partition_keys"></a>**partition_keys** (Optional) (default: none) (**Not yet supported**)
+- <a id="method-writse-param-partition_keys"></a>**partition_keys** (Optional) (default: `None`) &mdash; `[]str` &mdash; [**Not supported in this version**]
 
 Example:
 ```python
@@ -253,22 +308,29 @@ df.set_index("name")
 client.write(backend="kv", table="mytable", dfs=df)
 ```
 
+<a id="method-write-params-tsdb"></a>
+#### tsdb Backend write Parameters
+
+- <a id="method-write-param-labels"></a>**labels** (Optional) (default: `None`) &mdash; `dict` &mdash; A dictionary of `<label name>: <label value>` pairs that define metric labels to add to all written metric-sample table items.
+  Note that the values of the metric labels must be of type string.
+
 <a id="method-write-params-kv"></a>
 #### kv Backend write Parameters
 
 <!--
-- <a id="method-write-kv-param-expression"></a>**expression** (Optional) (default: none) &mdash; a platform update expression that determines how to update the table.
+- <a id="method-write-kv-param-expression"></a>**expression** (Optional) (default: `None`) &mdash; A platform update expression that determines how to update the table for all items in the DataFrame.
   For detailed information about platform update expressions, see the [platform documentation](https://www.iguazio.com/docs/reference/latest-release/expressions/update-expression/).
 -->
   <!-- [IntInfo] [c-no-update-expression-support] (24.9.19) See Bug IG-12510,
-    Requirement IG-5339, & DOC IG-12272. The original write example below had
-    an `expression` parameter:
+    Requirement IG-5339, & DOC IG-12272. TODO: When update expressions are
+    supported, edit the doc here and for the `write` method's `expression`
+    parameter as well as the Frames help text. See v3io/tutorials commit 03c7feb
+    (PR #119) for removal of updated documentation of Frames update expressions.
+    The original write example below had an `expression` parameter:
 v3c.write(backend="kv", table="mytable", dfs=df, expression="city='NY'", condition="age>14")
     -->
-  <!-- [IntInfo] [c-no-update-expression-support] (24.9.19) See Bug IG-12510,
-    Requirement IG-5339, & DOC IG-12272. -->
 
-- <a id="method-write-kv-param-condition"></a>**condition** (Optional) (default: none) &mdash; a platform condition expression that defines conditions for performing the update.
+- <a id="method-write-kv-param-condition"></a>**condition** (Optional) (default: `None`) &mdash; A platform condition expression that defines conditions for performing the write operation.
   For detailed information about platform condition expressions, see the [platform documentation](https://www.iguazio.com/docs/reference/latest-release/expressions/condition-expression/).
 
 Example:
@@ -282,13 +344,14 @@ v3c.write(backend="kv", table="mytable", dfs=df, condition="age>14")
 <a id="method-read"></a>
 ### read Method
 
-Reads data from a data collection (table/stream) in a platform data container to a DataFrame according to the configured backend.
+Reads data from a table or stream in a platform data container to a DataFrame, according to the configured backend.
 
 - [Syntax](#method-read-syntax)
-- [Common parameters](#method-read-backend-common-params)
+- [Common parameters](#method-read-common-params)
 - [`tsdb` backend `read` parameters](#method-read-params-tsdb)
 - [`kv` backend `read` parameters](#method-read-params-kv)
 - [`stream` backend `read` parameters](#method-read-params-stream)
+- [Return Value](#method-read-return-value)
 
 Reads data from a backend.
 
@@ -296,33 +359,51 @@ Reads data from a backend.
 #### Syntax
 
 ```python
-read(backend=<backend>, table=<table>, attrs=<backend-specific parameters>)
+read(backend='', table='', query='', columns=None, filter='', group_by='',
+    limit=0, data_format='', row_layout=False, max_in_message=0, marker='',
+    iterator=False, **kw)
 ```
 
-<a id="method-read-backend-common-params"></a>
+<a id="method-read-common-params"></a>
 #### Common read Parameters
 
-All Frames backends that support the `read` method support the following common parameters, which can be set in the `attrs` method parameter:
+All Frames backends that support the `read` method support the following common parameters:
 
-- <a id="method-read-param-iterator"></a>**iterator** &mdash; `bool` &mdash; return iterator of DataFrames or (if False) just one DataFrame
-- <a id="method-read-param-filter"></a>**filter** &mdash; `string` &mdash; query filter (can't be used with query)
-- <a id="method-read-param-columns"></a>**columns** &mdash; `[]str` &mdash; list of columns to pass (can't be used with query)
-- <a id="method-read-param-data_format"></a>**data_format** &mdash; `string` &mdash; data format (**Not yet supported**)
-- <a id="method-read-param-marker"></a>**marker** &mdash; `string` &mdash; query marker (**Not yet supported**)
-- <a id="method-read-param-limit"></a>**limit** &mdash; `int` &mdash; maximal number of rows to return (**Not yet supported**)
-- <a id="method-read-param-row_layout"></a>**row_layout** &mdash; `bool` &mdash; weather to use row layout (vs the default column layout) (**Not yet supported**)
+- <a id="method-read-param-iterator"></a>**iterator** &mdash; (Optional) (default: `False`) &mdash; `bool` &mdash; `True` to return a DataFrames iterator; `False` to return a single DataFrame.
+- <a id="method-read-param-filter"></a>**filter** (Optional) &mdash; `str` &mdash; A query filter.
+  <br/>
+  This parameter can't be used concurrently with the `query` parameter.
+- <a id="method-read-param-columns"></a>**columns** &mdash; `[]str` &mdash; A list of attributes (columns) to return.
+  <br/>
+  This parameter can't be used concurrently with the `query` parameter.
+- <a id="method-read-param-data_format"></a>**data_format** &mdash; `str` &mdash; The data format. [**Not supported in this version**]
+- <a id="method-read-param-marker"></a>**marker** &mdash; `str` &mdash; A query marker. [**Not supported in this version**]
+- <a id="method-read-param-limit"></a>**limit** &mdash; `int` &mdash; The maximum number of rows to return. [**Not supported in this version**]
+- <a id="method-read-param-row_layout"></a>**row_layout** (Optional) (default: `False`) &mdash; `bool` &mdash; `True` to use a row layout; `False` (default) to use a column layout. [**Not supported in this version**]
 
 <a id="method-read-params-tsdb"></a>
 #### tsdb Backend read Parameters
 
-- <a id="method-read-tsdb-param-start"></a>**start** &mdash; `string`
-- <a id="method-read-tsdb-param-end"></a>**end** &mdash; `string`
-- <a id="method-read-tsdb-param-step"></a>**step** &mdash; `string`
-- <a id="method-read-tsdb-param-aggregators"></a>**aggregators** &mdash; `string`
-- <a id="method-read-tsdb-param-aggregationWindow"></a>**aggregationWindow** &mdash; `string`
-- <a id="method-read-tsdb-param-query"></a>**query** &mdash; `string` &mdash; query in SQL format
-- <a id="method-read-tsdb-param-group_by"></a>**group_by** &mdash; `string` &mdash; query group by (can't be used with query)
-- <a id="method-read-tsdb-param-multi_index"></a>**multi_index** &mdash; `bool` &mdash; get the results as a multi index data frame where the labels are used as indexes in addition to the timestamp, or if `False` (default behavior) only the timestamp will function as the index.
+- <a id="method-read-tsdb-param-start"></a>**start** &mdash; `str` &mdash; Start (minimum) time for the read operation, as a string containing an RFC 3339 time, a Unix timestamp in milliseconds, a relative time of the format `"now"` or `"now-[0-9]+[mhd]"` (where `m` = minutes, `h` = hours, and `'d'` = days), or 0 for the earliest time.
+  For example: `"2016-01-02T15:34:26Z"`; `"1451748866"`; `"now-90m"`; `"0"`.
+  <br/>
+  The default start time is `<end time> - 1h`.
+- <a id="method-read-tsdb-param-end"></a>**end** &mdash; `str` &mdash; End (maximum) time for the read operation, as a string containing an RFC 3339 time, a Unix timestamp in milliseconds, a relative time of the format `"now"` or `"now-[0-9]+[mhd]"` (where `m` = minutes, `h` = hours, and `'d'` = days), or 0 for the earliest time.
+  For example: `"2018-09-26T14:10:20Z"`; `"1537971006000"`; `"now-3h"`; `"now-7d"`.
+  <br/>
+  The default end time is `"now"`.
+- <a id="method-read-tsdb-param-step"></a>**step** (Optional) &mdash; `str` &mdash; For an aggregation query, this parameter specifies the aggregation interval for applying the aggregation functions; by default, the aggregation is applied to all sample data within the requested time range.<br/>
+  When the query doesn't include aggregates, this parameter specifies an interval for downsampling the raw sample data.
+- <a id="method-read-tsdb-param-aggregators"></a>**aggregators** (Optional) &mdash; `str` &mdash; Aggregation information to return, as a comma-separated list of supported aggregation functions.
+- <a id="method-read-tsdb-param-aggregationWindow"></a>**aggregationWindow** (Optional) &mdash; `str` &mdash; Aggregation interval for applying the aggregation functions, if set in the [`aggregators`](#"method-read-tsdb-param-aggregators) or [`query`](#method-read-tsdb-param-query) parameters.
+- <a id="method-read-tsdb-param-query"></a>**query** (Optional) &mdash; `str` &mdash; A query string in SQL format.
+  > **Note:** When the `query` parameter is set, you can either specify the target table within the query string (`FROM <table>`) or by setting the `table` parameter of the `read` method to the table path.
+  > When the `query` string specifies the target table, the value of the `table` parameter (if set) is ignored.
+- <a id="method-read-tsdb-param-group_by"></a>**group_by** (Optional) &mdash; `str` &mdash; A group-by query  string.
+  <br/>
+  This parameter can't be used concurrently with the `query` parameter.
+- <a id="method-read-tsdb-param-multi_index"></a>**multi_index** (Optional) &mdash; `bool` &mdash; `True` to receive the read results as multi-index DataFrames where the labels are used as index columns in addition to the metric sample-time primary-key attribute; `False` (default) only the timestamp will function as the index.
+  <!-- [IntInfo] This parameter is available via the `kw` read parameter. -->
 
 For detailed information about these parameters, refer to the [V3IO TSDB documentation](https://github.com/v3io/v3io-tsdb#v3io-tsdb).
 
@@ -336,12 +417,12 @@ df = client.read(backend="tsdb", query="select avg(cpu) as cpu, avg(diskio), avg
 
 - <a id="method-read-kv-param-reset_index"></a>**reset_index** &mdash; `bool` &mdash; Reset the index. When set to `false` (default), the DataFrame will have the key column of the v3io kv as the index column.
   When set to `true`, the index will be reset to a range index.
-- <a id="method-read-kv-param-max_in_message"></a>**max_in_message** &mdash; `int` &mdash; Maximal number of rows per message
-- <a id="method-read-kv-param-"></a>**sharding_keys** &mdash; `[]string` (**Experimental**) &mdash; a list of specific sharding keys to query, for range-scan formatted tables only.
-- <a id="method-read-kv-param-segments"></a>**segments** &mdash; `[]int64` (**Not yet supported**)
-- <a id="method-read-kv-param-total_segments"></a>**total_segments** &mdash; `int64` (**Not yet supported**)
-- <a id="method-read-kv-param-sort_key_range_start"></a>**sort_key_range_start** &mdash; `string` (**Not yet supported**)
-- <a id="method-read-kv-param-sort_key_range_end"></a>**sort_key_range_end** &mdash; `string` (**Not yet supported**)
+- <a id="method-read-kv-param-max_in_message"></a>**max_in_message** &mdash; `int` &mdash; The maximum number of rows per message.
+- <a id="method-read-kv-param-"></a>**sharding_keys** &mdash; `[]string` (**Experimental**) &mdash; A list of specific sharding keys to query, for range-scan formatted tables only.
+- <a id="method-read-kv-param-segments"></a>**segments** &mdash; `[]int64` [**Not supported in this version**]
+- <a id="method-read-kv-param-total_segments"></a>**total_segments** &mdash; `int64` [**Not supported in this version**]
+- <a id="method-read-kv-param-sort_key_range_start"></a>**sort_key_range_start** &mdash; `str` [**Not supported in this version**]
+- <a id="method-read-kv-param-sort_key_range_end"></a>**sort_key_range_end** &mdash; `str` [**Not supported in this version**]
 
 For detailed information about these parameters, refer to the platform's NoSQL documentation.
 
@@ -353,12 +434,12 @@ df = client.read(backend="kv", table="mytable", filter="col1>666")
 <a id="method-read-params-stream"></a>
 #### stream Backend read Parameters
 
-- <a id="method-read-stream-param-seek"></a>**seek** &mdash; `string` &mdash; valid values:  `"time" | "seq"/"sequence" | "latest" | "earliest"`.
+- <a id="method-read-stream-param-seek"></a>**seek** &mdash; `str` &mdash; Valid values:  `"time" | "seq"/"sequence" | "latest" | "earliest"`.
   <br/>
   If the `"seq"|"sequence"` seek type is set, you need to provide the desired record sequence ID via the [`sequence`](#method-read-stream-param-sequence) parameter.
   <br/>
   If the `time` seek type is set, you need to provide the desired start time via the `start` parameter.
-- <a id="method-read-stream-param-shard_id"></a>**shard_id** &mdash; `string`
+- <a id="method-read-stream-param-shard_id"></a>**shard_id** &mdash; `str`
 - <a id="method-read-stream-param-sequence"></a>**sequence** &mdash; `int64` (Optional)
 
 For detailed information about these parameters, refer to the [platform streams documentation](https://www.iguazio.com/docs/concepts/latest-release/streams).
@@ -368,12 +449,24 @@ Example:
 df = client.read(backend="stream", table="mytable", seek="latest", shard_id="5")
 ```
 
+<a id="method-read-return-value"></a>
+#### Return Value
+
+- When the value of the [`iterator`](#method-read-param-iterator) parameter is `False` (default) &mdash; returns a single DataFrame.
+- When the value of the `iterator` parameter is `True` &mdash; returns a
+  DataFrames iterator.
+
+> **Note:** The returned DataFrames include a `labels` DataFrame attribute with backend-specific data, if applicable.
+> For example, for the `stream` backend, this attribute holds the sequence number of the last stream record that was read.
+<!-- [IntInfo] (26.9.19) For the `kv` backend - no relevant "labels" data.
+  For the `tsdb` backend - a labels set. When reading a DFs iterator, each DF
+  represents a unique label set, as reflected in the `labels` DF attribute, but
+  when reading a single DF, it' currently unclear what `labels` should hold. -->
+
 <a id="method-delete"></a>
 ### delete Method
 
-Deletes a data collection (table/stream) in a platform data container according to the configured backend.
-<br/>
-The `kb` backend also supports an optional [`filter`](#method-delete-kv-param-filter) parameter that can be used to delete only specific items in a NoSQL tables.
+Deletes a table or stream or specific table items from a platform data container, according to the specified backend type.
 
 - [Syntax](#method-delete-syntax)
 - [`tsdb` backend `delete` parameters](#method-delete-params-tsdb)
@@ -383,14 +476,20 @@ The `kb` backend also supports an optional [`filter`](#method-delete-kv-param-fi
 #### Syntax
 
 ```python
-delete(backend=<backend>, table=<table>, attrs=<backend-specific parameters>)
+delete(backend, table, filter='', start='', end='')
 ```
 
 <a id="method-delete-params-tsdb"></a>
 #### tsdb Backend delete Parameters
 
-- <a id="method-delete-tsdb-param-start"></a>**start** &mdash; `string` &mdash; delete since start
-- <a id="method-delete-tsdb-param-end"></a>**end** &mdash; `string` &mdash; delete since start
+- <a id="method-delete-tsdb-param-start"></a>**start** &mdash; `str` &mdash; Start (minimum) time for the delete operation, as a string containing an RFC 3339 time, a Unix timestamp in milliseconds, a relative time of the format `"now"` or `"now-[0-9]+[mhd]"` (where `m` = minutes, `h` = hours, and `'d'` = days), or 0 for the earliest time.
+  For example: `"2016-01-02T15:34:26Z"`; `"1451748866"`; `"now-90m"`; `"0"`.
+  <br/>
+  The default start time is `<end time> - 1h`.
+- <a id="method-delete-tsdb-param-end"></a>**end** &mdash; `str` &mdash; End (maximum) time for the delete operation, as a string containing an RFC 3339 time, a Unix timestamp in milliseconds, a relative time of the format `"now"` or `"now-[0-9]+[mhd]"` (where `m` = minutes, `h` = hours, and `'d'` = days), or 0 for the earliest time.
+  For example: `"2018-09-26T14:10:20Z"`; `"1537971006000"`; `"now-3h"`; `"now-7d"`.
+  <br/>
+  The default end time is `"now"`.
 
 > **Note:** When neither the `start` or `end` parameters are set, the entire TSDB table is deleted.
 
@@ -404,7 +503,7 @@ df = client.delete(backend="tsdb", table="mytable", start="now-1d", end="now-5h"
 <a id="method-delete-params-kv"></a>
 #### kv Backend delete Parameters
 
-- <a id="method-delete-kv-param-filter"></a>**filter** &mdash; `string` &mdash; a platform filter expression that identifies specific items to delete.
+- <a id="method-delete-kv-param-filter"></a>**filter** &mdash; `str` &mdash; A platform filter expression that identifies specific items to delete.
   For detailed information about platform filter expressions, see the [platform documentation](https://www.iguazio.com/docs/reference/latest-release/expressions/condition-expression/#filter-expression).
 
 > **Note:** When the `filter` parameter isn't set, the entire table is deleted.
@@ -417,11 +516,31 @@ df = client.delete(backend="kv", table="mytable", filter="age > 40")
 <a id="method-execute"></a>
 ### execute Method
 
-Extends the basic CRUD functionality of the other client methods via custom commands:
+Extends the basic CRUD functionality of the other client methods via custom commands.
 
+- [Syntax](#method-execute-syntax)
+- [Common parameters](#method-execute-common-params)
 - [tsdb backend commands](#method-execute-tsdb-cmds)
 - [kv backend commands](#method-execute-kv-cmds)
 - [stream backend commands](#method-execute-stream-cmds)
+
+<a id="method-execute-syntax"></a>
+#### Syntax
+
+```python
+execute(backend, table, command='', args=None)
+```
+
+<a id="method-execute-common-params"></a>
+#### Common execute Parameters
+
+All Frames backends that support the `execute` method support the following common parameters:
+
+- <a id="method-except-param-args"></a>**args** &mdash; A dictionary of `<argument name>: <value>` pairs for passing command-specific parameters (arguments).
+
+  - **Type:** dict
+  - **Requirement:** Optional
+  - **Default Value:** `None`
 
 <a id="method-execute-tsdb-cmds"></a>
 ### tsdb Backend execute Commands
@@ -431,7 +550,7 @@ Currently, no `execute` commands are available for the `tsdb` backend.
 <a id="method-execute-kv-cmds"></a>
 ### kv Backend execute Commands
 
-- <a id="method-execute-kv-cmd-infer"></a>**infer | inferschema** &mdash; infers the data schema of a given NoSQL table and creates a schema file for the table.
+- <a id="method-execute-kv-cmd-infer"></a>**infer | inferschema** &mdash; Infers the data schema of a given NoSQL table and creates a schema file for the table.
 
   Example:
   ```python
@@ -439,7 +558,8 @@ Currently, no `execute` commands are available for the `tsdb` backend.
   ````
 
 <!--
-- <a id="method-execute-kv-cmd-update"></a>**update** &mdash; perform an update expression for a specific key.
+- <a id="method-execute-kv-cmd-update"></a>**update** &mdash; Updates a specific item in a NoSQL table according to the provided update expression.
+  For detailed information about platform update expressions, see the [platform documentation](https://www.iguazio.com/docs/reference/latest-release/expressions/update-expression/).
 
   Example:
   ```python
@@ -451,7 +571,7 @@ Currently, no `execute` commands are available for the `tsdb` backend.
 <a id="method-execute-stream-cmds"></a>
 ### stream Backend execute Commands
 
-- <a id="method-execute-stream-cmd-put"></a>**put** &mdash; adds records to a stream.
+- <a id="method-execute-stream-cmd-put"></a>**put** &mdash; Adds records to a stream.
 
   Example:
   ```python
@@ -507,11 +627,11 @@ See **.travis.yml** for details.
 The following environment variables are defined in the [Travis settings](https://travis-ci.org/v3io/frames/settings):
 
 - Docker Container Registry ([Quay.io](https://quay.io/))
-    - `DOCKER_PASSWORD` &mdash; password for pushing images to Quay.io.
-    - `DOCKER_USERNAME` &mdash; username for pushing images to Quay.io.
+    - `DOCKER_PASSWORD` &mdash; a password for pushing images to Quay.io.
+    - `DOCKER_USERNAME` &mdash; a username for pushing images to Quay.io.
 - Python Package Index ([PyPI](https://pypi.org/))
-    - `V3IO_PYPI_PASSWORD` &mdash; password for pushing a new release to PyPi.
-    - `V3IO_PYPI_USER` &mdash; username for pushing a new release to PyPi.
+    - `V3IO_PYPI_PASSWORD` &mdash; a password for pushing a new release to PyPi.
+    - `V3IO_PYPI_USER` &mdash; a username for pushing a new release to PyPi.
 - Iguazio Data Science Platform
     - `V3IO_SESSION` &mdash; a JSON encoded map with session information for running tests.
       For example:
