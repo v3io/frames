@@ -211,7 +211,7 @@ class ClientBase:
         return self._delete(backend, table, filter, start, end, if_missing)
 
     def execute(self, backend, table, command='', args=None, expression=''):
-        """Executes a custom command on a table or stream
+        """Executes a backend-specific command on a table or stream
 
         Parameters
         ----------

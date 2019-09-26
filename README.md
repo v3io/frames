@@ -45,7 +45,7 @@ The `Client` class features the following methods for supporting basic data oper
 - [`delete`](#method-delete) &mdash; deletes a table or stream or specific table items
 - [`read`](#method-read) &mdash; reads data from a table or stream into pandas DataFrames.
 - [`write`](#method-write) &mdash; writes data from pandas DataFrames to a table or stream.
-- [`execute`](#method-execute) &mdash; executes a custom command on a table or stream.
+- [`execute`](#method-execute) &mdash; executes a backend-specific command on a table or stream.
   Each backend may support multiple commands.
 
 <a id="backend-types"></a>
@@ -522,7 +522,7 @@ df = client.delete(backend="kv", table="mytable", filter="age > 40")
 <a id="method-execute"></a>
 ### execute Method
 
-Extends the basic CRUD functionality of the other client methods via custom commands.
+Extends the basic CRUD functionality of the other client methods via backend-specific commands.
 
 - [Syntax](#method-execute-syntax)
 - [Common parameters](#method-execute-common-params)
