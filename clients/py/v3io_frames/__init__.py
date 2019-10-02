@@ -35,31 +35,40 @@ _known_protocols = {'grpc', 'http', 'https'}
 def Client(address='', data_url='', container='', path='', user='',
            password='', token='', session_id='', frame_factory=pd.DataFrame,
            concat=pd.concat):
-    """Return a new client.
+    """Creates a new Frames client object
 
     Parameters
     ----------
     address : str
-        framesd backend address. Use grpc:// or http:// prefix to specify
-        protocol (default is gRPC)
+        Address of the Frames service (framesd). Use the grpc:// prefix for
+        gRPC (default; recommended) or the http:// prefix for HTTP.
+        Use `framesd:8081` (gRPC; recommended) or `framesd:8080` for local
+        execution on an Iguazio Data Science Platform ("the platform").
     data_url : str
-        Backend URL (session info)
+        Base URL for accessing the backend data
     container : str
         Container name (session info)
     path : str
-        Path in container (session info)
+        DEPRECATED
     user : str
-        Login user (session info)
+        The username of a platform user with permissions to access the backend
+        data; can't be used with `token`
     password : str
-        Login password (session info)
+        A platform password for the user configured in the `user` parameter;
+        required when `user` is set; can't be used with `token`
     token : str
-        Login token (session info)
+        A valid platform access key that allows access to the backend data;
+        can't be used with `user` and `password`
     session_id : str
-        Session ID (session info)
+        Session ID
     frame_factory : class
-        DataFrame factory
+        DataFrame factory; currently, pandas DataFrame (default)
     concat : function
-        Function to concat DataFrames
+        Function for concatenating DataFrames; default: pandas concat
+
+    Return Value
+    ----------
+    A new `Client` object
     """
     protocol = urlparse(address).scheme or 'grpc'
     if protocol not in _known_protocols:
