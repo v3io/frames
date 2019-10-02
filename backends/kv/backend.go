@@ -137,3 +137,24 @@ func (b *Backend) newConnection(session *frames.Session, password string, token 
 
 	return container, newPath, err
 }
+
+func (b *Backend) newConnectionWithRequestChannelLength(session *frames.Session, password string, token string, path string, addSlash bool, requestChannelLen int) (v3io.Container, string, error) {
+
+	session = frames.InitSessionDefaults(session, b.framesConfig)
+	containerName, newPath, err := v3ioutils.ProcessPaths(session, path, addSlash)
+	if err != nil {
+		return nil, "", err
+	}
+
+	session.Container = containerName
+	container, err := v3ioutils.NewContainerWithRequestChannelLength(
+		session,
+		password,
+		token,
+		b.logger,
+		b.numWorkers,
+		requestChannelLen,
+	)
+
+	return container, newPath, err
+}
