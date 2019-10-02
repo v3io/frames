@@ -70,17 +70,17 @@ func NewAsyncItemsCursor(
 	newAsyncItemsCursor := &AsyncItemsCursor{
 		container:          container,
 		input:              input,
-		responseChan:       make(chan *v3io.Response, 1000),
 		workers:            workers,
 		logger:             logger.GetChild("AsyncItemsCursor"),
 		limit:              limit,
 		numberOfPartitions: len(partitions),
 	}
 
-	for _, partition := range partitions {
-		if len(shardingKeys) > 0 {
-			newAsyncItemsCursor.workers = len(shardingKeys)
+	if len(shardingKeys) > 0 {
+		newAsyncItemsCursor.workers = len(shardingKeys)
+		newAsyncItemsCursor.responseChan = make(chan *v3io.Response, len(partitions)*newAsyncItemsCursor.workers)
 
+		for _, partition := range partitions {
 			for i := 0; i < newAsyncItemsCursor.workers; i++ {
 				input := v3io.GetItemsInput{
 					Path:           partition,
@@ -94,10 +94,13 @@ func NewAsyncItemsCursor(
 					return nil, err
 				}
 			}
-		} else {
+		}
+	} else {
+		newAsyncItemsCursor.totalSegments = workers
+		newAsyncItemsCursor.responseChan = make(chan *v3io.Response, len(partitions)*newAsyncItemsCursor.workers)
 
+		for _, partition := range partitions {
 			for i := 0; i < newAsyncItemsCursor.workers; i++ {
-				newAsyncItemsCursor.totalSegments = workers
 				input := v3io.GetItemsInput{
 					Path:           partition,
 					AttributeNames: input.AttributeNames,
