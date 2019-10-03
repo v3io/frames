@@ -31,6 +31,8 @@ func stringCol(t testing.TB, name string, size int) frames.Column {
 	for i := range strings {
 		strings[i] = fmt.Sprintf("val-%d", i)
 	}
+
+	t.Logf("column %v has %v rows. data: %v", name, len(strings), strings)
 	col, err := frames.NewSliceColumn(name, strings)
 	if err != nil {
 		t.Fatal(err)
