@@ -14,7 +14,9 @@ podTemplate(label: "${git_project}-${label}", inheritFrom: "jnlp-docker-golang-p
                  remote       : "git@github.com:iguazio/pipelinex.git"])).com.iguazio.pipelinex
         common.notify_slack {
             withCredentials([
-                    string(credentialsId: git_deploy_user_token, variable: 'GIT_TOKEN')
+                    string(credentialsId: git_deploy_user_token, variable: 'GIT_TOKEN'),
+                    string(credentialsId: 'frames-ci-url', variable: 'FRAMES_CI_URL'),
+                    usernamePassword(credentialsId: 'frames-ci-user-credentials', passwordVariable: 'FRAMES_CI_PASSWORD', usernameVariable: 'FRAMES_CI_USERNAME'),
             ]) {
                 github.branch(git_deploy_user, git_project, git_project_user, git_project_upstream_user, true, GIT_TOKEN) {
                     parallel(
@@ -50,7 +52,8 @@ podTemplate(label: "${git_project}-${label}", inheritFrom: "jnlp-docker-golang-p
                             'test-go': {
                                 container('golang') {
                                     dir("${github.BUILD_FOLDER}/src/github.com/${git_project_upstream_user}/${git_project}") {
-                                        common.shellc("make test-go")
+                                        session = '{"url":"' + FRAMES_CI_URL + '","user":"' + FRAMES_CI_USERNAME + '","password":"' + FRAMES_CI_PASSWORD + '","container":"bigdata"}'
+                                        common.shellc("V3IO_SESSION='${session}' make test-go")
                                     }
                                 }
                             },

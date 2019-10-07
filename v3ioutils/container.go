@@ -59,17 +59,46 @@ func NewContainer(session *frames.Session, password string, token string, logger
 		AccessKey: tok,
 	}
 	container, err := createContainer(
-		logger, session.Url, session.Container, &newSessionInput, workers)
+		logger, session.Url, session.Container, &newSessionInput, workers, 0)
 	if err != nil {
 		return nil, errors.Wrap(err, "failed to create data container")
 	}
 
 	return container, nil
+}
 
+func NewContainerWithRequestChannelLength(session *frames.Session, password string, token string, logger logger.Logger, workers int, requestChannelLen int) (v3io.Container, error) {
+
+	var pass string
+	if password == "" {
+		pass = session.Password
+	} else {
+		pass = password
+	}
+
+	var tok string
+	if token == "" {
+		tok = session.Token
+	} else {
+		tok = token
+	}
+
+	newSessionInput := v3io.NewSessionInput{
+		Username:  session.User,
+		Password:  pass,
+		AccessKey: tok,
+	}
+	container, err := createContainer(
+		logger, session.Url, session.Container, &newSessionInput, workers, requestChannelLen)
+	if err != nil {
+		return nil, errors.Wrap(err, "failed to create data container")
+	}
+
+	return container, nil
 }
 
 // CreateContainer creates a new container
-func createContainer(logger logger.Logger, addr, cont string, newSessionInput *v3io.NewSessionInput, workers int) (v3io.Container, error) {
+func createContainer(logger logger.Logger, addr, cont string, newSessionInput *v3io.NewSessionInput, workers int, requestChannelLen int) (v3io.Container, error) {
 	// create context
 	if workers == 0 {
 		workers = 8
@@ -80,7 +109,7 @@ func createContainer(logger logger.Logger, addr, cont string, newSessionInput *v
 		addr = "http://" + addr
 	}
 
-	context, err := v3iohttp.NewContext(logger, &v3io.NewContextInput{ClusterEndpoints: []string{addr}, NumWorkers: workers})
+	context, err := v3iohttp.NewContext(logger, &v3io.NewContextInput{ClusterEndpoints: []string{addr}, NumWorkers: workers, RequestChanLen: requestChannelLen})
 	if err != nil {
 		return nil, errors.Wrap(err, "failed to create client")
 	}
