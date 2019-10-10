@@ -191,7 +191,7 @@ func (ki *Iterator) Next() bool {
 
 	// If the only column that was requested is the key-column don't set it as an index.
 	// Otherwise, set the key column (if requested) to be the index or not depending on the `ResetIndex` value.
-	if !ki.request.Proto.ResetIndex && (len(columns) > 1 || columns[0].Name() != ki.schema.Key) {
+	if columns != nil && !ki.request.Proto.ResetIndex && (len(columns) > 1 || columns[0].Name() != ki.schema.Key) {
 		indexCol, ok := byName[ki.schema.Key]
 		if ok {
 			delete(byName, ki.schema.Key)
