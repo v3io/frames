@@ -309,7 +309,7 @@ Example:
 ```python
 data = [["tom", 10], ["nick", 15], ["juli", 14]]
 df = pd.DataFrame(data, columns = ["name", "age"])
-df.set_index("name")
+df.set_index("name", inplace=True)
 client.write(backend="kv", table="mytable", dfs=df)
 ```
 
@@ -342,7 +342,7 @@ Example:
 ```python
 data = [["tom", 10, "TLV"], ["nick", 15, "Berlin"], ["juli", 14, "NY"]]
 df = pd.DataFrame(data, columns = ["name", "age", "city"])
-df.set_index("name")
+df.set_index("name", inplace=True)
 v3c.write(backend="kv", table="mytable", dfs=df, condition="age>14")
 ```
 
