@@ -35,6 +35,7 @@ import (
 	"github.com/v3io/v3io-tsdb/pkg/tsdb"
 	"github.com/v3io/v3io-tsdb/pkg/tsdb/schema"
 	tsdbutils "github.com/v3io/v3io-tsdb/pkg/utils"
+	"github.com/valyala/fasthttp"
 )
 
 // Backend is a tsdb backend
@@ -43,10 +44,11 @@ type Backend struct {
 	backendConfig *frames.BackendConfig
 	framesConfig  *frames.Config
 	logger        logger.Logger
+	httpClient    *fasthttp.Client
 }
 
 // NewBackend return a new tsdb backend
-func NewBackend(logger logger.Logger, cfg *frames.BackendConfig, framesConfig *frames.Config) (frames.DataBackend, error) {
+func NewBackend(logger logger.Logger, httpClient *fasthttp.Client, cfg *frames.BackendConfig, framesConfig *frames.Config) (frames.DataBackend, error) {
 
 	frames.InitBackendDefaults(cfg, framesConfig)
 	newBackend := Backend{
@@ -54,6 +56,7 @@ func NewBackend(logger logger.Logger, cfg *frames.BackendConfig, framesConfig *f
 		logger:        logger.GetChild("tsdb"),
 		backendConfig: cfg,
 		framesConfig:  framesConfig,
+		httpClient:    httpClient,
 	}
 
 	return &newBackend, nil
@@ -85,6 +88,7 @@ func (b *Backend) newAdapter(session *frames.Session, password string, token str
 	cfg := b.newConfig(session)
 
 	container, err := v3ioutils.NewContainer(
+		b.httpClient,
 		session,
 		password,
 		token,
