@@ -24,7 +24,6 @@ package api
 
 import (
 	"fmt"
-	v3iohttp "github.com/v3io/v3io-go/pkg/dataplane/http"
 	"strings"
 	"time"
 
@@ -39,6 +38,7 @@ import (
 
 	"github.com/nuclio/logger"
 	"github.com/pkg/errors"
+	v3iohttp "github.com/v3io/v3io-go/pkg/dataplane/http"
 )
 
 const (
