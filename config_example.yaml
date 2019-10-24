@@ -4,7 +4,7 @@ limit: 1000
 webApiEndpoint: "http://127.0.0.1:888"
 container: "bigdata"
 username: "iguazio"
-password: "datal@Ke!"
+password: "t0ps3cr3t"
 
 backends:
   - type: "kv"
