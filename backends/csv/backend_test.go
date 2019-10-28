@@ -140,7 +140,7 @@ func loadTempCSV(t *testing.T, req *frames.ReadRequest) []frames.Frame {
 		RootDir: path.Dir(csvPath),
 	}
 
-	backend, err := NewBackend(logger, cfg, nil)
+	backend, err := NewBackend(logger, nil, cfg, nil)
 	if err != nil {
 		t.Fatal(err)
 	}

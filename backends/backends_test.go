@@ -27,12 +27,13 @@ import (
 
 	"github.com/nuclio/logger"
 	"github.com/v3io/frames"
+	"github.com/valyala/fasthttp"
 )
 
 // Special error return from testFactory so we can see it's this function
 var errorBackendsTest = fmt.Errorf("backends test")
 
-func testFactory(logger.Logger, *frames.BackendConfig, *frames.Config) (frames.DataBackend, error) {
+func testFactory(logger.Logger, *fasthttp.Client, *frames.BackendConfig, *frames.Config) (frames.DataBackend, error) {
 	return nil, errorBackendsTest
 }
 
@@ -54,7 +55,7 @@ func TestBackends(t *testing.T) {
 		t.Fatalf("can't get %q - %s", capsType, err)
 	}
 
-	_, err = factory(nil, nil, nil)
+	_, err = factory(nil, nil, nil, nil)
 	if err != errorBackendsTest {
 		t.Fatalf("wrong factory")
 	}

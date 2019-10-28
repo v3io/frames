@@ -1,6 +1,5 @@
 # V3IO Frames
 
-[![Build Status](https://travis-ci.org/v3io/frames.svg?branch=master)](https://travis-ci.org/v3io/frames)
 [![GoDoc](https://godoc.org/github.com/v3io/frames?status.svg)](https://godoc.org/github.com/v3io/frames)
 [![License](https://img.shields.io/badge/License-Apache%202.0-blue.svg)](https://opensource.org/licenses/Apache-2.0)
 
@@ -310,7 +309,7 @@ Example:
 ```python
 data = [["tom", 10], ["nick", 15], ["juli", 14]]
 df = pd.DataFrame(data, columns = ["name", "age"])
-df.set_index("name")
+df.set_index("name", inplace=True)
 client.write(backend="kv", table="mytable", dfs=df)
 ```
 
@@ -343,7 +342,7 @@ Example:
 ```python
 data = [["tom", 10, "TLV"], ["nick", 15, "Berlin"], ["juli", 14, "NY"]]
 df = pd.DataFrame(data, columns = ["name", "age", "city"])
-df.set_index("name")
+df.set_index("name", inplace=True)
 v3c.write(backend="kv", table="mytable", dfs=df, condition="age>14")
 ```
 
