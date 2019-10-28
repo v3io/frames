@@ -40,7 +40,7 @@ func (tsdbSuite *TsdbTestSuite) generateSampleFrame(t testing.TB) frames.Frame {
 		floatCol(t, "cpu", index.Len()),
 		floatCol(t, "mem", index.Len()),
 		floatCol(t, "disk", index.Len()),
-		stringCol(t, "host", index.Len()),
+		//stringCol(t, "host", index.Len()),
 	}
 
 	frame, err := frames.NewFrame(columns, []frames.Column{index}, nil)
@@ -82,8 +82,9 @@ func (tsdbSuite *TsdbTestSuite) TestAll() {
 		tsdbSuite.T().Fatal(err)
 	}
 
-	col, _ := frame.Column("host")
-	tsdbSuite.T().Logf("saving frame to '%v', length: %v, frame: %v", table, len(col.Strings()), col.Strings())
+	//col, _ := frame.Column("host")
+	//tsdbSuite.T().Logf("saving frame to '%v', length: %v, frame: %v", table, len(col.Strings()), col.Strings())
+	tsdbSuite.T().Logf("saving frame to '%v', length: %v, frame: %v", table, frame.Len(), frame)
 	if err := appender.Add(frame); err != nil {
 		tsdbSuite.T().Fatal(err)
 	}
