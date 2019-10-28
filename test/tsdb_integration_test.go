@@ -40,7 +40,7 @@ func (tsdbSuite *TsdbTestSuite) generateSampleFrame(t testing.TB) frames.Frame {
 		floatCol(t, "cpu", index.Len()),
 		floatCol(t, "mem", index.Len()),
 		floatCol(t, "disk", index.Len()),
-		//stringCol(t, "host", index.Len()),
+		stringCol(t, "host", index.Len()),
 	}
 
 	frame, err := frames.NewFrame(columns, []frames.Column{index}, nil)
