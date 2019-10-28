@@ -38,6 +38,7 @@ import (
 
 	"github.com/nuclio/logger"
 	"github.com/pkg/errors"
+	v3iohttp "github.com/v3io/v3io-go/pkg/dataplane/http"
 )
 
 const (
@@ -270,7 +271,8 @@ func (api *API) createBackends(config *frames.Config) error {
 			return fmt.Errorf("unknown backend - %q", cfg.Type)
 		}
 
-		backend, err := factory(api.logger, cfg, config)
+		httpClient := v3iohttp.NewDefaultClient()
+		backend, err := factory(api.logger, httpClient, cfg, config)
 		if err != nil {
 			return errors.Wrapf(err, "%s:%s - can't create backend", cfg.Name, cfg.Type)
 		}
