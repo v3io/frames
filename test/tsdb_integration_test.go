@@ -84,7 +84,7 @@ func (tsdbSuite *TsdbTestSuite) TestAll() {
 
 	//col, _ := frame.Column("host")
 	//tsdbSuite.T().Logf("saving frame to '%v', length: %v, frame: %v", table, len(col.Strings()), col.Strings())
-	tsdbSuite.T().Logf("saving frame to '%v', length: %v, frame: %v", table, frame.Len(), frame)
+	tsdbSuite.T().Logf("saving frame to '%v', length: %v", table, frame.Len())
 	if err := appender.Add(frame); err != nil {
 		tsdbSuite.T().Fatal(err)
 	}

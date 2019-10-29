@@ -178,14 +178,18 @@ func (a *tsdbAppender) Add(frame frames.Frame) error {
 
 			for idx, metric := range metrics {
 				if i == 0 {
-					a.logger.Info("adding a new item, metric: %v, t: %v, v: %v",
+					//a.logger.Info("adding a new item, metric: %v, t: %v, v: %v",
+					//	metric.lset, tarray[0], values[idx][0])
+					fmt.Printf("adding a new item, metric: %v, t: %v, v: %v",
 						metric.lset, tarray[0], values[idx][0])
 					metric.ref, err = a.appender.Add(metric.lset, tarray[0], values[idx][0])
 					if err != nil {
 						return errors.Wrap(err, "failed to Add")
 					}
 				} else {
-					a.logger.Info("adding a new item, metric: %v, ref: %v t: %v, v: %v",
+					//a.logger.Info("adding a new item, metric: %v, ref: %v t: %v, v: %v",
+					//	metric.lset, metric.ref, tarray[i], values[idx][i])
+					fmt.Printf("adding a new item, metric: %v, ref: %v t: %v, v: %v\n",
 						metric.lset, metric.ref, tarray[i], values[idx][i])
 					err := a.appender.AddFast(metric.lset, metric.ref, tarray[i], values[idx][i])
 					if err != nil {
