@@ -21,8 +21,10 @@ such restriction.
 package frames
 
 import (
+	"fmt"
 	"github.com/nuclio/logger"
 	nucliozap "github.com/nuclio/zap"
+	"os"
 )
 
 var (
@@ -37,5 +39,12 @@ func NewLogger(verbose string) (logger.Logger, error) {
 	}
 
 	logLevel := nucliozap.GetLevelByName(verbose)
-	return nucliozap.NewNuclioZapCmd("v3io-frames", logLevel)
+
+	f, err := os.Create("/tmp/dat2")
+	if err != nil {
+		fmt.Println("got an error on file creation - ", err)
+	}
+
+	return nucliozap.NewNuclioZap("v3io-frames", "console", nil, f, f, logLevel)
+	//return nucliozap.NewNuclioZapCmd("v3io-frames", logLevel)
 }
