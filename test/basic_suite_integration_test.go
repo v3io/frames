@@ -67,13 +67,6 @@ func (mainSuite *mainTestSuite) SetupSuite() {
 }
 
 func (mainSuite *mainTestSuite) TearDownSuite() {
-	bytes, err := ioutil.ReadFile("/tmp/dat2")
-	if err != nil {
-		mainSuite.T().Error(err)
-	}
-
-	mainSuite.T().Log("Frames logs:")
-	mainSuite.T().Log(string(bytes))
 	mainSuite.info.process.Kill()
 }
 

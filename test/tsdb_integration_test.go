@@ -40,7 +40,6 @@ func (tsdbSuite *TsdbTestSuite) generateSampleFrame(t testing.TB) frames.Frame {
 		floatCol(t, "cpu", index.Len()),
 		floatCol(t, "mem", index.Len()),
 		floatCol(t, "disk", index.Len()),
-		//stringCol(t, "host", index.Len()),
 	}
 
 	frame, err := frames.NewFrame(columns, []frames.Column{index}, nil)
@@ -51,7 +50,7 @@ func (tsdbSuite *TsdbTestSuite) generateSampleFrame(t testing.TB) frames.Frame {
 	return frame
 }
 
-func (tsdbSuite *TsdbTestSuite) generateStringSampleFrame(t testing.TB) frames.Frame {
+func (tsdbSuite *TsdbTestSuite) generateSampleFrameWithStringMetric(t testing.TB) frames.Frame {
 	size := 60 // TODO
 	times := make([]time.Time, size)
 	end := time.Now().Truncate(time.Hour)
@@ -65,9 +64,6 @@ func (tsdbSuite *TsdbTestSuite) generateStringSampleFrame(t testing.TB) frames.F
 	}
 
 	columns := []frames.Column{
-		//floatCol(t, "cpu", index.Len()),
-		//floatCol(t, "mem", index.Len()),
-		//floatCol(t, "disk", index.Len()),
 		stringCol(t, "host", index.Len()),
 	}
 
@@ -110,8 +106,6 @@ func (tsdbSuite *TsdbTestSuite) TestAll() {
 		tsdbSuite.T().Fatal(err)
 	}
 
-	//col, _ := frame.Column("host")
-	//tsdbSuite.T().Logf("saving frame to '%v', length: %v, frame: %v", table, len(col.Strings()), col.Strings())
 	tsdbSuite.T().Logf("saving frame to '%v', length: %v", table, frame.Len())
 	if err := appender.Add(frame); err != nil {
 		tsdbSuite.T().Fatal(err)
@@ -160,7 +154,7 @@ func (tsdbSuite *TsdbTestSuite) TestAll() {
 
 }
 
-func (tsdbSuite *TsdbTestSuite) TestAllString() {
+func (tsdbSuite *TsdbTestSuite) TestAllStringMetric() {
 	table := fmt.Sprintf("tsdb_test_all%d", time.Now().UnixNano())
 
 	tsdbSuite.T().Log("create")
@@ -174,7 +168,7 @@ func (tsdbSuite *TsdbTestSuite) TestAllString() {
 	}
 
 	tsdbSuite.T().Log("write")
-	frame := tsdbSuite.generateStringSampleFrame(tsdbSuite.T())
+	frame := tsdbSuite.generateSampleFrameWithStringMetric(tsdbSuite.T())
 	wreq := &frames.WriteRequest{
 		Backend: tsdbSuite.backendName,
 		Table:   table,
@@ -185,8 +179,6 @@ func (tsdbSuite *TsdbTestSuite) TestAllString() {
 		tsdbSuite.T().Fatal(err)
 	}
 
-	//col, _ := frame.Column("host")
-	//tsdbSuite.T().Logf("saving frame to '%v', length: %v, frame: %v", table, len(col.Strings()), col.Strings())
 	tsdbSuite.T().Logf("saving frame to '%v', length: %v", table, frame.Len())
 	if err := appender.Add(frame); err != nil {
 		tsdbSuite.T().Fatal(err)
