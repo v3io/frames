@@ -97,13 +97,13 @@ func (mainSuite *mainTestSuite) runSubSuites(suites []SuiteCreateFunc) {
 	for _, currSuite := range suites {
 		// Run both Grpc and Http tests
 		grpcTestSuite := currSuite(mainSuite.newGrpcClient())
-		//httpTestSuite := currSuite(mainSuite.newHttpClient())
+		httpTestSuite := currSuite(mainSuite.newHttpClient())
 		currentTestSuiteName := reflect.TypeOf(grpcTestSuite).Elem().Name()
 
 		mainSuite.Run(fmt.Sprintf("%v/grpc_client", currentTestSuiteName),
 			func() { suite.Run(mainSuite.T(), grpcTestSuite) })
-		//mainSuite.Run(fmt.Sprintf("%v/http_client", currentTestSuiteName),
-		//	func() { suite.Run(mainSuite.T(), httpTestSuite) })
+		mainSuite.Run(fmt.Sprintf("%v/http_client", currentTestSuiteName),
+			func() { suite.Run(mainSuite.T(), httpTestSuite) })
 	}
 }
 
