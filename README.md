@@ -377,7 +377,7 @@ All Frames backends that support the `read` method support the following common 
 - <a id="method-read-param-iterator"></a>**iterator** &mdash; (Optional) (default: `False`) &mdash; `bool` &mdash; `True` to return a DataFrames iterator; `False` to return a single DataFrame.
 - <a id="method-read-param-filter"></a>**filter** (Optional) &mdash; `str` &mdash; A query filter.
   <br/>
-  This parameter can't be used concurrently with the `query` parameter.
+  This parameter can't be used concurrently with the `query` parameter. Example: `filter="col1=='my_value'"`
 - <a id="method-read-param-columns"></a>**columns** &mdash; `[]str` &mdash; A list of attributes (columns) to return.
   <br/>
   This parameter can't be used concurrently with the `query` parameter.
@@ -414,7 +414,7 @@ For detailed information about these parameters, refer to the [V3IO TSDB documen
 
 Example:
 ```python
-df = client.read(backend="tsdb", query="select avg(cpu) as cpu, avg(diskio), avg(network)from mytable", start="now-1d", end="now", step="2h")
+df = client.read(backend="tsdb", query="select avg(cpu) as cpu, avg(diskio), avg(network) from mytable where os='win'", start="now-1d", end="now", step="2h")
 ```
 
 <a id="method-read-params-kv"></a>
