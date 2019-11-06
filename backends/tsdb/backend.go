@@ -22,7 +22,6 @@ package tsdb
 
 import (
 	"fmt"
-	"github.com/nuclio/logger"
 	"hash/fnv"
 	"reflect"
 	"strings"
@@ -32,6 +31,8 @@ import (
 	"github.com/v3io/frames"
 	"github.com/v3io/frames/backends"
 
+	"github.com/golang/groupcache/lru"
+	"github.com/nuclio/logger"
 	"github.com/pkg/errors"
 	"github.com/v3io/frames/v3ioutils"
 	"github.com/v3io/v3io-tsdb/pkg/config"
@@ -43,7 +44,8 @@ import (
 
 // Backend is a tsdb backend
 type Backend struct {
-	adapters      map[uint64]*tsdb.V3ioAdapter
+	//map[uint64]*tsdb.V3ioAdapter
+	adapters      *lru.Cache
 	adaptersLock  sync.Mutex
 	backendConfig *frames.BackendConfig
 	framesConfig  *frames.Config
@@ -55,8 +57,13 @@ type Backend struct {
 func NewBackend(logger logger.Logger, httpClient *fasthttp.Client, cfg *frames.BackendConfig, framesConfig *frames.Config) (frames.DataBackend, error) {
 
 	frames.InitBackendDefaults(cfg, framesConfig)
+	adapterCacheSize := framesConfig.AdapterCacheSize
+	if adapterCacheSize == 0 {
+		adapterCacheSize = 64
+	}
+
 	newBackend := Backend{
-		adapters:      make(map[uint64]*tsdb.V3ioAdapter),
+		adapters:      lru.New(adapterCacheSize),
 		logger:        logger.GetChild("tsdb"),
 		backendConfig: cfg,
 		framesConfig:  framesConfig,
@@ -136,22 +143,22 @@ func (b *Backend) GetAdapter(session *frames.Session, password string, token str
 	_, _ = h.Write(getBytes(session.Token))
 	key := h.Sum64()
 
-	adapter, found := b.adapters[key]
+	adapter, found := b.adapters.Get(key)
 	if !found {
 		b.adaptersLock.Lock()
 		defer b.adaptersLock.Unlock()
-		adapter, found = b.adapters[key] // Double-checked locking
+		adapter, found = b.adapters.Get(key) // Double-checked locking
 		if !found {
 			var err error
 			adapter, err = b.newAdapter(session, password, token, path)
 			if err != nil {
 				return nil, err
 			}
-			b.adapters[key] = adapter
+			b.adapters.Add(key, adapter)
 		}
 	}
 
-	return adapter, nil
+	return adapter.(*tsdb.V3ioAdapter), nil
 }
 
 // Create creates a table
