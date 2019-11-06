@@ -22,9 +22,12 @@ package tsdb
 
 import (
 	"fmt"
-	"strings"
-
 	"github.com/nuclio/logger"
+	"hash/fnv"
+	"reflect"
+	"strings"
+	"sync"
+	"unsafe"
 
 	"github.com/v3io/frames"
 	"github.com/v3io/frames/backends"
@@ -40,7 +43,8 @@ import (
 
 // Backend is a tsdb backend
 type Backend struct {
-	adapters      map[string]*tsdb.V3ioAdapter
+	adapters      map[uint64]*tsdb.V3ioAdapter
+	adaptersLock  sync.Mutex
 	backendConfig *frames.BackendConfig
 	framesConfig  *frames.Config
 	logger        logger.Logger
@@ -52,7 +56,7 @@ func NewBackend(logger logger.Logger, httpClient *fasthttp.Client, cfg *frames.B
 
 	frames.InitBackendDefaults(cfg, framesConfig)
 	newBackend := Backend{
-		adapters:      map[string]*tsdb.V3ioAdapter{},
+		adapters:      make(map[uint64]*tsdb.V3ioAdapter),
 		logger:        logger.GetChild("tsdb"),
 		backendConfig: cfg,
 		framesConfig:  framesConfig,
@@ -110,14 +114,43 @@ func (b *Backend) newAdapter(session *frames.Session, password string, token str
 	return adapter, nil
 }
 
+// Get underlying bytes of string for read-only purposes to avoid allocating a slice.
+func getBytes(str string) []byte {
+	hdr := *(*reflect.StringHeader)(unsafe.Pointer(&str))
+	return *(*[]byte)(unsafe.Pointer(&reflect.SliceHeader{
+		Data: hdr.Data,
+		Len:  hdr.Len,
+		Cap:  hdr.Len,
+	}))
+}
+
 // GetAdapter returns an adapter
 func (b *Backend) GetAdapter(session *frames.Session, password string, token string, path string) (*tsdb.V3ioAdapter, error) {
-	// TODO: maintain adapter cache, for now create new per read/write request
 
-	adapter, err := b.newAdapter(session, password, token, path)
-	if err != nil {
-		return nil, err
+	h := fnv.New64()
+	_, _ = h.Write(getBytes(session.Url))
+	_, _ = h.Write(getBytes(session.Container))
+	_, _ = h.Write(getBytes(session.Path))
+	_, _ = h.Write(getBytes(session.User))
+	_, _ = h.Write(getBytes(session.Password))
+	_, _ = h.Write(getBytes(session.Token))
+	key := h.Sum64()
+
+	adapter, found := b.adapters[key]
+	if !found {
+		b.adaptersLock.Lock()
+		defer b.adaptersLock.Unlock()
+		adapter, found = b.adapters[key] // Double-checked locking
+		if !found {
+			var err error
+			adapter, err = b.newAdapter(session, password, token, path)
+			if err != nil {
+				return nil, err
+			}
+			b.adapters[key] = adapter
+		}
 	}
+
 	return adapter, nil
 }
 
