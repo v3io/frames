@@ -171,7 +171,7 @@ func (s *Server) handleRead(ctx *fasthttp.RequestCtx) {
 		requestInner.Session.Token = ""
 	}
 
-	s.logger.InfoWith("read request", "request", request)
+	s.logger.DebugWith("read request", "request", request)
 
 	ch := make(chan frames.Frame)
 	var apiError error
