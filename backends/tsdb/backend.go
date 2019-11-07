@@ -137,10 +137,10 @@ func (b *Backend) GetAdapter(session *frames.Session, password string, token str
 	h := fnv.New64()
 	_, _ = h.Write(getBytes(session.Url))
 	_, _ = h.Write(getBytes(session.Container))
-	_, _ = h.Write(getBytes(session.Path))
+	_, _ = h.Write(getBytes(path))
 	_, _ = h.Write(getBytes(session.User))
-	_, _ = h.Write(getBytes(session.Password))
-	_, _ = h.Write(getBytes(session.Token))
+	_, _ = h.Write(getBytes(password))
+	_, _ = h.Write(getBytes(token))
 	key := h.Sum64()
 
 	adapter, found := b.adapters.Get(key)
