@@ -36,6 +36,7 @@ import (
 	"github.com/pkg/errors"
 	"github.com/v3io/frames/v3ioutils"
 	"github.com/v3io/v3io-tsdb/pkg/config"
+	"github.com/v3io/v3io-tsdb/pkg/pquerier"
 	"github.com/v3io/v3io-tsdb/pkg/tsdb"
 	"github.com/v3io/v3io-tsdb/pkg/tsdb/schema"
 	tsdbutils "github.com/v3io/v3io-tsdb/pkg/utils"
@@ -44,9 +45,8 @@ import (
 
 // Backend is a tsdb backend
 type Backend struct {
-	//map[uint64]*tsdb.V3ioAdapter
-	adapters      *lru.Cache
-	adaptersLock  sync.Mutex
+	queriers      *lru.Cache
+	queriersLock  sync.Mutex
 	backendConfig *frames.BackendConfig
 	framesConfig  *frames.Config
 	logger        logger.Logger
@@ -63,7 +63,7 @@ func NewBackend(logger logger.Logger, httpClient *fasthttp.Client, cfg *frames.B
 	}
 
 	newBackend := Backend{
-		adapters:      lru.New(adapterCacheSize),
+		queriers:      lru.New(adapterCacheSize),
 		logger:        logger.GetChild("tsdb"),
 		backendConfig: cfg,
 		framesConfig:  framesConfig,
@@ -133,6 +133,15 @@ func getBytes(str string) []byte {
 
 // GetAdapter returns an adapter
 func (b *Backend) GetAdapter(session *frames.Session, password string, token string, path string) (*tsdb.V3ioAdapter, error) {
+	adapter, err := b.newAdapter(session, password, token, path)
+	if err != nil {
+		return nil, err
+	}
+	return adapter, nil
+}
+
+// GetQuerier returns a querier
+func (b *Backend) GetQuerier(session *frames.Session, password string, token string, path string) (*pquerier.V3ioQuerier, error) {
 
 	h := fnv.New64()
 	_, _ = h.Write(getBytes(session.Url))
@@ -143,22 +152,26 @@ func (b *Backend) GetAdapter(session *frames.Session, password string, token str
 	_, _ = h.Write(getBytes(token))
 	key := h.Sum64()
 
-	adapter, found := b.adapters.Get(key)
+	qry, found := b.queriers.Get(key)
 	if !found {
-		b.adaptersLock.Lock()
-		defer b.adaptersLock.Unlock()
-		adapter, found = b.adapters.Get(key) // Double-checked locking
+		b.queriersLock.Lock()
+		defer b.queriersLock.Unlock()
+		qry, found = b.queriers.Get(key) // Double-checked locking
 		if !found {
 			var err error
-			adapter, err = b.newAdapter(session, password, token, path)
+			adapter, err := b.newAdapter(session, password, token, path)
 			if err != nil {
 				return nil, err
 			}
-			b.adapters.Add(key, adapter)
+			qry, err = adapter.QuerierV2()
+			if err != nil {
+				return nil, errors.Wrap(err, "Failed to initialize Querier")
+			}
+			b.queriers.Add(key, qry)
 		}
 	}
 
-	return adapter.(*tsdb.V3ioAdapter), nil
+	return qry.(*pquerier.V3ioQuerier), nil
 }
 
 // Create creates a table
