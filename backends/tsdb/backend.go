@@ -22,16 +22,21 @@ package tsdb
 
 import (
 	"fmt"
+	"hash/fnv"
+	"reflect"
 	"strings"
-
-	"github.com/nuclio/logger"
+	"sync"
+	"unsafe"
 
 	"github.com/v3io/frames"
 	"github.com/v3io/frames/backends"
 
+	"github.com/golang/groupcache/lru"
+	"github.com/nuclio/logger"
 	"github.com/pkg/errors"
 	"github.com/v3io/frames/v3ioutils"
 	"github.com/v3io/v3io-tsdb/pkg/config"
+	"github.com/v3io/v3io-tsdb/pkg/pquerier"
 	"github.com/v3io/v3io-tsdb/pkg/tsdb"
 	"github.com/v3io/v3io-tsdb/pkg/tsdb/schema"
 	tsdbutils "github.com/v3io/v3io-tsdb/pkg/utils"
@@ -40,7 +45,8 @@ import (
 
 // Backend is a tsdb backend
 type Backend struct {
-	adapters      map[string]*tsdb.V3ioAdapter
+	queriers      *lru.Cache
+	queriersLock  sync.Mutex
 	backendConfig *frames.BackendConfig
 	framesConfig  *frames.Config
 	logger        logger.Logger
@@ -51,8 +57,13 @@ type Backend struct {
 func NewBackend(logger logger.Logger, httpClient *fasthttp.Client, cfg *frames.BackendConfig, framesConfig *frames.Config) (frames.DataBackend, error) {
 
 	frames.InitBackendDefaults(cfg, framesConfig)
+	querierCacheSize := framesConfig.QuerierCacheSize
+	if querierCacheSize == 0 {
+		querierCacheSize = 64
+	}
+
 	newBackend := Backend{
-		adapters:      map[string]*tsdb.V3ioAdapter{},
+		queriers:      lru.New(querierCacheSize),
 		logger:        logger.GetChild("tsdb"),
 		backendConfig: cfg,
 		framesConfig:  framesConfig,
@@ -110,15 +121,57 @@ func (b *Backend) newAdapter(session *frames.Session, password string, token str
 	return adapter, nil
 }
 
+// Get underlying bytes of string for read-only purposes to avoid allocating a slice.
+func getBytes(str string) []byte {
+	hdr := *(*reflect.StringHeader)(unsafe.Pointer(&str))
+	return *(*[]byte)(unsafe.Pointer(&reflect.SliceHeader{
+		Data: hdr.Data,
+		Len:  hdr.Len,
+		Cap:  hdr.Len,
+	}))
+}
+
 // GetAdapter returns an adapter
 func (b *Backend) GetAdapter(session *frames.Session, password string, token string, path string) (*tsdb.V3ioAdapter, error) {
-	// TODO: maintain adapter cache, for now create new per read/write request
-
 	adapter, err := b.newAdapter(session, password, token, path)
 	if err != nil {
 		return nil, err
 	}
 	return adapter, nil
+}
+
+// GetQuerier returns a querier
+func (b *Backend) GetQuerier(session *frames.Session, password string, token string, path string) (*pquerier.V3ioQuerier, error) {
+
+	h := fnv.New64()
+	_, _ = h.Write(getBytes(session.Url))
+	_, _ = h.Write(getBytes(session.Container))
+	_, _ = h.Write(getBytes(path))
+	_, _ = h.Write(getBytes(session.User))
+	_, _ = h.Write(getBytes(password))
+	_, _ = h.Write(getBytes(token))
+	key := h.Sum64()
+
+	qry, found := b.queriers.Get(key)
+	if !found {
+		b.queriersLock.Lock()
+		defer b.queriersLock.Unlock()
+		qry, found = b.queriers.Get(key) // Double-checked locking
+		if !found {
+			var err error
+			adapter, err := b.newAdapter(session, password, token, path)
+			if err != nil {
+				return nil, err
+			}
+			qry, err = adapter.QuerierV2()
+			if err != nil {
+				return nil, errors.Wrap(err, "Failed to initialize Querier")
+			}
+			b.queriers.Add(key, qry)
+		}
+	}
+
+	return qry.(*pquerier.V3ioQuerier), nil
 }
 
 // Create creates a table

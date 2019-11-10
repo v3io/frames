@@ -88,14 +88,9 @@ func (b *Backend) Read(request *frames.ReadRequest) (frames.FrameIterator, error
 			return nil, err
 		}
 	}
-	adapter, err := b.GetAdapter(request.Proto.Session, request.Password.Get(), request.Token.Get(), table)
+	qry, err := b.GetQuerier(request.Proto.Session, request.Password.Get(), request.Token.Get(), table)
 	if err != nil {
 		return nil, errors.Wrap(err, "failed to create adapter")
-	}
-
-	qry, err := adapter.QuerierV2()
-	if err != nil {
-		return nil, errors.Wrap(err, "Failed to initialize Querier")
 	}
 
 	iter := tsdbIterator{request: request}
