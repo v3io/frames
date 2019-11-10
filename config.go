@@ -47,6 +47,8 @@ type Config struct {
 	// Number of parallel V3IO worker routines
 	Workers int `json:"workers"`
 
+	QuerierCacheSize int `json:"querierCacheSize"`
+
 	Backends []*BackendConfig `json:"backends,omitempty"`
 }
 
