@@ -45,7 +45,7 @@ func (b *Backend) inferSchema(request *frames.ExecRequest) error {
 		Path: table, Filter: "", AttributeNames: []string{"*"}}
 	b.logger.DebugWith("GetItems for schema", "input", input)
 	iter, err := v3ioutils.NewAsyncItemsCursor(
-		container, &input, b.numWorkers, []string{}, b.logger, 0, []string{table})
+		container, &input, b.numWorkers, nil, b.logger, 0, []string{table})
 	if err != nil {
 		return err
 	}

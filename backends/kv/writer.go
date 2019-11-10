@@ -88,8 +88,8 @@ func (a *Appender) Add(frame frames.Frame) error {
 	if len(names) == 0 {
 		return fmt.Errorf("empty frame")
 	}
-	if len(frame.Indices()) > 1 {
-		return fmt.Errorf("can't set key from multi-index frame")
+	if len(frame.Indices()) > 2 {
+		return fmt.Errorf("can only write up to two indices")
 	}
 
 	// In case we are getting several frames to update, validate they all have the same schema
@@ -110,11 +110,18 @@ func (a *Appender) Add(frame frames.Frame) error {
 		if indexName == "" {
 			indexName = a.schema.(*v3ioutils.OldV3ioSchema).Key
 		}
-		newSchema = v3ioutils.NewSchema(indexName)
+		sortingKeyName := a.schema.(*v3ioutils.OldV3ioSchema).SortingKey
+		if len(indices) > 1 {
+			sortingKeyName = indices[1].Name()
+		}
+		newSchema = v3ioutils.NewSchema(indexName, sortingKeyName)
 		newSchema.AddColumn(indexName, indices[0], false)
+		if len(indices) > 1 {
+			newSchema.AddColumn(indexName, indices[1], false)
+		}
 	} else {
 		indexName = a.schema.(*v3ioutils.OldV3ioSchema).Key
-		newSchema = v3ioutils.NewSchema(indexName)
+		newSchema = v3ioutils.NewSchema(indexName, "")
 		newSchema.AddField(indexName, 0, false)
 	}
 
@@ -145,6 +152,18 @@ func (a *Appender) Add(frame frames.Frame) error {
 	indexVal, err := a.indexValFunc(frame)
 	if err != nil {
 		return err
+	}
+
+	var sortingKeyCol frames.Column
+	if len(frame.Indices()) > 1 {
+		sortingColFunc, err := a.funcFromCol(sortingKeyCol)
+		if err != nil {
+			return nil, err
+		}
+		compositeFunc := func(i int) interface{} {
+			return fmt.Sprintf("%v.%v", indexColFunc(i), sortingColFunc(i))
+		}
+		return compositeFunc, nil
 	}
 
 	for r := 0; r < frame.Len(); r++ {
@@ -297,8 +316,12 @@ func (a *Appender) WaitForComplete(timeout time.Duration) error {
 func (a *Appender) indexValFunc(frame frames.Frame) (func(int) interface{}, error) {
 	var indexCol frames.Column
 
-	if indices := frame.Indices(); len(indices) > 0 {
+	indices := frame.Indices()
+	if len(indices) > 0 {
 		indexCol = indices[0]
+		if len(indices) > 1 {
+			indexCol = indices[1]
+		}
 	} else {
 		// If no index column exist use range index
 		return func(i int) interface{} {
@@ -306,6 +329,14 @@ func (a *Appender) indexValFunc(frame frames.Frame) (func(int) interface{}, erro
 		}, nil
 	}
 
+	indexColFunc, err := a.funcFromCol(indexCol)
+	if err != nil {
+		return nil, err
+	}
+	return indexColFunc, nil
+}
+
+func (a *Appender) funcFromCol(indexCol frames.Column) (func(int) interface{}, error) {
 	var fn func(int) interface{}
 	switch indexCol.DType() {
 	// strconv.Format* is about twice as fast as fmt.Sprintf
@@ -340,7 +371,6 @@ func (a *Appender) indexValFunc(frame frames.Frame) (func(int) interface{}, erro
 	default:
 		return nil, fmt.Errorf("unknown column type - %v", indexCol.DType())
 	}
-
 	return fn, nil
 }
 

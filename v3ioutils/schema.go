@@ -41,8 +41,8 @@ const (
 )
 
 // NewSchema returns a new schema
-func NewSchema(key string) V3ioSchema {
-	return &OldV3ioSchema{Fields: []OldSchemaField{}, Key: key}
+func NewSchema(key string, sortingKey string) V3ioSchema {
+	return &OldV3ioSchema{Fields: []OldSchemaField{}, Key: key, SortingKey: sortingKey}
 }
 
 // SchemaFromJSON return a schema from JSON data
@@ -63,6 +63,7 @@ type V3ioSchema interface {
 type OldV3ioSchema struct {
 	Fields           []OldSchemaField `json:"fields"`
 	Key              string           `json:"key"`
+	SortingKey       string           `json:"sortingKey"`
 	HashingBucketNum int              `json:"hashingBucketNum"`
 }
 

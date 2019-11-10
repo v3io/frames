@@ -70,7 +70,7 @@ func (kv *Backend) Read(request *frames.ReadRequest) (frames.FrameIterator, erro
 		true,
 		len(partitions)*numberOfWorkers)
 
-	input := v3io.GetItemsInput{Filter: request.Proto.Filter, AttributeNames: columns}
+	input := v3io.GetItemsInput{Filter: request.Proto.Filter, AttributeNames: columns, SortKeyRangeStart: request.Proto.SortKeyRangeStart, SortKeyRangeEnd: request.Proto.SortKeyRangeEnd}
 	kv.logger.DebugWith("read input", "input", input, "request", request)
 
 	iter, err := v3ioutils.NewAsyncItemsCursor(
