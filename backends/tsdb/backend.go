@@ -57,13 +57,13 @@ type Backend struct {
 func NewBackend(logger logger.Logger, httpClient *fasthttp.Client, cfg *frames.BackendConfig, framesConfig *frames.Config) (frames.DataBackend, error) {
 
 	frames.InitBackendDefaults(cfg, framesConfig)
-	adapterCacheSize := framesConfig.AdapterCacheSize
-	if adapterCacheSize == 0 {
-		adapterCacheSize = 64
+	querierCacheSize := framesConfig.QuerierCacheSize
+	if querierCacheSize == 0 {
+		querierCacheSize = 64
 	}
 
 	newBackend := Backend{
-		queriers:      lru.New(adapterCacheSize),
+		queriers:      lru.New(querierCacheSize),
 		logger:        logger.GetChild("tsdb"),
 		backendConfig: cfg,
 		framesConfig:  framesConfig,
