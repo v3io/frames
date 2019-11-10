@@ -347,6 +347,8 @@ func (req *simpleJSONQueryRequest) getFieldNames(frame frames.Frame) []string {
 		retVal = frame.Names()
 		if req.getFormatType() == timeserieOutputType {
 			retVal = getMetricNames(frame)
+		} else if len(frame.Indices()) > 0 {
+			retVal = append(retVal, frame.Indices()[0].Name())
 		}
 		sort.Strings(retVal)
 	}
@@ -367,13 +369,25 @@ func getMetricNames(frame frames.Frame) []string {
 func prepareKVColumns(frame frames.Frame, headers []string) ([]tableColumn, error) {
 	retVal := []tableColumn{}
 	for _, header := range headers {
-		if column, err := frame.Column(header); err != nil {
+		if column, err := findColumnOrIndices(frame, header); err != nil {
 			return nil, err
 		} else {
 			retVal = append(retVal, prepareKVColumnFormat(column, header))
 		}
 	}
 	return retVal, nil
+}
+
+func findColumnOrIndices(frame frames.Frame, col string)(frames.Column, error) {
+	if column, err := frame.Column(col); err != nil {
+		if len(frame.Indices()) > 0 && frame.Indices()[0].Name() == col {
+			return frame.Indices()[0], nil
+		} else {
+			return nil, err
+		}
+	} else {
+		return column, nil
+	}
 }
 
 func prepareKVColumnFormat(column frames.Column, field string) tableColumn {
