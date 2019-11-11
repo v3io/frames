@@ -36,7 +36,6 @@ type frameImpl struct {
 	byName  map[string]Column // name -> Column
 	columns []Column
 	indices []Column
-	bitmask []map[string]struct{}
 	msg     *pb.Frame
 	names   []string // Created on 1st call to Names
 }
@@ -46,7 +45,7 @@ func NewFrame(columns []Column, indices []Column, labels map[string]interface{})
 	return NewFrameWithBitmask(columns, indices, labels, nil)
 }
 
-func NewFrameWithBitmask(columns []Column, indices []Column, labels map[string]interface{}, bitmask []map[string]struct{}) (Frame, error) {
+func NewFrameWithBitmask(columns []Column, indices []Column, labels map[string]interface{}, bitmask []*pb.RowBitmask) (Frame, error) {
 	if err := checkEqualLen(columns, indices); err != nil {
 		return nil, err
 	}
@@ -69,10 +68,7 @@ func NewFrameWithBitmask(columns []Column, indices []Column, labels map[string]i
 		return nil, err
 	}
 
-	msg.Bitmask = make([]*pb.RowBitmask, len(bitmask))
-	for i, currentBitmask := range bitmask {
-		msg.Bitmask[i] = &pb.RowBitmask{NullColumns: getKeys(currentBitmask)}
-	}
+	msg.Bitmask = bitmask
 
 	byName := make(map[string]Column)
 	for _, col := range columns {
@@ -85,7 +81,6 @@ func NewFrameWithBitmask(columns []Column, indices []Column, labels map[string]i
 		labels:  labels,
 		indices: indices,
 		columns: columns,
-		bitmask: bitmask,
 	}
 
 	return frame, nil
@@ -209,7 +204,7 @@ func (fr *frameImpl) Slice(start int, end int) (Frame, error) {
 		return nil, err
 	}
 
-	return NewFrameWithBitmask(colSlices, indexSlices, fr.labels, fr.bitmask[start:end])
+	return NewFrameWithBitmask(colSlices, indexSlices, fr.labels, fr.msg.Bitmask[start:end])
 }
 
 // FrameRowIterator returns iterator over rows
@@ -223,8 +218,14 @@ func (fr *frameImpl) Proto() *pb.Frame {
 }
 
 func (fr *frameImpl) IsNull(index int, colName string) bool {
-	_, ok := fr.bitmask[index][colName]
-	return ok
+	rowBitmask := fr.msg.Bitmask[index]
+	for _, nullColumnName := range rowBitmask.NullColumns {
+		if nullColumnName == colName {
+			return true
+		}
+	}
+
+	return false
 }
 
 // NewFrameFromProto return a new frame from protobuf message
@@ -240,21 +241,12 @@ func NewFrameFromProto(msg *pb.Frame) Frame {
 	for i, colMsg := range msg.Indices {
 		indices[i] = &colImpl{msg: colMsg}
 	}
-	bitmask := make([]map[string]struct{}, len(msg.Bitmask))
-	for i, currentBitmask := range msg.Bitmask {
-		myMap := make(map[string]struct{}, len(currentBitmask.NullColumns))
-		for _, value := range currentBitmask.NullColumns {
-			myMap[value] = struct{}{}
-		}
-		bitmask[i] = myMap
-	}
 
 	return &frameImpl{
 		msg:     msg,
 		columns: columns,
 		indices: indices,
 		byName:  byName,
-		bitmask: bitmask,
 	}
 }
 

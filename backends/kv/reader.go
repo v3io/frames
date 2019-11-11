@@ -27,6 +27,7 @@ import (
 	"github.com/v3io/frames"
 	"github.com/v3io/frames/backends"
 	"github.com/v3io/frames/backends/utils"
+	"github.com/v3io/frames/pb"
 	"github.com/v3io/frames/v3ioutils"
 	"github.com/v3io/v3io-go/pkg/dataplane"
 )
@@ -110,8 +111,30 @@ func (ki *Iterator) Next() bool {
 
 	rowNum := 0
 	numOfSchemaFiles := 0
-	var bitmask []map[string]struct{}
+	var bitmask []*pb.RowBitmask
 	hasAnyNulls := false
+
+	//create columns
+	for _, field := range ki.schema.Fields {
+		f, err := ki.schema.GetField(field.Name)
+		if err != nil {
+			ki.err = err
+			return false
+		}
+		data, err := utils.NewColumnFromType(f.Type, 0)
+		if err != nil {
+			ki.err = err
+			return false
+		}
+
+		col, err := frames.NewSliceColumn(field.Name, data)
+		if err != nil {
+			ki.err = err
+			return false
+		}
+		columns = append(columns, col)
+		byName[field.Name] = col
+	}
 
 	for ; rowNum < int(ki.request.Proto.MessageLimit) && ki.iter.Next(); rowNum++ {
 		row := ki.iter.GetFields()
@@ -134,27 +157,7 @@ func (ki *Iterator) Next() bool {
 				colName = ki.schema.Key
 			}
 
-			col, ok := byName[colName]
-			if !ok {
-				f, err := ki.schema.GetField(colName)
-				if err != nil {
-					ki.err = err
-					return false
-				}
-				data, err := utils.NewColumnFromType(f.Type, rowNum-numOfSchemaFiles)
-				if err != nil {
-					ki.err = err
-					return false
-				}
-
-				col, err = frames.NewSliceColumn(colName, data)
-				if err != nil {
-					ki.err = err
-					return false
-				}
-				columns = append(columns, col)
-				byName[colName] = col
-			}
+			col := byName[colName]
 
 			if err := utils.AppendColumn(col, field); err != nil {
 				ki.err = err
@@ -163,8 +166,9 @@ func (ki *Iterator) Next() bool {
 		}
 
 		// fill columns with nil if there was no value
-		currentRowBitmas := map[string]struct{}{}
-		for name, col := range byName {
+		var currentNullMask pb.RowBitmask
+		for _, field := range ki.schema.Fields {
+			name := field.Name
 			if name == ki.schema.Key && !hasKeyColumnAttribute {
 				name = indexColKey
 			}
@@ -173,15 +177,15 @@ func (ki *Iterator) Next() bool {
 			}
 
 			var err error
-			err = utils.AppendNil(col)
+			err = utils.AppendNil(byName[name])
 			if err != nil {
 				ki.err = err
 				return false
 			}
-			currentRowBitmas[name] = struct{}{}
+			currentNullMask.NullColumns = append(currentNullMask.NullColumns, name)
 			hasAnyNulls = true
 		}
-		bitmask = append(bitmask, currentRowBitmas)
+		bitmask = append(bitmask, &currentNullMask)
 	}
 
 	if ki.iter.Err() != nil {
@@ -214,7 +218,7 @@ func (ki *Iterator) Next() bool {
 		}
 	}
 
-	if !hasAnyNulls{
+	if !hasAnyNulls {
 		bitmask = nil
 	}
 	var err error
