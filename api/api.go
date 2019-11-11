@@ -79,7 +79,7 @@ func New(logger logger.Logger, config *frames.Config) (*API, error) {
 
 // Read reads from database, emitting results to wf
 func (api *API) Read(request *frames.ReadRequest, out chan frames.Frame) error {
-	api.logger.InfoWith("read request", "request", request)
+	api.logger.DebugWith("read request", "request", request)
 
 	backend, ok := api.backends[request.Proto.Backend]
 
@@ -114,7 +114,7 @@ func (api *API) Write(request *frames.WriteRequest, in chan frames.Frame) (int, 
 		return -1, -1, fmt.Errorf(missingMsg)
 	}
 
-	api.logger.InfoWith("write request", "request", request)
+	api.logger.DebugWith("write request", "request", request)
 	backend, ok := api.backends[request.Backend]
 	if !ok {
 		api.logger.ErrorWith("unkown backend", "name", request.Backend)
