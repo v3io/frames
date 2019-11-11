@@ -58,11 +58,16 @@ message Value {
     }
 }
 
+message RowBitmask {
+    repeated string nullColumns = 1;
+}
+
 message Frame {
     repeated Column columns = 1;
     repeated Column indices = 2;
     map<string, Value> labels = 3;
     string error = 4; // Used in errors when reading over HTTP
+    repeated RowBitmask bitmask = 5;
 }
 
 // TODO: Place these under TableSchema
