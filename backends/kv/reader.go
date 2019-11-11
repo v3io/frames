@@ -111,6 +111,7 @@ func (ki *Iterator) Next() bool {
 	rowNum := 0
 	numOfSchemaFiles := 0
 	var bitmask []map[string]struct{}
+	hasAnyNulls := false
 
 	for ; rowNum < int(ki.request.Proto.MessageLimit) && ki.iter.Next(); rowNum++ {
 		row := ki.iter.GetFields()
@@ -135,7 +136,7 @@ func (ki *Iterator) Next() bool {
 
 			col, ok := byName[colName]
 			if !ok {
-				f, err := ki.schema.GetField(name)
+				f, err := ki.schema.GetField(colName)
 				if err != nil {
 					ki.err = err
 					return false
@@ -178,6 +179,7 @@ func (ki *Iterator) Next() bool {
 				return false
 			}
 			currentRowBitmas[name] = struct{}{}
+			hasAnyNulls = true
 		}
 		bitmask = append(bitmask, currentRowBitmas)
 	}
@@ -212,6 +214,9 @@ func (ki *Iterator) Next() bool {
 		}
 	}
 
+	if !hasAnyNulls{
+		bitmask = nil
+	}
 	var err error
 	ki.currFrame, err = frames.NewFrameWithBitmask(columns, indices, nil, bitmask)
 	if err != nil {

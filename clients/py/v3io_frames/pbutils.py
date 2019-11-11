@@ -263,10 +263,14 @@ def series2col(s, name):
 
 
 def insert_nulls_based_on_bitmask(df, bitmask):
+    # if there are no Null values at all, skip
+    if len(bitmask) == 0:
+        return df
     i = 0
     casted_columns = {}
     for key in df.index:
         for col_name in bitmask[i].nullColumns:
+            # boolean columns should be converted to `object` to be able to represent None.
             if df[col_name].dtype == np.bool and col_name not in casted_columns:
                 casted_columns[col_name] = True
                 df[col_name] = df[col_name].astype(object)
