@@ -153,7 +153,7 @@ class ClientBase:
         return self._write(request, dfs, labels, index_cols)
 
     def create(self, backend, table, attrs=None, schema=None, if_exists=FAIL):
-        """Creates a new TSDB table or a stream
+        """Creates a new TSDB table or stream
 
         Parameters
         ----------

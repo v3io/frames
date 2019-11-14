@@ -40,8 +40,8 @@ You can then use the client methods to perform different data operations on the 
 
 The `Client` class features the following methods for supporting basic data operations:
 
-- [`create`](#method-create) &mdash; creates a new TSDB table or a stream ("backend data").
-- [`delete`](#method-delete) &mdash; deletes a table or stream or specific table items
+- [`create`](#method-create) &mdash; creates a new TSDB table or stream ("backend data").
+- [`delete`](#method-delete) &mdash; deletes a table or stream or specific table items.
 - [`read`](#method-read) &mdash; reads data from a table or stream into pandas DataFrames.
 - [`write`](#method-write) &mdash; writes data from pandas DataFrames to a table or stream.
 - [`execute`](#method-execute) &mdash; executes a backend-specific command on a table or stream.
@@ -110,7 +110,7 @@ Client(address='', container='', user='', password='', token='')
   <br/>
   When running locally on the platform (for example, from a Jupyter Notebook service), set this parameter to `framesd:8081` to use the gRPC (recommended) or to `framesd:8080` to use HTTP.
   <br/>
-  When connecting to the platform remotely, set this parameter to the API address of Frames platform service of the parent tenant.
+  When connecting to the platform remotely, set this parameter to the API address of a Frames platform service in the parent tenant.
   You can copy this address from the **API** column of the V3IO Frames service on the **Services** platform dashboard page.
   <!-- [IntInfo] In platform command-line environments, such as Jupyter
     Notebook, the local-execution Frames port numbers are saved in
@@ -185,7 +185,7 @@ Additional method-specific parameters are described for each method.
 <a id="method-create"></a>
 ### create Method
 
-Creates a new TSDB table or a stream in a platform data container, according to the specified backend type.
+Creates a new TSDB table or stream in a platform data container, according to the specified backend type.
 
 The `create` method is supported by the `tsdb` and `stream` backends, but not by the `kv` backend, because NoSQL tables in the platform don't need to be created prior to ingestion; when ingesting data into a table that doesn't exist, the table is automatically created.
 
