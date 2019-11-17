@@ -29,13 +29,13 @@ class ClientBase:
 
         Parameters
         ----------
-        address : str
+        address (Required) : str
             Address of the Frames service (framesd)
-        session : Session
+        session (Optional) : Session
             Session object
-        frame_factory : class
-            DataFrame factory; currently, pandas and cuDF are supported
-        concat : function
+        frame_factory (Optional) : class
+            DataFrame factory; currently, pandas (default) or cuDF
+        concat (Optional) : function
             Function for concatenating DataFrames; default: pandas concat
 
         Return Value
@@ -157,14 +157,14 @@ class ClientBase:
 
         Parameters
         ----------
-        backend : str
+        backend (Required) : str
             Backend name
-        table : str
+        table (Required) : str
             Table to create
-        attrs : dict
+        attrs (Required with `rate` for "tsdb"; optional for "stream") : dict
             A dictionary of backend-specific parameters (arguments)
-        schema: Schema or None
-            Table schema
+        schema (Optional) : Schema or None
+            Table schema; used for testing purposes with the "csv" backend
         if_exists : int
             One of IGNORE or FAIL
 
