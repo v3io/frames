@@ -59,7 +59,7 @@ message Value {
 }
 
 message RowBitmask {
-    repeated string nullColumns = 1;
+    map<string, bool> nullColumns = 1;
 }
 
 message Frame {

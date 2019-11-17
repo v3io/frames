@@ -226,14 +226,9 @@ func (fr *frameImpl) IsNull(index int, colName string) bool {
 	if len(fr.msg.Bitmask) == 0 {
 		return false
 	}
-	rowBitmask := fr.msg.Bitmask[index]
-	for _, nullColumnName := range rowBitmask.NullColumns {
-		if nullColumnName == colName {
-			return true
-		}
-	}
+	_, exist := fr.msg.Bitmask[index].NullColumns[colName]
 
-	return false
+	return exist
 }
 
 // NewFrameFromProto return a new frame from protobuf message
@@ -422,15 +417,4 @@ func cols2PB(columns []Column) ([]*pb.Column, error) {
 	}
 
 	return pbCols, nil
-}
-
-func getKeys(myMap map[string]struct{}) []string {
-	keys := make([]string, len(myMap))
-	i := 0
-	for k := range myMap {
-		keys[i] = k
-		i++
-	}
-
-	return keys
 }

@@ -292,12 +292,12 @@ def normalize_df(df, schema):
     """
     bitmask = []
     for index, row in df.iterrows():
-        current_bitmask = []
+        current_bitmask = {}
         for col_name in df.columns:
             if pd.isnull(row[col_name]):
                 df.at[index, col_name] = \
                     get_empty_value_by_type(schema[col_name])
-                current_bitmask.append(col_name)
+                current_bitmask[col_name] = True
         bitmask.append({'nullColumns': current_bitmask})
 
     return df, bitmask

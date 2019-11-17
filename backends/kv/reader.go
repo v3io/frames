@@ -167,6 +167,7 @@ func (ki *Iterator) Next() bool {
 
 		// fill columns with nil if there was no value
 		var currentNullMask pb.RowBitmask
+		currentNullMask.NullColumns = make(map[string]bool)
 		for _, field := range ki.schema.Fields {
 			name := field.Name
 			if name == ki.schema.Key && !hasKeyColumnAttribute {
@@ -182,7 +183,7 @@ func (ki *Iterator) Next() bool {
 				ki.err = err
 				return false
 			}
-			currentNullMask.NullColumns = append(currentNullMask.NullColumns, name)
+			currentNullMask.NullColumns["name"] = true
 			hasAnyNulls = true
 		}
 		bitmask = append(bitmask, &currentNullMask)
