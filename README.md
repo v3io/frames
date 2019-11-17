@@ -170,22 +170,20 @@ client = v3f.Client("framesd:8081", user="iguazio", password="mypass", container
 <a id="client-common-method-params"></a>
 ### Common Client Method Parameters
 
-All client methods receive the following common parameters:
+All client methods receive the following common parameters; additional, method-specific parameters are described for each method.
 
 - <a id="client-method-param-backend"></a>**backend** &mdash; The backend data type for the operation.
-  See the backend-types descriptions in the [overview](#backend-types).
+  See [Backend Types](#backend-types).
 
   - **Type:** `str`
-  - **Valid Values:** `"csv"` | `"kv"` | `"stream"` | `"tsdb"`
+  - **Valid Values:** `"csv"` (for testing) | `"kv"` | `"stream"` | `"tsdb"`
   - **Requirement:** Required
 
-- <a id="client-method-param-table"></a>**table** &mdash; The relative path to the backend data &mdash; A directory in the target platform data container (as configured for the client object) that represents a TSDB or NoSQL table or a data stream.
+- <a id="client-method-param-table"></a>**table** &mdash; The relative path to the backend data &mdash; a directory in the target platform data container (as configured for the client object) that represents a TSDB or NoSQL table or a data stream.
   For example, `"mytable"` or `"examples/tsdb/my_metrics"`.
 
   - **Type:** `str`
   - **Requirement:** Required unless otherwise specified in the method-specific documentation
-
-Additional method-specific parameters are described for each method.
 
 <a id="method-create"></a>
 ### create Method
