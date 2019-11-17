@@ -70,6 +70,7 @@ This can be done by using any of the following alternative methods (documented i
 - <a id="user-auth-client-const-params"></a>Provide the authentication credentials in the [`Client` constructor parameters](#client-constructor-parameters) by using either of the following methods:
 
   - <a id="user-auth-token"></a>Set the [`token`](#client-param-token) constructor parameter to a valid platform access key with the required data-access permissions.
+    You can get the access key from the **Access Keys** window that's available from the user-profile menu of the platform dashboard, or by copying the value of the `V3IO_ACCESS_KEY` environment variable in a platform web-shell or Jupyter Notebook service.
   - <a id="user-auth-user-password"></a>Set the [`user`](#client-param-user) and [`password`](#client-param-password) constructor parameters to the username and password of a platform user with the required data-access permissions.
   <br/>
 
@@ -78,13 +79,13 @@ This can be done by using any of the following alternative methods (documented i
 - <a id="user-auth-client-envar"></a>Set the authentication credentials in environment variables, by using either of the following methods:
 
   - <a id="user-auth-client-envar-access-key"></a>Set the `V3IO_ACCESS_KEY` environment variable to a valid platform access key with the required data-access permissions.
+
+    > **Note:** The platform's Jupyter Notebook service automatically defines the `V3IO_ACCESS_KEY` environment variable and initializes it to a valid access key for the running user of the service. 
   - <a id="user-auth-client-envar-user-pwd"></a>Set the `V3IO_USERNAME` and `V3IO_PASSWORD` environment variables to the username and password of a platform user with the required data-access permissions.
-  <br/>
 
   > **Note:**
-  > - When the client constructor is called with [authentication parameters](#user-auth-client-const-params), the authentication-credentials environment variables (if defined) are ignored.
+  > - When the client constructor is called with authentication parameters ([option #1](#user-auth-client-const-params)), the authentication-credentials environment variables (if defined) are ignored.
   > - When `V3IO_ACCESS_KEY` is defined, `V3IO_USERNAME` and `V3IO_PASSWORD` are ignored.
-  > - The platform's Jupyter Notebook service automatically defines the `V3IO_ACCESS_KEY` environment variable and initializes it to a valid access key for the running user of the service. 
 
 <a id="client-constructor"></a>
 ### Client Constructor
