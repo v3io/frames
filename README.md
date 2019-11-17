@@ -176,8 +176,8 @@ All client methods receive the following common parameters; additional, method-s
   See [Backend Types](#backend-types).
 
   - **Type:** `str`
-  - **Valid Values:** `"csv"` (for testing) | `"kv"` | `"stream"` | `"tsdb"`
   - **Requirement:** Required
+  - **Valid Values:** `"csv"` (for testing) | `"kv"` | `"stream"` | `"tsdb"`
 
 - <a id="client-method-param-table"></a>**table** &mdash; The relative path to the backend data &mdash; a directory in the target platform data container (as configured for the client object) that represents a TSDB or NoSQL table or a data stream.
   For example, `"mytable"` or `"examples/tsdb/my_metrics"`.
@@ -199,15 +199,30 @@ The `create` method is supported by the `tsdb` and `stream` backends, but not by
 
 <a id="method-create-syntax"></a>
 #### Syntax
+<!-- [IntInfo] (26.9.19) (sharonl) We omitted `schema=None` because the
+  `schema` parameter is used only with the `csv` testing backend. -->
+
+<a id="method-create-syntax-tsdb"></a>
+##### tsdb Backend
 
 ```python
 create(backend, table, attrs=None)
 ```
-<!--
-create(backend, table, attrs=None, schema=None)
--->
-<!-- [IntInfo] (26.9.19) The `schema` parameter is used only with the `csv`
- test backend. -->
+
+```python
+attrs={"rate": ""[, "aggregates": "", "aggregation-granularity": ""]}
+```
+
+<a id="method-create-syntax-stream"></a>
+##### stream Backend
+
+```python
+create(backend, table[, attrs=None])
+```
+
+```python
+attrs={["shards": 1, "retention_hours": 24]}
+```
 
 <a id="method-create-common-params"></a>
 #### Common create Parameters
@@ -216,52 +231,90 @@ All Frames backends that support the `create` method support the following commo
 
 - <a id="method-create-param-attrs"></a>**attrs** &mdash; A dictionary of `<argument name>: <value>` pairs for passing additional backend-specific parameters (arguments).
 
-  - **Type:** dict
+  - **Type:** `dict`
   - **Requirement:** Optional
+  - **Valid Values:** The valid values are backend-specific.
+    See [tsdb Backend create Parameters](#method-create-params-tsdb) and [stream Backend create Parameters](#method-create-params-stream).
   - **Default Value:** `None`
 
 <a id="method-create-params-tsdb"></a>
 #### tsdb Backend create Parameters
 
-The following `tsdb` backend parameters are passed via the [`attrs`](#method-create-param-attrs) parameter of the  `create` method:
+The following `tsdb` backend parameters are passed via the [`attrs`](#method-create-param-attrs) parameter of the `create` method; for more information about these parameters, see the [V3IO TSDB documentation](https://github.com/v3io/v3io-tsdb#v3io-tsdb):
 
-- <a id="method-create-tsdb-param-rate"></a>**rate** &mdash; The ingestion rate TSDB's metric-samples, as `"[0-9]+/[smh]"` (where `s` = seconds, `m` = minutes, and `h` = hours); for example, `"1/s"` (one sample per minute).
+- <a id="method-create-tsdb-param-rate"></a>**rate** &mdash; The ingestion rate of the TSDB metric samples.
   The rate should be calculated according to the slowest expected ingestion rate.
 
   - **Type:** `str`
   - **Requirement:** Required
+  - **Valid Values:** A string of the format `"[0-9]+/[smh]"` &mdash; where `s` = seconds, `m` = minutes, and `h` = hours.
+    For example, `"1/s"` (one sample per minute), `"20/m"` (20 samples per minute), or `"50/h"` (50 samples per hour).
 
-- <a id="method-create-tsdb-param-aggregates"></a>**aggregates** &mdash; Default aggregates to calculate in real time during the samples ingestion, as a comma-separated list of supported aggregation functions.
+- <a id="method-create-tsdb-param-aggregates"></a>**aggregates** &mdash; Default aggregates to calculate in real time during the samples ingestion.
 
   - **Type:** `str`
   - **Requirement:** Optional
+  - **Valid Values:** A string containing a comma-separated list of supported aggregation functions &mdash; `avg`| `count`| `last`| `max`| `min`| `rate`| `stddev`| `stdvar`| `sum`.
+    For example, `"count,avg,min,max"`.
 
 - <a id="method-create-tsdb-param-aggregation"></a>**aggregation-granularity** &mdash; Aggregation granularity; i.e., a time interval for applying the aggregation functions, if configured in the [`aggregates`](#method-create-tsdb-param-aggregates) parameter.
 
   - **Type:** `str`
   - **Requirement:** Optional
+  - **Valid Values:** A string of the format `"[0-9]+[mhd]"` &mdash; where `m` = minutes, `h` = hours, and `d` = days.
+    For example, `"30m"` (30 minutes), `"2h"` (2 hours), or `"1d"` (1 day).
 
-For detailed information about these parameters, refer to the [V3IO TSDB documentation](https://github.com/v3io/v3io-tsdb#v3io-tsdb).
+<a id="method-create-params-tsdb-examples"></a>
+###### Examples
 
-Example:
-```python
-client.create("tsdb", "/mytable", attrs={"rate": "1/m"})
-```
+- Create a TSDB table named "mytable" in the root directory of the client's data container with an ingestion rate of 10 samples per minute:
+
+  ```python
+  client.create("tsdb", "/mytable", attrs={"rate": "10/m"})
+  ```
+
+- Create a TSDB table named "my_metrics" in a **tsdb** directory in the client's data container with an ingestion rate of 1 sample per second.
+ The table is created with the `count`, `avg`, `min`, and `max` aggregates and an aggregation interval of 1 hour:
+
+  ```python
+  client.create("tsdb", "/tsdb/my_metrics", attrs={"rate": "1/s", "aggregates": "count,avg,min,max", "aggregation-granularity": "1h"})
+  ```
 
 <a id="method-create-params-stream"></a>
 #### stream Backend create Parameters
 
-The following `stream` backend parameters are passed via the [`attrs`](#method-create-param-attrs) parameter of the  `create` method:
+The following `stream` backend parameters are passed via the [`attrs`](#method-create-param-attrs) parameter of the `create` method; for more information about these parameters, see the [platform streams documentation](https://www.iguazio.com/docs/concepts/latest-release/streams):
 
-- <a id="method-create-stream-param-shards"></a>**shards** (Optional) (default: `1`) &mdash; `int` &mdash; The number of stream shards to create.
-- <a id="method-create-stream-param-retention_hours"></a>**retention_hours** (Optional) (default: `24`) &mdash; `int` &mdash; The stream's retention period, in hours.
+- <a id="method-create-stream-param-shards"></a>**shards** &mdash; The number of stream shards to create.
 
-For detailed information about these parameters, refer to the [platform streams documentation](https://www.iguazio.com/docs/concepts/latest-release/streams).
+  - **Type:** `int`
+  - **Requirement:** Optional
+  - **Default Value:** `1`
+  - **Valid Values:** A positive integer (>= 1).
 
-Example:
-```python
-client.create("stream", "/mystream", attrs={"shards": 6})
-```
+- <a id="method-create-stream-param-retention_hours"></a>**retention_hours** &mdash; The stream's retention period, in hours.
+
+  - **Type:** `int`
+  - **Requirement:** Optional
+  - **Default Value:** `24`
+  - **Valid Values:** A positive integer (>= 1).
+
+<a id="method-create-params-stream-examples"></a>
+###### Examples
+
+- Create a stream named "mystream" in the root directory of the client's data container.
+  The stream has 6 shards and a retention period of 1 hour (default):
+
+  ```python
+  client.create("stream", "/mystream", attrs={"shards": 6})
+  ```
+
+- Create a stream named "stream1" in a "my_streams" directory in the client's data container:
+  The stream has 24 shards (default) and a retention period of 2 hours:
+
+  ```python
+  client.create("stream", "my_streams/stream1", attrs={"retention_hours": 2})
+  ```
 
 <a id="method-write"></a>
 ### write Method
@@ -546,7 +599,7 @@ All Frames backends that support the `execute` method support the following comm
 
 - <a id="method-except-param-args"></a>**args** &mdash; A dictionary of `<argument name>: <value>` pairs for passing command-specific parameters (arguments).
 
-  - **Type:** dict
+  - **Type:** `dict`
   - **Requirement:** Optional
   - **Default Value:** `None`
 
