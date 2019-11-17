@@ -270,19 +270,22 @@ def insert_nulls_based_on_bitmask(df, bitmask):
     casted_columns = {}
     for key in df.index:
         for col_name in bitmask[i].nullColumns:
-            # boolean columns should be converted to `object` to be able to represent None.
-            if df[col_name].dtype == np.bool and col_name not in casted_columns:
+            # boolean columns should be converted to `object` to be able to
+            # represent None.
+            if df[col_name].dtype == np.bool and \
+                    col_name not in casted_columns:
                 casted_columns[col_name] = True
                 df[col_name] = df[col_name].astype(object)
             df.at[key, col_name] = None
-        i = i+1
+        i = i + 1
     return df
 
 
 def normalize_df(df, schema):
     """
-        This function converts all 'Null' values to the according default values based on the column type,
-        and creates a bitmask column to specify where are the null values
+        This function converts all 'Null' values to the according
+        default values based on the column type, and creates a bitmask column
+        to specify where are the null values
     :param schema: dictionary specifying the real type of every column
     :param df:
     :return:
@@ -292,7 +295,8 @@ def normalize_df(df, schema):
         current_bitmask = []
         for col_name in df.columns:
             if pd.isnull(row[col_name]):
-                df.at[index, col_name] = get_empty_value_by_type(schema[col_name])
+                df.at[index, col_name] = \
+                    get_empty_value_by_type(schema[col_name])
                 current_bitmask.append(col_name)
         bitmask.append({'nullColumns': current_bitmask})
 
@@ -322,8 +326,10 @@ def get_actual_types(df):
             column_types[col.name] = fpb.INTEGER
         elif is_float_dtype(col.dtype):
             column_types[col.name] = fpb.FLOAT
-        elif col.dtype == np.object:  # Pandas dtype for str or "mixed" type is object
-            # Go over the column values until we reach a real value and determine whether it's bool or string
+        elif col.dtype == np.object:
+            # Pandas dtype for str or "mixed" type is object
+            # Go over the column values until we reach a real value
+            # and determine whether it's bool or string
             for x in col:
                 if x is None:
                     continue
@@ -333,7 +339,8 @@ def get_actual_types(df):
                 if isinstance(x, bool):
                     column_types[col.name] = fpb.BOOLEAN
                     break
-                raise WriteError('{} - contains an unsupported value type - {}'.format(col_name, type(x)))
+                raise WriteError('{} - contains an unsupported value type - {}'
+                                 .format(col_name, type(x)))
         elif col.dtype == np.bool:
             column_types[col.name] = fpb.BOOLEAN
         elif is_time_dtype(col.dtype):
@@ -342,7 +349,8 @@ def get_actual_types(df):
             # We assume catgorical data is strings
             column_types[col.name] = fpb.STRING
         else:
-            raise WriteError('{} - unsupported type - {}'.format(col_name, col.dtype))
+            raise WriteError('{} - unsupported type - {}'
+                             .format(col_name, col.dtype))
 
     return column_types
 

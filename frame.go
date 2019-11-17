@@ -204,7 +204,12 @@ func (fr *frameImpl) Slice(start int, end int) (Frame, error) {
 		return nil, err
 	}
 
-	return NewFrameWithBitmask(colSlices, indexSlices, fr.labels, fr.msg.Bitmask[start:end])
+	var bitmaskSlice []*pb.RowBitmask
+	if len(fr.msg.Bitmask) != 0 {
+		bitmaskSlice = fr.msg.Bitmask[start:end]
+	}
+
+	return NewFrameWithBitmask(colSlices, indexSlices, fr.labels, bitmaskSlice)
 }
 
 // FrameRowIterator returns iterator over rows
@@ -218,7 +223,7 @@ func (fr *frameImpl) Proto() *pb.Frame {
 }
 
 func (fr *frameImpl) IsNull(index int, colName string) bool {
-	if len(fr.msg.Bitmask) == 0{
+	if len(fr.msg.Bitmask) == 0 {
 		return false
 	}
 	rowBitmask := fr.msg.Bitmask[index]
