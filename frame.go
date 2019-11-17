@@ -218,6 +218,9 @@ func (fr *frameImpl) Proto() *pb.Frame {
 }
 
 func (fr *frameImpl) IsNull(index int, colName string) bool {
+	if len(fr.msg.Bitmask) == 0{
+		return false
+	}
 	rowBitmask := fr.msg.Bitmask[index]
 	for _, nullColumnName := range rowBitmask.NullColumns {
 		if nullColumnName == colName {

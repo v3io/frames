@@ -88,7 +88,7 @@ func (csvSuite *CsvTestSuite) generateSampleFrame(t testing.TB) frames.Frame {
 }
 
 func (csvSuite *CsvTestSuite) TestAll() {
-	table := fmt.Sprintf("kv_test_all%d", time.Now().UnixNano())
+	table := fmt.Sprintf("csv_test_all%d", time.Now().UnixNano())
 
 	csvSuite.T().Log("write")
 	frame := csvSuite.generateSampleFrame(csvSuite.T())
