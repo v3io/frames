@@ -95,7 +95,7 @@ All Frames operations are executed via an object of the `Client` class.
 - [Syntax](#client-constructor-syntax)
 - [Parameters and Data Members](#client-constructor-parameters)
 - [Return Value](#client-constructor-return-value)
-- [Example](#client-constructor-example)
+- [Examples](#client-constructor-examples)
 
 <a id="client-constructor-syntax"></a>
 #### Syntax
@@ -128,35 +128,39 @@ Client(address='', container='', user='', password='', token='')
   - **Requirement:** Required
 
 - <a id="client-param-user"></a>**user** &mdash; The username of a platform user with permissions to access the backend data.
+  See [User Authentication](#user-authentication).
 
   - **Type:** `str`
   - **Requirement:** Required when neither the [`token`](#client-param-token) parameter or the authentication environment variables are set.
-    See [User Authentication](#user-authentication).
     <br/>
     When the `user` parameter is set, the [`password`](#client-param-password) parameter must also be set to a matching user password.
 
 - <a id="client-param-password"></a>**password** &mdash; A platform password for the user configured in the [`user`](#client-param-user) parameter.
+  See [User Authentication](#user-authentication).
 
   - **Type:** `str`
   - **Requirement:** Required when the [`user`](#client-param-user) parameter is set.
-    See [User Authentication](#user-authentication).
 
 - <a id="client-param-token"></a>**token** &mdash; A valid platform access key that allows access to the backend data.
-  To get this access key, select the user profile icon on any platform dashboard page, select **Access Tokens**, and copy an existing access key or create a new key.
+  See [User Authentication](#user-authentication).
 
   - **Type:** `str`
   - **Requirement:** Required when neither the [`user`](#client-param-user) or [`password`](#client-param-password) parameters or the authentication environment variables are set.
-    See [User Authentication](#user-authentication).
 
 <a id="client-constructor-return-value"></a>
 #### Return Value
 
 Returns a new Frames `Client` data object.
 
-<a id="client-constructor-example"></a>
-#### Example
+<a id="client-constructor-examples"></a>
+#### Examples
 
-The following example, for local platform execution, creates a Frames client for accessing data in the "users" container by using the authentication credentials of the user "iguazio":
+The following examples, for local platform execution, both create a Frames client for accessing data in the "users" container by using the authentication credentials of user "iguazio"; the first example uses access-key authentication while the second example uses username and password authentication (see [User Authentication](#user-authentication)):
+
+```python
+import v3io_frames as v3f
+client = v3f.Client("framesd:8081", user="iguazio", token="e8bd4ca2-537b-4175-bf01-8c74963e90bf", container="users")
+```
 
 ```python
 import v3io_frames as v3f
