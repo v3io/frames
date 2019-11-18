@@ -254,7 +254,7 @@ All Frames backends that support the `create` method support the following commo
 <a id="method-create-params-tsdb"></a>
 #### `tsdb` Backend `create` Parameters
 
-The following `tsdb` backend parameters are passed via the [`attrs`](#method-create-param-attrs) parameter of the `create` method; for more information about these parameters, see the [V3IO TSDB documentation](https://github.com/v3io/v3io-tsdb#v3io-tsdb):
+The following `create` parameters are specific to the `tsdb` backend and are passed via the method's [`attrs`](#method-create-param-attrs) parameter; for more information about these parameters, see the [V3IO TSDB documentation](https://github.com/v3io/v3io-tsdb#v3io-tsdb):
 
 - <a id="method-create-tsdb-param-rate"></a>**rate** &mdash; The ingestion rate of the TSDB metric samples.
   It's recommended that you set the rate to the average expected ingestion rate, and that the ingestion rates for a given TSDB table don't vary significantly; when there's a big difference in the ingestion rates (for example, x10), use separate TSDB tables.
@@ -281,7 +281,7 @@ The following `tsdb` backend parameters are passed via the [`attrs`](#method-cre
 <a id="method-create-params-stream"></a>
 #### `stream` Backend `create` Parameters
 
-The following `stream` backend parameters are passed via the [`attrs`](#method-create-param-attrs) parameter of the `create` method; for more information about these parameters, see the [platform streams documentation](https://www.iguazio.com/docs/concepts/latest-release/streams):
+The following `create` parameters are specific to the `stream` backend and are passed via the method's [`attrs`](#method-create-param-attrs) parameter; for more information about these parameters, see the [platform's streams documentation](https://www.iguazio.com/docs/concepts/latest-release/streams):
 
 - <a id="method-create-stream-param-shards"></a>**shards** &mdash; The number of stream shards to create.
 
@@ -382,6 +382,8 @@ All Frames backends that support the `write` method support the following common
 <a id="method-write-params-kv"></a>
 #### `kv` Backend `write` Parameters
 
+The following `write` parameters are specific to the `kv` backend; for more information about these parameters, see the platform's NoSQL documentation:
+
 <!--
 - <a id="method-write-kv-param-expression"></a>**expression** (Optional) (default: `None`) &mdash; A platform update expression that determines how to update the table for all items in the DataFrame.
   For detailed information about platform update expressions, see the [platform documentation](https://www.iguazio.com/docs/reference/latest-release/expressions/update-expression/).
@@ -400,6 +402,8 @@ v3c.write(backend="kv", table="mytable", dfs=df, expression="city='NY'", conditi
 
 <a id="method-write-params-tsdb"></a>
 #### `tsdb` Backend `write` Parameters
+
+The following `write` parameters are specific to the `tsdb` backend; for more information about these parameters, see the [V3IO TSDB documentation](https://github.com/v3io/v3io-tsdb#v3io-tsdb):
 
 - <a id="method-write-param-labels"></a>**labels** (Optional) (default: `None`) &mdash; `dict` &mdash; A dictionary of `<label name>: <label value>` pairs that define metric labels to add to all written metric-sample table items.
   Note that the values of the metric labels must be of type string.
@@ -471,6 +475,8 @@ All Frames backends that support the `read` method support the following common 
 <a id="method-read-params-kv"></a>
 #### `kv` Backend `read` Parameters
 
+The following `read` parameters are specific to the `kv` backend; for more information about these parameters, see the platform's NoSQL documentation:
+
 - <a id="method-read-kv-param-reset_index"></a>**reset_index** &mdash; `bool` &mdash; Reset the index. When set to `false` (default), the DataFrame will have the key column of the v3io kv as the index column.
   When set to `true`, the index will be reset to a range index.
 - <a id="method-read-kv-param-max_in_message"></a>**max_in_message** &mdash; `int` &mdash; The maximum number of rows per message.
@@ -480,10 +486,10 @@ All Frames backends that support the `read` method support the following common 
 - <a id="method-read-kv-param-sort_key_range_start"></a>**sort_key_range_start** &mdash; `str` [**Not supported in this version**]
 - <a id="method-read-kv-param-sort_key_range_end"></a>**sort_key_range_end** &mdash; `str` [**Not supported in this version**]
 
-For detailed information about these parameters, refer to the platform's NoSQL documentation.
-
 <a id="method-read-params-tsdb"></a>
 #### `tsdb` Backend `read` Parameters
+
+The following `read` parameters are specific to the `tsdb` backend; for more information about these parameters, see the [V3IO TSDB documentation](https://github.com/v3io/v3io-tsdb#v3io-tsdb):
 
 - <a id="method-read-tsdb-param-start"></a>**start** &mdash; `str` &mdash; Start (minimum) time for the read operation, as a string containing an RFC 3339 time, a Unix timestamp in milliseconds, a relative time of the format `"now"` or `"now-[0-9]+[mhd]"` (where `m` = minutes, `h` = hours, and `'d'` = days), or 0 for the earliest time.
   For example: `"2016-01-02T15:34:26Z"`; `"1451748866"`; `"now-90m"`; `"0"`.
@@ -506,10 +512,10 @@ For detailed information about these parameters, refer to the platform's NoSQL d
 - <a id="method-read-tsdb-param-multi_index"></a>**multi_index** (Optional) &mdash; `bool` &mdash; `True` to receive the read results as multi-index DataFrames where the labels are used as index columns in addition to the metric sample-time primary-key attribute; `False` (default) only the timestamp will function as the index.
   <!-- [IntInfo] This parameter is available via the `kw` read parameter. -->
 
-For detailed information about these parameters, refer to the [V3IO TSDB documentation](https://github.com/v3io/v3io-tsdb#v3io-tsdb).
-
 <a id="method-read-params-stream"></a>
 #### `stream` Backend `read` Parameters
+
+The following `read` parameters are specific to the `stream` backend; for more information about these parameters, see the [platform's streams documentation](https://www.iguazio.com/docs/concepts/latest-release/streams):
 
 - <a id="method-read-stream-param-seek"></a>**seek** &mdash; `str` &mdash; Valid values:  `"time" | "seq"/"sequence" | "latest" | "earliest"`.
   <br/>
@@ -518,8 +524,6 @@ For detailed information about these parameters, refer to the [V3IO TSDB documen
   If the `time` seek type is set, you need to provide the desired start time via the `start` parameter.
 - <a id="method-read-stream-param-shard_id"></a>**shard_id** &mdash; `str`
 - <a id="method-read-stream-param-sequence"></a>**sequence** &mdash; `int64` (Optional)
-
-For detailed information about these parameters, refer to the [platform streams documentation](https://www.iguazio.com/docs/concepts/latest-release/streams).
 
 <a id="method-read-return-value"></a>
 #### Return Value
@@ -588,6 +592,8 @@ delete(backend, table, filter='', start='', end='')
 <a id="method-delete-params-tsdb"></a>
 #### `tsdb` Backend `delete` Parameters
 
+The following `delete` parameters are specific to the `tsdb` backend; for more information about these parameters, see the [V3IO TSDB documentation](https://github.com/v3io/v3io-tsdb#v3io-tsdb):
+
 - <a id="method-delete-tsdb-param-start"></a>**start** &mdash; `str` &mdash; Start (minimum) time for the delete operation, as a string containing an RFC 3339 time, a Unix timestamp in milliseconds, a relative time of the format `"now"` or `"now-[0-9]+[mhd]"` (where `m` = minutes, `h` = hours, and `'d'` = days), or 0 for the earliest time.
   For example: `"2016-01-02T15:34:26Z"`; `"1451748866"`; `"now-90m"`; `"0"`.
   <br/>
@@ -598,8 +604,6 @@ delete(backend, table, filter='', start='', end='')
   The default end time is `"now"`.
 
 > **Note:** When neither the `start` or `end` parameters are set, the entire TSDB table is deleted.
-
-For detailed information about these parameters, refer to the [V3IO TSDB](https://github.com/v3io/v3io-tsdb#v3io-tsdb) documentation.
 
 <a id="method-delete-examples"></a>
 #### `delete` Examples
