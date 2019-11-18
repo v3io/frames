@@ -257,7 +257,7 @@ All Frames backends that support the `create` method support the following commo
 The following `tsdb` backend parameters are passed via the [`attrs`](#method-create-param-attrs) parameter of the `create` method; for more information about these parameters, see the [V3IO TSDB documentation](https://github.com/v3io/v3io-tsdb#v3io-tsdb):
 
 - <a id="method-create-tsdb-param-rate"></a>**rate** &mdash; The ingestion rate of the TSDB metric samples.
-  The rate should be calculated according to the slowest expected ingestion rate.
+  It's recommended that you set the rate to the average expected ingestion rate and that ingestion rates for a given TSDB table don't vary significantly; when there's a big difference in the ingestion rates (for example, x10), use separate TSDB tables.
 
   - **Type:** `str`
   - **Requirement:** Required
