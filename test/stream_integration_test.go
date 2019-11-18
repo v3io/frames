@@ -2,11 +2,14 @@ package test
 
 import (
 	"fmt"
+	"testing"
+	"time"
+
+	"github.com/nuclio/logger"
 	"github.com/stretchr/testify/suite"
 	"github.com/v3io/frames"
 	"github.com/v3io/frames/pb"
-	"testing"
-	"time"
+	v3io "github.com/v3io/v3io-go/pkg/dataplane"
 )
 
 type StreamTestSuite struct {
@@ -16,10 +19,17 @@ type StreamTestSuite struct {
 	basicQueryTime int64
 	client         frames.Client
 	backendName    string
+	v3ioContainer  v3io.Container
+	internalLogger logger.Logger
 }
 
 func GetStreamTestsConstructorFunc() SuiteCreateFunc {
-	return func(client frames.Client) suite.TestingSuite { return &StreamTestSuite{client: client, backendName: "stream"} }
+	return func(client frames.Client, v3ioContainer v3io.Container, internalLogger logger.Logger) suite.TestingSuite {
+		return &StreamTestSuite{client: client,
+			backendName:    "stream",
+			v3ioContainer:  v3ioContainer,
+			internalLogger: internalLogger}
+	}
 }
 
 func (streamSuite *StreamTestSuite) generateSampleFrame(t testing.TB) frames.Frame {

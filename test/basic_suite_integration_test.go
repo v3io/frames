@@ -18,6 +18,9 @@ import (
 	"github.com/v3io/frames"
 	"github.com/v3io/frames/grpc"
 	"github.com/v3io/frames/http"
+	"github.com/v3io/frames/v3ioutils"
+	v3io "github.com/v3io/v3io-go/pkg/dataplane"
+	v3iohttp "github.com/v3io/v3io-go/pkg/dataplane/http"
 )
 
 const (
@@ -32,12 +35,13 @@ var (
 )
 
 type testInfo struct {
-	config   *frames.Config
-	grpcAddr string
-	httpAddr string
-	process  *os.Process
-	root     string
-	session  *frames.Session
+	config        *frames.Config
+	grpcAddr      string
+	httpAddr      string
+	process       *os.Process
+	root          string
+	session       *frames.Session
+	v3ioContainer v3io.Container
 }
 
 type mainTestSuite struct {
@@ -63,7 +67,7 @@ func (mainSuite *mainTestSuite) newHttpClient() frames.Client {
 }
 
 func (mainSuite *mainTestSuite) SetupSuite() {
-	mainSuite.info = setupTest(mainSuite.T())
+	mainSuite.info = setupTest(mainSuite.T(), mainSuite.logger)
 }
 
 func (mainSuite *mainTestSuite) TearDownSuite() {
@@ -89,8 +93,8 @@ func (mainSuite *mainTestSuite) TestCSVBackend() {
 func (mainSuite *mainTestSuite) runSubSuites(suites []SuiteCreateFunc) {
 	for _, currSuite := range suites {
 		// Run both Grpc and Http tests
-		grpcTestSuite := currSuite(mainSuite.newGrpcClient())
-		httpTestSuite := currSuite(mainSuite.newHttpClient())
+		grpcTestSuite := currSuite(mainSuite.newGrpcClient(), mainSuite.info.v3ioContainer, mainSuite.logger)
+		httpTestSuite := currSuite(mainSuite.newHttpClient(), mainSuite.info.v3ioContainer, mainSuite.logger)
 		currentTestSuiteName := reflect.TypeOf(grpcTestSuite).Elem().Name()
 
 		mainSuite.Run(fmt.Sprintf("%v/grpc_client", currentTestSuiteName),
@@ -246,7 +250,7 @@ func waitForServer(t testing.TB, port int) {
 	t.Fatalf("server not up after %v", timeout)
 }
 
-func setupTest(t testing.TB) *testInfo {
+func setupTest(t testing.TB, internalLogger logger.Logger) *testInfo {
 	info := &testInfo{}
 	info.root = setupRoot(t)
 	t.Logf("root: %s", info.root)
@@ -263,6 +267,17 @@ func setupTest(t testing.TB) *testInfo {
 
 	info.grpcAddr = fmt.Sprintf("localhost:%d", grpcPort)
 	info.httpAddr = fmt.Sprintf("http://localhost:%d", httpPort)
+
+	httpClient := v3iohttp.NewDefaultClient()
+	container, _ := v3ioutils.NewContainer(
+		httpClient,
+		info.session,
+		info.session.Password,
+		info.session.Token,
+		internalLogger,
+		8,
+	)
+	info.v3ioContainer = container
 
 	return info
 }

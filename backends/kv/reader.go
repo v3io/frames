@@ -183,7 +183,7 @@ func (ki *Iterator) Next() bool {
 				ki.err = err
 				return false
 			}
-			currentNullMask.NullColumns["name"] = true
+			currentNullMask.NullColumns[name] = true
 			hasAnyNulls = true
 		}
 		bitmask = append(bitmask, &currentNullMask)

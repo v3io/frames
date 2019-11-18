@@ -5,9 +5,11 @@ import (
 	"testing"
 	"time"
 
+	"github.com/nuclio/logger"
 	"github.com/stretchr/testify/suite"
 	"github.com/v3io/frames"
 	"github.com/v3io/frames/pb"
+	v3io "github.com/v3io/v3io-go/pkg/dataplane"
 )
 
 type TsdbTestSuite struct {
@@ -17,10 +19,17 @@ type TsdbTestSuite struct {
 	basicQueryTime int64
 	client         frames.Client
 	backendName    string
+	v3ioContainer  v3io.Container
+	internalLogger logger.Logger
 }
 
 func GetTsdbTestsConstructorFunc() SuiteCreateFunc {
-	return func(client frames.Client) suite.TestingSuite { return &TsdbTestSuite{client: client, backendName: "tsdb"} }
+	return func(client frames.Client, v3ioContainer v3io.Container, internalLogger logger.Logger) suite.TestingSuite {
+		return &TsdbTestSuite{client: client,
+			backendName:    "tsdb",
+			v3ioContainer:  v3ioContainer,
+			internalLogger: internalLogger}
+	}
 }
 
 func (tsdbSuite *TsdbTestSuite) generateSampleFrame(t testing.TB) frames.Frame {
