@@ -340,8 +340,8 @@ Writes data from a DataFrame to a table or stream in a platform data container, 
 
 - [Syntax](#method-write-syntax)
 - [Common parameters](#method-write-common-params)
-- [`tsdb` backend `write` parameters](#method-write-params-tsdb)
 - [`kv` backend `write` parameters](#method-write-params-kv)
+- [`tsdb` backend `write` parameters](#method-write-params-tsdb)
 - [Examples](#method-write-examples)
 
 <a id="method-write-syntax"></a>
@@ -379,12 +379,6 @@ All Frames backends that support the `write` method support the following common
 - <a id="method-write-param-max_in_message"></a>**max_in_message** (Optional) (default: `0`)
 - <a id="method-writse-param-partition_keys"></a>**partition_keys** (Optional) (default: `None`) &mdash; `[]str` &mdash; [**Not supported in this version**]
 
-<a id="method-write-params-tsdb"></a>
-#### `tsdb` Backend `write` Parameters
-
-- <a id="method-write-param-labels"></a>**labels** (Optional) (default: `None`) &mdash; `dict` &mdash; A dictionary of `<label name>: <label value>` pairs that define metric labels to add to all written metric-sample table items.
-  Note that the values of the metric labels must be of type string.
-
 <a id="method-write-params-kv"></a>
 #### `kv` Backend `write` Parameters
 
@@ -403,6 +397,12 @@ v3c.write(backend="kv", table="mytable", dfs=df, expression="city='NY'", conditi
 
 - <a id="method-write-kv-param-condition"></a>**condition** (Optional) (default: `None`) &mdash; A platform condition expression that defines conditions for performing the write operation.
   For detailed information about platform condition expressions, see the [platform documentation](https://www.iguazio.com/docs/reference/latest-release/expressions/condition-expression/).
+
+<a id="method-write-params-tsdb"></a>
+#### `tsdb` Backend `write` Parameters
+
+- <a id="method-write-param-labels"></a>**labels** (Optional) (default: `None`) &mdash; `dict` &mdash; A dictionary of `<label name>: <label value>` pairs that define metric labels to add to all written metric-sample table items.
+  Note that the values of the metric labels must be of type string.
 
 <a id="method-write-examples"></a>
 #### `write` Examples
@@ -433,8 +433,8 @@ Reads data from a table or stream in a platform data container to a DataFrame, a
 
 - [Syntax](#method-read-syntax)
 - [Common parameters](#method-read-common-params)
-- [`tsdb` backend `read` parameters](#method-read-params-tsdb)
 - [`kv` backend `read` parameters](#method-read-params-kv)
+- [`tsdb` backend `read` parameters](#method-read-params-tsdb)
 - [`stream` backend `read` parameters](#method-read-params-stream)
 - [Return Value](#method-read-return-value)
 - [Examples](#method-read-examples)
@@ -468,6 +468,20 @@ All Frames backends that support the `read` method support the following common 
 - <a id="method-read-param-limit"></a>**limit** &mdash; `int` &mdash; The maximum number of rows to return. [**Not supported in this version**]
 - <a id="method-read-param-row_layout"></a>**row_layout** (Optional) (default: `False`) &mdash; `bool` &mdash; `True` to use a row layout; `False` (default) to use a column layout. [**Not supported in this version**]
 
+<a id="method-read-params-kv"></a>
+#### `kv` Backend `read` Parameters
+
+- <a id="method-read-kv-param-reset_index"></a>**reset_index** &mdash; `bool` &mdash; Reset the index. When set to `false` (default), the DataFrame will have the key column of the v3io kv as the index column.
+  When set to `true`, the index will be reset to a range index.
+- <a id="method-read-kv-param-max_in_message"></a>**max_in_message** &mdash; `int` &mdash; The maximum number of rows per message.
+- <a id="method-read-kv-param-"></a>**sharding_keys** &mdash; `[]string` (**Experimental**) &mdash; A list of specific sharding keys to query, for range-scan formatted tables only.
+- <a id="method-read-kv-param-segments"></a>**segments** &mdash; `[]int64` [**Not supported in this version**]
+- <a id="method-read-kv-param-total_segments"></a>**total_segments** &mdash; `int64` [**Not supported in this version**]
+- <a id="method-read-kv-param-sort_key_range_start"></a>**sort_key_range_start** &mdash; `str` [**Not supported in this version**]
+- <a id="method-read-kv-param-sort_key_range_end"></a>**sort_key_range_end** &mdash; `str` [**Not supported in this version**]
+
+For detailed information about these parameters, refer to the platform's NoSQL documentation.
+
 <a id="method-read-params-tsdb"></a>
 #### `tsdb` Backend `read` Parameters
 
@@ -493,20 +507,6 @@ All Frames backends that support the `read` method support the following common 
   <!-- [IntInfo] This parameter is available via the `kw` read parameter. -->
 
 For detailed information about these parameters, refer to the [V3IO TSDB documentation](https://github.com/v3io/v3io-tsdb#v3io-tsdb).
-
-<a id="method-read-params-kv"></a>
-#### `kv` Backend `read` Parameters
-
-- <a id="method-read-kv-param-reset_index"></a>**reset_index** &mdash; `bool` &mdash; Reset the index. When set to `false` (default), the DataFrame will have the key column of the v3io kv as the index column.
-  When set to `true`, the index will be reset to a range index.
-- <a id="method-read-kv-param-max_in_message"></a>**max_in_message** &mdash; `int` &mdash; The maximum number of rows per message.
-- <a id="method-read-kv-param-"></a>**sharding_keys** &mdash; `[]string` (**Experimental**) &mdash; A list of specific sharding keys to query, for range-scan formatted tables only.
-- <a id="method-read-kv-param-segments"></a>**segments** &mdash; `[]int64` [**Not supported in this version**]
-- <a id="method-read-kv-param-total_segments"></a>**total_segments** &mdash; `int64` [**Not supported in this version**]
-- <a id="method-read-kv-param-sort_key_range_start"></a>**sort_key_range_start** &mdash; `str` [**Not supported in this version**]
-- <a id="method-read-kv-param-sort_key_range_end"></a>**sort_key_range_end** &mdash; `str` [**Not supported in this version**]
-
-For detailed information about these parameters, refer to the platform's NoSQL documentation.
 
 <a id="method-read-params-stream"></a>
 #### `stream` Backend `read` Parameters
@@ -566,8 +566,8 @@ df = client.read(backend="stream", table="mytable", seek="latest", shard_id="5")
 Deletes a table or stream or specific table items from a platform data container, according to the specified backend type.
 
 - [Syntax](#method-delete-syntax)
-- [`tsdb` backend `delete` parameters](#method-delete-params-tsdb)
 - [`kv` backend `delete` parameters](#method-delete-params-kv)
+- [`tsdb` backend `delete` parameters](#method-delete-params-tsdb)
 - [Examples](#method-delete-examples)
 
 <a id="method-delete-syntax"></a>
@@ -576,6 +576,14 @@ Deletes a table or stream or specific table items from a platform data container
 ```python
 delete(backend, table, filter='', start='', end='')
 ```
+
+<a id="method-delete-params-kv"></a>
+#### `kv` Backend `delete` Parameters
+
+- <a id="method-delete-kv-param-filter"></a>**filter** &mdash; `str` &mdash; A platform filter expression that identifies specific items to delete.
+  For detailed information about platform filter expressions, see the [platform documentation](https://www.iguazio.com/docs/reference/latest-release/expressions/condition-expression/#filter-expression).
+
+> **Note:** When the `filter` parameter isn't set, the entire table is deleted.
 
 <a id="method-delete-params-tsdb"></a>
 #### `tsdb` Backend `delete` Parameters
@@ -592,14 +600,6 @@ delete(backend, table, filter='', start='', end='')
 > **Note:** When neither the `start` or `end` parameters are set, the entire TSDB table is deleted.
 
 For detailed information about these parameters, refer to the [V3IO TSDB](https://github.com/v3io/v3io-tsdb#v3io-tsdb) documentation.
-
-<a id="method-delete-params-kv"></a>
-#### `kv` Backend `delete` Parameters
-
-- <a id="method-delete-kv-param-filter"></a>**filter** &mdash; `str` &mdash; A platform filter expression that identifies specific items to delete.
-  For detailed information about platform filter expressions, see the [platform documentation](https://www.iguazio.com/docs/reference/latest-release/expressions/condition-expression/#filter-expression).
-
-> **Note:** When the `filter` parameter isn't set, the entire table is deleted.
 
 <a id="method-delete-examples"></a>
 #### `delete` Examples
