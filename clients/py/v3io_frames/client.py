@@ -25,13 +25,13 @@ FAIL = fpb.FAIL
 class ClientBase:
     def __init__(self, address, session, frame_factory=pd.DataFrame,
                  concat=pd.concat):
-        """Creates a new Frames client object
+        """Creates a new Frames base client object (for internal use)
 
         Parameters
         ----------
         address (Required) : str
             Address of the Frames service (framesd)
-        session (Optional) : Session
+        session (Optional) : object
             Session object
         frame_factory (Optional) : class
             DataFrame factory; currently, pandas (default) or cuDF

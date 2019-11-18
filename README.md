@@ -108,7 +108,7 @@ All Frames operations are executed via an object of the `Client` class.
 #### Syntax
 
 ```python
-Client(address='', container='', user='', password='', token='')
+Client(address=""[, data_url=""], container=""[, user="", password="", token=""])
 ```
 
 <a id="client-constructor-parameters"></a>
@@ -127,6 +127,12 @@ Client(address='', container='', user='', password='', token='')
 
   - **Type:** `str`
   - **Requirement:** Required 
+
+- <a id="client-param-data_url"></a>**data_url** &mdash; A web-API base URL for accessing the backend data.
+    By default, the client uses the data URL that's configured for the Frames service, which is typically the HTTPS URL of the web-APIs service of the parent platform tenant.
+
+  - **Type:** `str`
+  - **Requirement:** Optional
 
 - <a id="client-param-container"></a>**container** &mdash; The name of the platform data container that contains the backend data.
   For example, `"bigdata"` or `"users"`.
