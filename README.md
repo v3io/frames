@@ -16,16 +16,23 @@ V3IO Frames (**"Frames"**) is a multi-model open-source data-access library, dev
 
 - [Overview](#overview)
 - [User Authentication](#user-authentication)
-- [Client Constructor](#client-constructor)
-- [Common Client Method Parameters](#client-common-method-params)
-- [create Method](#method-create)
-- [write Method](#method-write)
-- [read Method](#method-read)
-- [delete Method](#method-delete)
-- [execute Method](#method-execute)
+- [`Client` Constructor](#client-constructor)
+- [Common `Client` Method Parameters](#client-common-method-params)
+- [`create` Method](#method-create)
+- [`write` Method](#method-write)
+- [`read` Method](#method-read)
+- [`delete` Method](#method-delete)
+- [`execute` Method](#method-execute)
 
 <a id="api-reference-overview"></a>
 ### Overview
+
+- [Initialization](#initialization)
+- [`Client` Methods](#client-methods)
+- [Backend Types](#backend-types)
+
+<a id="initialization"></a>
+#### Initialization
 
 To use Frames, you first need to import the **v3io_frames** Python library.
 For example:
@@ -36,7 +43,7 @@ Then, you need to create and initialize an instance of the `Client` class; see [
 You can then use the client methods to perform different data operations on the supported backend types:
 
 <a id="client-methods"></a>
-#### Client Methods
+#### `Client` Methods
 
 The `Client` class features the following methods for supporting basic data operations:
 
@@ -88,7 +95,7 @@ This can be done by using any of the following alternative methods (documented i
   > - When `V3IO_ACCESS_KEY` is defined, `V3IO_USERNAME` and `V3IO_PASSWORD` are ignored.
 
 <a id="client-constructor"></a>
-### Client Constructor
+### `Client` Constructor
 
 All Frames operations are executed via an object of the `Client` class.
 
@@ -168,7 +175,7 @@ client = v3f.Client("framesd:8081", user="iguazio", password="mypass", container
 ```
 
 <a id="client-common-method-params"></a>
-### Common Client Method Parameters
+### Common `Client` Method Parameters
 
 All client methods receive the following common parameters; additional, method-specific parameters are described for each method.
 
@@ -186,7 +193,7 @@ All client methods receive the following common parameters; additional, method-s
   - **Requirement:** Required unless otherwise specified in the method-specific documentation
 
 <a id="method-create"></a>
-### create Method
+### `create` Method
 
 Creates a new TSDB table or stream in a platform data container, according to the specified backend type.
 
@@ -196,6 +203,7 @@ The `create` method is supported by the `tsdb` and `stream` backends, but not by
 - [Common parameters](#method-create-common-params)
 - [`tsdb` backend `create` parameters](#method-create-params-tsdb)
 - [`stream` backend `create` parameters](#method-create-params-stream)
+- [Examples](#method-create-examples)
 
 <a id="method-create-syntax"></a>
 #### Syntax
@@ -203,7 +211,7 @@ The `create` method is supported by the `tsdb` and `stream` backends, but not by
   `schema` parameter is used only with the `csv` testing backend. -->
 
 <a id="method-create-syntax-tsdb"></a>
-##### tsdb Backend
+##### `tsdb` Backend
 
 ```python
 create(backend, table, attrs=None)
@@ -214,7 +222,7 @@ attrs={"rate": ""[, "aggregates": "", "aggregation-granularity": ""]}
 ```
 
 <a id="method-create-syntax-stream"></a>
-##### stream Backend
+##### `stream` Backend
 
 ```python
 create(backend, table[, attrs=None])
@@ -225,7 +233,7 @@ attrs={["shards": 1, "retention_hours": 24]}
 ```
 
 <a id="method-create-common-params"></a>
-#### Common create Parameters
+#### Common `create` Parameters
 
 All Frames backends that support the `create` method support the following common parameters:
 
@@ -238,7 +246,7 @@ All Frames backends that support the `create` method support the following commo
   - **Default Value:** `None`
 
 <a id="method-create-params-tsdb"></a>
-#### tsdb Backend create Parameters
+#### `tsdb` Backend `create` Parameters
 
 The following `tsdb` backend parameters are passed via the [`attrs`](#method-create-param-attrs) parameter of the `create` method; for more information about these parameters, see the [V3IO TSDB documentation](https://github.com/v3io/v3io-tsdb#v3io-tsdb):
 
@@ -247,7 +255,7 @@ The following `tsdb` backend parameters are passed via the [`attrs`](#method-cre
 
   - **Type:** `str`
   - **Requirement:** Required
-  - **Valid Values:** A string of the format `"[0-9]+/[smh]"` &mdash; where `s` = seconds, `m` = minutes, and `h` = hours.
+  - **Valid Values:** A string of the format `"[0-9]+/[smh]"` &mdash; where '`s`' = seconds, '`m`' = minutes, and '`h`' = hours.
     For example, `"1/s"` (one sample per minute), `"20/m"` (20 samples per minute), or `"50/h"` (50 samples per hour).
 
 - <a id="method-create-tsdb-param-aggregates"></a>**aggregates** &mdash; Default aggregates to calculate in real time during the samples ingestion.
@@ -261,27 +269,11 @@ The following `tsdb` backend parameters are passed via the [`attrs`](#method-cre
 
   - **Type:** `str`
   - **Requirement:** Optional
-  - **Valid Values:** A string of the format `"[0-9]+[mhd]"` &mdash; where `m` = minutes, `h` = hours, and `d` = days.
+  - **Valid Values:** A string of the format `"[0-9]+[mhd]"` &mdash; where '`m`' = minutes, '`h`' = hours, and '`d`' = days.
     For example, `"30m"` (30 minutes), `"2h"` (2 hours), or `"1d"` (1 day).
 
-<a id="method-create-params-tsdb-examples"></a>
-###### Examples
-
-- Create a TSDB table named "mytable" in the root directory of the client's data container with an ingestion rate of 10 samples per minute:
-
-  ```python
-  client.create("tsdb", "/mytable", attrs={"rate": "10/m"})
-  ```
-
-- Create a TSDB table named "my_metrics" in a **tsdb** directory in the client's data container with an ingestion rate of 1 sample per second.
- The table is created with the `count`, `avg`, `min`, and `max` aggregates and an aggregation interval of 1 hour:
-
-  ```python
-  client.create("tsdb", "/tsdb/my_metrics", attrs={"rate": "1/s", "aggregates": "count,avg,min,max", "aggregation-granularity": "1h"})
-  ```
-
 <a id="method-create-params-stream"></a>
-#### stream Backend create Parameters
+#### `stream` Backend `create` Parameters
 
 The following `stream` backend parameters are passed via the [`attrs`](#method-create-param-attrs) parameter of the `create` method; for more information about these parameters, see the [platform streams documentation](https://www.iguazio.com/docs/concepts/latest-release/streams):
 
@@ -299,8 +291,27 @@ The following `stream` backend parameters are passed via the [`attrs`](#method-c
   - **Default Value:** `24`
   - **Valid Values:** A positive integer (>= 1).
 
-<a id="method-create-params-stream-examples"></a>
-###### Examples
+<a id="method-create-examples"></a>
+#### `create` Examples
+
+<a id="method-create-examples-tsdb"></a>
+##### `tsdb` Backend
+
+- Create a TSDB table named "mytable" in the root directory of the client's data container with an ingestion rate of 10 samples per minute:
+
+  ```python
+  client.create("tsdb", "/mytable", attrs={"rate": "10/m"})
+  ```
+
+- Create a TSDB table named "my_metrics" in a **tsdb** directory in the client's data container with an ingestion rate of 1 sample per second.
+ The table is created with the `count`, `avg`, `min`, and `max` aggregates and an aggregation interval of 1 hour:
+
+  ```python
+  client.create("tsdb", "/tsdb/my_metrics", attrs={"rate": "1/s", "aggregates": "count,avg,min,max", "aggregation-granularity": "1h"})
+  ```
+
+<a id="method-create-examples-stream"></a>
+##### `stream` Backend
 
 - Create a stream named "mystream" in the root directory of the client's data container.
   The stream has 6 shards and a retention period of 1 hour (default):
@@ -317,7 +328,7 @@ The following `stream` backend parameters are passed via the [`attrs`](#method-c
   ```
 
 <a id="method-write"></a>
-### write Method
+### `write` Method
 
 Writes data from a DataFrame to a table or stream in a platform data container, according to the specified backend type.
 
@@ -325,6 +336,7 @@ Writes data from a DataFrame to a table or stream in a platform data container, 
 - [Common parameters](#method-write-common-params)
 - [`tsdb` backend `write` parameters](#method-write-params-tsdb)
 - [`kv` backend `write` parameters](#method-write-params-kv)
+- [Examples](#method-write-examples)
 
 <a id="method-write-syntax"></a>
 #### Syntax
@@ -347,7 +359,7 @@ write(backend, table, dfs, condition='', labels=None, max_in_message=0,
   The returned DataFrames include a `"labels"` DataFrame attribute with backend-specific data, if applicable; for example, for the `stream` backend, this attribute holds the sequence number of the last stream record that was read.
 
 <a id="method-write-common-params"></a>
-#### Common write Parameters
+#### Common `write` Parameters
 
 All Frames backends that support the `write` method support the following common parameters:
 
@@ -361,22 +373,14 @@ All Frames backends that support the `write` method support the following common
 - <a id="method-write-param-max_in_message"></a>**max_in_message** (Optional) (default: `0`)
 - <a id="method-writse-param-partition_keys"></a>**partition_keys** (Optional) (default: `None`) &mdash; `[]str` &mdash; [**Not supported in this version**]
 
-Example:
-```python
-data = [["tom", 10], ["nick", 15], ["juli", 14]]
-df = pd.DataFrame(data, columns = ["name", "age"])
-df.set_index("name", inplace=True)
-client.write(backend="kv", table="mytable", dfs=df)
-```
-
 <a id="method-write-params-tsdb"></a>
-#### tsdb Backend write Parameters
+#### `tsdb` Backend `write` Parameters
 
 - <a id="method-write-param-labels"></a>**labels** (Optional) (default: `None`) &mdash; `dict` &mdash; A dictionary of `<label name>: <label value>` pairs that define metric labels to add to all written metric-sample table items.
   Note that the values of the metric labels must be of type string.
 
 <a id="method-write-params-kv"></a>
-#### kv Backend write Parameters
+#### `kv` Backend `write` Parameters
 
 <!--
 - <a id="method-write-kv-param-expression"></a>**expression** (Optional) (default: `None`) &mdash; A platform update expression that determines how to update the table for all items in the DataFrame.
@@ -394,7 +398,13 @@ v3c.write(backend="kv", table="mytable", dfs=df, expression="city='NY'", conditi
 - <a id="method-write-kv-param-condition"></a>**condition** (Optional) (default: `None`) &mdash; A platform condition expression that defines conditions for performing the write operation.
   For detailed information about platform condition expressions, see the [platform documentation](https://www.iguazio.com/docs/reference/latest-release/expressions/condition-expression/).
 
-Example:
+<a id="method-write-examples"></a>
+#### `write` Examples
+
+<a id="method-write-examples-kv"></a>
+##### `kv` Backend
+<!-- TODO: Add example descriptions. -->
+
 ```python
 data = [["tom", 10, "TLV"], ["nick", 15, "Berlin"], ["juli", 14, "NY"]]
 df = pd.DataFrame(data, columns = ["name", "age", "city"])
@@ -402,8 +412,16 @@ df.set_index("name", inplace=True)
 v3c.write(backend="kv", table="mytable", dfs=df, condition="age>14")
 ```
 
+<!-- TODO: Add examples.
+<a id="method-write-examples-tsdb"></a>
+##### `tsdb` Backend
+
+<a id="method-stream-examples-tsdb"></a>
+##### `stream` Backend
+-->
+
 <a id="method-read"></a>
-### read Method
+### `read` Method
 
 Reads data from a table or stream in a platform data container to a DataFrame, according to the configured backend.
 
@@ -413,6 +431,7 @@ Reads data from a table or stream in a platform data container to a DataFrame, a
 - [`kv` backend `read` parameters](#method-read-params-kv)
 - [`stream` backend `read` parameters](#method-read-params-stream)
 - [Return Value](#method-read-return-value)
+- [Examples](#method-read-examples)
 
 Reads data from a backend.
 
@@ -426,14 +445,15 @@ read(backend='', table='', query='', columns=None, filter='', group_by='',
 ```
 
 <a id="method-read-common-params"></a>
-#### Common read Parameters
+#### Common `read` Parameters
 
 All Frames backends that support the `read` method support the following common parameters:
 
 - <a id="method-read-param-iterator"></a>**iterator** &mdash; (Optional) (default: `False`) &mdash; `bool` &mdash; `True` to return a DataFrames iterator; `False` to return a single DataFrame.
 - <a id="method-read-param-filter"></a>**filter** (Optional) &mdash; `str` &mdash; A query filter.
+  For example, `filter="col1=='my_value'"`.
   <br/>
-  This parameter can't be used concurrently with the `query` parameter. Example: `filter="col1=='my_value'"`
+  This parameter can't be used concurrently with the `query` parameter.
 - <a id="method-read-param-columns"></a>**columns** &mdash; `[]str` &mdash; A list of attributes (columns) to return.
   <br/>
   This parameter can't be used concurrently with the `query` parameter.
@@ -443,7 +463,7 @@ All Frames backends that support the `read` method support the following common 
 - <a id="method-read-param-row_layout"></a>**row_layout** (Optional) (default: `False`) &mdash; `bool` &mdash; `True` to use a row layout; `False` (default) to use a column layout. [**Not supported in this version**]
 
 <a id="method-read-params-tsdb"></a>
-#### tsdb Backend read Parameters
+#### `tsdb` Backend `read` Parameters
 
 - <a id="method-read-tsdb-param-start"></a>**start** &mdash; `str` &mdash; Start (minimum) time for the read operation, as a string containing an RFC 3339 time, a Unix timestamp in milliseconds, a relative time of the format `"now"` or `"now-[0-9]+[mhd]"` (where `m` = minutes, `h` = hours, and `'d'` = days), or 0 for the earliest time.
   For example: `"2016-01-02T15:34:26Z"`; `"1451748866"`; `"now-90m"`; `"0"`.
@@ -468,13 +488,8 @@ All Frames backends that support the `read` method support the following common 
 
 For detailed information about these parameters, refer to the [V3IO TSDB documentation](https://github.com/v3io/v3io-tsdb#v3io-tsdb).
 
-Example:
-```python
-df = client.read(backend="tsdb", query="select avg(cpu) as cpu, avg(diskio), avg(network) from mytable where os='win'", start="now-1d", end="now", step="2h")
-```
-
 <a id="method-read-params-kv"></a>
-#### kv Backend read Parameters
+#### `kv` Backend `read` Parameters
 
 - <a id="method-read-kv-param-reset_index"></a>**reset_index** &mdash; `bool` &mdash; Reset the index. When set to `false` (default), the DataFrame will have the key column of the v3io kv as the index column.
   When set to `true`, the index will be reset to a range index.
@@ -487,13 +502,8 @@ df = client.read(backend="tsdb", query="select avg(cpu) as cpu, avg(diskio), avg
 
 For detailed information about these parameters, refer to the platform's NoSQL documentation.
 
-Example:
-```python
-df = client.read(backend="kv", table="mytable", filter="col1>666")
-```
-
 <a id="method-read-params-stream"></a>
-#### stream Backend read Parameters
+#### `stream` Backend `read` Parameters
 
 - <a id="method-read-stream-param-seek"></a>**seek** &mdash; `str` &mdash; Valid values:  `"time" | "seq"/"sequence" | "latest" | "earliest"`.
   <br/>
@@ -504,11 +514,6 @@ df = client.read(backend="kv", table="mytable", filter="col1>666")
 - <a id="method-read-stream-param-sequence"></a>**sequence** &mdash; `int64` (Optional)
 
 For detailed information about these parameters, refer to the [platform streams documentation](https://www.iguazio.com/docs/concepts/latest-release/streams).
-
-Example:
-```python
-df = client.read(backend="stream", table="mytable", seek="latest", shard_id="5")
-```
 
 <a id="method-read-return-value"></a>
 #### Return Value
@@ -524,14 +529,40 @@ df = client.read(backend="stream", table="mytable", seek="latest", shard_id="5")
   represents a unique label set, as reflected in the `labels` DF attribute, but
   when reading a single DF, it' currently unclear what `labels` should hold. -->
 
+<a id="method-read-examples"></a>
+#### `read` Examples
+<!-- TODO: Add example descriptions. -->
+
+<a id="method-read-examples-kv"></a>
+##### `kv` Backend
+
+```python
+df = client.read(backend="kv", table="mytable", filter="col1>666")
+```
+
+<a id="method-read-examples-tsdb"></a>
+##### `tsdb` Backend
+
+```python
+df = client.read(backend="tsdb", query="select avg(cpu) as cpu, avg(diskio), avg(network) from mytable where os='win'", start="now-1d", end="now", step="2h")
+```
+
+<a id="method-stream-examples-tsdb"></a>
+##### `stream` Backend
+
+```python
+df = client.read(backend="stream", table="mytable", seek="latest", shard_id="5")
+```
+
 <a id="method-delete"></a>
-### delete Method
+### `delete` Method
 
 Deletes a table or stream or specific table items from a platform data container, according to the specified backend type.
 
 - [Syntax](#method-delete-syntax)
 - [`tsdb` backend `delete` parameters](#method-delete-params-tsdb)
 - [`kv` backend `delete` parameters](#method-delete-params-kv)
+- [Examples](#method-delete-examples)
 
 <a id="method-delete-syntax"></a>
 #### Syntax
@@ -541,7 +572,7 @@ delete(backend, table, filter='', start='', end='')
 ```
 
 <a id="method-delete-params-tsdb"></a>
-#### tsdb Backend delete Parameters
+#### `tsdb` Backend `delete` Parameters
 
 - <a id="method-delete-tsdb-param-start"></a>**start** &mdash; `str` &mdash; Start (minimum) time for the delete operation, as a string containing an RFC 3339 time, a Unix timestamp in milliseconds, a relative time of the format `"now"` or `"now-[0-9]+[mhd]"` (where `m` = minutes, `h` = hours, and `'d'` = days), or 0 for the earliest time.
   For example: `"2016-01-02T15:34:26Z"`; `"1451748866"`; `"now-90m"`; `"0"`.
@@ -556,34 +587,43 @@ delete(backend, table, filter='', start='', end='')
 
 For detailed information about these parameters, refer to the [V3IO TSDB](https://github.com/v3io/v3io-tsdb#v3io-tsdb) documentation.
 
-Example:
-```python
-df = client.delete(backend="tsdb", table="mytable", start="now-1d", end="now-5h")
-```
-
 <a id="method-delete-params-kv"></a>
-#### kv Backend delete Parameters
+#### `kv` Backend `delete` Parameters
 
 - <a id="method-delete-kv-param-filter"></a>**filter** &mdash; `str` &mdash; A platform filter expression that identifies specific items to delete.
   For detailed information about platform filter expressions, see the [platform documentation](https://www.iguazio.com/docs/reference/latest-release/expressions/condition-expression/#filter-expression).
 
 > **Note:** When the `filter` parameter isn't set, the entire table is deleted.
 
-Example:
+<a id="method-delete-examples"></a>
+#### `delete` Examples
+<!-- TODO: Add example descriptions. -->
+
+<a id="method-delete-examples-kv"></a>
+##### `kv` Backend
+
 ```python
 df = client.delete(backend="kv", table="mytable", filter="age > 40")
 ```
 
+<a id="method-delete-examples-tsdb"></a>
+##### `tsdb` Backend
+
+```python
+df = client.delete(backend="tsdb", table="mytable", start="now-1d", end="now-5h")
+```
+
 <a id="method-execute"></a>
-### execute Method
+### `execute` Method
 
 Extends the basic CRUD functionality of the other client methods via backend-specific commands.
 
 - [Syntax](#method-execute-syntax)
 - [Common parameters](#method-execute-common-params)
-- [tsdb backend commands](#method-execute-tsdb-cmds)
 - [kv backend commands](#method-execute-kv-cmds)
 - [stream backend commands](#method-execute-stream-cmds)
+
+> **Note:** Currently, no `execute` commands are available for the `tsdb` backend.
 
 <a id="method-execute-syntax"></a>
 #### Syntax
@@ -593,7 +633,7 @@ execute(backend, table, command='', args=None)
 ```
 
 <a id="method-execute-common-params"></a>
-#### Common execute Parameters
+#### Common `execute` Parameters
 
 All Frames backends that support the `execute` method support the following common parameters:
 
@@ -603,13 +643,8 @@ All Frames backends that support the `execute` method support the following comm
   - **Requirement:** Optional
   - **Default Value:** `None`
 
-<a id="method-execute-tsdb-cmds"></a>
-### tsdb Backend execute Commands
-
-Currently, no `execute` commands are available for the `tsdb` backend.
-
 <a id="method-execute-kv-cmds"></a>
-### kv Backend execute Commands
+### `kv` Backend `execute` Commands
 
 - <a id="method-execute-kv-cmd-infer"></a>**infer | inferschema** &mdash; Infers the data schema of a given NoSQL table and creates a schema file for the table.
 
@@ -630,7 +665,7 @@ Currently, no `execute` commands are available for the `tsdb` backend.
   <!-- [IntInfo] [c-no-update-expression-support] -->
 
 <a id="method-execute-stream-cmds"></a>
-### stream Backend execute Commands
+### `stream` Backend `execute` Commands
 
 - <a id="method-execute-stream-cmd-put"></a>**put** &mdash; Adds records to a stream.
 
