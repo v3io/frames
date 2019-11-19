@@ -271,6 +271,7 @@ The following `create` parameters are specific to the `stream` backend and are p
   - **Requirement:** Optional
   - **Default Value:** `1`
   - **Valid Values:** A positive integer (>= 1).
+    For example, `100`.
 
 - <a id="method-create-stream-param-retention_hours"></a>**retention_hours** &mdash; The stream's retention period, in hours.
 
@@ -278,6 +279,7 @@ The following `create` parameters are specific to the `stream` backend and are p
   - **Requirement:** Optional
   - **Default Value:** `24`
   - **Valid Values:** A positive integer (>= 1).
+    For example, `2` (2 hours).
 
 <a id="method-create-examples"></a>
 #### `create` Examples
