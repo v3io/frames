@@ -28,8 +28,8 @@ V3IO Frames (**"Frames"**) is a multi-model open-source data-access library, dev
 ### Overview
 
 - [Initialization](#initialization)
-- [`Client` Methods](#client-methods)
 - [Backend Types](#backend-types)
+- [`Client` Methods](#client-methods)
 
 <a id="initialization"></a>
 #### Initialization
@@ -41,18 +41,6 @@ import v3io_frames as v3f
 ```
 Then, you need to create and initialize an instance of the `Client` class; see [Client Constructor](#client-constructor).
 You can then use the client methods to perform different data operations on the supported backend types:
-
-<a id="client-methods"></a>
-#### `Client` Methods
-
-The `Client` class features the following methods for supporting basic data operations:
-
-- [`create`](#method-create) &mdash; creates a new TSDB table or stream ("backend data").
-- [`delete`](#method-delete) &mdash; deletes a table or stream or specific table items.
-- [`read`](#method-read) &mdash; reads data from a table or stream into pandas DataFrames.
-- [`write`](#method-write) &mdash; writes data from pandas DataFrames to a table or stream.
-- [`execute`](#method-execute) &mdash; executes a backend-specific command on a table or stream.
-  Each backend may support multiple commands.
 
 <a id="backend-types"></a>
 #### Backend Types
@@ -66,7 +54,19 @@ Frames supports the following backend types:
 - `csv` &mdash; a comma-separated-value (CSV) file.
   This backend type is used only for testing purposes.
 
-> **Note:** Some method parameters are common to all backend types and some are backend-specific, as detailed in this reference.
+<a id="client-methods"></a>
+#### `Client` Methods
+
+The `Client` class features the following methods for supporting basic data operations:
+
+- [`create`](#method-create) &mdash; creates a new TSDB table or stream ("backend data").
+- [`delete`](#method-delete) &mdash; deletes a table or stream or specific table items.
+- [`read`](#method-read) &mdash; reads data from a table or stream into pandas DataFrames.
+- [`write`](#method-write) &mdash; writes data from pandas DataFrames to a table or stream.
+- [`execute`](#method-execute) &mdash; executes a backend-specific command on a table or stream.
+  Each backend may support multiple commands.
+
+> **Note:** Some methods or method parameters are backend-specific, as detailed in this reference.
 
 <a id="user-authentication"></a>
 ### User Authentication
