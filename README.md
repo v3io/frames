@@ -349,13 +349,13 @@ Writes data from a DataFrame to a table or stream in a platform data container, 
 
 <!--
 ```python
-write(backend, table, dfs, expression='', condition='', labels=None,
+write(backend, table, dfs, expression="", condition="", labels=None,
     max_in_message=0, index_cols=None, partition_keys=None)
 ```
 -->
 <!-- [c-no-update-expression-support] -->
 ```python
-write(backend, table, dfs, condition='', labels=None, max_in_message=0,
+write(backend, table, dfs, condition="", labels=None, max_in_message=0,
     index_cols=None, partition_keys=None)
 ```
 
@@ -449,8 +449,8 @@ Reads data from a backend.
 #### Syntax
 
 ```python
-read(backend='', table='', query='', columns=None, filter='', group_by='',
-    limit=0, data_format='', row_layout=False, max_in_message=0, marker='',
+read(backend="", table="", query="", columns=None, filter="", group_by="",
+    limit=0, data_format="", row_layout=False, max_in_message=0, marker="",
     iterator=False, **kw)
 ```
 
@@ -578,7 +578,7 @@ Deletes a table or stream or specific table items from a platform data container
 #### Syntax
 
 ```python
-delete(backend, table, filter='', start='', end='')
+delete(backend, table, filter="", start="", end="")
 ```
 
 <a id="method-delete-params-kv"></a>
@@ -639,7 +639,7 @@ Extends the basic CRUD functionality of the other client methods via backend-spe
 #### Syntax
 
 ```python
-execute(backend, table, command='', args=None)
+execute(backend, table, command="", args=None)
 ```
 
 <a id="method-execute-common-params"></a>
