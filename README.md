@@ -172,7 +172,7 @@ The following examples, for local platform execution, both create a Frames clien
 
 ```python
 import v3io_frames as v3f
-client = v3f.Client("framesd:8081", user="iguazio", token="e8bd4ca2-537b-4175-bf01-8c74963e90bf", container="users")
+client = v3f.Client("framesd:8081", token="e8bd4ca2-537b-4175-bf01-8c74963e90bf", container="users")
 ```
 
 ```python
