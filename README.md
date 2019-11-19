@@ -352,12 +352,21 @@ write(backend, table, dfs, condition="", labels=None, max_in_message=0,
 All Frames backends that support the `write` method support the following common parameters:
 
 - <a id="method-write-param-dfs"></a>**dfs** (Required) &mdash; A single DataFrame, a list of DataFrames, or a DataFrames iterator &mdash; One or more DataFrames containing the data to write.
+
+  For the `tsdb` backend, for each DataFrame &mdash;
+
+  - You must define an index column whose value is the sample time of the data.
+    This column serves as the table's primary-key attribute.
+    Note that a TSDB DataFrame cannot have more than one index column of a time data type.
+  - You can optionally define additional string index columns for metric labels.
+    Note that you can also define labels by using the [`labels`](#method-write-tsdb-param-labels) parameter, in addition or instead of using column indexes.
+
 - <a id="method-write-param-index_cols"></a>**index_cols** (Optional) (default: `None`) &mdash; `[]str` &mdash; A list of column (attribute) names to be used as index columns for the write operation, regardless of any index-column definitions in the DataFrame.
   By default, the DataFrame's index columns are used.
   <br/>
   > **Note:** The significance and supported number of index columns is backend specific.
   > For example, the `kv` backend supports only a single index column for the primary-key item attribute, while the `tsdb` backend supports additional index columns for metric labels.
-- <a id="method-write-param-labels"></a>**labels** (Optional) (default: `None`) &mdash; This parameter is currently defined for all backends but is used only for the TSDB backend, therefore it's documented as part of the `write` method's [`tsdb` backend parameters](#method-write-params-tsdb).
+- <a id="method-write-param-labels"></a>**labels** (Optional) &mdash; This parameter is currently applicable only to the `tsdb` backend (although it's available for all backends) and is therefore documented as part of the `write` method's [`tsdb` backend parameters](#method-write-tsdb-param-labels).
 - <a id="method-write-param-max_in_message"></a>**max_in_message** (Optional) (default: `0`)
 - <a id="method-writse-param-partition_keys"></a>**partition_keys** (Optional) (default: `None`) &mdash; `[]str` &mdash; [**Not supported in this version**]
 
@@ -387,8 +396,10 @@ v3c.write(backend="kv", table="mytable", dfs=df, expression="city='NY'", conditi
 
 The following `write` parameters are specific to the `tsdb` backend; for more information about these parameters, see the [V3IO TSDB documentation](https://github.com/v3io/v3io-tsdb#v3io-tsdb):
 
-- <a id="method-write-param-labels"></a>**labels** (Optional) (default: `None`) &mdash; `dict` &mdash; A dictionary of `<label name>: <label value>` pairs that define metric labels to add to all written metric-sample table items.
-  Note that the values of the metric labels must be of type string.
+- <a id="method-write-tsdb-param-labels"></a>**labels** (Optional) (default: `None`) &mdash; `dict` &mdash;
+A dictionary of metric labels for the written item (row) of the format `{<label>: <value>[, <label>: <value>, ...]}`.
+  For example, `{"os": "linux", "arch": "x86"}`.
+  Note that you can also define labels by using DataFrame index columns, in addition or instead of using the `labels` parameter, as explained in the description of the [`dfs`](#method-write-param-dfs) parameter.
 
 <a id="method-write-examples"></a>
 #### `write` Examples
