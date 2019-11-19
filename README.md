@@ -190,7 +190,7 @@ All client methods receive the following common parameters; additional, method-s
 
   - **Type:** `str`
   - **Requirement:** Required
-  - **Valid Values:** `"csv"` (for testing) | `"kv"` | `"stream"` | `"tsdb"`
+  - **Valid Values:**  `"kv"` | `"stream"` | `"tsdb"` | `"csv"` (for testing)
 
 - <a id="client-method-param-table"></a>**table** &mdash; The relative path to the backend data &mdash; a directory in the target platform data container (as configured for the client object) that represents a TSDB or NoSQL table or a data stream.
   For example, `"mytable"` or `"examples/tsdb/my_metrics"`.
