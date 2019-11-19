@@ -161,7 +161,7 @@ class ClientBase:
             Backend name
         table (Required) : str
             Table to create
-        attrs (Required with `rate` for "tsdb"; optional for "stream") : dict
+        attrs (Required for the "tsdb" backend; optional otherwise : dict
             A dictionary of backend-specific parameters (arguments)
         schema (Optional) : Schema or None
             Table schema; used for testing purposes with the "csv" backend

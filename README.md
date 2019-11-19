@@ -213,30 +213,12 @@ The `create` method is supported by the `tsdb` and `stream` backends, but not by
 
 <a id="method-create-syntax"></a>
 #### Syntax
-<!-- [IntInfo] (26.9.19) (sharonl) We omitted `schema=None` because the
-  `schema` parameter is used only with the `csv` testing backend. -->
-
-<a id="method-create-syntax-tsdb"></a>
-##### `tsdb` Backend
-
-```python
-create(backend, table, attrs=None)
-```
-
-```python
-attrs={"rate": ""[, "aggregates": "", "aggregation-granularity": ""]}
-```
-
-<a id="method-create-syntax-stream"></a>
-##### `stream` Backend
 
 ```python
 create(backend, table[, attrs=None])
 ```
-
-```python
-attrs={["shards": 1, "retention_hours": 24]}
-```
+<!-- [IntInfo] (26.9.19) (sharonl) We omitted `schema=None` because the
+  `schema` parameter is used only with the `csv` testing backend. -->
 
 <a id="method-create-common-params"></a>
 #### Common `create` Parameters
@@ -246,7 +228,7 @@ All Frames backends that support the `create` method support the following commo
 - <a id="method-create-param-attrs"></a>**attrs** &mdash; A dictionary of `<argument name>: <value>` pairs for passing additional backend-specific parameters (arguments).
 
   - **Type:** `dict`
-  - **Requirement:** Optional
+  - **Requirement:** Required for the `tsdb` backend; optional otherwise
   - **Valid Values:** The valid values are backend-specific.
     See [tsdb Backend create Parameters](#method-create-params-tsdb) and [stream Backend create Parameters](#method-create-params-stream).
   - **Default Value:** `None`
