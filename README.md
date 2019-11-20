@@ -81,7 +81,7 @@ This can be done by using any of the following alternative methods (documented i
   - <a id="user-auth-user-password"></a>Set the [`user`](#client-param-user) and [`password`](#client-param-password) constructor parameters to the username and password of a platform user with the required data-access permissions.
   <br/>
 
-  > **Note:** You can't use both methods concurrently: setting both the `token` and `username` and `password` parameters in the same constructor call will produce an error.
+  > **Note:** You can't use both methods concurrently: setting both the `token` and `user` and `password` parameters in the same constructor call will produce an error.
 
 - <a id="user-auth-client-envar"></a>Set the authentication credentials in environment variables, by using either of the following methods:
 
