@@ -121,9 +121,10 @@ class ClientBase:
             Table to write to
         dfs : a single DataFrame, a DataFrames list, or a DataFrames iterator
             One or more DataFrames containing the data to write.
-            For the "tsdb" backend, the DF must contain a single time index
-            column for the metric sample time and can optionally contain
-            additional string index columns for metric labels.
+            For the "tsdb" backend - the DF must contain one or more non-index
+            columns for the sample metrics and a single time index column for
+            the sample time, and can optionally contain additional string index
+            columns for metric labels that apply to the current DataFrame row.
         expression : str
             A platform update expression that determines the update logic for
             all items in the DataFrame [Not supported in this version]
@@ -131,8 +132,8 @@ class ClientBase:
             A platform condition expression that defines a condition for
             performing the write operation
         labels : dict (`{<label>: <value>[, <label>: <value>, ...]}`)
-            Dictionary of labels; currently, used only with the "tsdb" backend,
-            which supports only string labels
+            Currently applicable only to the "tsdb" backend - a dictionary of
+            sample labels of type string that apply to all the DataFrame rows
         max_in_message : int
             Maximum number of rows to send per message
         index_cols : []str

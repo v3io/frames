@@ -354,15 +354,7 @@ write(backend, table, dfs, condition="", labels=None, max_in_message=0,
 All Frames backends that support the `write` method support the following common parameters:
 
 - <a id="method-write-param-dfs"></a>**dfs** (Required) &mdash; A single DataFrame, a list of DataFrames, or a DataFrames iterator &mdash; One or more DataFrames containing the data to write.
-
-  For the `tsdb` backend, for each DataFrame &mdash;
-
-  - You must define an index column whose value is the sample time of the data.
-    This column serves as the table's primary-key attribute.
-    Note that a TSDB DataFrame cannot have more than one index column of a time data type.
-  - You can optionally define additional string index columns for metric labels.
-    Note that you can also define labels by using the [`labels`](#method-write-tsdb-param-labels) parameter, in addition or instead of using column indexes.
-
+  (See the [`tsdb` backend-specific parameters](#method-write-tsdb-param-dfs).)
 - <a id="method-write-param-index_cols"></a>**index_cols** (Optional) (default: `None`) &mdash; `[]str` &mdash; A list of column (attribute) names to be used as index columns for the write operation, regardless of any index-column definitions in the DataFrame.
   By default, the DataFrame's index columns are used.
   <br/>
@@ -396,12 +388,21 @@ v3c.write(backend="kv", table="mytable", dfs=df, expression="city='NY'", conditi
 <a id="method-write-params-tsdb"></a>
 #### `tsdb` Backend `write` Parameters
 
-The following `write` parameters are specific to the `tsdb` backend; for more information about these parameters, see the [V3IO TSDB documentation](https://github.com/v3io/v3io-tsdb#v3io-tsdb):
+The following `write` parameter descriptions are specific to the `tsdb` backend; for more information about these parameters, see the [V3IO TSDB documentation](https://github.com/v3io/v3io-tsdb#v3io-tsdb):
 
-- <a id="method-write-tsdb-param-labels"></a>**labels** (Optional) (default: `None`) &mdash; `dict` &mdash;
-A dictionary of metric labels for the written item (row) of the format `{<label>: <value>[, <label>: <value>, ...]}`.
+- <a id="method-write-tsdb-param-dfs"></a>**dfs** (Required) &mdash; A single DataFrame, a list of DataFrames, or a DataFrames iterator &mdash; One or more DataFrames containing the data to write.
+  This is a common `write` parameter, but the following information is specific to the `tsdb` backend:
+
+  - You must define one or more non-index DataFrame columns that represent the sample metrics; the name of the column is the metric name and its values is the sample data (i.e., the ingested metric).
+  - You must define a single index column whose value is the sample time of the data.
+    This column serves as the table's primary-key attribute.
+    Note that a TSDB DataFrame cannot have more than one index column of a time data type.
+  - <a id="tsdb-label-index-columns"></a>You can optionally define string index columns that represent metric labels for the current DataFrame row.
+    Note that you can also define labels for all DataFrame rows by using the [`labels`](#method-write-tsdb-param-labels) parameter (in addition or instead of using column indexes to apply labels to a specific row).
+
+- <a id="method-write-tsdb-param-labels"></a>**labels** (Optional) (default: `None`) &mdash; `dict` &mdash; A dictionary of metric labels of the format `{<label>: <value>[, <label>: <value>, ...]}`, which will be applied to all the DataFrame rows (i.e., to all the ingested metric samples).
   For example, `{"os": "linux", "arch": "x86"}`.
-  Note that you can also define labels by using DataFrame index columns, in addition or instead of using the `labels` parameter, as explained in the description of the [`dfs`](#method-write-param-dfs) parameter.
+  Note that you can also define labels for a specific DataFrame row by adding a string index column to the row (in addition or instead of using the `labels` parameter to define labels for all rows), as explained in the description of the [`dfs`](#tsdb-label-index-columns) parameter.
 
 <a id="method-write-examples"></a>
 #### `write` Examples
