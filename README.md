@@ -40,7 +40,7 @@ For example:
 import v3io_frames as v3f
 ```
 Then, you need to create and initialize an instance of the `Client` class; see [Client Constructor](#client-constructor).
-You can then use the client methods to perform different data operations on the supported backend types:
+You can then use the client methods to perform different data operations on the supported backend types.
 
 <a id="backend-types"></a>
 #### Backend Types
