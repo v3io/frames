@@ -22,6 +22,7 @@ package kv
 
 import (
 	"fmt"
+	"net/http"
 	"strings"
 	"time"
 
@@ -30,6 +31,7 @@ import (
 	"github.com/v3io/frames/backends/utils"
 	"github.com/v3io/frames/v3ioutils"
 	v3io "github.com/v3io/v3io-go/pkg/dataplane"
+	v3ioerrors "github.com/v3io/v3io-go/pkg/errors"
 )
 
 // Appender is key/value appender
@@ -61,6 +63,38 @@ func (kv *Backend) Write(request *frames.WriteRequest) (frames.FrameAppender, er
 		return nil, err
 	}
 
+	var schema v3ioutils.V3ioSchema
+	schema, schemaError := v3ioutils.GetSchema(tablePath, container)
+
+	// Ignore 404 error, since it makes sense there is no schema yet.
+	tableAlreadyExists := true
+	if err != nil {
+		if errorWithStatus, ok := err.(*v3ioerrors.ErrorWithStatusCode); !ok || errorWithStatus.StatusCode() != http.StatusNotFound {
+			return nil, err
+		} else {
+			tableAlreadyExists = false
+		}
+	}
+
+	switch request.SaveMode {
+	case frames.Overwrite:
+		// If this is the first time we writing to the table, there is nothing to delete.
+		if tableAlreadyExists {
+			err = v3ioutils.DeleteTable(kv.logger, container, tablePath, "", kv.numWorkers, true)
+			if err != nil {
+				return nil, fmt.Errorf("error occured while deleting the table, err: %v", err)
+			}
+			schema = nil
+		}
+	case frames.ErrorIfExists:
+		if schemaError == nil {
+			return nil, fmt.Errorf("table %v already exists, either use a differnet save mode or save to a different table", tablePath)
+		}
+	}
+
+	if schema == nil {
+		schema = v3ioutils.NewSchema(v3ioutils.DefaultKeyColumn)
+	}
 	appender := Appender{
 		request:      request,
 		container:    container,
@@ -68,7 +102,7 @@ func (kv *Backend) Write(request *frames.WriteRequest) (frames.FrameAppender, er
 		responseChan: make(chan *v3io.Response, 1000),
 		commChan:     make(chan int, 2),
 		logger:       kv.logger,
-		schema:       v3ioutils.NewSchema("idx"),
+		schema:       schema,
 	}
 	go appender.respWaitLoop(time.Minute)
 
@@ -90,12 +124,6 @@ func (a *Appender) Add(frame frames.Frame) error {
 	}
 	if len(frame.Indices()) > 1 {
 		return fmt.Errorf("can't set key from multi-index frame")
-	}
-
-	// In case we are getting several frames to update, validate they all have the same schema
-	err := a.validateSchema(frame)
-	if err != nil {
-		return err
 	}
 
 	if a.request.Expression != "" {
@@ -137,7 +165,7 @@ func (a *Appender) Add(frame frames.Frame) error {
 		}
 	}
 
-	err = a.schema.UpdateSchema(a.container, a.tablePath, newSchema)
+	err := a.schema.UpdateSchema(a.container, a.tablePath, newSchema)
 	if err != nil {
 		return err
 	}
@@ -178,7 +206,10 @@ func (a *Appender) Add(frame frames.Frame) error {
 			}
 		}
 
-		input := v3io.PutItemInput{Path: a.tablePath + fmt.Sprintf("%v", key), Attributes: row, Condition: condition}
+		input := v3io.PutItemInput{Path: a.tablePath + fmt.Sprintf("%v", key),
+			Attributes: row,
+			Condition:  condition,
+			UpdateMode: a.request.SaveMode.GetNginxModeName()}
 		a.logger.DebugWith("write", "input", input)
 		_, err := a.container.PutItem(&input, r, a.responseChan)
 		if err != nil {
@@ -389,51 +420,6 @@ func (a *Appender) respWaitLoop(timeout time.Duration) {
 			active = false
 		}
 	}
-}
-
-func (a *Appender) validateSchema(frame frames.Frame) error {
-	prevSchema := a.schema.(*v3ioutils.OldV3ioSchema)
-
-	// Assume that no fields means it's the first frame to save, so no validation is required
-	if len(prevSchema.Fields) == 0 {
-		return nil
-	}
-
-	indexes := frame.Indices()
-	if len(indexes) == 1 && indexes[0].Name() != prevSchema.Key {
-		return fmt.Errorf("index name mismatch. previous frame index was '%v', current frame index is '%v'",
-			prevSchema.Key, indexes[0].Name())
-	}
-	// Number of columns should be the same (schema fields contains also an index field
-	numberOfPreviousFields, numberOfCurrentFields := len(prevSchema.Fields)-1, len(frame.Names())
-	if numberOfCurrentFields != numberOfPreviousFields {
-		var fieldsList []string
-		for _, f := range prevSchema.Fields {
-			if f.Name != prevSchema.Key {
-				fieldsList = append(fieldsList, f.Name)
-			}
-		}
-		return fmt.Errorf("columns number mismatch. previous frames had %v columns %v while current have %v columns %v",
-			len(prevSchema.Fields), fieldsList, len(frame.Names()), frame.Names())
-	}
-
-	for _, fieldName := range frame.Names() {
-		found, field := v3ioutils.ContainsField(prevSchema.Fields, fieldName)
-
-		if !found {
-			return fmt.Errorf("columns mismatch. "+
-				"column '%v' exist in current frame and did not existed in previous frames",
-				fieldName)
-		}
-		col, _ := frame.Column(fieldName)
-		currentType := v3ioutils.ConvertDTypeToString(col.DType())
-		if field.Type != currentType {
-			return fmt.Errorf("column type mismatch. column '%v' expected type '%v' but got type '%v'",
-				fieldName, field.Type, currentType)
-		}
-	}
-
-	return nil
 }
 
 // Check if the current error was caused specifically because the condition was evaluated to false.

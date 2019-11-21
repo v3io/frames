@@ -23,6 +23,7 @@ package frames
 import (
 	"time"
 
+	"github.com/pkg/errors"
 	"github.com/v3io/frames/pb"
 )
 
@@ -36,6 +37,30 @@ var (
 	IntType    = DType(pb.DType_INTEGER)
 	StringType = DType(pb.DType_STRING)
 	TimeType   = DType(pb.DType_TIME)
+)
+
+type SaveMode int
+
+func (mode SaveMode) GetNginxModeName() string {
+	switch mode {
+	case ErrorIfExists:
+		return ""
+	case Append:
+		return "CreateNewAttributes"
+	case Overwrite:
+		return ""
+	case Replace:
+		return "CreateOrReplaceAttributes"
+	default:
+		return ""
+	}
+}
+
+const (
+	ErrorIfExists SaveMode = 0
+	Append        SaveMode = 1
+	Overwrite     SaveMode = 2
+	Replace       SaveMode = 3
 )
 
 // Column is a data column
@@ -127,6 +152,7 @@ type WriteRequest struct {
 	Condition string
 	// Will we get more message chunks (in a stream), if not we can complete
 	HaveMore bool
+	SaveMode SaveMode
 }
 
 // CreateRequest is a table creation request
@@ -179,4 +205,19 @@ func InitSecretString(s string) SecretString {
 
 func (s SecretString) Get() string {
 	return *s.s
+}
+
+func SaveModeFromString(mode string) (SaveMode, error) {
+	switch mode {
+	case "", "errorIfExists": // this is the default save mode
+		return ErrorIfExists, nil
+	case "append":
+		return Append, nil
+	case "overwrite":
+		return Overwrite, nil
+	case "replace":
+		return Replace, nil
+	default:
+		return -1, errors.Errorf("no save mode named '%v' ", mode)
+	}
 }

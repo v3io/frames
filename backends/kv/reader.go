@@ -21,7 +21,6 @@ such restriction.
 package kv
 
 import (
-	"encoding/json"
 	"fmt"
 
 	"github.com/v3io/frames"
@@ -78,18 +77,13 @@ func (kv *Backend) Read(request *frames.ReadRequest) (frames.FrameIterator, erro
 		return nil, err
 	}
 
-	// Get Schema
-	schemaInput := &v3io.GetObjectInput{Path: tablePath + ".#schema"}
-	resp, err := container.GetObjectSync(schemaInput)
+	schemaInterface, err := v3ioutils.GetSchema(tablePath, container)
 	if err != nil {
 		return nil, err
 	}
-	schema := &v3ioutils.OldV3ioSchema{}
-	if err := json.Unmarshal(resp.HTTPResponse.Body(), schema); err != nil {
-		return nil, err
-	}
+	schemaObj := schemaInterface.(*v3ioutils.OldV3ioSchema)
 
-	newKVIter := Iterator{request: request, iter: iter, schema: schema, shouldDuplicateIndex: containsString(columns, schema.Key)}
+	newKVIter := Iterator{request: request, iter: iter, schema: schemaObj, shouldDuplicateIndex: containsString(columns, schemaObj.Key)}
 	return &newKVIter, nil
 }
 
