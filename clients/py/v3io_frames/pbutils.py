@@ -284,8 +284,8 @@ def insert_nulls_based_on_null_values_map(df, null_values):
 def normalize_df(df, schema):
     """
         This function converts all 'Null' values to the according
-        default values based on the column type, and creates a list of all null columns
-        to specify where are the null values
+        default values based on the column type, and creates an indication
+        list to specify where are the null values
     :param schema: dictionary specifying the real type of every column
     :param df:
     :return:
