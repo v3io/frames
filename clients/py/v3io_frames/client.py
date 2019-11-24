@@ -26,17 +26,17 @@ FAIL = fpb.FAIL
 class ClientBase:
     def __init__(self, address, session, frame_factory=pd.DataFrame,
                  concat=pd.concat):
-        """Creates a new Frames client object
+        """Creates a new Frames base client object (for internal use)
 
         Parameters
         ----------
-        address : str
+        address (Required) : str
             Address of the Frames service (framesd)
-        session : Session
+        session (Optional) : object
             Session object
-        frame_factory : class
-            DataFrame factory; currently, pandas and cuDF are supported
-        concat : function
+        frame_factory (Optional) : class
+            DataFrame factory; currently, pandas (default) or cuDF
+        concat (Optional) : function
             Function for concatenating DataFrames; default: pandas concat
 
         Return Value
@@ -121,15 +121,20 @@ class ClientBase:
         table : str
             Table to write to
         dfs : a single DataFrame, a DataFrames list, or a DataFrames iterator
-            DataFrames to write
+            One or more DataFrames containing the data to write.
+            For the "tsdb" backend - the DF must contain one or more non-index
+            columns for the sample metrics and a single time index column for
+            the sample time, and can optionally contain additional string index
+            columns for metric labels that apply to the current DataFrame row.
         expression : str
             A platform update expression that determines the update logic for
             all items in the DataFrame [Not supported in this version]
         condition : str
             A platform condition expression that defines a condition for
             performing the write operation
-        labels : dict
-            Dictionary of labels; currently, used only with the "tsdb" backend
+        labels : dict (`{<label>: <value>[, <label>: <value>, ...]}`)
+            Currently applicable only to the "tsdb" backend - a dictionary of
+            sample labels of type string that apply to all the DataFrame rows
         max_in_message : int
             Maximum number of rows to send per message
         index_cols : []str
@@ -158,18 +163,18 @@ class ClientBase:
         return self._write(request, dfs, labels, index_cols)
 
     def create(self, backend, table, attrs=None, schema=None, if_exists=FAIL):
-        """Creates a new TSDB table or a stream
+        """Creates a new TSDB table or stream
 
         Parameters
         ----------
-        backend : str
+        backend (Required) : str
             Backend name
-        table : str
+        table (Required) : str
             Table to create
-        attrs : dict
+        attrs (Required for the "tsdb" backend; optional otherwise : dict
             A dictionary of backend-specific parameters (arguments)
-        schema: Schema or None
-            Table schema
+        schema (Optional) : Schema or None
+            Table schema; used for testing purposes with the "csv" backend
         if_exists : int
             One of IGNORE or FAIL
 
