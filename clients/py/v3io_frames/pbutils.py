@@ -129,7 +129,7 @@ def msg2df(frame, frame_factory, columns=None, do_reorder=True):
             else:
                 df = df.reindex(columns=sorted(df.columns))
 
-    df = insert_nulls_based_on_bitmask(df, frame.bitmask)
+    df = insert_nulls_based_on_null_values_map(df, frame.null_values)
     return df
 
 
@@ -180,7 +180,7 @@ def df2msg(df, labels=None, index_cols=None):
         indices = [series2col(s, s.name) for s in serieses]
 
     schema = get_actual_types(df)
-    df, bitmask = normalize_df(df, schema)
+    df, null_values = normalize_df(df, schema)
 
     is_range = isinstance(df.columns, pd.RangeIndex)
     columns = []
@@ -196,7 +196,7 @@ def df2msg(df, labels=None, index_cols=None):
         columns=columns,
         indices=indices,
         labels=pb_map(labels),
-        bitmask=bitmask,
+        null_values=null_values,
     )
 
 
@@ -262,14 +262,14 @@ def series2col(s, name):
     return fpb.Column(**kw)
 
 
-def insert_nulls_based_on_bitmask(df, bitmask):
+def insert_nulls_based_on_null_values_map(df, null_values):
     # if there are no Null values at all, skip
-    if len(bitmask) == 0:
+    if len(null_values) == 0:
         return df
     i = 0
     casted_columns = {}
     for key in df.index:
-        for col_name in bitmask[i].nullColumns:
+        for col_name in null_values[i].nullColumns:
             # boolean columns should be converted to `object` to be able to
             # represent None.
             if df[col_name].dtype == np.bool and \
@@ -284,30 +284,30 @@ def insert_nulls_based_on_bitmask(df, bitmask):
 def normalize_df(df, schema):
     """
         This function converts all 'Null' values to the according
-        default values based on the column type, and creates a bitmask column
+        default values based on the column type, and creates a list of all null columns
         to specify where are the null values
     :param schema: dictionary specifying the real type of every column
     :param df:
     :return:
     """
-    bitmask = []
+    nullValues = []
     for index, row in df.iterrows():
-        current_bitmask = {}
+        current_null_map = {}
         for col_name in df.columns:
             if pd.isnull(row[col_name]):
                 df.at[index, col_name] = \
                     get_empty_value_by_type(schema[col_name])
-                current_bitmask[col_name] = True
-        bitmask.append({'nullColumns': current_bitmask})
+                current_null_map[col_name] = True
+        nullValues.append({'nullColumns': current_null_map})
 
-    return df, bitmask
+    return df, nullValues
 
 
 def get_empty_value_by_type(dtype):
     if dtype == fpb.INTEGER:
         return 0
     elif dtype == fpb.FLOAT:
-        return np.NaN
+        return 0.0
     elif dtype == fpb.STRING:
         return ''
     elif dtype == fpb.TIME:

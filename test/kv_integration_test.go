@@ -165,14 +165,14 @@ func (kvSuite *KvTestSuite) TestNullValuesWrite() {
 		timeCol(kvSuite.T(), "n4", len(index)),
 	}
 
-	nullValues := initializeNullColumnsBitmask(len(index))
+	nullValues := initializeNullColumns(len(index))
 	nullValues[0].NullColumns["n1"] = true
 
 	nullValues[1].NullColumns["n2"] = true
 	nullValues[1].NullColumns["n3"] = true
 	nullValues[1].NullColumns["n4"] = true
 
-	frame, err := frames.NewFrameWithBitmask(columns, []frames.Column{icol}, nil, nullValues)
+	frame, err := frames.NewFrameWithNullValues(columns, []frames.Column{icol}, nil, nullValues)
 	if err != nil {
 		kvSuite.T().Fatal(err)
 	}

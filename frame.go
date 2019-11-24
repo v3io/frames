@@ -42,10 +42,10 @@ type frameImpl struct {
 
 // NewFrame returns a new Frame
 func NewFrame(columns []Column, indices []Column, labels map[string]interface{}) (Frame, error) {
-	return NewFrameWithBitmask(columns, indices, labels, nil)
+	return NewFrameWithNullValues(columns, indices, labels, nil)
 }
 
-func NewFrameWithBitmask(columns []Column, indices []Column, labels map[string]interface{}, bitmask []*pb.RowBitmask) (Frame, error) {
+func NewFrameWithNullValues(columns []Column, indices []Column, labels map[string]interface{}, nullValues []*pb.NullMap) (Frame, error) {
 	if err := checkEqualLen(columns, indices); err != nil {
 		return nil, err
 	}
@@ -68,7 +68,7 @@ func NewFrameWithBitmask(columns []Column, indices []Column, labels map[string]i
 		return nil, err
 	}
 
-	msg.Bitmask = bitmask
+	msg.NullValues = nullValues
 
 	byName := make(map[string]Column)
 	for _, col := range columns {
@@ -204,12 +204,12 @@ func (fr *frameImpl) Slice(start int, end int) (Frame, error) {
 		return nil, err
 	}
 
-	var bitmaskSlice []*pb.RowBitmask
-	if len(fr.msg.Bitmask) != 0 {
-		bitmaskSlice = fr.msg.Bitmask[start:end]
+	var nullValuesSlice []*pb.NullMap
+	if len(fr.msg.NullValues) != 0 {
+		nullValuesSlice = fr.msg.NullValues[start:end]
 	}
 
-	return NewFrameWithBitmask(colSlices, indexSlices, fr.labels, bitmaskSlice)
+	return NewFrameWithNullValues(colSlices, indexSlices, fr.labels, nullValuesSlice)
 }
 
 // FrameRowIterator returns iterator over rows
@@ -223,10 +223,10 @@ func (fr *frameImpl) Proto() *pb.Frame {
 }
 
 func (fr *frameImpl) IsNull(index int, colName string) bool {
-	if len(fr.msg.Bitmask) == 0 {
+	if len(fr.msg.NullValues) == 0 {
 		return false
 	}
-	_, exist := fr.msg.Bitmask[index].NullColumns[colName]
+	_, exist := fr.msg.NullValues[index].NullColumns[colName]
 
 	return exist
 }

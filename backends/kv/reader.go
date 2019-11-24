@@ -111,7 +111,7 @@ func (ki *Iterator) Next() bool {
 
 	rowNum := 0
 	numOfSchemaFiles := 0
-	var bitmask []*pb.RowBitmask
+	var nullColumns []*pb.NullMap
 	hasAnyNulls := false
 
 	//create columns
@@ -166,7 +166,7 @@ func (ki *Iterator) Next() bool {
 		}
 
 		// fill columns with nil if there was no value
-		var currentNullMask pb.RowBitmask
+		var currentNullMask pb.NullMap
 		currentNullMask.NullColumns = make(map[string]bool)
 		for _, field := range ki.schema.Fields {
 			name := field.Name
@@ -186,7 +186,7 @@ func (ki *Iterator) Next() bool {
 			currentNullMask.NullColumns[name] = true
 			hasAnyNulls = true
 		}
-		bitmask = append(bitmask, &currentNullMask)
+		nullColumns = append(nullColumns, &currentNullMask)
 	}
 
 	if ki.iter.Err() != nil {
@@ -220,10 +220,10 @@ func (ki *Iterator) Next() bool {
 	}
 
 	if !hasAnyNulls {
-		bitmask = nil
+		nullColumns = nil
 	}
 	var err error
-	ki.currFrame, err = frames.NewFrameWithBitmask(columns, indices, nil, bitmask)
+	ki.currFrame, err = frames.NewFrameWithNullValues(columns, indices, nil, nullColumns)
 	if err != nil {
 		ki.err = err
 		return false
