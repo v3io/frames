@@ -114,7 +114,7 @@ Client(address=""[, data_url=""], container=""[, user="", password="", token=""]
 <a id="client-constructor-parameters"></a>
 #### Parameters and Data Members
 
-- <a id="client-param-address"></a>**address** &mdash; The address of the Frames service (`framesdb`).
+- <a id="client-param-address"></a>**address** &mdash; The address of the Frames service (`framesd`).
   <br/>
   When running locally on the platform (for example, from a Jupyter Notebook service), set this parameter to `framesd:8081` to use the gRPC (recommended) or to `framesd:8080` to use HTTP.
   <br/>
