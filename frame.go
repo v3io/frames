@@ -45,7 +45,7 @@ func NewFrame(columns []Column, indices []Column, labels map[string]interface{})
 	return NewFrameWithNullValues(columns, indices, labels, nil)
 }
 
-func NewFrameWithNullValues(columns []Column, indices []Column, labels map[string]interface{}, nullValues []*pb.NullMap) (Frame, error) {
+func NewFrameWithNullValues(columns []Column, indices []Column, labels map[string]interface{}, nullValues []*pb.NullValuesMap) (Frame, error) {
 	if err := checkEqualLen(columns, indices); err != nil {
 		return nil, err
 	}
@@ -204,7 +204,7 @@ func (fr *frameImpl) Slice(start int, end int) (Frame, error) {
 		return nil, err
 	}
 
-	var nullValuesSlice []*pb.NullMap
+	var nullValuesSlice []*pb.NullValuesMap
 	if len(fr.msg.NullValues) != 0 {
 		nullValuesSlice = fr.msg.NullValues[start:end]
 	}

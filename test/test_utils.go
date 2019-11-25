@@ -70,10 +70,10 @@ func timeCol(t testing.TB, name string, size int) frames.Column {
 	return col
 }
 
-func initializeNullColumns(length int) []*pb.NullMap{
-	nullValues := make([]*pb.NullMap, length)
+func initializeNullColumns(length int) []*pb.NullValuesMap{
+	nullValues := make([]*pb.NullValuesMap, length)
 	for i := 0 ; i < length; i++{
-		nullValues[i] = &pb.NullMap{NullColumns: make(map[string]bool)}
+		nullValues[i] = &pb.NullValuesMap{NullColumns: make(map[string]bool)}
 	}
 	return nullValues
 }

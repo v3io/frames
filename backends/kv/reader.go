@@ -111,7 +111,7 @@ func (ki *Iterator) Next() bool {
 
 	rowNum := 0
 	numOfSchemaFiles := 0
-	var nullColumns []*pb.NullMap
+	var nullColumns []*pb.NullValuesMap
 	hasAnyNulls := false
 
 	//create columns
@@ -166,7 +166,7 @@ func (ki *Iterator) Next() bool {
 		}
 
 		// fill columns with nil if there was no value
-		var currentNullMask pb.NullMap
+		var currentNullMask pb.NullValuesMap
 		currentNullMask.NullColumns = make(map[string]bool)
 		for _, field := range ki.schema.Fields {
 			name := field.Name
