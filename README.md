@@ -374,7 +374,7 @@ The following `write` parameters are specific to the `kv` backend; for more info
     parameter as well as the Frames help text. See v3io/tutorials commit 03c7feb
     (PR #119) for removal of updated documentation of Frames update expressions.
     The original write example below had an `expression` parameter:
-v3c.write(backend="kv", table="mytable", dfs=df, expression="city='NY'", condition="age>14")
+client.write(backend="kv", table="mytable", dfs=df, expression="city='NY'", condition="age>14")
     -->
 
 - <a id="method-write-kv-param-condition"></a>**condition** (Optional) (default: `None`) &mdash; A platform condition expression that defines conditions for performing the write operation.
@@ -410,7 +410,7 @@ The following `write` parameter descriptions are specific to the `tsdb` backend;
 data = [["tom", 10, "TLV"], ["nick", 15, "Berlin"], ["juli", 14, "NY"]]
 df = pd.DataFrame(data, columns = ["name", "age", "city"])
 df.set_index("name", inplace=True)
-v3c.write(backend="kv", table="mytable", dfs=df, condition="age>14")
+client.write(backend="kv", table="mytable", dfs=df, condition="age>14")
 ```
 
 <!-- TODO: Add examples.
