@@ -22,12 +22,15 @@ package test
 
 import (
 	"fmt"
-	"github.com/v3io/frames/pb"
 	"testing"
 	"time"
 
+	"github.com/nuclio/logger"
 	"github.com/stretchr/testify/suite"
 	"github.com/v3io/frames"
+	"github.com/v3io/frames/pb"
+	"github.com/v3io/frames/v3ioutils"
+	v3io "github.com/v3io/v3io-go/pkg/dataplane"
 	"github.com/v3io/v3io-tsdb/pkg/tsdb/tsdbtest"
 )
 
@@ -38,10 +41,17 @@ type KvTestSuite struct {
 	basicQueryTime int64
 	client         frames.Client
 	backendName    string
+	v3ioContainer  v3io.Container
+	internalLogger logger.Logger
 }
 
 func GetKvTestsConstructorFunc() SuiteCreateFunc {
-	return func(client frames.Client) suite.TestingSuite { return &KvTestSuite{client: client, backendName: "kv"} }
+	return func(client frames.Client, v3ioContainer v3io.Container, internalLogger logger.Logger) suite.TestingSuite {
+		return &KvTestSuite{client: client,
+			backendName:    "kv",
+			v3ioContainer:  v3ioContainer,
+			internalLogger: internalLogger}
+	}
 }
 
 func (kvSuite *KvTestSuite) toMillis(date string) int64 {
@@ -137,4 +147,170 @@ func (kvSuite *KvTestSuite) TestAll() {
 		kvSuite.T().Fatal(err)
 	}
 
+}
+
+func (kvSuite *KvTestSuite) TestNullValuesWrite() {
+	table := fmt.Sprintf("kv_test_nulls%d", time.Now().UnixNano())
+
+	index := []string{"mike", "joe", "jim"}
+	icol, err := frames.NewSliceColumn("idx", index)
+	if err != nil {
+		kvSuite.T().Fatal(err)
+	}
+
+	columns := []frames.Column{
+		floatCol(kvSuite.T(), "n1", len(index)),
+		stringCol(kvSuite.T(), "n2", len(index)),
+		boolCol(kvSuite.T(), "n3", len(index)),
+		timeCol(kvSuite.T(), "n4", len(index)),
+	}
+
+	nullValues := initializeNullColumns(len(index))
+	nullValues[0].NullColumns["n1"] = true
+
+	nullValues[1].NullColumns["n2"] = true
+	nullValues[1].NullColumns["n3"] = true
+	nullValues[1].NullColumns["n4"] = true
+
+	frame, err := frames.NewFrameWithNullValues(columns, []frames.Column{icol}, nil, nullValues)
+	if err != nil {
+		kvSuite.T().Fatal(err)
+	}
+
+	kvSuite.T().Log("write")
+	wreq := &frames.WriteRequest{
+		Backend: kvSuite.backendName,
+		Table:   table,
+	}
+
+	appender, err := kvSuite.client.Write(wreq)
+	if err != nil {
+		kvSuite.T().Fatal(err)
+	}
+
+	if err := appender.Add(frame); err != nil {
+		kvSuite.T().Fatal(err)
+	}
+
+	if err := appender.WaitForComplete(3 * time.Second); err != nil {
+		kvSuite.T().Fatal(err)
+	}
+
+	input := v3io.GetItemsInput{AttributeNames: []string{"__name", "n1", "n2", "n3", "n4"}}
+
+	iter, err := v3ioutils.NewAsyncItemsCursor(
+		kvSuite.v3ioContainer, &input, 1, nil, kvSuite.internalLogger, 0, []string{table + "/"})
+
+	for iter.Next() {
+		currentRow := iter.GetItem()
+
+		key, _ := currentRow.GetFieldString("__name")
+		switch key {
+		case ".#schema":
+			continue
+		case "mike":
+			kvSuite.Require().Nil(currentRow.GetField("n1"),
+				"item %v - key n1 supposed to be null but got %v", key, currentRow.GetField("n1"))
+
+			kvSuite.Require().NotNil(currentRow.GetField("n2"),
+				"item %v - key n2 supposed to be null but got %v", key, currentRow.GetField("n2"))
+			kvSuite.Require().NotNil(currentRow.GetField("n3"),
+				"item %v - key n3 supposed to be null but got %v", key, currentRow.GetField("n3"))
+			kvSuite.Require().NotNil(currentRow.GetField("n4"),
+				"item %v - key n4 supposed to be null but got %v", key, currentRow.GetField("n4"))
+		case "joe":
+			kvSuite.Require().NotNil(currentRow.GetField("n1"),
+				"item %v - key n1 supposed to be null but got %v", key, currentRow.GetField("n1"))
+
+			kvSuite.Require().Nil(currentRow.GetField("n2"),
+				"item %v - key n2 supposed to be null but got %v", key, currentRow.GetField("n2"))
+			kvSuite.Require().Nil(currentRow.GetField("n3"),
+				"item %v - key n3 supposed to be null but got %v", key, currentRow.GetField("n3"))
+			kvSuite.Require().Nil(currentRow.GetField("n4"),
+				"item %v - key n4 supposed to be null but got %v", key, currentRow.GetField("n4"))
+		case "jim":
+			kvSuite.Require().NotNil(currentRow.GetField("n1"),
+				"item %v - key n1 supposed to be null but got %v", key, currentRow.GetField("n1"))
+			kvSuite.Require().NotNil(currentRow.GetField("n2"),
+				"item %v - key n2 supposed to be null but got %v", key, currentRow.GetField("n2"))
+			kvSuite.Require().NotNil(currentRow.GetField("n3"),
+				"item %v - key n3 supposed to be null but got %v", key, currentRow.GetField("n3"))
+			kvSuite.Require().NotNil(currentRow.GetField("n4"),
+				"item %v - key n4 supposed to be null but got %v", key, currentRow.GetField("n4"))
+		default:
+			kvSuite.T().Fatalf("got an unexpected key '%v'", key)
+		}
+	}
+
+	if iter.Err() != nil {
+		kvSuite.T().Fatalf("error querying items got: %v", iter.Err())
+	}
+}
+
+func (kvSuite *KvTestSuite) TestNullValuesRead() {
+	table := fmt.Sprintf("kv_test_nulls_read%d", time.Now().UnixNano())
+
+	data := make(map[string]map[string]interface{})
+	data["mike"] = map[string]interface{}{"idx": "mike", "n2": "dsad", "n3": true, "n4": time.Now()}
+	data["joe"] = map[string]interface{}{"idx": "joe", "n1": 12.2}
+	data["jim"] = map[string]interface{}{"idx": "jim", "n1": 66.6, "n2": "XXX", "n3": true, "n4": time.Now()}
+
+	input := &v3io.PutItemsInput{Path: table, Items: data}
+	res, err := kvSuite.v3ioContainer.PutItemsSync(input)
+	if err != nil {
+		kvSuite.T().Fatalf("error putting test data, err: %v", err)
+	}
+	if res.Error != nil {
+		kvSuite.T().Fatalf("error putting test data, err: %v", res.Error)
+	}
+
+	oldSchema := v3ioutils.NewSchema("idx")
+	schema := v3ioutils.NewSchema("idx")
+	_ = schema.AddField("idx", "", false)
+	_ = schema.AddField("n1", 12.6, true)
+	_ = schema.AddField("n2", "", true)
+	_ = schema.AddField("n3", true, true)
+	_ = schema.AddField("n4", time.Now(), true)
+	err = oldSchema.UpdateSchema(kvSuite.v3ioContainer, table+"/", schema)
+	if err != nil {
+		kvSuite.T().Fatalf("failed to create schema, err: %v", err)
+	}
+
+	rreq := &pb.ReadRequest{
+		Backend: kvSuite.backendName,
+		Table:   table,
+	}
+
+	it, err := kvSuite.client.Read(rreq)
+	if err != nil {
+		kvSuite.T().Fatal(err)
+	}
+
+	for it.Next() {
+		// TODO: More checks
+		frame := it.At()
+		if frame.Len() != len(data) {
+			kvSuite.T().Fatalf("wrong length: %d != %d", frame.Len(), frame.Len())
+		}
+
+		indexCol := frame.Indices()[0]
+		for i := 0; i < frame.Len(); i++ {
+			currentKey, _ := indexCol.StringAt(i)
+			for _, columnName := range frame.Names() {
+				// Checking that the desired Null values are indeed null
+				if currentKey == "mike" && columnName == "n1" {
+					kvSuite.Require().True(frame.IsNull(i, columnName), "key %v and column %v expected to be null but is not", currentKey, columnName)
+				} else if currentKey == "joe" &&
+					(columnName == "n2" || columnName == "n3" || columnName == "n4") {
+					kvSuite.Require().True(frame.IsNull(i, columnName), "key %v and column %v expected to be null but is not", currentKey, columnName)
+				} else {
+					kvSuite.Require().False(frame.IsNull(i, columnName), "key %v and column %v expected to have value but got Null", currentKey, columnName)
+				}
+			}
+		}
+	}
+
+	if err := it.Err(); err != nil {
+		kvSuite.T().Fatal(err)
+	}
 }

@@ -91,6 +91,7 @@ type Frame interface {
 	Column(name string) (Column, error)      // Column by name
 	Slice(start int, end int) (Frame, error) // Slice of Frame
 	IterRows(includeIndex bool) RowIterator  // Iterate over rows
+	IsNull(index int, colName string) bool
 }
 
 // RowIterator is an iterator over frame rows

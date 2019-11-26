@@ -42,6 +42,10 @@ type frameImpl struct {
 
 // NewFrame returns a new Frame
 func NewFrame(columns []Column, indices []Column, labels map[string]interface{}) (Frame, error) {
+	return NewFrameWithNullValues(columns, indices, labels, nil)
+}
+
+func NewFrameWithNullValues(columns []Column, indices []Column, labels map[string]interface{}, nullValues []*pb.NullValuesMap) (Frame, error) {
 	if err := checkEqualLen(columns, indices); err != nil {
 		return nil, err
 	}
@@ -63,6 +67,8 @@ func NewFrame(columns []Column, indices []Column, labels map[string]interface{})
 	if err != nil {
 		return nil, err
 	}
+
+	msg.NullValues = nullValues
 
 	byName := make(map[string]Column)
 	for _, col := range columns {
@@ -198,7 +204,12 @@ func (fr *frameImpl) Slice(start int, end int) (Frame, error) {
 		return nil, err
 	}
 
-	return NewFrame(colSlices, indexSlices, fr.labels)
+	var nullValuesSlice []*pb.NullValuesMap
+	if len(fr.msg.NullValues) != 0 {
+		nullValuesSlice = fr.msg.NullValues[start:end]
+	}
+
+	return NewFrameWithNullValues(colSlices, indexSlices, fr.labels, nullValuesSlice)
 }
 
 // FrameRowIterator returns iterator over rows
@@ -209,6 +220,15 @@ func (fr *frameImpl) IterRows(includeIndex bool) RowIterator {
 // Proto returns the underlying protobuf message
 func (fr *frameImpl) Proto() *pb.Frame {
 	return fr.msg
+}
+
+func (fr *frameImpl) IsNull(index int, colName string) bool {
+	if len(fr.msg.NullValues) == 0 {
+		return false
+	}
+	_, exist := fr.msg.NullValues[index].NullColumns[colName]
+
+	return exist
 }
 
 // NewFrameFromProto return a new frame from protobuf message
