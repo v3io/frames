@@ -294,7 +294,7 @@ The following `create` parameters are specific to the `stream` backend and are p
   ```
 
 - Create a TSDB table named "my_metrics" in a **tsdb** directory in the client's data container with an ingestion rate of 1 sample per second.
- The table is created with the `count`, `avg`, `min`, and `max` aggregates and an aggregation interval of 1 hour:
+ The table is created with the `count`, `avg`, `min`, and `max` aggregates and an aggregation granularity of 1 hour:
 
   ```python
   client.create("tsdb", "/tsdb/my_metrics", attrs={"rate": "1/s", "aggregates": "count,avg,min,max", "aggregation-granularity": "1h"})
@@ -310,7 +310,7 @@ The following `create` parameters are specific to the `stream` backend and are p
   client.create("stream", "/mystream", attrs={"shards": 6})
   ```
 
-- Create a stream named "stream1" in a "my_streams" directory in the client's data container:
+- Create a stream named "stream1" in a "my_streams" directory in the client's data container.
   The stream has 24 shards (default) and a retention period of 2 hours:
 
   ```python
