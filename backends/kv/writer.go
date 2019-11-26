@@ -152,6 +152,9 @@ func (a *Appender) Add(frame frames.Frame) error {
 
 		// set row values from columns
 		for name, col := range columns {
+			if frame.IsNull(r, name){
+				continue
+			}
 			val, err := utils.ColAt(col, r)
 			if err != nil {
 				return err

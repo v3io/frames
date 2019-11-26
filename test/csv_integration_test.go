@@ -2,12 +2,15 @@ package test
 
 import (
 	"fmt"
-	"github.com/stretchr/testify/suite"
-	"github.com/v3io/frames"
-	"github.com/v3io/frames/pb"
 	"math/rand"
 	"testing"
 	"time"
+
+	"github.com/nuclio/logger"
+	"github.com/stretchr/testify/suite"
+	"github.com/v3io/frames"
+	"github.com/v3io/frames/pb"
+	v3io "github.com/v3io/v3io-go/pkg/dataplane"
 )
 
 var (
@@ -25,7 +28,9 @@ type CsvTestSuite struct {
 }
 
 func GetCsvTestsConstructorFunc() SuiteCreateFunc {
-	return func(client frames.Client) suite.TestingSuite { return &CsvTestSuite{client: client, backendName: "csv"} }
+	return func(client frames.Client, _ v3io.Container, _ logger.Logger) suite.TestingSuite {
+		return &CsvTestSuite{client: client, backendName:    "csv"}
+	}
 }
 
 func (csvSuite *CsvTestSuite) SetupSuite() {
@@ -88,7 +93,7 @@ func (csvSuite *CsvTestSuite) generateSampleFrame(t testing.TB) frames.Frame {
 }
 
 func (csvSuite *CsvTestSuite) TestAll() {
-	table := fmt.Sprintf("kv_test_all%d", time.Now().UnixNano())
+	table := fmt.Sprintf("csv_test_all%d", time.Now().UnixNano())
 
 	csvSuite.T().Log("write")
 	frame := csvSuite.generateSampleFrame(csvSuite.T())
