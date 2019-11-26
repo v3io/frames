@@ -70,10 +70,39 @@ func timeCol(t testing.TB, name string, size int) frames.Column {
 	return col
 }
 
-func initializeNullColumns(length int) []*pb.NullValuesMap{
+func initializeNullColumns(length int) []*pb.NullValuesMap {
 	nullValues := make([]*pb.NullValuesMap, length)
-	for i := 0 ; i < length; i++{
+	for i := 0; i < length; i++ {
 		nullValues[i] = &pb.NullValuesMap{NullColumns: make(map[string]bool)}
 	}
 	return nullValues
+}
+
+func validateFramesAreEqual(s suite.Suite, frame1, frame2 frames.Frame) {
+	// Check length
+	s.Require().Equal(frame1.Len(), frame2.Len(), "frames length is different")
+
+	// Check Indices
+	frame1IndicesCount, frame2IndicesCount := len(frame1.Indices()), len(frame2.Indices())
+	s.Require().Equal(frame1IndicesCount, frame2IndicesCount, "frames indices length is different")
+	frame1IndicesNames, frame2IndicesNames := make([]string, frame1IndicesCount), make([]string, frame2IndicesCount)
+	for i := 0; i < frame1IndicesCount; i++ {
+		frame1IndicesNames[i] = frame1.Indices()[i].Name()
+		frame2IndicesNames[i] = frame2.Indices()[i].Name()
+	}
+	s.Require().EqualValues(frame1IndicesNames, frame2IndicesNames, "frames index names are different")
+
+	// Check columns
+	s.Require().EqualValues(frame1.Names(), frame2.Names(), "frames column names are different")
+	s.Require().EqualValues(iteratorToSlice(frame1.IterRows(true)),
+		iteratorToSlice(frame2.IterRows(true)),
+		"frames values mismatch")
+}
+
+func iteratorToSlice(iter frames.RowIterator) []map[string]interface{} {
+	var response []map[string]interface{}
+	for iter.Next() {
+		response = append(response, iter.Row())
+	}
+	return response
 }

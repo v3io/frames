@@ -56,6 +56,21 @@ func (mode SaveMode) GetNginxModeName() string {
 	}
 }
 
+func (mode SaveMode) String() string {
+	switch mode {
+	case ErrorIfExists:
+		return "errorIfExists"
+	case Append:
+		return "append"
+	case Overwrite:
+		return "overwrite"
+	case Replace:
+		return "replace"
+	default:
+		return ""
+	}
+}
+
 const (
 	ErrorIfExists SaveMode = 0
 	Append        SaveMode = 1
