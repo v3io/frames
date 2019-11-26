@@ -343,11 +343,6 @@ write(backend, table, dfs, condition="", labels=None, max_in_message=0,
     index_cols=None, partition_keys=None)
 ```
 
-- When the value of the [`iterator`](#method-read-param-iterator) parameter is `False` (default) &mdash; returns a single DataFrame.
-- When the value of the `iterator` parameter is `True` &mdash; returns a
-  DataFrames iterator.
-  The returned DataFrames include a `"labels"` DataFrame attribute with backend-specific data, if applicable; for example, for the `stream` backend, this attribute holds the sequence number of the last stream record that was read.
-
 <a id="method-write-common-params"></a>
 #### Common `write` Parameters
 
