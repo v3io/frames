@@ -253,7 +253,7 @@ The following `create` parameters are specific to the `tsdb` backend and are pas
   - **Valid Values:** A string containing a comma-separated list of supported aggregation functions &mdash; `avg`| `count`| `last`| `max`| `min`| `rate`| `stddev`| `stdvar`| `sum`.
     For example, `"count,avg,min,max"`.
 
-- <a id="method-create-tsdb-param-aggregation"></a>**aggregation-granularity** &mdash; Aggregation granularity; i.e., a time interval for applying the aggregation functions, if configured in the [`aggregates`](#method-create-tsdb-param-aggregates) parameter.
+- <a id="method-create-tsdb-param-aggregation-granularity"></a>**aggregation-granularity** &mdash; Aggregation granularity; i.e., a time interval for applying the aggregation functions, if configured in the [`aggregates`](#method-create-tsdb-param-aggregates) parameter.
 
   - **Type:** `str`
   - **Requirement:** Optional
