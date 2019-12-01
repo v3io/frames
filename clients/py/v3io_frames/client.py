@@ -210,10 +210,9 @@ class ClientBase:
              days), or 0 for the earliest time; the default is an empty string
              for when `start` is also not set - to delete the entire table -
              and `0` when `start` is set
-        if_missing : int
+        if_missing : int (frames_pb2 pb.ErrorOptions)
             Determines the behavior when the specified table or stream doesn't
-            exist - `fpb.FAIL` (default) to raise an error or `fpb.IGNORE` to
-            ignore
+            exist - `FAIL` (default) to raise an error or `IGNORE` to ignore
 
         Raises
         ------
