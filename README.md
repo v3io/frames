@@ -604,14 +604,14 @@ The following `delete` parameters are specific to the `tsdb` backend; for more i
 ##### `kv` Backend
 
 ```python
-df = client.delete(backend="kv", table="mytable", filter="age > 40")
+client.delete(backend="kv", table="mytable", filter="age > 40")
 ```
 
 <a id="method-delete-examples-tsdb"></a>
 ##### `tsdb` Backend
 
 ```python
-df = client.delete(backend="tsdb", table="mytable", start="now-1d", end="now-5h")
+client.delete(backend="tsdb", table="mytable", start="now-1d", end="now-5h")
 ```
 
 <a id="method-execute"></a>
