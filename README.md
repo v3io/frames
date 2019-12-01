@@ -575,26 +575,40 @@ delete(backend, table, filter="", start="", end="")
 <a id="method-delete-params-kv"></a>
 #### `kv` Backend `delete` Parameters
 
-- <a id="method-delete-kv-param-filter"></a>**filter** &mdash; `str` &mdash; A platform filter expression that identifies specific items to delete.
+- <a id="method-delete-kv-param-filter"></a>**filter** &mdash; A platform filter expression that identifies specific items to delete.
   For detailed information about platform filter expressions, see the [platform documentation](https://www.iguazio.com/docs/reference/latest-release/expressions/condition-expression/#filter-expression).
+  > **Note:** When the `filter` parameter isn't set, the entire table and its schema file (**.#schema**) are deleted.
 
-> **Note:** When the `filter` parameter isn't set, the entire table is deleted.
+  - **Type:** `str`
+  - **Requirement:** Optional
+  - **Default Value:** `""`
 
 <a id="method-delete-params-tsdb"></a>
 #### `tsdb` Backend `delete` Parameters
 
 The following `delete` parameters are specific to the `tsdb` backend; for more information about these parameters, see the [V3IO TSDB documentation](https://github.com/v3io/v3io-tsdb#v3io-tsdb):
 
-- <a id="method-delete-tsdb-param-start"></a>**start** &mdash; `str` &mdash; Start (minimum) time for the delete operation, as a string containing an RFC 3339 time, a Unix timestamp in milliseconds, a relative time of the format `"now"` or `"now-[0-9]+[mhd]"` (where `m` = minutes, `h` = hours, and `'d'` = days), or 0 for the earliest time.
-  For example: `"2016-01-02T15:34:26Z"`; `"1451748866"`; `"now-90m"`; `"0"`.
-  <br/>
-  The default start time is `<end time> - 1h`.
-- <a id="method-delete-tsdb-param-end"></a>**end** &mdash; `str` &mdash; End (maximum) time for the delete operation, as a string containing an RFC 3339 time, a Unix timestamp in milliseconds, a relative time of the format `"now"` or `"now-[0-9]+[mhd]"` (where `m` = minutes, `h` = hours, and `'d'` = days), or 0 for the earliest time.
-  For example: `"2018-09-26T14:10:20Z"`; `"1537971006000"`; `"now-3h"`; `"now-7d"`.
-  <br/>
-  The default end time is `"now"`.
+- <a id="method-delete-tsdb-param-start"></a>**start** &mdash; Start (minimum) time for the delete operation &mdash; i.e., delete only items whose data sample time is at or after (`>=`) the specified start time.
 
-> **Note:** When neither the `start` or `end` parameters are set, the entire TSDB table is deleted.
+  - **Type:** `str`
+  - **Requirement:** Optional
+  - **Valid Values:** A string containing an RFC 3339 time, a Unix timestamp in milliseconds, a relative time of the format `"now"` or `"now-[0-9]+[mhd]"` (where `m` = minutes, `h` = hours, and `'d'` = days), or 0 for the earliest time.
+    For example: `"2016-01-02T15:34:26Z"`; `"1451748866"`; `"now-90m"`; `"0"`.
+  - **Default Value:** `""` when neither `start` nor [`end`](#method-delete-tsdb-param-end) are set &mdash; to delete the entire table and its schema file (**.schema**) &mdash; and `0` when `end` is set
+
+- <a id="method-delete-tsdb-param-end"></a>**end** &mdash; `str` &mdash; End (maximum) time for the delete operation &mdash; i.e., delete only items whose data sample time is before or at (`<=`) the specified end time.
+
+  - **Type:** `str`
+  - **Requirement:** Optional
+  - **Valid Values:** A string containing an RFC 3339 time, a Unix timestamp in milliseconds, a relative time of the format `"now"` or `"now-[0-9]+[mhd]"` (where `m` = minutes, `h` = hours, and `'d'` = days), or 0 for the earliest time.
+    For example: `"2018-09-26T14:10:20Z"`; `"1537971006000"`; `"now-3h"`; `"now-7d"`.
+  - **Default Value:** `""` when neither [`start`](#method-delete-tsdb-param-start) nor `end` are set &mdash; to delete the entire table and its schema file (**.schema**) &mdash; and `0` when `start` is set
+
+> **Note:**
+> - When neither the [`start`](#method-delete-tsdb-param-start) nor [`end`](#method-delete-tsdb-param-end) parameters are set, the entire TSDB table and its schema file are deleted.
+> - Only full table partitions within the specified time frame (as determined by the `start` and `end` parameters) are deleted.
+>   Items within the specified time frames that reside within partitions that begin before the delete start time or end after the delete end time aren't deleted.
+>   The partition interval is calculated automatically based on the table's ingestion rate and is stored in the TSDB's `partitionerInterval` schema field (see the  **.schema** file).
 
 <a id="method-delete-examples"></a>
 #### `delete` Examples
@@ -612,6 +626,13 @@ client.delete(backend="kv", table="mytable", filter="age > 40")
 
 ```python
 client.delete(backend="tsdb", table="mytable", start="now-1d", end="now-5h")
+```
+
+<a id="method-delete-examples-stream"></a>
+##### `stream` Backend
+
+```python
+client.delete(backend="stream", table="mystream")
 ```
 
 <a id="method-execute"></a>

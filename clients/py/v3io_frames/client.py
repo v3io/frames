@@ -190,23 +190,30 @@ class ClientBase:
         backend : str
             Backend name
         table : str
-            Table to create
+            Table or stream to delete or from which to delete specific items
         filter : str
-            Filter for selective delete
-        start : string
-             (`tsdb` backend only) Start (minimum) metric-sample time for the
+            (`kv` backend only) A filter expression that identifies specific
+            items to delete; for example, "age<18"
+        start : str
+             (`tsdb` backend only) Start (minimum) data sample time for the
              delete operation, as a string containing an RFC 3339 time, a Unix
              timestamp in milliseconds, a relative time (`"now"` or
              `"now-[0-9]+[mhd]"`, where `m` = minutes, `h` = hours, and `'d'` =
-             days), or 0 for the earliest time; the default is <end time> - 1h
-        end : string
-             (`tsdb` backend only) End (maximum) metric-sample time for the
+             days), or 0 for the earliest time; the default is an empty string
+             for when `end` is also not set - to delete the entire table - and
+             `0` when `end` is set
+        end : str
+             (`tsdb` backend only) End (maximum) data sample time for the
              delete operation, as a string containing an RFC 3339 time, a Unix
              timestamp in milliseconds, a relative time (`"now"` or
              `"now-[0-9]+[mhd]"`, where `m` = minutes, `h` = hours, and `'d'` =
-             days), or 0 for the earliest time; the default is "now"
+             days), or 0 for the earliest time; the default is an empty string
+             for when `start` is also not set - to delete the entire table -
+             and `0` when `start` is set
         if_missing : int
-            One of IGNORE or FAIL
+            Determines the behavior when the specified table or stream doesn't
+            exist - `fpb.FAIL` (default) to raise an error or `fpb.IGNORE` to
+            ignore
 
         Raises
         ------
