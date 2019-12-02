@@ -114,7 +114,7 @@ Client(address=""[, data_url=""], container=""[, user="", password="", token=""]
 <a id="client-constructor-parameters"></a>
 #### Parameters and Data Members
 
-- <a id="client-param-address"></a>**address** &mdash; The address of the Frames service (`framesdb`).
+- <a id="client-param-address"></a>**address** &mdash; The address of the Frames service (`framesd`).
   <br/>
   When running locally on the platform (for example, from a Jupyter Notebook service), set this parameter to `framesd:8081` to use the gRPC (recommended) or to `framesd:8080` to use HTTP.
   <br/>
@@ -253,7 +253,7 @@ The following `create` parameters are specific to the `tsdb` backend and are pas
   - **Valid Values:** A string containing a comma-separated list of supported aggregation functions &mdash; `avg`| `count`| `last`| `max`| `min`| `rate`| `stddev`| `stdvar`| `sum`.
     For example, `"count,avg,min,max"`.
 
-- <a id="method-create-tsdb-param-aggregation"></a>**aggregation-granularity** &mdash; Aggregation granularity; i.e., a time interval for applying the aggregation functions, if configured in the [`aggregates`](#method-create-tsdb-param-aggregates) parameter.
+- <a id="method-create-tsdb-param-aggregation-granularity"></a>**aggregation-granularity** &mdash; Aggregation granularity; i.e., a time interval for applying the aggregation functions, if configured in the [`aggregates`](#method-create-tsdb-param-aggregates) parameter.
 
   - **Type:** `str`
   - **Requirement:** Optional
@@ -294,7 +294,7 @@ The following `create` parameters are specific to the `stream` backend and are p
   ```
 
 - Create a TSDB table named "my_metrics" in a **tsdb** directory in the client's data container with an ingestion rate of 1 sample per second.
- The table is created with the `count`, `avg`, `min`, and `max` aggregates and an aggregation interval of 1 hour:
+ The table is created with the `count`, `avg`, `min`, and `max` aggregates and an aggregation granularity of 1 hour:
 
   ```python
   client.create("tsdb", "/tsdb/my_metrics", attrs={"rate": "1/s", "aggregates": "count,avg,min,max", "aggregation-granularity": "1h"})
@@ -310,7 +310,7 @@ The following `create` parameters are specific to the `stream` backend and are p
   client.create("stream", "/mystream", attrs={"shards": 6})
   ```
 
-- Create a stream named "stream1" in a "my_streams" directory in the client's data container:
+- Create a stream named "stream1" in a "my_streams" directory in the client's data container.
   The stream has 24 shards (default) and a retention period of 2 hours:
 
   ```python
@@ -343,11 +343,6 @@ write(backend, table, dfs, condition="", labels=None, max_in_message=0,
     index_cols=None, partition_keys=None)
 ```
 
-- When the value of the [`iterator`](#method-read-param-iterator) parameter is `False` (default) &mdash; returns a single DataFrame.
-- When the value of the `iterator` parameter is `True` &mdash; returns a
-  DataFrames iterator.
-  The returned DataFrames include a `"labels"` DataFrame attribute with backend-specific data, if applicable; for example, for the `stream` backend, this attribute holds the sequence number of the last stream record that was read.
-
 <a id="method-write-common-params"></a>
 #### Common `write` Parameters
 
@@ -379,7 +374,7 @@ The following `write` parameters are specific to the `kv` backend; for more info
     parameter as well as the Frames help text. See v3io/tutorials commit 03c7feb
     (PR #119) for removal of updated documentation of Frames update expressions.
     The original write example below had an `expression` parameter:
-v3c.write(backend="kv", table="mytable", dfs=df, expression="city='NY'", condition="age>14")
+client.write(backend="kv", table="mytable", dfs=df, expression="city='NY'", condition="age>14")
     -->
 
 - <a id="method-write-kv-param-condition"></a>**condition** (Optional) (default: `None`) &mdash; A platform condition expression that defines conditions for performing the write operation.
@@ -415,7 +410,7 @@ The following `write` parameter descriptions are specific to the `tsdb` backend;
 data = [["tom", 10, "TLV"], ["nick", 15, "Berlin"], ["juli", 14, "NY"]]
 df = pd.DataFrame(data, columns = ["name", "age", "city"])
 df.set_index("name", inplace=True)
-v3c.write(backend="kv", table="mytable", dfs=df, condition="age>14")
+client.write(backend="kv", table="mytable", dfs=df, condition="age>14")
 ```
 
 <!-- TODO: Add examples.
