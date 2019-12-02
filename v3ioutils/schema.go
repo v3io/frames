@@ -136,8 +136,9 @@ func (s *OldV3ioSchema) merge(new *OldV3ioSchema) (bool, error) {
 		}
 	}
 
+	// Do not accept key name change, unless it's the first time we are saving to this table
 	if s.Key != new.Key && new.Key != "" {
-		if s.Key == DefaultKeyColumn {
+		if len(s.Fields) == 0 {
 			s.Key = new.Key
 			changed = true
 		} else {

@@ -3,6 +3,7 @@ package test
 import (
 	"fmt"
 	"math/rand"
+	"reflect"
 	"testing"
 	"time"
 
@@ -16,7 +17,7 @@ import (
 type SuiteCreateFunc = func(frames.Client, v3io.Container, logger.Logger) suite.TestingSuite
 
 func floatCol(t testing.TB, name string, size int) frames.Column {
-	random := rand.New(rand.NewSource(time.Now().Unix()))
+	random := rand.New(rand.NewSource(time.Now().UnixNano()))
 	floats := make([]float64, size)
 	for i := range floats {
 		floats[i] = random.Float64()
@@ -94,9 +95,11 @@ func validateFramesAreEqual(s suite.Suite, frame1, frame2 frames.Frame) {
 
 	// Check columns
 	s.Require().EqualValues(frame1.Names(), frame2.Names(), "frames column names are different")
-	s.Require().EqualValues(iteratorToSlice(frame1.IterRows(true)),
-		iteratorToSlice(frame2.IterRows(true)),
-		"frames values mismatch")
+	frame1Data := iteratorToSlice(frame1.IterRows(true))
+	frame2Data := iteratorToSlice(frame2.IterRows(true))
+
+	s.Require().True(compareMapSlice(frame1Data, frame2Data),
+		"frames values mismatch, frame1: %v \n, frame2: %v", frame1Data, frame2Data)
 }
 
 func iteratorToSlice(iter frames.RowIterator) []map[string]interface{} {
@@ -105,4 +108,26 @@ func iteratorToSlice(iter frames.RowIterator) []map[string]interface{} {
 		response = append(response, iter.Row())
 	}
 	return response
+}
+
+func compareMapSlice(a, b []map[string]interface{}) bool {
+	if len(a) != len(b) {
+		return false
+	}
+
+	for _, currentMapA := range a {
+		foundMap := false
+		for _, currentMapB := range b {
+			if reflect.DeepEqual(currentMapA, currentMapB) {
+				foundMap = true
+				break
+			}
+		}
+
+		if !foundMap {
+			return false
+		}
+	}
+
+	return true
 }
