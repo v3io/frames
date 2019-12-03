@@ -57,10 +57,12 @@ type AsyncItemsCursor struct {
 }
 
 // NewAsyncItemsCursor return new AsyncItemsCursor
-func NewAsyncItemsCursor(container v3io.Container, input *v3io.GetItemsInput, workers int, shardingKeys []string, logger logger.Logger, limit int,
-	partitions []string) (*AsyncItemsCursor, error) {
+func NewAsyncItemsCursor(container v3io.Container, input *v3io.GetItemsInput, workers int, shardingKeys []string,
+	logger logger.Logger, limit int, partitions []string,
+	sortKeyRangeStart string, sortKeyRangeEnd string) (*AsyncItemsCursor, error) {
 
-	if workers == 0 {
+	// TODO: use workers from Context.numWorkers (if no ShardingKey)
+	if workers == 0 || input.ShardingKey != "" {
 		workers = 1
 	}
 
@@ -79,10 +81,15 @@ func NewAsyncItemsCursor(container v3io.Container, input *v3io.GetItemsInput, wo
 
 		for _, partition := range partitions {
 			for i := 0; i < newAsyncItemsCursor.workers; i++ {
-				in := *input
-				in.Path = partition
-				in.ShardingKey = shardingKeys[i]
-				_, err := container.GetItems(&in, &in, newAsyncItemsCursor.responseChan)
+				input := v3io.GetItemsInput{
+					Path:              partition,
+					AttributeNames:    input.AttributeNames,
+					Filter:            input.Filter,
+					ShardingKey:       shardingKeys[i],
+					SortKeyRangeStart: sortKeyRangeStart,
+					SortKeyRangeEnd:   sortKeyRangeEnd,
+				}
+				_, err := container.GetItems(&input, &input, newAsyncItemsCursor.responseChan)
 
 				if err != nil {
 					return nil, err
@@ -95,11 +102,14 @@ func NewAsyncItemsCursor(container v3io.Container, input *v3io.GetItemsInput, wo
 
 		for _, partition := range partitions {
 			for i := 0; i < newAsyncItemsCursor.workers; i++ {
-				in := *input
-				in.Path = partition
-				in.TotalSegments = newAsyncItemsCursor.totalSegments
-				in.Segment = i
-				_, err := container.GetItems(&in, &in, newAsyncItemsCursor.responseChan)
+				input := v3io.GetItemsInput{
+					Path:           partition,
+					AttributeNames: input.AttributeNames,
+					Filter:         input.Filter,
+					TotalSegments:  newAsyncItemsCursor.totalSegments,
+					Segment:        i,
+				}
+				_, err := container.GetItems(&input, &input, newAsyncItemsCursor.responseChan)
 
 				if err != nil {
 					// TODO: proper exit, release requests which passed

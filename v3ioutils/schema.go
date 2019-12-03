@@ -155,6 +155,11 @@ func (s *OldV3ioSchema) merge(new *OldV3ioSchema) (bool, error) {
 		changed = true
 	}
 
+	if s.SortingKey != new.SortingKey && new.SortingKey != "" {
+		s.SortingKey = new.SortingKey
+		changed = true
+	}
+
 	return changed, nil
 }
 

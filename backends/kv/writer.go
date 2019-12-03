@@ -68,7 +68,7 @@ func (kv *Backend) Write(request *frames.WriteRequest) (frames.FrameAppender, er
 		responseChan: make(chan *v3io.Response, 1000),
 		commChan:     make(chan int, 2),
 		logger:       kv.logger,
-		schema:       v3ioutils.NewSchema("idx"),
+		schema:       v3ioutils.NewSchema("idx", ""),
 	}
 	go appender.respWaitLoop(time.Minute)
 
@@ -105,7 +105,9 @@ func (a *Appender) Add(frame frames.Frame) error {
 	columns := make(map[string]frames.Column)
 	indexName := ""
 	var newSchema v3ioutils.V3ioSchema
-	if indices := frame.Indices(); len(indices) > 0 {
+	indices := frame.Indices()
+
+	if len(indices) > 0 {
 		indexName = indices[0].Name()
 		if indexName == "" {
 			indexName = a.schema.(*v3ioutils.OldV3ioSchema).Key
@@ -117,7 +119,7 @@ func (a *Appender) Add(frame frames.Frame) error {
 		newSchema = v3ioutils.NewSchema(indexName, sortingKeyName)
 		newSchema.AddColumn(indexName, indices[0], false)
 		if len(indices) > 1 {
-			newSchema.AddColumn(indexName, indices[1], false)
+			newSchema.AddColumn(indices[1].Name(), indices[1], false)
 		}
 	} else {
 		indexName = a.schema.(*v3ioutils.OldV3ioSchema).Key
@@ -154,18 +156,6 @@ func (a *Appender) Add(frame frames.Frame) error {
 		return err
 	}
 
-	var sortingKeyCol frames.Column
-	if len(frame.Indices()) > 1 {
-		sortingColFunc, err := a.funcFromCol(sortingKeyCol)
-		if err != nil {
-			return nil, err
-		}
-		compositeFunc := func(i int) interface{} {
-			return fmt.Sprintf("%v.%v", indexColFunc(i), sortingColFunc(i))
-		}
-		return compositeFunc, nil
-	}
-
 	for r := 0; r < frame.Len(); r++ {
 		row := make(map[string]interface{})
 
@@ -186,11 +176,6 @@ func (a *Appender) Add(frame frames.Frame) error {
 			row[name] = val
 		}
 
-		key := indexVal(r)
-
-		// Add key column as an attribute
-		row[indexName] = key
-
 		var condition string
 		if a.request.Condition != "" {
 			condition, err = genExpr(a.request.Condition, frame, r)
@@ -200,7 +185,20 @@ func (a *Appender) Add(frame frames.Frame) error {
 			}
 		}
 
-		input := v3io.PutItemInput{Path: a.tablePath + fmt.Sprintf("%v", key), Attributes: row, Condition: condition}
+		key := indexVal(r)
+		// Add key column as an attribute
+		row[indexName] = key
+
+		var sortingVal interface{}
+		if len(indices) > 1 {
+			sortingFunc, err := a.funcFromCol(indices[1])
+			if err != nil {
+				return err
+			}
+			sortingVal = sortingFunc(r)
+			row[indices[1].Name()] = sortingVal
+		}
+		input := v3io.PutItemInput{Path: a.tablePath + a.formatKeyName(len(frame.Indices()), key, sortingVal), Attributes: row, Condition: condition}
 		a.logger.DebugWith("write", "input", input)
 		_, err := a.container.PutItem(&input, r, a.responseChan)
 		if err != nil {
@@ -213,6 +211,16 @@ func (a *Appender) Add(frame frames.Frame) error {
 
 	a.rowsProcessed += frame.Len()
 	return nil
+}
+
+func (a *Appender) formatKeyName(indicesSize int, key interface{}, sortingVal interface{}) string {
+	var format string
+	if indicesSize > 1 {
+		format = fmt.Sprintf("%v.%v", key, sortingVal)
+	} else {
+		format = fmt.Sprintf("%v", key)
+	}
+	return format
 }
 
 // update updates rows from a frame
@@ -244,7 +252,16 @@ func (a *Appender) update(frame frames.Frame) error {
 		}
 
 		key := indexVal(r)
-		input := v3io.UpdateItemInput{Path: a.tablePath + fmt.Sprintf("%v", key), Expression: expr, Condition: cond}
+		var sortingVal interface{}
+		if len(frame.Indices()) > 1 {
+			sortingFunc, err := a.funcFromCol(frame.Indices()[1])
+			if err != nil {
+				return err
+			}
+			sortingVal = sortingFunc(r)
+		}
+
+		input := v3io.UpdateItemInput{Path: a.tablePath + a.formatKeyName(len(frame.Indices()), key, sortingVal), Expression: expr, Condition: cond}
 		a.logger.DebugWith("write update", "input", input)
 		_, err = a.container.UpdateItem(&input, r, a.responseChan)
 		if err != nil {
@@ -316,12 +333,8 @@ func (a *Appender) WaitForComplete(timeout time.Duration) error {
 func (a *Appender) indexValFunc(frame frames.Frame) (func(int) interface{}, error) {
 	var indexCol frames.Column
 
-	indices := frame.Indices()
-	if len(indices) > 0 {
+	if indices := frame.Indices(); len(indices) > 0 {
 		indexCol = indices[0]
-		if len(indices) > 1 {
-			indexCol = indices[1]
-		}
 	} else {
 		// If no index column exist use range index
 		return func(i int) interface{} {
@@ -329,11 +342,7 @@ func (a *Appender) indexValFunc(frame frames.Frame) (func(int) interface{}, erro
 		}, nil
 	}
 
-	indexColFunc, err := a.funcFromCol(indexCol)
-	if err != nil {
-		return nil, err
-	}
-	return indexColFunc, nil
+	return a.funcFromCol(indexCol)
 }
 
 func (a *Appender) funcFromCol(indexCol frames.Column) (func(int) interface{}, error) {

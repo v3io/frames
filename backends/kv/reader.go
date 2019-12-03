@@ -74,7 +74,8 @@ func (kv *Backend) Read(request *frames.ReadRequest) (frames.FrameIterator, erro
 	kv.logger.DebugWith("read input", "input", input, "request", request)
 
 	iter, err := v3ioutils.NewAsyncItemsCursor(
-		container, &input, kv.numWorkers, request.Proto.ShardingKeys, kv.logger, 0, partitions)
+		container, &input, kv.numWorkers, request.Proto.ShardingKeys, kv.logger, 0, partitions,
+		request.Proto.SortKeyRangeStart, request.Proto.SortKeyRangeEnd)
 	if err != nil {
 		return nil, err
 	}
