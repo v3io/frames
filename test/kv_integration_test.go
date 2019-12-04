@@ -199,7 +199,7 @@ func (kvSuite *KvTestSuite) TestNullValuesWrite() {
 	input := v3io.GetItemsInput{AttributeNames: []string{"__name", "n1", "n2", "n3", "n4"}}
 
 	iter, err := v3ioutils.NewAsyncItemsCursor(
-		kvSuite.v3ioContainer, &input, 1, nil, kvSuite.internalLogger, 0, []string{table + "/"})
+		kvSuite.v3ioContainer, &input, 1, nil, kvSuite.internalLogger, 0, []string{table + "/"}, "", "")
 
 	for iter.Next() {
 		currentRow := iter.GetItem()
@@ -264,8 +264,8 @@ func (kvSuite *KvTestSuite) TestNullValuesRead() {
 		kvSuite.T().Fatalf("error putting test data, err: %v", res.Error)
 	}
 
-	oldSchema := v3ioutils.NewSchema("idx")
-	schema := v3ioutils.NewSchema("idx")
+	oldSchema := v3ioutils.NewSchema("idx", "")
+	schema := v3ioutils.NewSchema("idx", "")
 	_ = schema.AddField("idx", "", false)
 	_ = schema.AddField("n1", 12.6, true)
 	_ = schema.AddField("n2", "", true)
