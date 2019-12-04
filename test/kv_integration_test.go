@@ -781,6 +781,68 @@ func (kvSuite *KvTestSuite) TestSaveModeAppendChangeIndexName() {
 	}
 }
 
+func (kvSuite *KvTestSuite) TestSaveModeAppendUpdateExpressionNewAttributes() {
+	table := fmt.Sprintf("TestSaveModeAppendNewAttribute%d", time.Now().UnixNano())
+
+	columnNames := []string{"n1", "n2"}
+	frame := kvSuite.generateSequentialSampleFrame(3, "idx", columnNames)
+	wreq := &frames.WriteRequest{
+		Backend: kvSuite.backendName,
+		Table:   table,
+	}
+
+	appender, err := kvSuite.client.Write(wreq)
+	if err != nil {
+		kvSuite.T().Fatal(err)
+	}
+
+	if err := appender.Add(frame); err != nil {
+		kvSuite.T().Fatal(err)
+	}
+
+	if err := appender.WaitForComplete(time.Second); err != nil {
+		kvSuite.T().Fatal(err)
+	}
+
+	// Save a frame to the same path
+	frame2 := kvSuite.generateSequentialSampleFrame(3, "idx", columnNames)
+	wreq = &frames.WriteRequest{
+		Backend:  kvSuite.backendName,
+		Table:    table,
+		SaveMode: frames.Append,
+		Expression: "col3={n1}+{n2}",
+	}
+
+	appender, err = kvSuite.client.Write(wreq)
+	if err != nil {
+		kvSuite.T().Fatal(err)
+	}
+
+	err = appender.Add(frame2)
+	kvSuite.NoError(err, "failed to write frame")
+
+	if err := appender.WaitForComplete(time.Second); err != nil {
+		kvSuite.T().Fatal(err)
+	}
+
+	rreq := &pb.ReadRequest{
+		Backend: kvSuite.backendName,
+		Table:   table,
+	}
+	iter, err := kvSuite.client.Read(rreq)
+	kvSuite.NoError(err, "error reading from kv")
+
+	for iter.Next() {
+		currentFrame := iter.At()
+		validateFramesAreEqual(kvSuite.Suite, currentFrame, frame)
+	}
+
+	kvSuite.NoError(iter.Err(), "error reading from kv")
+}
+func (kvSuite *KvTestSuite) TestSaveModeAppendUpdateExpressionChangeAttributeValue() {
+
+}
+
 func (kvSuite *KvTestSuite) TestSaveModeReplaceNewRow() {
 	table := fmt.Sprintf("TestSaveModeAppendNewRow%d", time.Now().UnixNano())
 
@@ -1049,3 +1111,7 @@ func (kvSuite *KvTestSuite) TestSaveModeReplaceChangeIndexName() {
 		kvSuite.T().Fatalf("expected to fail, but completed succesfully")
 	}
 }
+
+
+func (kvSuite *KvTestSuite) TestSaveModeReplaceUpdateExpressionNewAttributes() {}
+func (kvSuite *KvTestSuite) TestSaveModeReplaceUpdateExpressionChangeAttributeValue() {}

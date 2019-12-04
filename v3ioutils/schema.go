@@ -119,6 +119,7 @@ func (s *OldV3ioSchema) toJSON() ([]byte, error) {
 
 func (s *OldV3ioSchema) merge(new *OldV3ioSchema) (bool, error) {
 	changed := false
+	isFirstSchema := len(s.Fields) == 0
 	for _, field := range new.Fields {
 		index := -1
 		for j := 0; j < len(s.Fields); j++ {
@@ -138,7 +139,7 @@ func (s *OldV3ioSchema) merge(new *OldV3ioSchema) (bool, error) {
 
 	// Do not accept key name change, unless it's the first time we are saving to this table
 	if s.Key != new.Key && new.Key != "" {
-		if len(s.Fields) == 0 {
+		if isFirstSchema {
 			s.Key = new.Key
 			changed = true
 		} else {

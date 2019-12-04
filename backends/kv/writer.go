@@ -180,7 +180,7 @@ func (a *Appender) Add(frame frames.Frame) error {
 
 		// set row values from columns
 		for name, col := range columns {
-			if frame.IsNull(r, name){
+			if frame.IsNull(r, name) {
 				continue
 			}
 			val, err := utils.ColAt(col, r)
@@ -256,7 +256,10 @@ func (a *Appender) update(frame frames.Frame) error {
 		}
 
 		key := indexVal(r)
-		input := v3io.UpdateItemInput{Path: a.tablePath + fmt.Sprintf("%v", key), Expression: expr, Condition: cond}
+		input := v3io.UpdateItemInput{Path: a.tablePath + fmt.Sprintf("%v", key),
+			Expression: expr,
+			Condition:  cond,
+			UpdateMode: a.request.SaveMode.GetNginxModeName()}
 		a.logger.DebugWith("write update", "input", input)
 		_, err = a.container.UpdateItem(&input, r, a.responseChan)
 		if err != nil {
