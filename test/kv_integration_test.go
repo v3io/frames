@@ -149,6 +149,77 @@ func (kvSuite *KvTestSuite) TestAll() {
 
 }
 
+func (kvSuite *KvTestSuite) TestRangeScan() {
+	table := fmt.Sprintf("kv_range_scan%d", time.Now().UnixNano())
+
+	index := []string{"mike", "joe", "mike", "jim", "mike"}
+	icol, err := frames.NewSliceColumn("key", index)
+	if err != nil {
+		kvSuite.T().Fatal(err)
+	}
+	sorting := []string{"aa", "aa", "bb", "aa", "dd"}
+	sortcol, err := frames.NewSliceColumn("sorting", sorting)
+	if err != nil {
+		kvSuite.T().Fatal(err)
+	}
+
+	columns := []frames.Column{
+		stringCol(kvSuite.T(), "n1", len(index)),
+		stringCol(kvSuite.T(), "n2", len(index)),
+		stringCol(kvSuite.T(), "n3", len(index)),
+	}
+
+	frame, err := frames.NewFrame(columns, []frames.Column{icol, sortcol}, nil)
+	if err != nil {
+		kvSuite.T().Fatal(err)
+	}
+
+	kvSuite.T().Log("write")
+	wreq := &frames.WriteRequest{
+		Backend: kvSuite.backendName,
+		Table:   table,
+	}
+
+	appender, err := kvSuite.client.Write(wreq)
+	if err != nil {
+		kvSuite.T().Fatal(err)
+	}
+
+	if err := appender.Add(frame); err != nil {
+		kvSuite.T().Fatal(err)
+	}
+
+	if err := appender.WaitForComplete(3 * time.Second); err != nil {
+		kvSuite.T().Fatal(err)
+	}
+
+	rreq := &pb.ReadRequest{
+		Backend: kvSuite.backendName,
+		Table:   table,
+		ShardingKeys: []string{"mike"},
+		SortKeyRangeStart: "aa",
+		SortKeyRangeEnd: "cc",
+	}
+
+	it, err := kvSuite.client.Read(rreq)
+	if err != nil {
+		kvSuite.T().Fatal(err)
+	}
+
+	for it.Next() {
+		frame = it.At()
+		indexCol := frame.Indices()[0]
+		for i := 0; i < frame.Len(); i++ {
+			currentKey, _ := indexCol.StringAt(i)
+			sortingcol, _ :=  frame.Column("sorting")
+			sorting, _ :=sortingcol.StringAt(i)
+			if !(currentKey == "mike" && (sorting == "aa" || sorting == "bb")) {
+				kvSuite.T().Fatal("key name does not match, expected mike.aa or mike.bb, got ", frame)
+			}
+		}
+	}
+}
+
 func (kvSuite *KvTestSuite) TestNullValuesWrite() {
 	table := fmt.Sprintf("kv_test_nulls%d", time.Now().UnixNano())
 
