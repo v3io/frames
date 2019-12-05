@@ -8,7 +8,7 @@ require (
 	github.com/nuclio/zap v0.0.2
 	github.com/pkg/errors v0.8.1
 	github.com/stretchr/testify v1.3.0
-	github.com/v3io/v3io-go v0.0.0-20191120130819-97cc03a96403df14145ffeac1a42bbfd8b62986b
+	github.com/v3io/v3io-go v0.0.0-20191120130819-9003ae83f0b673afb88b862d8f46dcc818684450
 	github.com/v3io/v3io-tsdb v0.0.0-20191024110729-ff7f29be08a007f53cdfeaddf67ac7d0d1d45066
 	github.com/valyala/fasthttp v1.2.0
 	github.com/xwb1989/sqlparser v0.0.0-20180606152119-120387863bf2
@@ -17,5 +17,3 @@ require (
 )
 
 replace github.com/xwb1989/sqlparser => github.com/v3io/sqlparser v0.0.0-20190306105200-4d7273501871
-
-replace github.com/v3io/v3io-go => github.com/talIguaz/v3io-go v0.0.0-20191120130819-64dd1a346dc7cc3c09a1669284141d2d75d06e86
