@@ -72,8 +72,10 @@ class ClientBase:
             A group-by query string; can't be used with `query`
         limit: int
             Maximum number of rows to return
+            [Not supported in this version]
         data_format : str
             Data format
+            [Not supported in this version]
         row_layout : bool
             True to use a row layout; False (default) to use a column layout
             [Not supported in this version]
@@ -81,6 +83,7 @@ class ClientBase:
             Maximum number of rows per message
         marker : str
             Query marker; can't be used with the `query` parameter
+            [Not supported in this version]
         iterator : bool
             True - return a DataFrames iterator;
             False (default) - return a single DataFrame
