@@ -16,7 +16,7 @@ test: test-go test-py
 
 .PHONY: test-go
 test-go:
-	GO111MODULE=on time go test -v $(testflags) -timeout 30m ./...
+	GO111MODULE=on go test -v $(testflags) -timeout 30m ./...
 
 .PHONY: test-py
 test-py:
