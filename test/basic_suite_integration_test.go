@@ -9,6 +9,7 @@ import (
 	"os"
 	"os/exec"
 	"reflect"
+	"strings"
 	"testing"
 	"time"
 
@@ -42,6 +43,7 @@ type testInfo struct {
 	root          string
 	session       *frames.Session
 	v3ioContainer v3io.Container
+	debugMode     bool
 }
 
 type mainTestSuite struct {
@@ -71,12 +73,15 @@ func (mainSuite *mainTestSuite) SetupSuite() {
 }
 
 func (mainSuite *mainTestSuite) TearDownSuite() {
-	mainSuite.info.process.Kill()
+	if !mainSuite.info.debugMode {
+		mainSuite.info.process.Kill()
+	}
 }
 
 func (mainSuite *mainTestSuite) TestKVBackend() {
 	mainSuite.runSubSuites(kvSuites)
 }
+
 
 func (mainSuite *mainTestSuite) TestTSDBBackend() {
 	mainSuite.runSubSuites(tsdbSuites)
@@ -252,6 +257,7 @@ func waitForServer(t testing.TB, port int) {
 
 func setupTest(t testing.TB, internalLogger logger.Logger) *testInfo {
 	info := &testInfo{}
+	info.debugMode = strings.ToLower(os.Getenv("DEBUG")) == "true"
 	info.root = setupRoot(t)
 	t.Logf("root: %s", info.root)
 	info.session = sessionInfo(t)
@@ -261,9 +267,12 @@ func setupTest(t testing.TB, internalLogger logger.Logger) *testInfo {
 	configPath := fmt.Sprintf("%s/%s", info.root, configFile)
 	encodeConfig(t, info.config, configPath)
 
-	grpcPort, httpPort := freePort(t), freePort(t)
-	cmd := runServer(t, info.root, grpcPort, httpPort)
-	info.process = cmd.Process
+	grpcPort, httpPort := 8081, 8080
+	if !info.debugMode {
+		grpcPort, httpPort = freePort(t), freePort(t)
+		cmd := runServer(t, info.root, grpcPort, httpPort)
+		info.process = cmd.Process
+	}
 
 	info.grpcAddr = fmt.Sprintf("localhost:%d", grpcPort)
 	info.httpAddr = fmt.Sprintf("http://localhost:%d", httpPort)

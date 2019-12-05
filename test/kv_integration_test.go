@@ -782,7 +782,7 @@ func (kvSuite *KvTestSuite) TestSaveModeAppendChangeIndexName() {
 }
 
 func (kvSuite *KvTestSuite) TestSaveModeAppendUpdateExpressionNewAttributes() {
-	table := fmt.Sprintf("TestSaveModeAppendNewAttribute%d", time.Now().UnixNano())
+	table := fmt.Sprintf("TestSaveModeAppendUpdateExpressionNewAttributes%d", time.Now().UnixNano())
 
 	columnNames := []string{"n1", "n2"}
 	frame := kvSuite.generateSequentialSampleFrame(3, "idx", columnNames)
@@ -807,10 +807,10 @@ func (kvSuite *KvTestSuite) TestSaveModeAppendUpdateExpressionNewAttributes() {
 	// Save a frame to the same path
 	frame2 := kvSuite.generateSequentialSampleFrame(3, "idx", columnNames)
 	wreq = &frames.WriteRequest{
-		Backend:  kvSuite.backendName,
-		Table:    table,
-		SaveMode: frames.Append,
-		Expression: "col3={n1}+{n2}",
+		Backend:    kvSuite.backendName,
+		Table:      table,
+		SaveMode:   frames.Append,
+		Expression: "n3=n1+n2",
 	}
 
 	appender, err = kvSuite.client.Write(wreq)
@@ -825,22 +825,108 @@ func (kvSuite *KvTestSuite) TestSaveModeAppendUpdateExpressionNewAttributes() {
 		kvSuite.T().Fatal(err)
 	}
 
-	rreq := &pb.ReadRequest{
+	// TODO: once schema inferring will be fix varify that schema was changed.
+	input := v3io.GetItemsInput{AttributeNames: []string{"*"}}
+
+	iter, err := v3ioutils.NewAsyncItemsCursor(
+		kvSuite.v3ioContainer, &input, 1, nil, kvSuite.internalLogger, 0, []string{table + "/"})
+
+	for iter.Next() {
+		currentRow := iter.GetItem()
+
+		key, _ := currentRow.GetFieldString("__name")
+		switch key {
+		case ".#schema":
+			continue
+		default:
+			n1, ok := currentRow["n1"]
+			kvSuite.Require().True(ok, "item %v don't have column 'n1'", key)
+
+			n2, ok := currentRow["n2"]
+			kvSuite.Require().True(ok, "item %v don't have column 'n1'", key)
+			n3, ok := currentRow["n3"]
+			kvSuite.Require().True(ok, "item %v don't have column 'n1'", key)
+
+			kvSuite.Require().Equal(n1.(float64)+n2.(float64), n3.(float64),
+				"column 'n3' wasnt set correctly for item '%v'", key)
+		}
+	}
+
+	if iter.Err() != nil {
+		kvSuite.T().Fatalf("error querying items got: %v", iter.Err())
+	}
+}
+
+func (kvSuite *KvTestSuite) TestSaveModeAppendUpdateExpressionChangeAttributeValue() {
+	table := fmt.Sprintf("TestSaveModeAppendUpdateExpressionChangeAttributeValue%d", time.Now().UnixNano())
+
+	columnNames := []string{"n1", "n2"}
+	frame := kvSuite.generateSequentialSampleFrame(3, "idx", columnNames)
+	wreq := &frames.WriteRequest{
 		Backend: kvSuite.backendName,
 		Table:   table,
 	}
-	iter, err := kvSuite.client.Read(rreq)
-	kvSuite.NoError(err, "error reading from kv")
 
-	for iter.Next() {
-		currentFrame := iter.At()
-		validateFramesAreEqual(kvSuite.Suite, currentFrame, frame)
+	appender, err := kvSuite.client.Write(wreq)
+	if err != nil {
+		kvSuite.T().Fatal(err)
 	}
 
-	kvSuite.NoError(iter.Err(), "error reading from kv")
-}
-func (kvSuite *KvTestSuite) TestSaveModeAppendUpdateExpressionChangeAttributeValue() {
+	if err := appender.Add(frame); err != nil {
+		kvSuite.T().Fatal(err)
+	}
 
+	if err := appender.WaitForComplete(time.Second); err != nil {
+		kvSuite.T().Fatal(err)
+	}
+
+	// Save a frame to the same path
+	frame2 := kvSuite.generateSequentialSampleFrame(3, "idx", columnNames)
+	wreq = &frames.WriteRequest{
+		Backend:    kvSuite.backendName,
+		Table:      table,
+		SaveMode:   frames.Append,
+		Expression: "n1=666;n2=12",
+	}
+
+	appender, err = kvSuite.client.Write(wreq)
+	if err != nil {
+		kvSuite.T().Fatal(err)
+	}
+
+	err = appender.Add(frame2)
+	kvSuite.NoError(err, "failed to write frame")
+
+	if err := appender.WaitForComplete(time.Second); err != nil {
+		kvSuite.T().Fatal(err)
+	}
+
+	// TODO: once schema inferring will be fix varify that schema was changed.
+	input := v3io.GetItemsInput{AttributeNames: []string{"*"}}
+
+	iter, err := v3ioutils.NewAsyncItemsCursor(
+		kvSuite.v3ioContainer, &input, 1, nil, kvSuite.internalLogger, 0, []string{table + "/"})
+
+	frameData := FrameToDataMap(frame)
+	for iter.Next() {
+		currentRow := iter.GetItem()
+
+		key, _ := currentRow.GetFieldString("__name")
+		switch key {
+		case ".#schema":
+			continue
+		default:
+			currentRowOfFrame := frameData[key]
+			kvSuite.Require().Equal(currentRowOfFrame["n1"], currentRow["n1"],
+				"column 'n1' not equal for item '%v'", key)
+			kvSuite.Require().Equal(currentRowOfFrame["n2"], currentRow["n2"],
+				"column 'n2' not equal for item '%v'", key)
+		}
+	}
+
+	if iter.Err() != nil {
+		kvSuite.T().Fatalf("error querying items got: %v", iter.Err())
+	}
 }
 
 func (kvSuite *KvTestSuite) TestSaveModeReplaceNewRow() {
@@ -1112,6 +1198,148 @@ func (kvSuite *KvTestSuite) TestSaveModeReplaceChangeIndexName() {
 	}
 }
 
+func (kvSuite *KvTestSuite) TestSaveModeReplaceUpdateExpressionNewAttributes() {
+	table := fmt.Sprintf("TestSaveModeReplaceUpdateExpressionNewAttributes%d", time.Now().UnixNano())
 
-func (kvSuite *KvTestSuite) TestSaveModeReplaceUpdateExpressionNewAttributes() {}
-func (kvSuite *KvTestSuite) TestSaveModeReplaceUpdateExpressionChangeAttributeValue() {}
+	columnNames := []string{"n1", "n2"}
+	frame := kvSuite.generateSequentialSampleFrame(3, "idx", columnNames)
+	wreq := &frames.WriteRequest{
+		Backend: kvSuite.backendName,
+		Table:   table,
+	}
+
+	appender, err := kvSuite.client.Write(wreq)
+	if err != nil {
+		kvSuite.T().Fatal(err)
+	}
+
+	if err := appender.Add(frame); err != nil {
+		kvSuite.T().Fatal(err)
+	}
+
+	if err := appender.WaitForComplete(time.Second); err != nil {
+		kvSuite.T().Fatal(err)
+	}
+
+	// Save a frame to the same path
+	frame2 := kvSuite.generateSequentialSampleFrame(3, "idx", columnNames)
+	wreq = &frames.WriteRequest{
+		Backend:    kvSuite.backendName,
+		Table:      table,
+		SaveMode:   frames.Replace,
+		Expression: "n3=n1+n2",
+	}
+
+	appender, err = kvSuite.client.Write(wreq)
+	if err != nil {
+		kvSuite.T().Fatal(err)
+	}
+
+	err = appender.Add(frame2)
+	kvSuite.NoError(err, "failed to write frame")
+
+	if err := appender.WaitForComplete(time.Second); err != nil {
+		kvSuite.T().Fatal(err)
+	}
+
+	// TODO: once schema inferring will be fix varify that schema was changed.
+	input := v3io.GetItemsInput{AttributeNames: []string{"*"}}
+
+	iter, err := v3ioutils.NewAsyncItemsCursor(
+		kvSuite.v3ioContainer, &input, 1, nil, kvSuite.internalLogger, 0, []string{table + "/"})
+
+	for iter.Next() {
+		currentRow := iter.GetItem()
+
+		key, _ := currentRow.GetFieldString("__name")
+		switch key {
+		case ".#schema":
+			continue
+		default:
+			n1, ok := currentRow["n1"]
+			kvSuite.Require().True(ok, "item %v don't have column 'n1'", key)
+
+			n2, ok := currentRow["n2"]
+			kvSuite.Require().True(ok, "item %v don't have column 'n1'", key)
+			n3, ok := currentRow["n3"]
+			kvSuite.Require().True(ok, "item %v don't have column 'n1'", key)
+
+			kvSuite.Require().Equal(n1.(float64)+n2.(float64), n3.(float64),
+				"column 'n3' wasnt set correctly for item '%v'", key)
+		}
+	}
+
+	if iter.Err() != nil {
+		kvSuite.T().Fatalf("error querying items got: %v", iter.Err())
+	}
+}
+
+func (kvSuite *KvTestSuite) TestSaveModeReplaceUpdateExpressionChangeAttributeValue() {
+	table := fmt.Sprintf("TestSaveModeReplaceUpdateExpressionChangeAttributeValue%d", time.Now().UnixNano())
+
+	columnNames := []string{"n1", "n2"}
+	frame := kvSuite.generateSequentialSampleFrame(3, "idx", columnNames)
+	wreq := &frames.WriteRequest{
+		Backend: kvSuite.backendName,
+		Table:   table,
+	}
+
+	appender, err := kvSuite.client.Write(wreq)
+	if err != nil {
+		kvSuite.T().Fatal(err)
+	}
+
+	if err := appender.Add(frame); err != nil {
+		kvSuite.T().Fatal(err)
+	}
+
+	if err := appender.WaitForComplete(time.Second); err != nil {
+		kvSuite.T().Fatal(err)
+	}
+
+	// Save a frame to the same path
+	frame2 := kvSuite.generateSequentialSampleFrame(3, "idx", columnNames)
+	wreq = &frames.WriteRequest{
+		Backend:    kvSuite.backendName,
+		Table:      table,
+		SaveMode:   frames.Replace,
+		Expression: "n1=666;n2=12",
+	}
+
+	appender, err = kvSuite.client.Write(wreq)
+	if err != nil {
+		kvSuite.T().Fatal(err)
+	}
+
+	err = appender.Add(frame2)
+	kvSuite.NoError(err, "failed to write frame")
+
+	if err := appender.WaitForComplete(time.Second); err != nil {
+		kvSuite.T().Fatal(err)
+	}
+
+	// TODO: once schema inferring will be fix varify that schema was changed.
+	input := v3io.GetItemsInput{AttributeNames: []string{"*"}}
+
+	iter, err := v3ioutils.NewAsyncItemsCursor(
+		kvSuite.v3ioContainer, &input, 1, nil, kvSuite.internalLogger, 0, []string{table + "/"})
+
+	for iter.Next() {
+		currentRow := iter.GetItem()
+
+		key, _ := currentRow.GetFieldString("__name")
+		switch key {
+		case ".#schema":
+			continue
+		default:
+			kvSuite.Require().Equal(666, currentRow["n1"],
+				"column 'n1' not equal for item '%v'", key)
+			kvSuite.Require().Equal(12, currentRow["n2"],
+				"column 'n2' not equal for item '%v'", key)
+		}
+	}
+
+	if iter.Err() != nil {
+		kvSuite.T().Fatalf("error querying items got: %v", iter.Err())
+	}
+}

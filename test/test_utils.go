@@ -110,6 +110,19 @@ func iteratorToSlice(iter frames.RowIterator) []map[string]interface{} {
 	return response
 }
 
+func FrameToDataMap(frame frames.Frame) map[string]map[string]interface{} {
+	iter := frame.IterRows(true)
+	keyColumnName := frame.Indices()[0].Name()
+
+	response := make(map[string]map[string]interface{})
+	for iter.Next() {
+		currentKey := fmt.Sprintf("%v", iter.Row()[keyColumnName])
+		response[currentKey] = iter.Row()
+	}
+
+	return response
+}
+
 func compareMapSlice(a, b []map[string]interface{}) bool {
 	if len(a) != len(b) {
 		return false
