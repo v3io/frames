@@ -468,8 +468,8 @@ All Frames backends that support the `read` method support the following common 
 
 The following `read` parameters are specific to the `kv` backend; for more information about these parameters, see the platform's NoSQL documentation:
 
-- <a id="method-read-kv-param-reset_index"></a>**reset_index** &mdash; `bool` &mdash; Reset the index. When set to `false` (default), the DataFrame will have the key column of the v3io kv as the index column.
-  When set to `true`, the index will be reset to a range index.
+- <a id="method-read-kv-param-reset_index"></a>**reset_index** &mdash; `bool` &mdash; Reset the index. When set to `False` (default), the DataFrame will have the key column of the v3io kv as the index column.
+  When set to `True`, the index will be reset to a range index.
 - <a id="method-read-kv-param-max_in_message"></a>**max_in_message** &mdash; `int` &mdash; The maximum number of rows per message.
 - <a id="method-read-kv-param-sharding_keys"></a>**sharding_keys** &mdash; `[]string` (**Experimental**) &mdash; A list of specific sharding keys to query, for range-scan formatted tables only.
 - <a id="method-read-kv-param-segments"></a>**segments** &mdash; `[]int64` [**Not supported in this version**]
