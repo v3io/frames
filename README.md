@@ -471,7 +471,7 @@ The following `read` parameters are specific to the `kv` backend; for more infor
 - <a id="method-read-kv-param-reset_index"></a>**reset_index** &mdash; `bool` &mdash; Reset the index. When set to `false` (default), the DataFrame will have the key column of the v3io kv as the index column.
   When set to `true`, the index will be reset to a range index.
 - <a id="method-read-kv-param-max_in_message"></a>**max_in_message** &mdash; `int` &mdash; The maximum number of rows per message.
-- <a id="method-read-kv-param-"></a>**sharding_keys** &mdash; `[]string` (**Experimental**) &mdash; A list of specific sharding keys to query, for range-scan formatted tables only.
+- <a id="method-read-kv-param-sharding_keys"></a>**sharding_keys** &mdash; `[]string` (**Experimental**) &mdash; A list of specific sharding keys to query, for range-scan formatted tables only.
 - <a id="method-read-kv-param-segments"></a>**segments** &mdash; `[]int64` [**Not supported in this version**]
 - <a id="method-read-kv-param-total_segments"></a>**total_segments** &mdash; `int64` [**Not supported in this version**]
 - <a id="method-read-kv-param-sort_key_range_start"></a>**sort_key_range_start** &mdash; `str` [**Not supported in this version**]
@@ -497,7 +497,7 @@ The following `read` parameters are specific to the `tsdb` backend; for more inf
 - <a id="method-read-tsdb-param-query"></a>**query** (Optional) &mdash; `str` &mdash; A query string in SQL format.
   > **Note:** When the `query` parameter is set, you can either specify the target table within the query string (`FROM <table>`) or by setting the `table` parameter of the `read` method to the table path.
   > When the `query` string specifies the target table, the value of the `table` parameter (if set) is ignored.
-- <a id="method-read-tsdb-param-group_by"></a>**group_by** (Optional) &mdash; `str` &mdash; A group-by query  string.
+- <a id="method-read-tsdb-param-group_by"></a>**group_by** (Optional) &mdash; `str` &mdash; A group-by query string.
   <br/>
   This parameter can't be used concurrently with the `query` parameter.
 - <a id="method-read-tsdb-param-multi_index"></a>**multi_index** (Optional) &mdash; `bool` &mdash; `True` to receive the read results as multi-index DataFrames where the labels are used as index columns in addition to the metric sample-time primary-key attribute; `False` (default) only the timestamp will function as the index.
