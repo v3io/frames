@@ -64,31 +64,29 @@ func (kv *Backend) Write(request *frames.WriteRequest) (frames.FrameAppender, er
 	}
 
 	var schema v3ioutils.V3ioSchema
-	schema, schemaError := v3ioutils.GetSchema(tablePath, container)
+	schema, err = v3ioutils.GetSchema(tablePath, container)
 
 	// Ignore 404 error, since it makes sense there is no schema yet.
 	tableAlreadyExists := true
 	if err != nil {
-		if errorWithStatus, ok := err.(*v3ioerrors.ErrorWithStatusCode); !ok || errorWithStatus.StatusCode() != http.StatusNotFound {
+		if errorWithStatus, ok := err.(v3ioerrors.ErrorWithStatusCode); !ok || errorWithStatus.StatusCode() != http.StatusNotFound {
 			return nil, err
 		} else {
 			tableAlreadyExists = false
 		}
 	}
 
-	switch request.SaveMode {
-	case frames.Overwrite:
-		// If this is the first time we writing to the table, there is nothing to delete.
-		if tableAlreadyExists {
+	if tableAlreadyExists {
+		switch request.SaveMode {
+		case frames.Overwrite:
+			// If this is the first time we writing to the table, there is nothing to delete.
 			err = v3ioutils.DeleteTable(kv.logger, container, tablePath, "", kv.numWorkers, true)
 			if err != nil {
-				return nil, fmt.Errorf("error occured while deleting the table, err: %v", err)
+				return nil, fmt.Errorf("error occured while deleting table '%v', err: %v", tablePath, err)
 			}
 			schema = nil
-		}
-	case frames.ErrorIfExists:
-		if schemaError == nil {
-			return nil, fmt.Errorf("table %v already exists, either use a differnet save mode or save to a different table", tablePath)
+		case frames.ErrorIfExists:
+			return nil, fmt.Errorf("table '%v' already exists, either use a differnet save mode or save to a different table", tablePath)
 		}
 	}
 

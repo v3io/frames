@@ -72,10 +72,10 @@ func (mode SaveMode) String() string {
 }
 
 const (
-	ErrorIfExists SaveMode = 0
-	Append        SaveMode = 1
-	Overwrite     SaveMode = 2
-	Replace       SaveMode = 3
+	ErrorIfExists SaveMode = iota
+	Append
+	Overwrite
+	Replace
 )
 
 // Column is a data column
@@ -234,6 +234,6 @@ func SaveModeFromString(mode string) (SaveMode, error) {
 	case "replace":
 		return Replace, nil
 	default:
-		return -1, errors.Errorf("no save mode named '%v' ", mode)
+		return -1, errors.Errorf("no save mode named '%v'", mode)
 	}
 }

@@ -143,7 +143,7 @@ func (s *OldV3ioSchema) merge(new *OldV3ioSchema) (bool, error) {
 			s.Key = new.Key
 			changed = true
 		} else {
-			return changed, fmt.Errorf("changing primary key is not allowed, old: %v, new:%v", s.Key, new.Key)
+			return changed, fmt.Errorf("changing primary key is not allowed, old: %v, new: %v", s.Key, new.Key)
 		}
 	}
 

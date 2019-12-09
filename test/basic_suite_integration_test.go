@@ -82,7 +82,6 @@ func (mainSuite *mainTestSuite) TestKVBackend() {
 	mainSuite.runSubSuites(kvSuites)
 }
 
-
 func (mainSuite *mainTestSuite) TestTSDBBackend() {
 	mainSuite.runSubSuites(tsdbSuites)
 }
