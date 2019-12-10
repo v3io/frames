@@ -91,18 +91,20 @@ func (kv *Backend) Read(request *frames.ReadRequest) (frames.FrameIterator, erro
 		return nil, err
 	}
 
-	newKVIter := Iterator{request: request, iter: iter, schema: schema, shouldDuplicateIndex: containsString(columns, schema.Key)}
+	shouldDuplicateSorting := schema.SortingKey != "" && containsString(columns, schema.SortingKey)
+	newKVIter := Iterator{request: request, iter: iter, schema: schema, shouldDuplicateIndex: containsString(columns, schema.Key), shouldDuplicateSorting: shouldDuplicateSorting}
 	return &newKVIter, nil
 }
 
 // Iterator is key/value iterator
 type Iterator struct {
-	request              *frames.ReadRequest
-	iter                 *v3ioutils.AsyncItemsCursor
-	err                  error
-	currFrame            frames.Frame
-	shouldDuplicateIndex bool
-	schema               *v3ioutils.OldV3ioSchema
+	request                *frames.ReadRequest
+	iter                   *v3ioutils.AsyncItemsCursor
+	err                    error
+	currFrame              frames.Frame
+	shouldDuplicateIndex   bool
+	schema                 *v3ioutils.OldV3ioSchema
+	shouldDuplicateSorting bool
 }
 
 // Next advances the iterator to next frame
@@ -203,20 +205,20 @@ func (ki *Iterator) Next() bool {
 
 	// If the only column that was requested is the key-column don't set it as an index.
 	// Otherwise, set the key column (if requested) to be the index or not depending on the `ResetIndex` value.
-	if len(columns) > 0 && !ki.request.Proto.ResetIndex && (len(columns) > 1 || columns[0].Name() != ki.schema.Key) {
-		indexCol, ok := byName[ki.schema.Key]
-		if ok {
-			delete(byName, ki.schema.Key)
-
-			// If a user requested specific columns containing the index, duplicate the index column
-			// to be an index and a column
-			if ki.shouldDuplicateIndex {
-				dupIndex := indexCol.CopyWithName(fmt.Sprintf("_%v", ki.schema.Key))
-				indices = []frames.Column{dupIndex}
-			} else {
-				indices = []frames.Column{indexCol}
+	if len(columns) > 0 && !ki.request.Proto.ResetIndex {
+		if len(columns) > 1 || columns[0].Name() != ki.schema.Key {
+			shouldDelete := ki.handleIndices(ki.schema.Key, byName, ki.shouldDuplicateIndex, &indices)
+			if shouldDelete {
 				columns = utils.RemoveColumn(ki.schema.Key, columns)
 			}
+			delete(byName, ki.schema.Key)
+		}
+		if  ki.schema.SortingKey != "" && (len(columns) > 1 || columns[0].Name() != ki.schema.SortingKey) {
+			shouldDelete := ki.handleIndices(ki.schema.SortingKey, byName, ki.shouldDuplicateSorting, &indices)
+			if shouldDelete {
+				columns = utils.RemoveColumn(ki.schema.SortingKey, columns)
+			}
+			delete(byName, ki.schema.SortingKey)
 		}
 	}
 
@@ -231,6 +233,23 @@ func (ki *Iterator) Next() bool {
 	}
 
 	return true
+}
+
+func (ki *Iterator) handleIndices(index string, columns map[string]frames.Column, shouldDup bool, indices *[]frames.Column) bool {
+	col, ok := columns[index]
+	if ok {
+		// If a user requested specific columns containing the index, duplicate the index column
+		// to be an index and a column
+		if shouldDup {
+			dupIndex := col.CopyWithName(fmt.Sprintf("_%v", index))
+			*indices = append(*indices, dupIndex)
+			return false
+		} else {
+			*indices = append(*indices, col)
+			return true
+		}
+	}
+	return false
 }
 
 // Err return the last error

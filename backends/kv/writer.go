@@ -106,6 +106,7 @@ func (a *Appender) Add(frame frames.Frame) error {
 	indexName := ""
 	var newSchema v3ioutils.V3ioSchema
 	indices := frame.Indices()
+	var sortingFunc func(int) interface{}
 
 	if len(indices) > 0 {
 		indexName = indices[0].Name()
@@ -115,6 +116,10 @@ func (a *Appender) Add(frame frames.Frame) error {
 		sortingKeyName := a.schema.(*v3ioutils.OldV3ioSchema).SortingKey
 		if len(indices) > 1 {
 			sortingKeyName = indices[1].Name()
+			sortingFunc, err = a.funcFromCol(indices[1])
+			if err != nil {
+				return err
+			}
 		}
 		newSchema = v3ioutils.NewSchema(indexName, sortingKeyName)
 		newSchema.AddColumn(indexName, indices[0], false)
@@ -191,14 +196,10 @@ func (a *Appender) Add(frame frames.Frame) error {
 
 		var sortingVal interface{}
 		if len(indices) > 1 {
-			sortingFunc, err := a.funcFromCol(indices[1])
-			if err != nil {
-				return err
-			}
 			sortingVal = sortingFunc(r)
 			row[indices[1].Name()] = sortingVal
 		}
-		input := v3io.PutItemInput{Path: a.tablePath + a.formatKeyName(len(frame.Indices()), key, sortingVal), Attributes: row, Condition: condition}
+		input := v3io.PutItemInput{Path: a.tablePath + a.formatKeyName(key, sortingVal), Attributes: row, Condition: condition}
 		a.logger.DebugWith("write", "input", input)
 		_, err := a.container.PutItem(&input, r, a.responseChan)
 		if err != nil {
@@ -213,9 +214,9 @@ func (a *Appender) Add(frame frames.Frame) error {
 	return nil
 }
 
-func (a *Appender) formatKeyName(indicesSize int, key interface{}, sortingVal interface{}) string {
+func (a *Appender) formatKeyName(key interface{}, sortingVal interface{}) string {
 	var format string
-	if indicesSize > 1 {
+	if sortingVal != nil {
 		format = fmt.Sprintf("%v.%v", key, sortingVal)
 	} else {
 		format = fmt.Sprintf("%v", key)
@@ -230,6 +231,13 @@ func (a *Appender) update(frame frames.Frame) error {
 		return err
 	}
 
+	var sortingFunc func(int) interface{}
+	if len(frame.Indices()) > 1 {
+		sortingFunc, err = a.funcFromCol(frame.Indices()[1])
+		if err != nil {
+			return err
+		}
+	}
 	for r := 0; r < frame.Len(); r++ {
 
 		var expr *string
@@ -254,14 +262,10 @@ func (a *Appender) update(frame frames.Frame) error {
 		key := indexVal(r)
 		var sortingVal interface{}
 		if len(frame.Indices()) > 1 {
-			sortingFunc, err := a.funcFromCol(frame.Indices()[1])
-			if err != nil {
-				return err
-			}
 			sortingVal = sortingFunc(r)
 		}
 
-		input := v3io.UpdateItemInput{Path: a.tablePath + a.formatKeyName(len(frame.Indices()), key, sortingVal), Expression: expr, Condition: cond}
+		input := v3io.UpdateItemInput{Path: a.tablePath + a.formatKeyName(key, sortingVal), Expression: expr, Condition: cond}
 		a.logger.DebugWith("write update", "input", input)
 		_, err = a.container.UpdateItem(&input, r, a.responseChan)
 		if err != nil {

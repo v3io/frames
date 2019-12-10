@@ -118,6 +118,7 @@ func (s *OldV3ioSchema) toJSON() ([]byte, error) {
 }
 
 func (s *OldV3ioSchema) merge(new *OldV3ioSchema) (bool, error) {
+	isFirstSchema := len(s.Fields) == 0
 	changed := false
 	for _, field := range new.Fields {
 		index := -1
@@ -151,13 +152,21 @@ func (s *OldV3ioSchema) merge(new *OldV3ioSchema) (bool, error) {
 	}
 
 	if s.Key != new.Key && new.Key != "" {
-		s.Key = new.Key
-		changed = true
+		if isFirstSchema {
+			s.Key = new.Key
+			changed = true
+		} else {
+			return changed, fmt.Errorf("changing primary key is not allowed, old: %v, new:%v", s.Key, new.Key)
+		}
 	}
 
 	if s.SortingKey != new.SortingKey && new.SortingKey != "" {
-		s.SortingKey = new.SortingKey
-		changed = true
+		if isFirstSchema {
+			s.SortingKey = new.SortingKey
+			changed = true
+		} else {
+			return changed, fmt.Errorf("changing sorting key is not allowed, old: %v, new:%v", s.SortingKey, new.SortingKey)
+		}
 	}
 
 	return changed, nil
