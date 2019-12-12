@@ -358,7 +358,7 @@ func (kvSuite *KvTestSuite) TestRequestSpecificColumns() {
 }
 
 func (kvSuite *KvTestSuite) TestRequestSpecificColumnsWithKey() {
-	table := fmt.Sprintf("TestRequestSpecificColumns%d", time.Now().UnixNano())
+	table := fmt.Sprintf("TestRequestSpecificColumnsWithKey%d", time.Now().UnixNano())
 
 	frame := kvSuite.generateSampleFrame(kvSuite.T())
 	wreq := &frames.WriteRequest{
