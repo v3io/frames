@@ -21,6 +21,7 @@ such restriction.
 package test
 
 import (
+	"encoding/json"
 	"fmt"
 	"testing"
 	"time"
@@ -157,7 +158,7 @@ func (kvSuite *KvTestSuite) TestRangeScan() {
 	if err != nil {
 		kvSuite.T().Fatal(err)
 	}
-	sorting := []string{"aa", "aa", "bb", "aa", "dd"}
+	sorting := []string{"aa", "cc", "bb", "aa", "dd"}
 	sortcol, err := frames.NewSliceColumn("sorting", sorting)
 	if err != nil {
 		kvSuite.T().Fatal(err)
@@ -165,8 +166,6 @@ func (kvSuite *KvTestSuite) TestRangeScan() {
 
 	columns := []frames.Column{
 		stringCol(kvSuite.T(), "n1", len(index)),
-		stringCol(kvSuite.T(), "n2", len(index)),
-		stringCol(kvSuite.T(), "n3", len(index)),
 	}
 
 	frame, err := frames.NewFrame(columns, []frames.Column{icol, sortcol}, nil)
@@ -174,7 +173,6 @@ func (kvSuite *KvTestSuite) TestRangeScan() {
 		kvSuite.T().Fatal(err)
 	}
 
-	kvSuite.T().Log("write")
 	wreq := &frames.WriteRequest{
 		Backend: kvSuite.backendName,
 		Table:   table,
@@ -193,7 +191,57 @@ func (kvSuite *KvTestSuite) TestRangeScan() {
 		kvSuite.T().Fatal(err)
 	}
 
+	//check schema
+	schemaInput := &v3io.GetObjectInput{Path: table + "/.#schema"}
+	resp, err := kvSuite.v3ioContainer.GetObjectSync(schemaInput)
+	if err != nil {
+		kvSuite.T().Fatal("1 " + err.Error())
+	}
+	schema := &v3ioutils.OldV3ioSchema{}
+	if err := json.Unmarshal(resp.HTTPResponse.Body(), schema); err != nil {
+		kvSuite.T().Fatal(err)
+	}
+	if schema.Key != "key" {
+		kvSuite.T().Fatal("wrong key in schema, expected 'key', got ", schema.Key)
+	}
+	if schema.SortingKey != "sorting" {
+		kvSuite.T().Fatal("wrong sorting key in schema, expected 'sorting', got ", schema.SortingKey)
+	}
+	if len(schema.Fields) != 3 {
+		kvSuite.T().Fatal("wrong number of columns in schema, expected 3, got ", len(schema.Fields))
+	}
+	////
 	rreq := &pb.ReadRequest{
+		Backend: kvSuite.backendName,
+		Table:   table,
+		ShardingKeys: []string{"mike", "joe"},
+		SortKeyRangeStart: "bb",
+	}
+
+	it, err := kvSuite.client.Read(rreq)
+	if err != nil {
+		kvSuite.T().Fatal(err)
+	}
+	for it.Next() {
+		frame = it.At()
+		if len(frame.Indices()) != 2 {
+			kvSuite.T().Fatal("wrong number of indices, expected 2, got ", len(frame.Indices()))
+		}
+		indexCol := frame.Indices()[0]
+		sortcol := frame.Indices()[1]
+		if frame.Len() != 3 {
+			kvSuite.T().Fatal("got different number of results, expected 3, got ",frame.Len())
+		}
+		for i := 0; i < frame.Len(); i++ {
+			currentKey, _ := indexCol.StringAt(i)
+			sorting, _ := sortcol.StringAt(i)
+			if !((currentKey == "mike" || currentKey == "joe") && sorting >= "bb") {
+				kvSuite.T().Fatal("key name does not match, expected mike.bb, joe.cc, or mike.dd, got ", frame)
+			}
+		}
+	}
+	////
+	rreq = &pb.ReadRequest{
 		Backend: kvSuite.backendName,
 		Table:   table,
 		ShardingKeys: []string{"mike"},
@@ -201,18 +249,24 @@ func (kvSuite *KvTestSuite) TestRangeScan() {
 		SortKeyRangeEnd: "cc",
 	}
 
-	it, err := kvSuite.client.Read(rreq)
+	it, err = kvSuite.client.Read(rreq)
 	if err != nil {
 		kvSuite.T().Fatal(err)
 	}
 
 	for it.Next() {
 		frame = it.At()
+		if len(frame.Indices()) != 2 {
+			kvSuite.T().Fatal("wrong number of indices, expected 2, got ", len(frame.Indices()))
+		}
 		indexCol := frame.Indices()[0]
+		sortcol := frame.Indices()[1]
+		if frame.Len() != 2 {
+			kvSuite.T().Fatal("got different number of results, expected 2, got ",frame.Len())
+		}
 		for i := 0; i < frame.Len(); i++ {
 			currentKey, _ := indexCol.StringAt(i)
-			sortingcol, _ :=  frame.Column("sorting")
-			sorting, _ :=sortingcol.StringAt(i)
+			sorting, _ := sortcol.StringAt(i)
 			if !(currentKey == "mike" && (sorting == "aa" || sorting == "bb")) {
 				kvSuite.T().Fatal("key name does not match, expected mike.aa or mike.bb, got ", frame)
 			}
