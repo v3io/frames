@@ -392,7 +392,7 @@ func (kvSuite *KvTestSuite) TestRequestSpecificColumnsWithKey() {
 		if !(fr.Len() == frame.Len() || fr.Len()-1 == frame.Len()) {
 			kvSuite.T().Fatalf("wrong length: %d != %d", fr.Len(), frame.Len())
 		}
-		kvSuite.Require().EqualValues(requestedColumns, fr.Names(), "got other columns then requested")
+		kvSuite.Require().EqualValues(requestedColumns, fr.Names(), "got other columns than requested")
 		kvSuite.Require().Equal("_idx", fr.Indices()[0].Name(), "got wrong index name")
 	}
 
