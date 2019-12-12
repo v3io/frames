@@ -49,8 +49,8 @@ type Appender struct {
 
 const (
 	errorCodeString              = "ErrorCode"
-	falseConditionOuterErrorCode = "184549378"
-	falseConditionInnerErrorCode = "385876025"
+	falseConditionOuterErrorCode = "16777244"
+	falseConditionInnerErrorCode = "16777245"
 )
 
 // Write support writing to backend
