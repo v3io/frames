@@ -314,3 +314,88 @@ func (kvSuite *KvTestSuite) TestNullValuesRead() {
 		kvSuite.T().Fatal(err)
 	}
 }
+
+func (kvSuite *KvTestSuite) TestRequestSpecificColumns() {
+	table := fmt.Sprintf("TestRequestSpecificColumns%d", time.Now().UnixNano())
+
+	frame := kvSuite.generateSampleFrame(kvSuite.T())
+	wreq := &frames.WriteRequest{
+		Backend: kvSuite.backendName,
+		Table:   table,
+	}
+
+	appender, err := kvSuite.client.Write(wreq)
+	kvSuite.NoError(err)
+
+	err = appender.Add(frame)
+	kvSuite.NoError(err)
+
+	err = appender.WaitForComplete(3 * time.Second)
+	kvSuite.NoError(err)
+
+	time.Sleep(3 * time.Second) // Let DB sync
+
+	requestedColumns := []string{"n1", "n2"}
+	rreq := &pb.ReadRequest{
+		Backend: kvSuite.backendName,
+		Table:   table,
+		Columns: requestedColumns,
+	}
+
+	it, err := kvSuite.client.Read(rreq)
+	kvSuite.NoError(err)
+
+	for it.Next() {
+		fr := it.At()
+		if !(fr.Len() == frame.Len() || fr.Len()-1 == frame.Len()) {
+			kvSuite.T().Fatalf("wrong length: %d != %d", fr.Len(), frame.Len())
+		}
+		kvSuite.Require().EqualValues(requestedColumns, fr.Names(), "got other columns then requested")
+	}
+
+	err = it.Err()
+	kvSuite.NoError(err)
+}
+
+func (kvSuite *KvTestSuite) TestRequestSpecificColumnsWithKey() {
+	table := fmt.Sprintf("TestRequestSpecificColumns%d", time.Now().UnixNano())
+
+	frame := kvSuite.generateSampleFrame(kvSuite.T())
+	wreq := &frames.WriteRequest{
+		Backend: kvSuite.backendName,
+		Table:   table,
+	}
+
+	appender, err := kvSuite.client.Write(wreq)
+	kvSuite.NoError(err)
+
+	err = appender.Add(frame)
+	kvSuite.NoError(err)
+
+	err = appender.WaitForComplete(3 * time.Second)
+	kvSuite.NoError(err)
+
+	time.Sleep(3 * time.Second) // Let DB sync
+
+	requestedColumns := []string{"idx", "n1", "n2"}
+	rreq := &pb.ReadRequest{
+		Backend: kvSuite.backendName,
+		Table:   table,
+		Columns: requestedColumns,
+	}
+
+	it, err := kvSuite.client.Read(rreq)
+	kvSuite.NoError(err)
+
+	for it.Next() {
+		fr := it.At()
+		if !(fr.Len() == frame.Len() || fr.Len()-1 == frame.Len()) {
+			kvSuite.T().Fatalf("wrong length: %d != %d", fr.Len(), frame.Len())
+		}
+		kvSuite.Require().EqualValues(requestedColumns, fr.Names(), "got other columns then requested")
+		kvSuite.Require().Equal("_idx", fr.Indices()[0].Name(), "got wrong index name")
+	}
+
+	err = it.Err()
+	kvSuite.NoError(err)
+}
