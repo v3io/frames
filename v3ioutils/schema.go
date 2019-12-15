@@ -41,8 +41,8 @@ const (
 )
 
 // NewSchema returns a new schema
-func NewSchema(key string) V3ioSchema {
-	return &OldV3ioSchema{Fields: []OldSchemaField{}, Key: key}
+func NewSchema(key string, sortingKey string) V3ioSchema {
+	return &OldV3ioSchema{Fields: []OldSchemaField{}, Key: key, SortingKey: sortingKey}
 }
 
 // SchemaFromJSON return a schema from JSON data
@@ -63,6 +63,7 @@ type V3ioSchema interface {
 type OldV3ioSchema struct {
 	Fields           []OldSchemaField `json:"fields"`
 	Key              string           `json:"key"`
+	SortingKey       string           `json:"sortingKey"`
 	HashingBucketNum int              `json:"hashingBucketNum"`
 }
 
@@ -117,6 +118,7 @@ func (s *OldV3ioSchema) toJSON() ([]byte, error) {
 }
 
 func (s *OldV3ioSchema) merge(new *OldV3ioSchema) (bool, error) {
+	isFirstSchema := len(s.Fields) == 0
 	changed := false
 	for _, field := range new.Fields {
 		index := -1
@@ -150,8 +152,21 @@ func (s *OldV3ioSchema) merge(new *OldV3ioSchema) (bool, error) {
 	}
 
 	if s.Key != new.Key && new.Key != "" {
-		s.Key = new.Key
-		changed = true
+		if isFirstSchema {
+			s.Key = new.Key
+			changed = true
+		} else {
+			return changed, fmt.Errorf("changing primary key is not allowed, old: %v, new:%v", s.Key, new.Key)
+		}
+	}
+
+	if s.SortingKey != new.SortingKey && new.SortingKey != "" {
+		if isFirstSchema {
+			s.SortingKey = new.SortingKey
+			changed = true
+		} else {
+			return changed, fmt.Errorf("changing sorting key is not allowed, old: %v, new:%v", s.SortingKey, new.SortingKey)
+		}
 	}
 
 	return changed, nil
