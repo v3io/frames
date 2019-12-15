@@ -120,7 +120,7 @@ func (ki *Iterator) Next() bool {
 
 	columnNamesToReturn := ki.request.Proto.Columns
 	specificColumnsRequested := len(columnNamesToReturn) != 0
-
+	
 	//create columns
 	for _, field := range ki.schema.Fields {
 		if specificColumnsRequested && !containsString(ki.request.Proto.Columns, field.Name) {
@@ -150,7 +150,7 @@ func (ki *Iterator) Next() bool {
 	}
 
 	if specificColumnsRequested {
-		for _, attr := range systemAttrs{
+		for _, attr := range systemAttrs {
 			if containsString(ki.request.Proto.Columns, attr) {
 				sysCol, err := frames.NewSliceColumn(attr, make([]int64, 0))
 				if err != nil {
@@ -158,6 +158,7 @@ func (ki *Iterator) Next() bool {
 					return false
 				}
 				columns = append(columns, sysCol)
+				byName[attr] = sysCol
 			}
 		}
 	}
@@ -230,7 +231,6 @@ func (ki *Iterator) Next() bool {
 	if len(columns) > 0 && !ki.request.Proto.ResetIndex {
 		if len(columns) > 1 || columns[0].Name() != ki.schema.Key {
 			ki.handleIndices(ki.schema.Key, byName, ki.shouldDuplicateIndex, &indices, &columns)
-			columns = utils.RemoveColumn(ki.schema.Key, columns)
 			delete(byName, ki.schema.Key)
 		}
 		if  ki.schema.SortingKey != "" && (len(columns) > 1 || columns[0].Name() != ki.schema.SortingKey) {

@@ -147,7 +147,6 @@ func (kvSuite *KvTestSuite) TestAll() {
 	if err := kvSuite.client.Delete(dreq); err != nil {
 		kvSuite.T().Fatal(err)
 	}
-
 }
 
 func (kvSuite *KvTestSuite) TestRangeScan() {
@@ -195,7 +194,7 @@ func (kvSuite *KvTestSuite) TestRangeScan() {
 	schemaInput := &v3io.GetObjectInput{Path: table + "/.#schema"}
 	resp, err := kvSuite.v3ioContainer.GetObjectSync(schemaInput)
 	if err != nil {
-		kvSuite.T().Fatal("1 " + err.Error())
+		kvSuite.T().Fatal(err.Error())
 	}
 	schema := &v3ioutils.OldV3ioSchema{}
 	if err := json.Unmarshal(resp.HTTPResponse.Body(), schema); err != nil {
@@ -525,6 +524,58 @@ func (kvSuite *KvTestSuite) TestRequestSpecificColumnsWithKey() {
 	kvSuite.NoError(err)
 }
 
+func (kvSuite *KvTestSuite) TestDeleteWithFilter() {
+	table := fmt.Sprintf("kv_delete_filter%d", time.Now().UnixNano())
+
+	frame := kvSuite.generateSampleFrame(kvSuite.T())
+	wreq := &frames.WriteRequest{
+		Backend: kvSuite.backendName,
+		Table:   table,
+	}
+
+	appender, err := kvSuite.client.Write(wreq)
+	if err != nil {
+		kvSuite.T().Fatal(err)
+	}
+
+	if err := appender.Add(frame); err != nil {
+		kvSuite.T().Fatal(err)
+	}
+
+	if err := appender.WaitForComplete(3 * time.Second); err != nil {
+		kvSuite.T().Fatal(err)
+	}
+	kvSuite.T().Log("delete")
+	dreq := &pb.DeleteRequest{
+		Backend: kvSuite.backendName,
+		Table:   table,
+		Filter:  "__mtime_secs > 0",
+	}
+
+	if err := kvSuite.client.Delete(dreq); err != nil {
+		kvSuite.T().Fatal(err)
+	}
+
+	// check only schema is left
+	kvSuite.T().Log("read")
+	rreq := &pb.ReadRequest{
+		Backend: kvSuite.backendName,
+		Table:   table,
+	}
+
+	it, err := kvSuite.client.Read(rreq)
+	kvSuite.NoError(err)
+
+	for it.Next() {
+		frame := it.At()
+		kvSuite.Require().Equal(frame.Len(), 0, "wrong length: %d != %d")
+	}
+	//make sure schema is not deleted
+	schemaInput := &v3io.GetObjectInput{Path: table + "/.#schema"}
+	_, err = kvSuite.v3ioContainer.GetObjectSync(schemaInput)
+	kvSuite.NoError(err, "schema is not found ")
+}
+
 func (kvSuite *KvTestSuite) TestRequestSystemAttrs() {
 	table := fmt.Sprintf("TestRequestSystemAttrs%d", time.Now().UnixNano())
 
@@ -545,7 +596,7 @@ func (kvSuite *KvTestSuite) TestRequestSystemAttrs() {
 
 	time.Sleep(3 * time.Second) // Let DB sync
 
-	requestedColumns := []string{"__gid", "__mode", "__mtime_nsecs", "__mtime_secs", "__size", "__uid", "__ctime_nsecs", "__ctime_secs", "n1"}
+	requestedColumns := []string{"n1", "__gid", "__mode", "__mtime_nsecs", "__mtime_secs", "__size", "__uid", "__ctime_nsecs", "__ctime_secs"}
 	rreq := &pb.ReadRequest{
 		Backend: kvSuite.backendName,
 		Table:   table,
@@ -557,9 +608,6 @@ func (kvSuite *KvTestSuite) TestRequestSystemAttrs() {
 
 	for it.Next() {
 		fr := it.At()
-		if !(fr.Len() == frame.Len() || fr.Len()-1 == frame.Len()) {
-			kvSuite.T().Fatalf("wrong length: %d != %d", fr.Len(), frame.Len())
-		}
 		kvSuite.Require().EqualValues(requestedColumns, fr.Names(), "got other columns than requested")
 	}
 
