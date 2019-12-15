@@ -207,17 +207,12 @@ func (ki *Iterator) Next() bool {
 	// Otherwise, set the key column (if requested) to be the index or not depending on the `ResetIndex` value.
 	if len(columns) > 0 && !ki.request.Proto.ResetIndex {
 		if len(columns) > 1 || columns[0].Name() != ki.schema.Key {
-			shouldDelete := ki.handleIndices(ki.schema.Key, byName, ki.shouldDuplicateIndex, &indices)
-			if shouldDelete {
-				columns = utils.RemoveColumn(ki.schema.Key, columns)
-			}
+			ki.handleIndices(ki.schema.Key, byName, ki.shouldDuplicateIndex, &indices, &columns)
+			columns = utils.RemoveColumn(ki.schema.Key, columns)
 			delete(byName, ki.schema.Key)
 		}
 		if  ki.schema.SortingKey != "" && (len(columns) > 1 || columns[0].Name() != ki.schema.SortingKey) {
-			shouldDelete := ki.handleIndices(ki.schema.SortingKey, byName, ki.shouldDuplicateSorting, &indices)
-			if shouldDelete {
-				columns = utils.RemoveColumn(ki.schema.SortingKey, columns)
-			}
+			ki.handleIndices(ki.schema.SortingKey, byName, ki.shouldDuplicateSorting, &indices, &columns)
 			delete(byName, ki.schema.SortingKey)
 		}
 	}
@@ -235,21 +230,19 @@ func (ki *Iterator) Next() bool {
 	return true
 }
 
-func (ki *Iterator) handleIndices(index string, columns map[string]frames.Column, shouldDup bool, indices *[]frames.Column) bool {
-	col, ok := columns[index]
+func (ki *Iterator) handleIndices(index string, data map[string]frames.Column, shouldDup bool, indices *[]frames.Column, columns *[]frames.Column) {
+	col, ok := data[index]
 	if ok {
 		// If a user requested specific columns containing the index, duplicate the index column
 		// to be an index and a column
 		if shouldDup {
 			dupIndex := col.CopyWithName(fmt.Sprintf("_%v", index))
 			*indices = append(*indices, dupIndex)
-			return false
 		} else {
 			*indices = append(*indices, col)
-			return true
+			*columns = utils.RemoveColumn(index, *columns)
 		}
 	}
-	return false
 }
 
 // Err return the last error
