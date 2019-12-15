@@ -57,10 +57,9 @@ type AsyncItemsCursor struct {
 }
 
 // NewAsyncItemsCursor return new AsyncItemsCursor
-func NewAsyncItemsCursor(
-	container v3io.Container, input *v3io.GetItemsInput,
-	workers int, shardingKeys []string, logger logger.Logger, limit int,
-	partitions []string) (*AsyncItemsCursor, error) {
+func NewAsyncItemsCursor(container v3io.Container, input *v3io.GetItemsInput, workers int, shardingKeys []string,
+	logger logger.Logger, limit int, partitions []string,
+	sortKeyRangeStart string, sortKeyRangeEnd string) (*AsyncItemsCursor, error) {
 
 	// TODO: use workers from Context.numWorkers (if no ShardingKey)
 	if workers == 0 || input.ShardingKey != "" {
@@ -83,10 +82,12 @@ func NewAsyncItemsCursor(
 		for _, partition := range partitions {
 			for i := 0; i < newAsyncItemsCursor.workers; i++ {
 				input := v3io.GetItemsInput{
-					Path:           partition,
-					AttributeNames: input.AttributeNames,
-					Filter:         input.Filter,
-					ShardingKey:    shardingKeys[i],
+					Path:              partition,
+					AttributeNames:    input.AttributeNames,
+					Filter:            input.Filter,
+					ShardingKey:       shardingKeys[i],
+					SortKeyRangeStart: sortKeyRangeStart,
+					SortKeyRangeEnd:   sortKeyRangeEnd,
 				}
 				_, err := container.GetItems(&input, &input, newAsyncItemsCursor.responseChan)
 
