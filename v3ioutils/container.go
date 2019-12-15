@@ -121,6 +121,7 @@ func DeleteTable(logger logger.Logger, container v3io.Container, path, filter st
 	getItemsTerminationChan := make(chan error, workers)
 	deleteTerminationChan := make(chan error, workers)
 	onErrorTerminationChannel := make(chan struct{}, 2*workers)
+	deleteAll := filter == ""
 
 	for i := 0; i < workers; i++ {
 		input := &v3io.GetItemsInput{
@@ -131,7 +132,7 @@ func DeleteTable(logger logger.Logger, container v3io.Container, path, filter st
 			TotalSegments:  workers,
 		}
 		go getItemsWorker(container, input, fileNameChan, getItemsTerminationChan, onErrorTerminationChannel)
-		go deleteObjectWorker(path, container, fileNameChan, deleteTerminationChan, onErrorTerminationChannel)
+		go deleteObjectWorker(path, container, fileNameChan, deleteTerminationChan, onErrorTerminationChannel, deleteAll)
 	}
 
 	var getItemsTerminated, deletesTerminated int
@@ -162,10 +163,12 @@ func DeleteTable(logger logger.Logger, container v3io.Container, path, filter st
 		}
 	}
 
-	err := container.DeleteObjectSync(&v3io.DeleteObjectInput{Path: path})
-	if err != nil {
-		if !utils.IsNotExistsError(err) {
-			return errors.Wrapf(err, "Failed to delete table object '%s'.", path)
+	if deleteAll {
+		err := container.DeleteObjectSync(&v3io.DeleteObjectInput{Path: path})
+		if err != nil {
+			if !utils.IsNotExistsError(err) {
+				return errors.Wrapf(err, "Failed to delete table object '%s'.", path)
+			}
 		}
 	}
 
@@ -198,7 +201,8 @@ func getItemsWorker(container v3io.Container, input *v3io.GetItemsInput, fileNam
 	}
 }
 
-func deleteObjectWorker(tablePath string, container v3io.Container, fileNameChan <-chan string, terminationChan chan<- error, onErrorTerminationChannel <-chan struct{}) {
+func deleteObjectWorker(tablePath string, container v3io.Container, fileNameChan <-chan string, terminationChan chan<- error,
+	onErrorTerminationChannel <-chan struct{}, deleteSchema bool) {
 	for {
 		select {
 		case fileName, ok := <-fileNameChan:
@@ -206,11 +210,13 @@ func deleteObjectWorker(tablePath string, container v3io.Container, fileNameChan
 				terminationChan <- nil
 				return
 			}
-			input := &v3io.DeleteObjectInput{Path: tablePath + "/" + fileName}
-			err := container.DeleteObjectSync(input)
-			if err != nil {
-				terminationChan <- err
-				return
+			if deleteSchema || (!deleteSchema && fileName != ".#schema") {
+				input := &v3io.DeleteObjectInput{Path: tablePath + "/" + fileName}
+				err := container.DeleteObjectSync(input)
+				if err != nil {
+					terminationChan <- err
+					return
+				}
 			}
 		case _ = <-onErrorTerminationChannel:
 			return

@@ -314,3 +314,61 @@ func (kvSuite *KvTestSuite) TestNullValuesRead() {
 		kvSuite.T().Fatal(err)
 	}
 }
+
+func (kvSuite *KvTestSuite) TestDeleteWithFilter() {
+	table := fmt.Sprintf("kv_delete_filter%d", time.Now().UnixNano())
+
+	frame := kvSuite.generateSampleFrame(kvSuite.T())
+	wreq := &frames.WriteRequest{
+		Backend: kvSuite.backendName,
+		Table:   table,
+	}
+
+	appender, err := kvSuite.client.Write(wreq)
+	if err != nil {
+		kvSuite.T().Fatal(err)
+	}
+
+	if err := appender.Add(frame); err != nil {
+		kvSuite.T().Fatal(err)
+	}
+
+	if err := appender.WaitForComplete(3 * time.Second); err != nil {
+		kvSuite.T().Fatal(err)
+	}
+	kvSuite.T().Log("delete")
+	dreq := &pb.DeleteRequest{
+		Backend: kvSuite.backendName,
+		Table:   table,
+		Filter:  "__mtime_secs > 0",
+	}
+
+	if err := kvSuite.client.Delete(dreq); err != nil {
+		kvSuite.T().Fatal(err)
+	}
+
+	// check only schema is left
+	kvSuite.T().Log("read")
+	rreq := &pb.ReadRequest{
+		Backend: kvSuite.backendName,
+		Table:   table,
+	}
+
+	it, err := kvSuite.client.Read(rreq)
+	if err != nil {
+		kvSuite.T().Fatal(err)
+	}
+
+	for it.Next() {
+		frame := it.At()
+		if frame.Len() != 0 {
+			kvSuite.T().Fatalf("wrong length: %d != %d", frame.Len(), 0)
+		}
+	}
+	//make sure schema is not deleted
+	schemaInput := &v3io.GetObjectInput{Path: table + "/.#schema"}
+	_, err = kvSuite.v3ioContainer.GetObjectSync(schemaInput)
+	if err != nil {
+		kvSuite.T().Fatal("schema is not found " + err.Error())
+	}
+}
