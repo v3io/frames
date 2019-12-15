@@ -44,8 +44,8 @@ func (b *Backend) inferSchema(request *frames.ExecRequest) error {
 	input := v3io.GetItemsInput{
 		Path: table, Filter: "", AttributeNames: []string{"*"}}
 	b.logger.DebugWith("GetItems for schema", "input", input)
-	iter, err := v3ioutils.NewAsyncItemsCursor(
-		container, &input, b.numWorkers, []string{}, b.logger, 0, []string{table})
+	iter, err := v3ioutils.NewAsyncItemsCursor(container, &input, b.numWorkers, []string{}, b.logger, 0,
+	[]string{table}, "", "")
 	if err != nil {
 		return err
 	}
@@ -73,8 +73,8 @@ func (b *Backend) inferSchema(request *frames.ExecRequest) error {
 		return fmt.Errorf("Failed to create frame - %v", err)
 	}
 
-	nullSchema := v3ioutils.NewSchema(keyField)
-	newSchema := v3ioutils.NewSchema(keyField)
+	nullSchema := v3ioutils.NewSchema(keyField, "")
+	newSchema := v3ioutils.NewSchema(keyField, "")
 
 	for _, name := range frame.Names() {
 		col, err := frame.Column(name)

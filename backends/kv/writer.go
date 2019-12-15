@@ -51,8 +51,8 @@ type Appender struct {
 
 const (
 	errorCodeString              = "ErrorCode"
-	falseConditionOuterErrorCode = "184549378"
-	falseConditionInnerErrorCode = "385876025"
+	falseConditionOuterErrorCode = "16777244"
+	falseConditionInnerErrorCode = "16777245"
 )
 
 // Write support writing to backend
@@ -91,7 +91,7 @@ func (kv *Backend) Write(request *frames.WriteRequest) (frames.FrameAppender, er
 	}
 
 	if schema == nil {
-		schema = v3ioutils.NewSchema(v3ioutils.DefaultKeyColumn)
+		schema = v3ioutils.NewSchema(v3ioutils.DefaultKeyColumn, "")
 	}
 	appender := Appender{
 		request:      request,
@@ -120,8 +120,8 @@ func (a *Appender) Add(frame frames.Frame) error {
 	if len(names) == 0 {
 		return fmt.Errorf("empty frame")
 	}
-	if len(frame.Indices()) > 1 {
-		return fmt.Errorf("can't set key from multi-index frame")
+	if len(frame.Indices()) > 2 {
+		return fmt.Errorf("can only write up to two indices")
 	}
 
 	if a.request.Expression != "" {
@@ -131,16 +131,31 @@ func (a *Appender) Add(frame frames.Frame) error {
 	columns := make(map[string]frames.Column)
 	indexName := ""
 	var newSchema v3ioutils.V3ioSchema
-	if indices := frame.Indices(); len(indices) > 0 {
+	indices := frame.Indices()
+	var sortingFunc func(int) interface{}
+	var err error
+
+	if len(indices) > 0 {
 		indexName = indices[0].Name()
 		if indexName == "" {
 			indexName = a.schema.(*v3ioutils.OldV3ioSchema).Key
 		}
-		newSchema = v3ioutils.NewSchema(indexName)
+		sortingKeyName := a.schema.(*v3ioutils.OldV3ioSchema).SortingKey
+		if len(indices) > 1 {
+			sortingKeyName = indices[1].Name()
+			sortingFunc, err = a.funcFromCol(indices[1])
+			if err != nil {
+				return err
+			}
+		}
+		newSchema = v3ioutils.NewSchema(indexName, sortingKeyName)
 		newSchema.AddColumn(indexName, indices[0], false)
+		if len(indices) > 1 {
+			newSchema.AddColumn(indices[1].Name(), indices[1], false)
+		}
 	} else {
 		indexName = a.schema.(*v3ioutils.OldV3ioSchema).Key
-		newSchema = v3ioutils.NewSchema(indexName)
+		newSchema = v3ioutils.NewSchema(indexName, "")
 		newSchema.AddField(indexName, 0, false)
 	}
 
@@ -163,7 +178,7 @@ func (a *Appender) Add(frame frames.Frame) error {
 		}
 	}
 
-	err := a.schema.UpdateSchema(a.container, a.tablePath, newSchema)
+	err = a.schema.UpdateSchema(a.container, a.tablePath, newSchema)
 	if err != nil {
 		return err
 	}
@@ -193,11 +208,6 @@ func (a *Appender) Add(frame frames.Frame) error {
 			row[name] = val
 		}
 
-		key := indexVal(r)
-
-		// Add key column as an attribute
-		row[indexName] = key
-
 		var condition string
 		if a.request.Condition != "" {
 			condition, err = genExpr(a.request.Condition, frame, r)
@@ -207,7 +217,16 @@ func (a *Appender) Add(frame frames.Frame) error {
 			}
 		}
 
-		input := v3io.PutItemInput{Path: a.tablePath + fmt.Sprintf("%v", key),
+		key := indexVal(r)
+		// Add key column as an attribute
+		row[indexName] = key
+
+		var sortingVal interface{}
+		if len(indices) > 1 {
+			sortingVal = sortingFunc(r)
+			row[indices[1].Name()] = sortingVal
+		}
+		input := v3io.PutItemInput{Path: a.tablePath + a.formatKeyName(key, sortingVal),
 			Attributes: row,
 			Condition:  condition,
 			UpdateMode: a.request.SaveMode.GetNginxModeName()}
@@ -225,6 +244,16 @@ func (a *Appender) Add(frame frames.Frame) error {
 	return nil
 }
 
+func (a *Appender) formatKeyName(key interface{}, sortingVal interface{}) string {
+	var format string
+	if sortingVal != nil {
+		format = fmt.Sprintf("%v.%v", key, sortingVal)
+	} else {
+		format = fmt.Sprintf("%v", key)
+	}
+	return format
+}
+
 // update updates rows from a frame
 func (a *Appender) update(frame frames.Frame) error {
 	indexVal, err := a.indexValFunc(frame)
@@ -232,6 +261,13 @@ func (a *Appender) update(frame frames.Frame) error {
 		return err
 	}
 
+	var sortingFunc func(int) interface{}
+	if len(frame.Indices()) > 1 {
+		sortingFunc, err = a.funcFromCol(frame.Indices()[1])
+		if err != nil {
+			return err
+		}
+	}
 	for r := 0; r < frame.Len(); r++ {
 
 		var expr *string
@@ -254,7 +290,12 @@ func (a *Appender) update(frame frames.Frame) error {
 		}
 
 		key := indexVal(r)
-		input := v3io.UpdateItemInput{Path: a.tablePath + fmt.Sprintf("%v", key),
+		var sortingVal interface{}
+		if len(frame.Indices()) > 1 {
+			sortingVal = sortingFunc(r)
+		}
+
+		input := v3io.UpdateItemInput{Path: a.tablePath + a.formatKeyName(key, sortingVal),
 			Expression: expr,
 			Condition:  cond,
 			UpdateMode: a.request.SaveMode.GetNginxModeName()}
@@ -338,6 +379,10 @@ func (a *Appender) indexValFunc(frame frames.Frame) (func(int) interface{}, erro
 		}, nil
 	}
 
+	return a.funcFromCol(indexCol)
+}
+
+func (a *Appender) funcFromCol(indexCol frames.Column) (func(int) interface{}, error) {
 	var fn func(int) interface{}
 	switch indexCol.DType() {
 	// strconv.Format* is about twice as fast as fmt.Sprintf
@@ -372,7 +417,6 @@ func (a *Appender) indexValFunc(frame frames.Frame) (func(int) interface{}, erro
 	default:
 		return nil, fmt.Errorf("unknown column type - %v", indexCol.DType())
 	}
-
 	return fn, nil
 }
 
