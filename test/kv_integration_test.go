@@ -147,7 +147,6 @@ func (kvSuite *KvTestSuite) TestAll() {
 	if err := kvSuite.client.Delete(dreq); err != nil {
 		kvSuite.T().Fatal(err)
 	}
-
 }
 
 func (kvSuite *KvTestSuite) TestRangeScan() {
@@ -565,20 +564,14 @@ func (kvSuite *KvTestSuite) TestDeleteWithFilter() {
 	}
 
 	it, err := kvSuite.client.Read(rreq)
-	if err != nil {
-		kvSuite.T().Fatal(err)
-	}
+	kvSuite.NoError(err)
 
 	for it.Next() {
 		frame := it.At()
-		if frame.Len() != 0 {
-			kvSuite.T().Fatalf("wrong length: %d != %d", frame.Len(), 0)
-		}
+		kvSuite.Require().Equal(frame.Len(), 0, "wrong length: %d != %d")
 	}
 	//make sure schema is not deleted
 	schemaInput := &v3io.GetObjectInput{Path: table + "/.#schema"}
 	_, err = kvSuite.v3ioContainer.GetObjectSync(schemaInput)
-	if err != nil {
-		kvSuite.T().Fatal("schema is not found " + err.Error())
-	}
+	kvSuite.NoError(err, "schema is not found ")
 }
