@@ -217,7 +217,6 @@ func (ki *Iterator) Next() bool {
 	if len(columns) > 0 && !ki.request.Proto.ResetIndex {
 		if len(columns) > 1 || columns[0].Name() != ki.schema.Key {
 			ki.handleIndices(ki.schema.Key, byName, ki.shouldDuplicateIndex, &indices, &columns)
-			columns = utils.RemoveColumn(ki.schema.Key, columns)
 			delete(byName, ki.schema.Key)
 		}
 		if  ki.schema.SortingKey != "" && (len(columns) > 1 || columns[0].Name() != ki.schema.SortingKey) {

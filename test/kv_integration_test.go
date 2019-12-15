@@ -195,7 +195,7 @@ func (kvSuite *KvTestSuite) TestRangeScan() {
 	schemaInput := &v3io.GetObjectInput{Path: table + "/.#schema"}
 	resp, err := kvSuite.v3ioContainer.GetObjectSync(schemaInput)
 	if err != nil {
-		kvSuite.T().Fatal("1 " + err.Error())
+		kvSuite.T().Fatal(err.Error())
 	}
 	schema := &v3ioutils.OldV3ioSchema{}
 	if err := json.Unmarshal(resp.HTTPResponse.Body(), schema); err != nil {
