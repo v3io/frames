@@ -114,8 +114,17 @@ func (ki *Iterator) Next() bool {
 	var nullColumns []*pb.NullValuesMap
 	hasAnyNulls := false
 
+	columnNamesToReturn := ki.request.Proto.Columns
+	specificColumnsRequested := len(columnNamesToReturn) != 0
+
 	//create columns
 	for _, field := range ki.schema.Fields {
+		if specificColumnsRequested && !containsString(ki.request.Proto.Columns, field.Name) {
+			continue
+		} else if !specificColumnsRequested {
+			columnNamesToReturn = append(columnNamesToReturn, field.Name)
+		}
+
 		f, err := ki.schema.GetField(field.Name)
 		if err != nil {
 			ki.err = err
@@ -168,8 +177,8 @@ func (ki *Iterator) Next() bool {
 		// fill columns with nil if there was no value
 		var currentNullMask pb.NullValuesMap
 		currentNullMask.NullColumns = make(map[string]bool)
-		for _, field := range ki.schema.Fields {
-			name := field.Name
+		for _, fieldName := range columnNamesToReturn {
+			name := fieldName
 			if name == ki.schema.Key && !hasKeyColumnAttribute {
 				name = indexColKey
 			}
