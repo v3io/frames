@@ -35,6 +35,7 @@ import (
 const (
 	indexColKey = "__name"
 )
+var systemAttrs = []string{"__gid", "__mode", "__mtime_nsecs", "__mtime_secs", "__size", "__uid", "__ctime_nsecs", "__ctime_secs"}
 
 // Read does a read request
 func (kv *Backend) Read(request *frames.ReadRequest) (frames.FrameIterator, error) {
@@ -148,6 +149,18 @@ func (ki *Iterator) Next() bool {
 		byName[field.Name] = col
 	}
 
+	if specificColumnsRequested {
+		for _, attr := range systemAttrs{
+			if containsString(ki.request.Proto.Columns, attr) {
+				sysCol, err := frames.NewSliceColumn(attr, make([]int64, 0))
+				if err != nil {
+					ki.err = err
+					return false
+				}
+				columns = append(columns, sysCol)
+			}
+		}
+	}
 	for ; rowNum < int(ki.request.Proto.MessageLimit) && ki.iter.Next(); rowNum++ {
 		row := ki.iter.GetFields()
 

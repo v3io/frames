@@ -524,3 +524,45 @@ func (kvSuite *KvTestSuite) TestRequestSpecificColumnsWithKey() {
 	err = it.Err()
 	kvSuite.NoError(err)
 }
+
+func (kvSuite *KvTestSuite) TestRequestSystemAttrs() {
+	table := fmt.Sprintf("TestRequestSystemAttrs%d", time.Now().UnixNano())
+
+	frame := kvSuite.generateSampleFrame(kvSuite.T())
+	wreq := &frames.WriteRequest{
+		Backend: kvSuite.backendName,
+		Table:   table,
+	}
+
+	appender, err := kvSuite.client.Write(wreq)
+	kvSuite.NoError(err)
+
+	err = appender.Add(frame)
+	kvSuite.NoError(err)
+
+	err = appender.WaitForComplete(3 * time.Second)
+	kvSuite.NoError(err)
+
+	time.Sleep(3 * time.Second) // Let DB sync
+
+	requestedColumns := []string{"__gid", "__mode", "__mtime_nsecs", "__mtime_secs", "__size", "__uid", "__ctime_nsecs", "__ctime_secs", "n1"}
+	rreq := &pb.ReadRequest{
+		Backend: kvSuite.backendName,
+		Table:   table,
+		Columns: requestedColumns,
+	}
+
+	it, err := kvSuite.client.Read(rreq)
+	kvSuite.NoError(err)
+
+	for it.Next() {
+		fr := it.At()
+		if !(fr.Len() == frame.Len() || fr.Len()-1 == frame.Len()) {
+			kvSuite.T().Fatalf("wrong length: %d != %d", fr.Len(), frame.Len())
+		}
+		kvSuite.Require().EqualValues(requestedColumns, fr.Names(), "got other columns than requested")
+	}
+
+	err = it.Err()
+	kvSuite.NoError(err)
+}
