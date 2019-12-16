@@ -28,8 +28,9 @@ clean_pyc:
 flake8:
 	PIPENV_IGNORE_VIRTUALENVS=1 \
 	    pipenv run flake8 \
-	    	--exclude 'frames_pb2*.py' \
-	    	v3io_frames tests
+            --ignore=E121,E123,E126,E226,E24,E704,E501 \
+	        --exclude 'frames_pb2*.py' \
+	        v3io_frames tests
 
 .PHONY: test
 test: clean_pyc flake8
