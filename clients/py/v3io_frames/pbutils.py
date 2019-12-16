@@ -290,19 +290,18 @@ def normalize_df(df, schema):
     :param df:
     :return:
     """
-    nullValues = []
+    null_values = []
     first_col = True
     for col_pos, col_name in enumerate(df.columns):
         col = df[col_name]
         for index, value in col.items():
+            if first_col:
+                null_values.append(fpb.NullValuesMap(nullColumns={}))
             if pd.isnull(value):
                 df.at[index, col_name] = get_empty_value_by_type(schema[col_name])
-            if first_col:
-                nullValues.append(fpb.NullValuesMap(nullColumns={col_name: True}))
-            else:
-                nullValues[col_pos].nullColumns[col_name] = True
+                null_values[index].nullColumns[col_name] = True
 
-    return df, nullValues
+    return df, null_values
 
 
 def get_empty_value_by_type(dtype):
