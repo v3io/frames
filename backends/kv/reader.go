@@ -120,7 +120,7 @@ func (ki *Iterator) Next() bool {
 
 	columnNamesToReturn := ki.request.Proto.Columns
 	specificColumnsRequested := len(columnNamesToReturn) != 0
-	
+
 	//create columns
 	for _, field := range ki.schema.Fields {
 		if specificColumnsRequested && !containsString(ki.request.Proto.Columns, field.Name) {
