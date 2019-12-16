@@ -149,7 +149,7 @@ func (ki *Iterator) Next() bool {
 		byName[field.Name] = col
 	}
 
-	if specificColumnsRequested {
+	if specificColumnsRequested && len(columnNamesToReturn) != len(columns) {
 		for _, attr := range systemAttrs {
 			if containsString(ki.request.Proto.Columns, attr) {
 				sysCol, err := frames.NewSliceColumn(attr, make([]int64, 0))
