@@ -36,14 +36,15 @@ var (
 )
 
 type testInfo struct {
-	config        *frames.Config
-	grpcAddr      string
-	httpAddr      string
-	process       *os.Process
-	root          string
-	session       *frames.Session
-	v3ioContainer v3io.Container
-	debugMode     bool
+	config         *frames.Config
+	grpcAddr       string
+	httpAddr       string
+	process        *os.Process
+	root           string
+	session        *frames.Session
+	v3ioContainer  v3io.Container
+	debugMode      bool
+	backendsToTest string
 }
 
 type mainTestSuite struct {
@@ -79,18 +80,30 @@ func (mainSuite *mainTestSuite) TearDownSuite() {
 }
 
 func (mainSuite *mainTestSuite) TestKVBackend() {
+	if !strings.Contains(mainSuite.info.backendsToTest, "kv") {
+		mainSuite.T().Skip("skipping kv backend tests")
+	}
 	mainSuite.runSubSuites(kvSuites)
 }
 
 func (mainSuite *mainTestSuite) TestTSDBBackend() {
+	if !strings.Contains(mainSuite.info.backendsToTest, "tsdb") {
+		mainSuite.T().Skip("skipping tsdb backend tests")
+	}
 	mainSuite.runSubSuites(tsdbSuites)
 }
 
 func (mainSuite *mainTestSuite) TestStreamBackend() {
+	if !strings.Contains(mainSuite.info.backendsToTest, "stream") {
+		mainSuite.T().Skip("skipping stream backend tests")
+	}
 	mainSuite.runSubSuites(streamSuites)
 }
 
 func (mainSuite *mainTestSuite) TestCSVBackend() {
+	if !strings.Contains(mainSuite.info.backendsToTest, "csv") {
+		mainSuite.T().Skip("skipping csv backend tests")
+	}
 	mainSuite.runSubSuites(csvSuites)
 }
 
@@ -257,6 +270,11 @@ func waitForServer(t testing.TB, port int) {
 func setupTest(t testing.TB, internalLogger logger.Logger) *testInfo {
 	info := &testInfo{}
 	info.debugMode = strings.ToLower(os.Getenv("DEBUG")) == "true"
+	info.backendsToTest = os.Getenv("TEST_BACKENDS")
+	if info.backendsToTest == "" {
+		info.backendsToTest = "kv,tsdb,stream,csv"
+	}
+
 	info.root = setupRoot(t)
 	t.Logf("root: %s", info.root)
 	info.session = sessionInfo(t)

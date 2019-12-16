@@ -43,14 +43,16 @@ type SaveMode int
 
 func (mode SaveMode) GetNginxModeName() string {
 	switch mode {
-	case ErrorIfExists:
+	case ErrorIfTableExists:
 		return ""
-	case Append:
-		return "CreateNewAttributes"
-	case Overwrite:
+	case OverwriteTable:
 		return ""
-	case Replace:
+	case UpdateItem:
 		return "CreateOrReplaceAttributes"
+	case OverwriteItem:
+		return "OverWriteAttributes"
+	case CreateNewItemsOnly:
+		return "CreateNewItemOnly"
 	default:
 		return ""
 	}
@@ -58,24 +60,27 @@ func (mode SaveMode) GetNginxModeName() string {
 
 func (mode SaveMode) String() string {
 	switch mode {
-	case ErrorIfExists:
-		return "errorIfExists"
-	case Append:
-		return "append"
-	case Overwrite:
-		return "overwrite"
-	case Replace:
-		return "replace"
+	case ErrorIfTableExists:
+		return "errorIfTableExists"
+	case OverwriteTable:
+		return "overwriteTable"
+	case UpdateItem:
+		return "updateItem"
+	case OverwriteItem:
+		return "overwriteItem"
+	case CreateNewItemsOnly:
+		return "createNewItemsOnly"
 	default:
 		return ""
 	}
 }
 
 const (
-	ErrorIfExists SaveMode = iota
-	Append
-	Overwrite
-	Replace
+	ErrorIfTableExists SaveMode = iota
+	OverwriteTable
+	UpdateItem
+	OverwriteItem
+	CreateNewItemsOnly
 )
 
 // Column is a data column
@@ -225,14 +230,16 @@ func (s SecretString) Get() string {
 
 func SaveModeFromString(mode string) (SaveMode, error) {
 	switch mode {
-	case "", "errorIfExists": // this is the default save mode
-		return ErrorIfExists, nil
-	case "append":
-		return Append, nil
-	case "overwrite":
-		return Overwrite, nil
-	case "replace":
-		return Replace, nil
+	case "", "errorIfTableExists": // this is the default save mode
+		return ErrorIfTableExists, nil
+	case "overwriteTable":
+		return OverwriteTable, nil
+	case "updateItem":
+		return UpdateItem, nil
+	case "overwriteItem":
+		return OverwriteItem, nil
+	case "createNewItemsOnly":
+		return CreateNewItemsOnly, nil
 	default:
 		return -1, errors.Errorf("no save mode named '%v'", mode)
 	}

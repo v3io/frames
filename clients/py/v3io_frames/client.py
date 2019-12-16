@@ -111,7 +111,7 @@ class ClientBase:
 
     def write(self, backend, table, dfs, expression='', condition='',
               labels=None, max_in_message=0, index_cols=None,
-              save_mode='errorIfExists', partition_keys=None):
+              save_mode='errorIfTableExists', partition_keys=None):
         """Writes data to a table or stream
 
         Parameters

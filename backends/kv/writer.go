@@ -78,14 +78,14 @@ func (kv *Backend) Write(request *frames.WriteRequest) (frames.FrameAppender, er
 
 	if tableAlreadyExists {
 		switch request.SaveMode {
-		case frames.Overwrite:
+		case frames.OverwriteTable:
 			// If this is the first time we writing to the table, there is nothing to delete.
 			err = v3ioutils.DeleteTable(kv.logger, container, tablePath, "", kv.numWorkers, true)
 			if err != nil {
 				return nil, fmt.Errorf("error occured while deleting table '%v', err: %v", tablePath, err)
 			}
 			schema = nil
-		case frames.ErrorIfExists:
+		case frames.ErrorIfTableExists:
 			return nil, fmt.Errorf("table '%v' already exists, either use a differnet save mode or save to a different table", tablePath)
 		}
 	}
@@ -129,7 +129,7 @@ func (a *Appender) Add(frame frames.Frame) error {
 	}
 
 	columns := make(map[string]frames.Column)
-	indexName := ""
+	indexName, sortingKeyName := "", ""
 	var newSchema v3ioutils.V3ioSchema
 	indices := frame.Indices()
 	var sortingFunc func(int) interface{}
@@ -140,7 +140,7 @@ func (a *Appender) Add(frame frames.Frame) error {
 		if indexName == "" {
 			indexName = a.schema.(*v3ioutils.OldV3ioSchema).Key
 		}
-		sortingKeyName := a.schema.(*v3ioutils.OldV3ioSchema).SortingKey
+		sortingKeyName = a.schema.(*v3ioutils.OldV3ioSchema).SortingKey
 		if len(indices) > 1 {
 			sortingKeyName = indices[1].Name()
 			sortingFunc, err = a.funcFromCol(indices[1])
@@ -189,23 +189,25 @@ func (a *Appender) Add(frame frames.Frame) error {
 	}
 
 	for r := 0; r < frame.Len(); r++ {
-		row := make(map[string]interface{})
+		var rowMap map[string]interface{}
+		var expression *string
+		var err error
+		var keyVal, sortingKeyVal interface{}
 
-		// set row values from columns
-		for name, col := range columns {
-			if frame.IsNull(r, name) {
-				continue
-			}
-			val, err := utils.ColAt(col, r)
-			if err != nil {
-				return err
-			}
+		if a.request.SaveMode == frames.UpdateItem {
+			var expressionStr string
+			expressionStr, keyVal, sortingKeyVal, err = getUpdateExpressionFromRow(columns, r, frame.IsNull,
+				indexVal, sortingFunc,
+				indexName, sortingKeyName)
+			expression = &expressionStr
+		} else {
+			rowMap, keyVal, sortingKeyVal, err = getMapFromRow(columns, r, frame.IsNull,
+				indexVal, sortingFunc,
+				indexName, sortingKeyName)
+		}
 
-			if val64, ok := val.(int64); ok {
-				val = int(val64)
-			}
-
-			row[name] = val
+		if err != nil {
+			return err
 		}
 
 		var condition string
@@ -217,21 +219,14 @@ func (a *Appender) Add(frame frames.Frame) error {
 			}
 		}
 
-		key := indexVal(r)
-		// Add key column as an attribute
-		row[indexName] = key
-
-		var sortingVal interface{}
-		if len(indices) > 1 {
-			sortingVal = sortingFunc(r)
-			row[indices[1].Name()] = sortingVal
-		}
-		input := v3io.PutItemInput{Path: a.tablePath + a.formatKeyName(key, sortingVal),
-			Attributes: row,
+		input := v3io.UpdateItemInput{Path: a.tablePath + a.formatKeyName(keyVal, sortingKeyVal),
+			Attributes: rowMap,
+			Expression: expression,
 			Condition:  condition,
 			UpdateMode: a.request.SaveMode.GetNginxModeName()}
 		a.logger.DebugWith("write", "input", input)
-		_, err := a.container.PutItem(&input, r, a.responseChan)
+		_, err = a.container.UpdateItem(&input, r, a.responseChan)
+
 		if err != nil {
 			a.logger.ErrorWith("write error", "error", err)
 			return err
@@ -437,10 +432,14 @@ func (a *Appender) respWaitLoop(timeout time.Duration) {
 			active = true
 			timer.Reset(timeout)
 
+			input := resp.Request().Input.(*v3io.UpdateItemInput)
+
 			if resp.Error != nil {
 				// If condition was evaluated as false log this and discard error.
 				if isFalseConditionError(resp.Error) {
 					a.logger.Info("condition was evaluated to false for item %v", resp.Request().Input)
+				} else if isOnlyNewItemUpdateModeItemExistError(resp.Error, input.UpdateMode) {
+					a.logger.Info("trying to write to existing item with 'CreateNewItemsOnly' update mode, item: %v", resp.Request().Input)
 				} else {
 					a.logger.ErrorWith("failed write response", "error", resp.Error)
 					a.asyncErr = resp.Error
@@ -481,4 +480,99 @@ func isFalseConditionError(err error) bool {
 	}
 
 	return false
+}
+
+func isOnlyNewItemUpdateModeItemExistError(err error, mode string) bool {
+	errString := err.Error()
+
+	if mode == frames.CreateNewItemsOnly.GetNginxModeName() &&
+		strings.Count(errString, errorCodeString) == 1 &&
+		strings.Contains(errString, falseConditionOuterErrorCode) {
+		return true
+	}
+
+	return false
+}
+
+func getMapFromRow(columns map[string]frames.Column,
+	index int,
+	isNull func(int, string) bool,
+	indexValFunc, sortingKeyValFunc func(int) interface{},
+	indexName, sortingKeyName string) (map[string]interface{}, interface{}, interface{}, error) {
+	row := make(map[string]interface{})
+
+	// set row values from columns
+	for name, col := range columns {
+		if isNull(index, name) {
+			continue
+		}
+		val, err := utils.ColAt(col, index)
+		if err != nil {
+			return nil, nil, nil, err
+		}
+
+		if val64, ok := val.(int64); ok {
+			val = int(val64)
+		}
+
+		row[name] = val
+	}
+
+	key := indexValFunc(index)
+	// Add key column as an attribute
+	row[indexName] = key
+
+	var sortingVal interface{}
+	if sortingKeyName != "" {
+		sortingVal = sortingKeyValFunc(index)
+		row[sortingKeyName] = sortingVal
+	}
+
+	return row, key, sortingVal, nil
+}
+
+func getUpdateExpressionFromRow(columns map[string]frames.Column,
+	index int,
+	isNull func(int, string) bool,
+	indexValFunc, sortingKeyValFunc func(int) interface{},
+	indexName, sortingKeyName string) (string, interface{}, interface{}, error) {
+	expression := strings.Builder{}
+
+	// set row values from columns
+	for name, col := range columns {
+		if isNull(index, name) {
+			expression.WriteString(fmt.Sprintf("delete(%v);", name))
+		}
+		val, err := utils.ColAt(col, index)
+		if err != nil {
+			return "", nil, nil, err
+		}
+
+		expression.WriteString(valueToTypedExpressionString(val, name))
+	}
+
+	key := indexValFunc(index)
+	// Add key column as an attribute
+	expression.WriteString(valueToTypedExpressionString(key, indexName))
+
+	var sortingVal interface{}
+	if sortingKeyName != "" {
+		sortingVal = sortingKeyValFunc(index)
+		expression.WriteString(valueToTypedExpressionString(sortingVal, sortingKeyName))
+	}
+
+	return expression.String(), key, sortingVal, nil
+}
+
+func valueToTypedExpressionString(value interface{}, name string) string {
+	switch typedVal := value.(type) {
+	case string:
+		return fmt.Sprintf("%v='%v';", name, typedVal)
+	case time.Time:
+		seconds := typedVal.Unix()
+		nanos := typedVal.UnixNano() % 1e9
+		return fmt.Sprintf("%v=%v:%v;", name, seconds, nanos)
+	default:
+		return fmt.Sprintf("%v=%v;", name, value)
+	}
 }
