@@ -11,7 +11,7 @@ import (
 	v3io "github.com/v3io/v3io-go/pkg/dataplane"
 )
 
-// === SaveMode - ErrorIfExists
+// === SaveMode - errorIfTableExists
 
 func (kvSuite *KvTestSuite) TestSaveModeErrorIfExistsTableExists() {
 	table := fmt.Sprintf("TestSaveModeErrorIfExistsTableExists%d", time.Now().UnixNano())

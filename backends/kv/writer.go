@@ -570,7 +570,7 @@ func valueToTypedExpressionString(value interface{}, name string) string {
 		return fmt.Sprintf("%v='%v';", name, typedVal)
 	case time.Time:
 		seconds := typedVal.Unix()
-		nanos := typedVal.UnixNano() % 1e9
+		nanos := typedVal.Nanosecond()
 		return fmt.Sprintf("%v=%v:%v;", name, seconds, nanos)
 	default:
 		return fmt.Sprintf("%v=%v;", name, value)

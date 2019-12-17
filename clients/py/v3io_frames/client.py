@@ -142,8 +142,8 @@ class ClientBase:
             operation; by default, the DataFrame's index columns are used
         save_mode : str
             Save mode.
-            Optional values: errorIfExists (default), append,
-             overwrite, replace
+            Optional values: errorIfTableExists (default), overwriteTable,
+             updateItem, overwriteItem, createNewItemsOnly
         partition_keys : []str
             Partition keys [Not supported in this version]
 
