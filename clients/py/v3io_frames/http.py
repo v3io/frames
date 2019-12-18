@@ -23,7 +23,7 @@ from requests.exceptions import RequestException
 from urllib3.exceptions import HTTPError
 
 from . import frames_pb2 as fpb
-from .client import ClientBase
+from .client import ClientBase, RawFrame
 from .errors import (CreateError, DeleteError, Error, ExecuteError, ReadError,
                      WriteError)
 from .frames_pb2 import Frame
@@ -89,9 +89,9 @@ class Client(ClientBase):
             raise Error('cannot call API - {}'.format(resp.text))
 
         do_reorder = should_reorder_columns(backend, query, columns)
-        dfs = self._iter_dfs(resp.raw, columns, do_reorder=do_reorder)
+        dfs = self._iter_dfs(resp.raw, columns, get_raw, do_reorder=do_reorder)
 
-        if not iterator:
+        if not iterator and not get_raw:
             return concat_dfs(dfs, self.frame_factory, self.concat)
         return dfs
 
@@ -190,11 +190,14 @@ class Client(ClientBase):
 
         return headers
 
-    def _iter_dfs(self, resp, columns, do_reorder=True):
+    def _iter_dfs(self, resp, columns, get_raw, do_reorder=True):
         for msg in iter(partial(self._read_msg, resp), None):
             if msg.error:
                 raise ReadError(msg.error)
-            yield msg2df(msg, self.frame_factory, columns, do_reorder)
+            if get_raw:
+                yield RawFrame(msg)
+            else:
+                yield msg2df(msg, self.frame_factory, columns, do_reorder)
 
     def _read_msg(self, resp):
         data = resp.read(header_fmt_size)

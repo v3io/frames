@@ -35,6 +35,13 @@ class RawFrame:
     def column(self, column_name):
         for col in self.raw_frame.columns:
             if col.name == column_name:
+                return col
+
+        raise ReadError('no column named {}'.format(column_name))
+
+    def column_data(self, column_name):
+        for col in self.raw_frame.columns:
+            if col.name == column_name:
                 if col.dtype == fpb.INTEGER:
                     return col.ints
                 elif col.dtype == fpb.FLOAT:
@@ -46,9 +53,9 @@ class RawFrame:
                 elif col.dtype == fpb.BOOLEAN:
                     return col.bools
                 else:
-                    raise ReadError('{} - unsupported type - {}'.format(col.name, col.dtype))
+                    raise ReadError('{} - unsupported type - {}'.format(column_name, col.dtype))
 
-        raise ReadError('no column named {}'.format(col.name))
+        raise ReadError('no column named {}'.format(column_name))
 
     def labels(self):
         return self.raw_frame.labels
