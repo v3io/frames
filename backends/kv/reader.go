@@ -28,7 +28,6 @@ import (
 	"github.com/v3io/frames/pb"
 	"github.com/v3io/frames/v3ioutils"
 	"github.com/v3io/v3io-go/pkg/dataplane"
-	"strings"
 )
 
 const (
@@ -116,50 +115,53 @@ func (ki *Iterator) Next() bool {
 	specificColumnsRequested := len(columnNamesToReturn) != 0
 
 	//create columns
-	var col frames.Column
-	var colName string
-	var er error
-
-	if specificColumnsRequested {
-		for _, field := range ki.request.Proto.Columns {
-			colName = field
-			if strings.HasPrefix(field, "__") {
-				if field == indexColKey {
-					col, er = frames.NewSliceColumn(field, make([]int64, 0))
-					if er != nil {
-						ki.err = er
-						return false
-					}
-				} else if containsString(systemAttrs, field) {
-					col, er = frames.NewSliceColumn(field, make([]string, 0))
-					if er != nil {
-						ki.err = er
-						return false
-					}
-				} else {
-					return false
-				}
-			} else {
-				col = ki.createColumnFromSchema(field)
-				if col == nil {
-					return false
-				}
-			}
-		}
-	} else {
-		for _, field := range ki.schema.Fields {
-			col = ki.createColumnFromSchema(field.Name)
-			if col == nil {
-				return false
-			}
+	//create columns
+	for _, field := range ki.schema.Fields {
+		if specificColumnsRequested && !containsString(ki.request.Proto.Columns, field.Name) {
+			continue
+		} else if !specificColumnsRequested {
 			columnNamesToReturn = append(columnNamesToReturn, field.Name)
-			colName = field.Name
 		}
+
+		f, err := ki.schema.GetField(field.Name)
+		if err != nil {
+			ki.err = err
+			return false
+		}
+		data, err := utils.NewColumnFromType(f.Type, 0)
+		if err != nil {
+			ki.err = err
+			return false
+		}
+
+		col, err := frames.NewSliceColumn(field.Name, data)
+		if err != nil {
+			ki.err = err
+			return false
+		}
+		columns = append(columns, col)
+		byName[field.Name] = col
 	}
 
-	columnNamesToReturn = append(columnNamesToReturn, colName)
-	columns = append(columns, col)
-	byName[colName] = col
+	if specificColumnsRequested && len(columnNamesToReturn) != len(columns) {
+		for _, attr := range systemAttrs {
+			if containsString(ki.request.Proto.Columns, attr) {
+				var sysCol frames.Column
+				var err error
+				if attr == "__name" {
+					sysCol, err = frames.NewSliceColumn(attr, make([]string, 0))
+				} else {
+					sysCol, err = frames.NewSliceColumn(attr, make([]int64, 0))
+				}
+				if err != nil {
+					ki.err = err
+					return false
+				}
+				columns = append(columns, sysCol)
+				byName[attr] = sysCol
+			}
+		}
+	}
 
 	for ; rowNum < int(ki.request.Proto.MessageLimit) && ki.iter.Next(); rowNum++ {
 		row := ki.iter.GetFields()
@@ -176,7 +178,7 @@ func (ki *Iterator) Next() bool {
 		for name, field := range row {
 			colName := name
 			if colName == indexColKey { // convert `__name` attribute name to the key column
-				if hasKeyColumnAttribute && !requestedIndexKey {
+				if hasKeyColumnAttribute {
 					continue
 				}
 				colName = ki.schema.Key

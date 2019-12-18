@@ -598,7 +598,7 @@ func (kvSuite *KvTestSuite) TestRequestSpecificColumnsWithKey() {
 func (kvSuite *KvTestSuite) TestDeleteWithFilter() {
 	table := fmt.Sprintf("kv_delete_filter%d", time.Now().UnixNano())
 
-	frame := kvSuite.generateSampleFrame(kvSuite.T())
+	frame := kvSuite.generateRandomSampleFrame(5, "idx", []string{"n1", "n2"})
 	wreq := &frames.WriteRequest{
 		Backend: kvSuite.backendName,
 		Table:   table,
@@ -650,7 +650,7 @@ func (kvSuite *KvTestSuite) TestDeleteWithFilter() {
 func (kvSuite *KvTestSuite) TestRequestSystemAttrs() {
 	table := fmt.Sprintf("TestRequestSystemAttrs%d", time.Now().UnixNano())
 
-	frame := kvSuite.generateSampleFrame(kvSuite.T())
+	frame := kvSuite.generateRandomSampleFrame(5, "idx", []string{"n1", "n2"})
 	wreq := &frames.WriteRequest{
 		Backend: kvSuite.backendName,
 		Table:   table,
