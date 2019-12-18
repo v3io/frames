@@ -100,21 +100,23 @@ func main() {
 	fmt.Printf("server running on http=%s, grpc=%s\n", config.httpAddr, config.grpcAddr)
 
 	// Start profiling endpoint
-	go func() {
-		logger, _ := frames.NewLogger(cfg.Log.Level)
-		hasLog := logger != nil
+	if !cfg.DisableProfiling {
+		go func() {
+			logger, _ := frames.NewLogger(cfg.Log.Level)
+			hasLog := logger != nil
 
-		if hasLog {
-			logger.Info("creating profiling endpoint at :8082. To start profiling run one of the following commands:\n" +
-				" -> profiling: curl -o cpu.pprof localhost:8082/debug/pprof/profile?seconds=30\n" +
-				" -> trace: curl -o trace.pprof localhost:8082/debug/pprof/trace?seconds=30")
-		}
+			if hasLog {
+				logger.Info("creating profiling endpoint at :8082. To start profiling run one of the following commands:\n" +
+					" -> profiling: curl -o cpu.pprof localhost:8082/debug/pprof/profile?seconds=30\n" +
+					" -> trace: curl -o trace.pprof localhost:8082/debug/pprof/trace?seconds=30")
+			}
 
-		err := http.ListenAndServe(":8082", nil)
-		if err != nil && hasLog {
-			logger.Warn("failed to create profiling endpoint")
-		}
-	}()
+			err := http.ListenAndServe(":8082", nil)
+			if err != nil && hasLog {
+				logger.Warn("failed to create profiling endpoint")
+			}
+		}()
+	}
 
 	for hsrv.State() == frames.RunningState && gsrv.State() == frames.RunningState {
 		time.Sleep(time.Second)

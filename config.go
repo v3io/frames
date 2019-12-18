@@ -50,6 +50,8 @@ type Config struct {
 	QuerierCacheSize int `json:"querierCacheSize"`
 
 	Backends []*BackendConfig `json:"backends,omitempty"`
+
+	DisableProfiling bool `json:"disableProfiling,omitempty"`
 }
 
 // InitDefaults initializes the defaults for configuration
