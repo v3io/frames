@@ -153,6 +153,11 @@ class ClientBase:
         iterator : bool
             True - return a DataFrames iterator;
             False (default) - return a single DataFrame
+        get_raw : bool
+            False (default) - return Pandas Dataframe
+            True - return a raw data object rather then Pandas data frame.
+            This will boost performance at the expense of Pandas convenience.
+            Note: this mode will always return an iterator of frames.
         **kw
             Extra parameter for specific backends
 
