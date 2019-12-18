@@ -170,6 +170,10 @@ func (s *Server) Write(stream pb.Frames_WriteServer) error {
 		frame = frames.NewFrameFromProto(pbReq.InitialData)
 	}
 
+	saveMode, err := frames.SaveModeFromString(pbReq.SaveMode)
+	if err != nil {
+		return err
+	}
 	req := &frames.WriteRequest{
 		Session:       pbReq.Session,
 		Password:      password,
@@ -180,6 +184,7 @@ func (s *Server) Write(stream pb.Frames_WriteServer) error {
 		HaveMore:      pbReq.More,
 		ImmidiateData: frame,
 		Table:         pbReq.Table,
+		SaveMode:      saveMode,
 	}
 
 	// TODO: Unite with the code in HTTP server
