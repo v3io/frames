@@ -367,6 +367,7 @@ func pbWriteReq(req *frames.WriteRequest) (*pb.InitialWriteRequest, error) {
 		InitialData: frMsg,
 		Expression:  req.Expression,
 		More:        req.HaveMore,
+		SaveMode:    req.SaveMode.String(),
 	}
 
 	return msg, nil

@@ -27,9 +27,8 @@ import (
 	"time"
 
 	"github.com/pkg/errors"
-	v3io "github.com/v3io/v3io-go/pkg/dataplane"
-
 	"github.com/v3io/frames"
+	v3io "github.com/v3io/v3io-go/pkg/dataplane"
 )
 
 const (
@@ -38,6 +37,8 @@ const (
 	StringType = "string"
 	TimeType   = "timestamp"
 	BoolType   = "boolean"
+
+	DefaultKeyColumn = "idx"
 )
 
 // NewSchema returns a new schema
@@ -132,25 +133,12 @@ func (s *OldV3ioSchema) merge(new *OldV3ioSchema) (bool, error) {
 			s.Fields = append(s.Fields, field)
 			changed = true
 		} else if field.Type != s.Fields[index].Type {
-			if field.Type == StringType {
-				s.Fields[index].Type = StringType
-				changed = true
-				continue
-			}
-
-			if field.Type == DoubleType && s.Fields[index].Type == LongType {
-				s.Fields[index].Type = DoubleType
-				changed = true
-				continue
-			}
-
-			if field.Type == TimeType || s.Fields[index].Type == TimeType {
-				return changed, fmt.Errorf(
-					"Schema change from %s to %s is not allowed", s.Fields[index].Type, field.Type)
-			}
+			return changed, fmt.Errorf(
+				"schema change for column %v from type %s to %s is not allowed", field.Name, s.Fields[index].Type, field.Type)
 		}
 	}
 
+	// Do not accept key name change, unless it's the first time we are saving to this table
 	if s.Key != new.Key && new.Key != "" {
 		if isFirstSchema {
 			s.Key = new.Key
@@ -221,4 +209,17 @@ func ContainsField(fields []OldSchemaField, fieldName string) (bool, OldSchemaFi
 	}
 
 	return false, OldSchemaField{}
+}
+
+func GetSchema(tablePath string, container v3io.Container) (V3ioSchema, error) {
+	schemaInput := &v3io.GetObjectInput{Path: tablePath + ".#schema"}
+	resp, err := container.GetObjectSync(schemaInput)
+	if err != nil {
+		return nil, err
+	}
+	schema := &OldV3ioSchema{}
+	if err := json.Unmarshal(resp.HTTPResponse.Body(), schema); err != nil {
+		return nil, err
+	}
+	return schema, nil
 }

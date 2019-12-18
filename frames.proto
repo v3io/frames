@@ -157,6 +157,7 @@ message InitialWriteRequest {
     bool more = 6;
     repeated string partition_keys = 7;
     string condition = 8;
+    string save_mode = 9;
 }
 
 message WriteRequest {
