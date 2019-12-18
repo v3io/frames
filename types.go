@@ -23,6 +23,7 @@ package frames
 import (
 	"time"
 
+	"github.com/pkg/errors"
 	"github.com/v3io/frames/pb"
 )
 
@@ -36,6 +37,50 @@ var (
 	IntType    = DType(pb.DType_INTEGER)
 	StringType = DType(pb.DType_STRING)
 	TimeType   = DType(pb.DType_TIME)
+)
+
+type SaveMode int
+
+func (mode SaveMode) GetNginxModeName() string {
+	switch mode {
+	case ErrorIfTableExists:
+		return ""
+	case OverwriteTable:
+		return ""
+	case UpdateItem:
+		return "CreateOrReplaceAttributes"
+	case OverwriteItem:
+		return "OverWriteAttributes"
+	case CreateNewItemsOnly:
+		return "CreateNewItemOnly"
+	default:
+		return ""
+	}
+}
+
+func (mode SaveMode) String() string {
+	switch mode {
+	case ErrorIfTableExists:
+		return "errorIfTableExists"
+	case OverwriteTable:
+		return "overwriteTable"
+	case UpdateItem:
+		return "updateItem"
+	case OverwriteItem:
+		return "overwriteItem"
+	case CreateNewItemsOnly:
+		return "createNewItemsOnly"
+	default:
+		return ""
+	}
+}
+
+const (
+	ErrorIfTableExists SaveMode = iota
+	OverwriteTable
+	UpdateItem
+	OverwriteItem
+	CreateNewItemsOnly
 )
 
 // Column is a data column
@@ -128,6 +173,7 @@ type WriteRequest struct {
 	Condition string
 	// Will we get more message chunks (in a stream), if not we can complete
 	HaveMore bool
+	SaveMode SaveMode
 }
 
 // CreateRequest is a table creation request
@@ -180,4 +226,21 @@ func InitSecretString(s string) SecretString {
 
 func (s SecretString) Get() string {
 	return *s.s
+}
+
+func SaveModeFromString(mode string) (SaveMode, error) {
+	switch mode {
+	case "", "errorIfTableExists": // this is the default save mode
+		return ErrorIfTableExists, nil
+	case "overwriteTable":
+		return OverwriteTable, nil
+	case "updateItem":
+		return UpdateItem, nil
+	case "overwriteItem":
+		return OverwriteItem, nil
+	case "createNewItemsOnly":
+		return CreateNewItemsOnly, nil
+	default:
+		return -1, errors.Errorf("no save mode named '%v'", mode)
+	}
 }

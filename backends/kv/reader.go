@@ -21,7 +21,6 @@ such restriction.
 package kv
 
 import (
-	"encoding/json"
 	"fmt"
 
 	"github.com/v3io/frames"
@@ -81,19 +80,14 @@ func (kv *Backend) Read(request *frames.ReadRequest) (frames.FrameIterator, erro
 		return nil, err
 	}
 
-	// Get Schema
-	schemaInput := &v3io.GetObjectInput{Path: tablePath + ".#schema"}
-	resp, err := container.GetObjectSync(schemaInput)
+	schemaInterface, err := v3ioutils.GetSchema(tablePath, container)
 	if err != nil {
 		return nil, err
 	}
-	schema := &v3ioutils.OldV3ioSchema{}
-	if err := json.Unmarshal(resp.HTTPResponse.Body(), schema); err != nil {
-		return nil, err
-	}
+	schemaObj := schemaInterface.(*v3ioutils.OldV3ioSchema)
 
-	shouldDuplicateSorting := schema.SortingKey != "" && containsString(columns, schema.SortingKey)
-	newKVIter := Iterator{request: request, iter: iter, schema: schema, shouldDuplicateIndex: containsString(columns, schema.Key), shouldDuplicateSorting: shouldDuplicateSorting}
+	shouldDuplicateSorting := schemaObj.SortingKey != "" && containsString(columns, schemaObj.SortingKey)
+	newKVIter := Iterator{request: request, iter: iter, schema: schemaObj, shouldDuplicateIndex: containsString(columns, schemaObj.Key), shouldDuplicateSorting: shouldDuplicateSorting}
 	return &newKVIter, nil
 }
 
@@ -183,7 +177,13 @@ func (ki *Iterator) Next() bool {
 				colName = ki.schema.Key
 			}
 
-			col := byName[colName]
+			col, ok := byName[colName]
+			if !ok {
+				ki.err = fmt.Errorf("column '%v' for item with key: '%v' does not exist in the schema file. "+
+					"Your data structure was probably changed, try re-inferring the schema for the table",
+					colName, rowIndex)
+				return false
+			}
 
 			if err := utils.AppendColumn(col, field); err != nil {
 				ki.err = err
