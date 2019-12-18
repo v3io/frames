@@ -61,7 +61,7 @@ class Client(ClientBase):
 
     @connection_error(ReadError)
     def _read(self, backend, table, query, columns, filter, group_by, limit,
-              data_format, row_layout, max_in_message, marker, iterator, **kw):
+              data_format, row_layout, max_in_message, marker, iterator, get_raw, **kw):
         request = {
             'session': pb2py(self.session),
             'backend': backend,

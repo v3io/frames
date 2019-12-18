@@ -22,6 +22,68 @@ from .errors import (CreateError, DeleteError, ExecuteError, ReadError,
 FAIL = fpb.FAIL
 
 
+class RawFrame:
+    def __init__(self, proto_frame):
+        self.raw_frame = proto_frame
+
+    def names(self):
+        column_names = []
+        for col in self.raw_frame.columns:
+            column_names.append(col.name)
+        return column_names
+
+    def column(self, column_name):
+        for col in self.raw_frame.columns:
+            if col.name == column_name:
+                if col.dtype == fpb.INTEGER:
+                    return col.ints
+                elif col.dtype == fpb.FLOAT:
+                    return col.floats
+                elif col.dtype == fpb.STRING:
+                    return col.strings
+                elif col.dtype == fpb.TIME:
+                    return col.times
+                elif col.dtype == fpb.BOOLEAN:
+                    return col.bools
+                else:
+                    raise ReadError('{} - unsupported type - {}'.format(col.name, col.dtype))
+
+        raise ReadError('no column named {}'.format(col.name))
+
+    def labels(self):
+        return self.raw_frame.labels
+
+    def indices(self):
+        return self.raw_frame.indices
+
+    def columns(self):
+        return self.raw_frame.columns
+
+    def __len__(self):
+        if len(self.raw_frame.columns) > 0:
+            col = self.raw_frame.columns[0]
+            if col.dtype == fpb.INTEGER:
+                return len(col.ints)
+            elif col.dtype == fpb.FLOAT:
+                return len(col.floats)
+            elif col.dtype == fpb.STRING:
+                return len(col.strings)
+            elif col.dtype == fpb.TIME:
+                return len(col.times)
+            elif col.dtype == fpb.BOOLEAN:
+                return len(col.bools)
+        return 0
+
+    def is_null(self, index, column_name):
+        if len(self.raw_frame.null_values) == 0:
+            return False
+
+        for null_column in self.raw_frame.null_values[index].nullColumns:
+            if null_column.key == column_name:
+                return True
+        return False
+
+
 class ClientBase:
     def __init__(self, address, session, frame_factory=pd.DataFrame,
                  concat=pd.concat):
@@ -52,7 +114,7 @@ class ClientBase:
 
     def read(self, backend='', table='', query='', columns=None, filter='',
              group_by='', limit=0, data_format='', row_layout=False,
-             max_in_message=0, marker='', iterator=False, **kw):
+             max_in_message=0, marker='', iterator=False, get_raw=False, **kw):
         """Reads data from a table or stream (run a data query)
 
         Common Parameters
@@ -106,7 +168,7 @@ class ClientBase:
         return self._read(
             backend, table, query, columns, filter,
             group_by, limit, data_format, row_layout,
-            max_in_message, marker, iterator, **kw)
+            max_in_message, marker, iterator, get_raw, **kw)
 
     def write(self, backend, table, dfs, expression='', condition='',
               labels=None, max_in_message=0, index_cols=None,
