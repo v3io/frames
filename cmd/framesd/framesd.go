@@ -103,16 +103,16 @@ func main() {
 	go func() {
 		logger, _ := frames.NewLogger(cfg.Log.Level)
 		hasLog := logger != nil
+
+		if hasLog {
+			logger.Info("creating profiling endpoint at :8082. To start profiling run one of the following commands:\n" +
+				" -> profiling: curl -o cpu.pprof localhost:8082/debug/pprof/profile?seconds=30\n" +
+				" -> trace: curl -o trace.pprof localhost:8082/debug/pprof/trace?seconds=30")
+		}
+
 		err := http.ListenAndServe(":8082", nil)
 		if err != nil && hasLog {
 			logger.Warn("failed to create profiling endpoint")
-		}
-
-		if hasLog {
-			logger.Info("profiling endpoint created at :8082")
-			logger.Info("to start profiling run one of the following commands:\n" +
-				"profiling: curl -o cpu.pprof localhost:8082/debug/pprof/profile?seconds=30\n" +
-				"trace: curl -o trace.pprof localhost:8082/debug/pprof/trace?seconds=30")
 		}
 	}()
 
