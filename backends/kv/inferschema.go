@@ -81,10 +81,19 @@ func (b *Backend) inferSchema(request *frames.ExecRequest) error {
 
 func schemaFromKeys(keyField string, rowSet []map[string]interface{}) (v3ioutils.V3ioSchema, error) {
 	columnNameToValue := make(map[string]interface{})
-	columnCanBeKey := make(map[string]bool)
+	columnCanBeFullKey := make(map[string]bool)
+	columnCanBePrimaryKey := make(map[string]bool)
+	columnCanBeSortingKey := make(map[string]bool)
 
 	for _, row := range rowSet {
-		keyValue := row["__name"]
+		keyValue := row["__name"].(string)
+		var primaryKeyValue string
+		var sortingKeyValue string
+		indexOfDot := strings.Index(keyValue, ".")
+		if indexOfDot >= 0 && indexOfDot < len(keyValue)-1 {
+			sortingKeyValue = keyValue[indexOfDot+1:]
+			primaryKeyValue = keyValue[:indexOfDot]
+		}
 		for attrName, attrValue := range row {
 			if attrName == "__name" {
 				continue
@@ -98,38 +107,73 @@ func schemaFromKeys(keyField string, rowSet []map[string]interface{}) (v3ioutils
 				}
 			}
 			columnNameToValue[attrName] = attrValue
-			if _, ok = columnCanBeKey[attrName]; !ok {
-				columnCanBeKey[attrName] = true
+			if _, ok = columnCanBeFullKey[attrName]; !ok {
+				columnCanBeFullKey[attrName] = true
 			}
-			columnCanBeKey[attrName] = columnCanBeKey[attrName] && attrValue == keyValue
+			columnCanBeFullKey[attrName] = columnCanBeFullKey[attrName] && attrValue == keyValue
+			if primaryKeyValue != "" {
+				if _, ok = columnCanBePrimaryKey[attrName]; !ok {
+					columnCanBePrimaryKey[attrName] = true
+				}
+				columnCanBePrimaryKey[attrName] = columnCanBePrimaryKey[attrName] && attrValue == primaryKeyValue
+			}
+			if sortingKeyValue != "" {
+				if _, ok = columnCanBeSortingKey[attrName]; !ok {
+					columnCanBeSortingKey[attrName] = true
+				}
+				columnCanBeSortingKey[attrName] = columnCanBeSortingKey[attrName] && attrValue == sortingKeyValue
+			}
 		}
 	}
 
+	var primaryKeyField string
+	var sortingKeyField string
 	if keyField == "" {
-		var possibleKeys []string
-		for columnName, canBeKey := range columnCanBeKey {
+		var possibleFullKeys []string
+		for columnName, canBeKey := range columnCanBeFullKey {
 			if canBeKey {
-				possibleKeys = append(possibleKeys, columnName)
+				possibleFullKeys = append(possibleFullKeys, columnName)
 			}
 		}
-		if len(possibleKeys) == 1 {
-			keyField = possibleKeys[0]
+		var possiblePrimaryKeys []string
+		for columnName, canBeKey := range columnCanBePrimaryKey {
+			if canBeKey {
+				possiblePrimaryKeys = append(possiblePrimaryKeys, columnName)
+			}
+		}
+		var possibleSortingKeys []string
+		for columnName, canBeKey := range columnCanBeSortingKey {
+			if canBeKey {
+				possibleSortingKeys = append(possibleSortingKeys, columnName)
+			}
+		}
+		if len(possiblePrimaryKeys) == 1 {
+			primaryKeyField = possiblePrimaryKeys[0]
+			if len(possibleSortingKeys) == 1 {
+				sortingKeyField = possibleSortingKeys[0]
+			}
+		}
+		if primaryKeyField != "" && sortingKeyField != "" {
+			keyField = primaryKeyField
+		} else if len(possibleFullKeys) == 1 {
+			keyField = possibleFullKeys[0]
+			sortingKeyField = ""
 		} else {
 			var reason string
-			if len(possibleKeys) == 0 {
+			if len(possibleFullKeys) == 0 {
 				reason = "no column matched __name attribute"
 			} else {
-				sort.Strings(possibleKeys)
-				reason = fmt.Sprintf("%d columns (%s) matched __name attribute", len(possibleKeys), strings.Join(possibleKeys, ", "))
+				sort.Strings(possibleFullKeys)
+				reason = fmt.Sprintf("%d columns (%s) matched __name attribute", len(possibleFullKeys), strings.Join(possibleFullKeys, ", "))
 			}
 			return nil, errors.Errorf("Could not determine which column is the table key because %s.", reason)
 		}
 	}
 
-	newSchema := v3ioutils.NewSchema(keyField, "")
+	newSchema := v3ioutils.NewSchema(keyField, sortingKeyField)
 
 	for name, value := range columnNameToValue {
-		err := newSchema.AddField(name, value, name != keyField)
+		err := newSchema.AddField(name, value, name != keyField && name != sortingKeyField)
 		if err != nil {
 			return nil, err
 		}
