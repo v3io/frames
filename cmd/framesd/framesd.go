@@ -113,7 +113,7 @@ func main() {
 
 			err := http.ListenAndServe(":8082", nil)
 			if err != nil && hasLog {
-				logger.Warn("failed to create profiling endpoint")
+				logger.Warn("failed to create profiling endpoint, err: %v", err)
 			}
 		}()
 	}
