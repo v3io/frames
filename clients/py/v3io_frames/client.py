@@ -134,7 +134,8 @@ class ClientBase:
             columns for metric labels that apply to the current DataFrame row.
         expression : str
             A platform update expression that determines the update logic for
-            all items in the DataFrame [Not supported in this version]
+            all items in the DataFrame
+            [Not supported in this version]
         condition : str
             A platform condition expression that defines a condition for
             performing the write operation
@@ -151,7 +152,8 @@ class ClientBase:
             Optional values: errorIfTableExists (default), overwriteTable,
              updateItem, overwriteItem, createNewItemsOnly
         partition_keys : []str
-            Partition keys [Not supported in this version]
+            Partition keys
+            [Not supported in this version]
 
         Return Value
         ----------
