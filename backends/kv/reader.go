@@ -185,10 +185,12 @@ func (ki *Iterator) Next() bool {
 		for name, field := range row {
 			colName := name
 			if colName == indexColKey { // convert `__name` attribute name to the key column
-				if hasKeyColumnAttribute && !indexKeyRequested {
-					continue
-				} else if !hasKeyColumnAttribute && !indexKeyRequested {
-					colName = ki.schema.Key
+				if !indexKeyRequested {
+					if hasKeyColumnAttribute {
+						continue
+					} else {
+						colName = ki.schema.Key
+					}
 				}
 			}
 
@@ -340,3 +342,4 @@ func containsString(s []string, subString string) bool {
 
 	return false
 }
+
