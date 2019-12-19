@@ -142,6 +142,22 @@ func (ki *Iterator) Next() bool {
 		byName[field.Name] = col
 	}
 
+	if specificColumnsRequested && len(columns) != len(ki.request.Proto.Columns) {
+		//requested column that doesn't exist
+		for _, reqCol := range ki.request.Proto.Columns {
+			found := false
+			for _, col := range columns {
+				if reqCol == col.Name() {
+					found = true
+					break
+				}
+			}
+			if !found {
+				ki.err = fmt.Errorf("column %v doesn't exist", reqCol)
+				return false
+			}
+		}
+	}
 	for ; rowNum < int(ki.request.Proto.MessageLimit) && ki.iter.Next(); rowNum++ {
 		row := ki.iter.GetFields()
 

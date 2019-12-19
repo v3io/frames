@@ -646,3 +646,39 @@ func (kvSuite *KvTestSuite) TestDeleteWithFilter() {
 	_, err = kvSuite.v3ioContainer.GetObjectSync(schemaInput)
 	kvSuite.NoError(err, "schema is not found ")
 }
+
+func (kvSuite *KvTestSuite) TestNonExistingColumns() {
+	table := fmt.Sprintf("TestNonExistingColumns%d", time.Now().UnixNano())
+
+	frame := kvSuite.generateRandomSampleFrame(5, "idx", []string{"n1", "n2"})
+	wreq := &frames.WriteRequest{
+		Backend: kvSuite.backendName,
+		Table:   table,
+	}
+
+	appender, err := kvSuite.client.Write(wreq)
+	if err != nil {
+		kvSuite.T().Fatal(err)
+	}
+
+	if err := appender.Add(frame); err != nil {
+		kvSuite.T().Fatal(err)
+	}
+
+	if err := appender.WaitForComplete(3 * time.Second); err != nil {
+		kvSuite.T().Fatal(err)
+	}
+
+	kvSuite.T().Log("read")
+	rreq := &pb.ReadRequest{
+		Backend: kvSuite.backendName,
+		Table:   table,
+		Columns: []string{"n1", "kk"},
+	}
+
+	it, err := kvSuite.client.Read(rreq)
+	kvSuite.NoError(err)
+	if it.Err() == nil {
+		kvSuite.T().Fatal("error was expected when reading a non existing column")
+	}
+}
