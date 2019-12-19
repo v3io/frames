@@ -115,7 +115,6 @@ func (ki *Iterator) Next() bool {
 	specificColumnsRequested := len(columnNamesToReturn) != 0
 
 	//create columns
-	//create columns
 	for _, field := range ki.schema.Fields {
 		if specificColumnsRequested && !containsString(ki.request.Proto.Columns, field.Name) {
 			continue
@@ -143,22 +142,30 @@ func (ki *Iterator) Next() bool {
 		byName[field.Name] = col
 	}
 
+	indexKeyRequested := false
 	if specificColumnsRequested && len(columnNamesToReturn) != len(columns) {
-		for _, attr := range systemAttrs {
-			if containsString(ki.request.Proto.Columns, attr) {
-				var sysCol frames.Column
-				var err error
-				if attr == "__name" {
-					sysCol, err = frames.NewSliceColumn(attr, make([]string, 0))
-				} else {
-					sysCol, err = frames.NewSliceColumn(attr, make([]int64, 0))
+		if containsString(ki.request.Proto.Columns, indexColKey) {
+			indexKeyRequested = true
+			sysCol, err := frames.NewSliceColumn(indexColKey, make([]string, 0))
+			if err != nil {
+				ki.err = err
+				return false
+			}
+			columns = append(columns, sysCol)
+			byName[indexColKey] = sysCol
+		}
+		//if still not all columns found
+		if len(columnNamesToReturn) != len(columns) {
+			for _, attr := range systemAttrs {
+				if containsString(ki.request.Proto.Columns, attr) {
+					sysCol, err := frames.NewSliceColumn(attr, make([]int64, 0))
+					if err != nil {
+						ki.err = err
+						return false
+					}
+					columns = append(columns, sysCol)
+					byName[attr] = sysCol
 				}
-				if err != nil {
-					ki.err = err
-					return false
-				}
-				columns = append(columns, sysCol)
-				byName[attr] = sysCol
 			}
 		}
 	}
@@ -178,10 +185,11 @@ func (ki *Iterator) Next() bool {
 		for name, field := range row {
 			colName := name
 			if colName == indexColKey { // convert `__name` attribute name to the key column
-				if hasKeyColumnAttribute {
+				if hasKeyColumnAttribute && !indexKeyRequested {
 					continue
+				} else if !hasKeyColumnAttribute && !indexKeyRequested {
+					colName = ki.schema.Key
 				}
-				colName = ki.schema.Key
 			}
 
 			col, ok := byName[colName]
@@ -257,26 +265,6 @@ func (ki *Iterator) Next() bool {
 	}
 
 	return true
-}
-
-func (ki *Iterator) createColumnFromSchema(name string) frames.Column {
-	f, err := ki.schema.GetField(name)
-	if err != nil {
-		ki.err = err
-		return nil
-	}
-	data, err := utils.NewColumnFromType(f.Type, 0)
-	if err != nil {
-		ki.err = err
-		return nil
-	}
-
-	col, err := frames.NewSliceColumn(name, data)
-	if err != nil {
-		ki.err = err
-		return nil
-	}
-	return col
 }
 
 func (ki *Iterator) handleIndices(index string, data map[string]frames.Column, shouldDup bool, indices *[]frames.Column, columns *[]frames.Column) {
