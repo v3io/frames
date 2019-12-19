@@ -28,12 +28,29 @@ class RawFrame:
         self.raw_frame = proto_frame
 
     def names(self):
+        """Returns all column names of the frame
+
+        Return Value
+        ----------
+            Column names
+        """
         column_names = []
         for col in self.raw_frame.columns:
             column_names.append(col.name)
         return column_names
 
     def column(self, column_name):
+        """Get column by column name
+
+        Parameters
+        ----------
+        column_name : str
+            Column name to get
+
+        Return Value
+        ----------
+            Column object by the requested name
+        """
         for col in self.raw_frame.columns:
             if col.name == column_name:
                 return col
@@ -41,6 +58,17 @@ class RawFrame:
         raise ReadError('no column named {}'.format(column_name))
 
     def column_data(self, column_name):
+        """Get column's data by column name
+
+       Parameters
+       ----------
+       column_name : str
+           Column name to get
+
+       Return Value
+       ----------
+           List of values which represents the requested column's data
+       """
         for col in self.raw_frame.columns:
             if col.name == column_name:
                 if col.dtype == fpb.INTEGER:
@@ -59,15 +87,40 @@ class RawFrame:
         raise ReadError('no column named {}'.format(column_name))
 
     def labels(self):
+        """Get frame's labels
+
+       Return Value
+       ----------
+           labels of the current frame. Only applicable to TSDB and Stream backends
+       """
         return self.raw_frame.labels
 
     def indices(self):
+        """Get frame's indices
+
+
+       Return Value
+       ----------
+           List of column objects representing the indices of the frame
+       """
         return self.raw_frame.indices
 
     def columns(self):
+        """Get all frame's columns
+
+       Return Value
+       ----------
+           List of column objects representing the columns of the frame
+       """
         return self.raw_frame.columns
 
     def __len__(self):
+        """Get the length of the frame
+
+       Return Value
+       ----------
+           Number of rows in the frame
+       """
         if len(self.raw_frame.columns) > 0:
             col = self.raw_frame.columns[0]
             if col.dtype == fpb.INTEGER:
@@ -83,6 +136,20 @@ class RawFrame:
         return 0
 
     def is_null(self, index, column_name):
+        """Indicates whether a specific cell is null or not.
+
+       Parameters
+       ----------
+       index : str
+           Row index of the desired cell
+       column_name : str
+           Column name of the desired cell
+
+       Return Value
+       ----------
+           True - the current cell is null
+           False - the current cell has a value
+       """
         if len(self.raw_frame.null_values) == 0:
             return False
 
