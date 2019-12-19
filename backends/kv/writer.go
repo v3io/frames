@@ -22,6 +22,7 @@ package kv
 
 import (
 	"fmt"
+	"net/http"
 	"strings"
 	"time"
 
@@ -30,6 +31,7 @@ import (
 	"github.com/v3io/frames/backends/utils"
 	"github.com/v3io/frames/v3ioutils"
 	v3io "github.com/v3io/v3io-go/pkg/dataplane"
+	v3ioerrors "github.com/v3io/v3io-go/pkg/errors"
 )
 
 // Appender is key/value appender
@@ -49,8 +51,8 @@ type Appender struct {
 
 const (
 	errorCodeString              = "ErrorCode"
-	falseConditionOuterErrorCode = "184549378"
-	falseConditionInnerErrorCode = "385876025"
+	falseConditionOuterErrorCode = "16777244"
+	falseConditionInnerErrorCode = "16777245"
 )
 
 // Write support writing to backend
@@ -61,6 +63,36 @@ func (kv *Backend) Write(request *frames.WriteRequest) (frames.FrameAppender, er
 		return nil, err
 	}
 
+	var schema v3ioutils.V3ioSchema
+	schema, err = v3ioutils.GetSchema(tablePath, container)
+
+	// Ignore 404 error, since it makes sense there is no schema yet.
+	tableAlreadyExists := true
+	if err != nil {
+		if errorWithStatus, ok := err.(v3ioerrors.ErrorWithStatusCode); !ok || errorWithStatus.StatusCode() != http.StatusNotFound {
+			return nil, err
+		} else {
+			tableAlreadyExists = false
+		}
+	}
+
+	if tableAlreadyExists {
+		switch request.SaveMode {
+		case frames.OverwriteTable:
+			// If this is the first time we writing to the table, there is nothing to delete.
+			err = v3ioutils.DeleteTable(kv.logger, container, tablePath, "", kv.numWorkers, true)
+			if err != nil {
+				return nil, fmt.Errorf("error occured while deleting table '%v', err: %v", tablePath, err)
+			}
+			schema = nil
+		case frames.ErrorIfTableExists:
+			return nil, fmt.Errorf("table '%v' already exists, either use a differnet save mode or save to a different table", tablePath)
+		}
+	}
+
+	if schema == nil {
+		schema = v3ioutils.NewSchema(v3ioutils.DefaultKeyColumn, "")
+	}
 	appender := Appender{
 		request:      request,
 		container:    container,
@@ -68,7 +100,7 @@ func (kv *Backend) Write(request *frames.WriteRequest) (frames.FrameAppender, er
 		responseChan: make(chan *v3io.Response, 1000),
 		commChan:     make(chan int, 2),
 		logger:       kv.logger,
-		schema:       v3ioutils.NewSchema("idx"),
+		schema:       schema,
 	}
 	go appender.respWaitLoop(time.Minute)
 
@@ -88,14 +120,8 @@ func (a *Appender) Add(frame frames.Frame) error {
 	if len(names) == 0 {
 		return fmt.Errorf("empty frame")
 	}
-	if len(frame.Indices()) > 1 {
-		return fmt.Errorf("can't set key from multi-index frame")
-	}
-
-	// In case we are getting several frames to update, validate they all have the same schema
-	err := a.validateSchema(frame)
-	if err != nil {
-		return err
+	if len(frame.Indices()) > 2 {
+		return fmt.Errorf("can only write up to two indices")
 	}
 
 	if a.request.Expression != "" {
@@ -103,18 +129,33 @@ func (a *Appender) Add(frame frames.Frame) error {
 	}
 
 	columns := make(map[string]frames.Column)
-	indexName := ""
+	indexName, sortingKeyName := "", ""
 	var newSchema v3ioutils.V3ioSchema
-	if indices := frame.Indices(); len(indices) > 0 {
+	indices := frame.Indices()
+	var sortingFunc func(int) interface{}
+	var err error
+
+	if len(indices) > 0 {
 		indexName = indices[0].Name()
 		if indexName == "" {
 			indexName = a.schema.(*v3ioutils.OldV3ioSchema).Key
 		}
-		newSchema = v3ioutils.NewSchema(indexName)
+		sortingKeyName = a.schema.(*v3ioutils.OldV3ioSchema).SortingKey
+		if len(indices) > 1 {
+			sortingKeyName = indices[1].Name()
+			sortingFunc, err = a.funcFromCol(indices[1])
+			if err != nil {
+				return err
+			}
+		}
+		newSchema = v3ioutils.NewSchema(indexName, sortingKeyName)
 		newSchema.AddColumn(indexName, indices[0], false)
+		if len(indices) > 1 {
+			newSchema.AddColumn(indices[1].Name(), indices[1], false)
+		}
 	} else {
 		indexName = a.schema.(*v3ioutils.OldV3ioSchema).Key
-		newSchema = v3ioutils.NewSchema(indexName)
+		newSchema = v3ioutils.NewSchema(indexName, "")
 		newSchema.AddField(indexName, 0, false)
 	}
 
@@ -148,29 +189,26 @@ func (a *Appender) Add(frame frames.Frame) error {
 	}
 
 	for r := 0; r < frame.Len(); r++ {
-		row := make(map[string]interface{})
+		var rowMap map[string]interface{}
+		var expression *string
+		var err error
+		var keyVal, sortingKeyVal interface{}
 
-		// set row values from columns
-		for name, col := range columns {
-			if frame.IsNull(r, name){
-				continue
-			}
-			val, err := utils.ColAt(col, r)
-			if err != nil {
-				return err
-			}
-
-			if val64, ok := val.(int64); ok {
-				val = int(val64)
-			}
-
-			row[name] = val
+		if a.request.SaveMode == frames.UpdateItem {
+			var expressionStr string
+			expressionStr, keyVal, sortingKeyVal, err = getUpdateExpressionFromRow(columns, r, frame.IsNull,
+				indexVal, sortingFunc,
+				indexName, sortingKeyName)
+			expression = &expressionStr
+		} else {
+			rowMap, keyVal, sortingKeyVal, err = getMapFromRow(columns, r, frame.IsNull,
+				indexVal, sortingFunc,
+				indexName, sortingKeyName)
 		}
 
-		key := indexVal(r)
-
-		// Add key column as an attribute
-		row[indexName] = key
+		if err != nil {
+			return err
+		}
 
 		var condition string
 		if a.request.Condition != "" {
@@ -181,9 +219,14 @@ func (a *Appender) Add(frame frames.Frame) error {
 			}
 		}
 
-		input := v3io.PutItemInput{Path: a.tablePath + fmt.Sprintf("%v", key), Attributes: row, Condition: condition}
+		input := v3io.UpdateItemInput{Path: a.tablePath + a.formatKeyName(keyVal, sortingKeyVal),
+			Attributes: rowMap,
+			Expression: expression,
+			Condition:  condition,
+			UpdateMode: a.request.SaveMode.GetNginxModeName()}
 		a.logger.DebugWith("write", "input", input)
-		_, err := a.container.PutItem(&input, r, a.responseChan)
+		_, err = a.container.UpdateItem(&input, r, a.responseChan)
+
 		if err != nil {
 			a.logger.ErrorWith("write error", "error", err)
 			return err
@@ -196,6 +239,16 @@ func (a *Appender) Add(frame frames.Frame) error {
 	return nil
 }
 
+func (a *Appender) formatKeyName(key interface{}, sortingVal interface{}) string {
+	var format string
+	if sortingVal != nil {
+		format = fmt.Sprintf("%v.%v", key, sortingVal)
+	} else {
+		format = fmt.Sprintf("%v", key)
+	}
+	return format
+}
+
 // update updates rows from a frame
 func (a *Appender) update(frame frames.Frame) error {
 	indexVal, err := a.indexValFunc(frame)
@@ -203,6 +256,13 @@ func (a *Appender) update(frame frames.Frame) error {
 		return err
 	}
 
+	var sortingFunc func(int) interface{}
+	if len(frame.Indices()) > 1 {
+		sortingFunc, err = a.funcFromCol(frame.Indices()[1])
+		if err != nil {
+			return err
+		}
+	}
 	for r := 0; r < frame.Len(); r++ {
 
 		var expr *string
@@ -225,7 +285,15 @@ func (a *Appender) update(frame frames.Frame) error {
 		}
 
 		key := indexVal(r)
-		input := v3io.UpdateItemInput{Path: a.tablePath + fmt.Sprintf("%v", key), Expression: expr, Condition: cond}
+		var sortingVal interface{}
+		if len(frame.Indices()) > 1 {
+			sortingVal = sortingFunc(r)
+		}
+
+		input := v3io.UpdateItemInput{Path: a.tablePath + a.formatKeyName(key, sortingVal),
+			Expression: expr,
+			Condition:  cond,
+			UpdateMode: a.request.SaveMode.GetNginxModeName()}
 		a.logger.DebugWith("write update", "input", input)
 		_, err = a.container.UpdateItem(&input, r, a.responseChan)
 		if err != nil {
@@ -306,6 +374,10 @@ func (a *Appender) indexValFunc(frame frames.Frame) (func(int) interface{}, erro
 		}, nil
 	}
 
+	return a.funcFromCol(indexCol)
+}
+
+func (a *Appender) funcFromCol(indexCol frames.Column) (func(int) interface{}, error) {
 	var fn func(int) interface{}
 	switch indexCol.DType() {
 	// strconv.Format* is about twice as fast as fmt.Sprintf
@@ -340,7 +412,6 @@ func (a *Appender) indexValFunc(frame frames.Frame) (func(int) interface{}, erro
 	default:
 		return nil, fmt.Errorf("unknown column type - %v", indexCol.DType())
 	}
-
 	return fn, nil
 }
 
@@ -361,10 +432,14 @@ func (a *Appender) respWaitLoop(timeout time.Duration) {
 			active = true
 			timer.Reset(timeout)
 
+			input := resp.Request().Input.(*v3io.UpdateItemInput)
+
 			if resp.Error != nil {
 				// If condition was evaluated as false log this and discard error.
 				if isFalseConditionError(resp.Error) {
 					a.logger.Info("condition was evaluated to false for item %v", resp.Request().Input)
+				} else if isOnlyNewItemUpdateModeItemExistError(resp.Error, input.UpdateMode) {
+					a.logger.Info("trying to write to existing item with 'CreateNewItemsOnly' update mode, item: %v", resp.Request().Input)
 				} else {
 					a.logger.ErrorWith("failed write response", "error", resp.Error)
 					a.asyncErr = resp.Error
@@ -394,51 +469,6 @@ func (a *Appender) respWaitLoop(timeout time.Duration) {
 	}
 }
 
-func (a *Appender) validateSchema(frame frames.Frame) error {
-	prevSchema := a.schema.(*v3ioutils.OldV3ioSchema)
-
-	// Assume that no fields means it's the first frame to save, so no validation is required
-	if len(prevSchema.Fields) == 0 {
-		return nil
-	}
-
-	indexes := frame.Indices()
-	if len(indexes) == 1 && indexes[0].Name() != prevSchema.Key {
-		return fmt.Errorf("index name mismatch. previous frame index was '%v', current frame index is '%v'",
-			prevSchema.Key, indexes[0].Name())
-	}
-	// Number of columns should be the same (schema fields contains also an index field
-	numberOfPreviousFields, numberOfCurrentFields := len(prevSchema.Fields)-1, len(frame.Names())
-	if numberOfCurrentFields != numberOfPreviousFields {
-		var fieldsList []string
-		for _, f := range prevSchema.Fields {
-			if f.Name != prevSchema.Key {
-				fieldsList = append(fieldsList, f.Name)
-			}
-		}
-		return fmt.Errorf("columns number mismatch. previous frames had %v columns %v while current have %v columns %v",
-			len(prevSchema.Fields), fieldsList, len(frame.Names()), frame.Names())
-	}
-
-	for _, fieldName := range frame.Names() {
-		found, field := v3ioutils.ContainsField(prevSchema.Fields, fieldName)
-
-		if !found {
-			return fmt.Errorf("columns mismatch. "+
-				"column '%v' exist in current frame and did not existed in previous frames",
-				fieldName)
-		}
-		col, _ := frame.Column(fieldName)
-		currentType := v3ioutils.ConvertDTypeToString(col.DType())
-		if field.Type != currentType {
-			return fmt.Errorf("column type mismatch. column '%v' expected type '%v' but got type '%v'",
-				fieldName, field.Type, currentType)
-		}
-	}
-
-	return nil
-}
-
 // Check if the current error was caused specifically because the condition was evaluated to false.
 func isFalseConditionError(err error) bool {
 	errString := err.Error()
@@ -450,4 +480,99 @@ func isFalseConditionError(err error) bool {
 	}
 
 	return false
+}
+
+func isOnlyNewItemUpdateModeItemExistError(err error, mode string) bool {
+	errString := err.Error()
+
+	if mode == frames.CreateNewItemsOnly.GetNginxModeName() &&
+		strings.Count(errString, errorCodeString) == 1 &&
+		strings.Contains(errString, falseConditionOuterErrorCode) {
+		return true
+	}
+
+	return false
+}
+
+func getMapFromRow(columns map[string]frames.Column,
+	index int,
+	isNull func(int, string) bool,
+	indexValFunc, sortingKeyValFunc func(int) interface{},
+	indexName, sortingKeyName string) (map[string]interface{}, interface{}, interface{}, error) {
+	row := make(map[string]interface{})
+
+	// set row values from columns
+	for name, col := range columns {
+		if isNull(index, name) {
+			continue
+		}
+		val, err := utils.ColAt(col, index)
+		if err != nil {
+			return nil, nil, nil, err
+		}
+
+		if val64, ok := val.(int64); ok {
+			val = int(val64)
+		}
+
+		row[name] = val
+	}
+
+	key := indexValFunc(index)
+	// Add key column as an attribute
+	row[indexName] = key
+
+	var sortingVal interface{}
+	if sortingKeyName != "" {
+		sortingVal = sortingKeyValFunc(index)
+		row[sortingKeyName] = sortingVal
+	}
+
+	return row, key, sortingVal, nil
+}
+
+func getUpdateExpressionFromRow(columns map[string]frames.Column,
+	index int,
+	isNull func(int, string) bool,
+	indexValFunc, sortingKeyValFunc func(int) interface{},
+	indexName, sortingKeyName string) (string, interface{}, interface{}, error) {
+	expression := strings.Builder{}
+
+	// set row values from columns
+	for name, col := range columns {
+		if isNull(index, name) {
+			expression.WriteString(fmt.Sprintf("delete(%v);", name))
+		}
+		val, err := utils.ColAt(col, index)
+		if err != nil {
+			return "", nil, nil, err
+		}
+
+		expression.WriteString(valueToTypedExpressionString(val, name))
+	}
+
+	key := indexValFunc(index)
+	// Add key column as an attribute
+	expression.WriteString(valueToTypedExpressionString(key, indexName))
+
+	var sortingVal interface{}
+	if sortingKeyName != "" {
+		sortingVal = sortingKeyValFunc(index)
+		expression.WriteString(valueToTypedExpressionString(sortingVal, sortingKeyName))
+	}
+
+	return expression.String(), key, sortingVal, nil
+}
+
+func valueToTypedExpressionString(value interface{}, name string) string {
+	switch typedVal := value.(type) {
+	case string:
+		return fmt.Sprintf("%v='%v';", name, typedVal)
+	case time.Time:
+		seconds := typedVal.Unix()
+		nanos := typedVal.Nanosecond()
+		return fmt.Sprintf("%v=%v:%v;", name, seconds, nanos)
+	default:
+		return fmt.Sprintf("%v=%v;", name, value)
+	}
 }

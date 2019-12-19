@@ -12,8 +12,9 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-import pandas as pd
 from os import environ
+
+import pandas as pd
 
 from . import frames_pb2 as fpb
 from .errors import (CreateError, DeleteError, ExecuteError, ReadError,
@@ -114,7 +115,7 @@ class ClientBase:
 
     def write(self, backend, table, dfs, expression='', condition='',
               labels=None, max_in_message=0, index_cols=None,
-              partition_keys=None):
+              save_mode='errorIfTableExists', partition_keys=None):
         """Writes data to a table or stream
 
         Parameters
@@ -145,6 +146,10 @@ class ClientBase:
         index_cols : []str
             List of column names to be used as the index columns for the write
             operation; by default, the DataFrame's index columns are used
+        save_mode : str
+            Save mode.
+            Optional values: errorIfTableExists (default), overwriteTable,
+             updateItem, overwriteItem, createNewItemsOnly
         partition_keys : []str
             Partition keys [Not supported in this version]
 
@@ -160,7 +165,7 @@ class ClientBase:
             dfs = self._iter_chunks(dfs, max_in_message)
 
         request = self._encode_write(
-            backend, table, expression, condition, partition_keys)
+            backend, table, expression, condition, save_mode, partition_keys)
         return self._write(request, dfs, labels, index_cols)
 
     def create(self, backend, table, attrs=None, schema=None, if_exists=FAIL):
@@ -258,7 +263,7 @@ class ClientBase:
     def _encode_session(self, session):
         return session
 
-    def _encode_write(self, backend, table, expression, condition,
+    def _encode_write(self, backend, table, expression, condition, save_mode,
                       partition_keys):
         # TODO: InitialData?
         return fpb.InitialWriteRequest(
@@ -268,6 +273,7 @@ class ClientBase:
             expression=expression,
             condition=condition,
             partition_keys=partition_keys,
+            save_mode=save_mode,
         )
 
     def _validate_request(self, backend, table, err_cls):

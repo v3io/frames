@@ -21,8 +21,8 @@ such restriction.
 package test
 
 import (
+	"encoding/json"
 	"fmt"
-	"testing"
 	"time"
 
 	"github.com/nuclio/logger"
@@ -66,24 +66,93 @@ func (kvSuite *KvTestSuite) SetupSuite() {
 	}
 }
 
-func (kvSuite *KvTestSuite) generateSampleFrame(t testing.TB) frames.Frame {
+func (kvSuite *KvTestSuite) generateRandomSampleFrame(size int, indexName string, columnNames []string) frames.Frame {
 	var icol frames.Column
 
-	index := []string{"mike", "joe", "jim", "rose", "emily", "dan"}
-	icol, err := frames.NewSliceColumn("idx", index)
-	if err != nil {
-		t.Fatal(err)
+	index := make([]string, size)
+	for i := 0; i < size; i++ {
+		index[i] = fmt.Sprintf("%v%v", i, time.Now().Nanosecond())
 	}
 
-	columns := []frames.Column{
-		floatCol(t, "n1", len(index)),
-		floatCol(t, "n2", len(index)),
-		floatCol(t, "n3", len(index)),
+	icol, err := frames.NewSliceColumn(indexName, index)
+	if err != nil {
+		kvSuite.T().Fatal(err)
+	}
+
+	columns := make([]frames.Column, len(columnNames))
+	for i, name := range columnNames {
+		columns[i] = floatCol(kvSuite.T(), name, size)
 	}
 
 	frame, err := frames.NewFrame(columns, []frames.Column{icol}, nil)
 	if err != nil {
-		t.Fatal(err)
+		kvSuite.T().Fatal(err)
+	}
+
+	return frame
+}
+
+func (kvSuite *KvTestSuite) generateSequentialSampleFrame(size int, indexName string, columnNames []string) frames.Frame {
+	var icol frames.Column
+
+	index := make([]int, size)
+	for i := 0; i < size; i++ {
+		index[i] = i
+	}
+
+	icol, err := frames.NewSliceColumn(indexName, index)
+	if err != nil {
+		kvSuite.T().Fatal(err)
+	}
+
+	columns := make([]frames.Column, len(columnNames))
+	for i, name := range columnNames {
+		columns[i] = floatCol(kvSuite.T(), name, size)
+	}
+
+	frame, err := frames.NewFrame(columns, []frames.Column{icol}, nil)
+	if err != nil {
+		kvSuite.T().Fatal(err)
+	}
+
+	return frame
+}
+
+func (kvSuite *KvTestSuite) generateSequentialSampleFrameWithTypes(size int, indexName string, columnNames map[string]string) frames.Frame {
+	var icol frames.Column
+
+	index := make([]int, size)
+	for i := 0; i < size; i++ {
+		index[i] = i
+	}
+
+	icol, err := frames.NewSliceColumn(indexName, index)
+	if err != nil {
+		kvSuite.T().Fatal(err)
+	}
+
+	columns := make([]frames.Column, len(columnNames))
+	i := 0
+	for columnName, columnType := range columnNames {
+		switch columnType {
+		case "string":
+			columns[i] = stringCol(kvSuite.T(), columnName, size)
+		case "float":
+			columns[i] = floatCol(kvSuite.T(), columnName, size)
+		case "bool":
+			columns[i] = boolCol(kvSuite.T(), columnName, size)
+		case "time":
+			columns[i] = timeCol(kvSuite.T(), columnName, size)
+		default:
+			kvSuite.T().Fatalf("type %v not supported", columnType)
+		}
+
+		i++
+	}
+
+	frame, err := frames.NewFrame(columns, []frames.Column{icol}, nil)
+	if err != nil {
+		kvSuite.T().Fatal(err)
 	}
 
 	return frame
@@ -93,7 +162,7 @@ func (kvSuite *KvTestSuite) TestAll() {
 	table := fmt.Sprintf("kv_test_all%d", time.Now().UnixNano())
 
 	kvSuite.T().Log("write")
-	frame := kvSuite.generateSampleFrame(kvSuite.T())
+	frame := kvSuite.generateRandomSampleFrame(5, "idx", []string{"n1", "n2", "n3"})
 	wreq := &frames.WriteRequest{
 		Backend: kvSuite.backendName,
 		Table:   table,
@@ -146,7 +215,130 @@ func (kvSuite *KvTestSuite) TestAll() {
 	if err := kvSuite.client.Delete(dreq); err != nil {
 		kvSuite.T().Fatal(err)
 	}
+}
 
+func (kvSuite *KvTestSuite) TestRangeScan() {
+	table := fmt.Sprintf("kv_range_scan%d", time.Now().UnixNano())
+
+	index := []string{"mike", "joe", "mike", "jim", "mike"}
+	icol, err := frames.NewSliceColumn("key", index)
+	if err != nil {
+		kvSuite.T().Fatal(err)
+	}
+	sorting := []string{"aa", "cc", "bb", "aa", "dd"}
+	sortcol, err := frames.NewSliceColumn("sorting", sorting)
+	if err != nil {
+		kvSuite.T().Fatal(err)
+	}
+
+	columns := []frames.Column{
+		stringCol(kvSuite.T(), "n1", len(index)),
+	}
+
+	frame, err := frames.NewFrame(columns, []frames.Column{icol, sortcol}, nil)
+	if err != nil {
+		kvSuite.T().Fatal(err)
+	}
+
+	wreq := &frames.WriteRequest{
+		Backend: kvSuite.backendName,
+		Table:   table,
+	}
+
+	appender, err := kvSuite.client.Write(wreq)
+	if err != nil {
+		kvSuite.T().Fatal(err)
+	}
+
+	if err := appender.Add(frame); err != nil {
+		kvSuite.T().Fatal(err)
+	}
+
+	if err := appender.WaitForComplete(3 * time.Second); err != nil {
+		kvSuite.T().Fatal(err)
+	}
+
+	//check schema
+	schemaInput := &v3io.GetObjectInput{Path: table + "/.#schema"}
+	resp, err := kvSuite.v3ioContainer.GetObjectSync(schemaInput)
+	if err != nil {
+		kvSuite.T().Fatal(err.Error())
+	}
+	schema := &v3ioutils.OldV3ioSchema{}
+	if err := json.Unmarshal(resp.HTTPResponse.Body(), schema); err != nil {
+		kvSuite.T().Fatal(err)
+	}
+	if schema.Key != "key" {
+		kvSuite.T().Fatal("wrong key in schema, expected 'key', got ", schema.Key)
+	}
+	if schema.SortingKey != "sorting" {
+		kvSuite.T().Fatal("wrong sorting key in schema, expected 'sorting', got ", schema.SortingKey)
+	}
+	if len(schema.Fields) != 3 {
+		kvSuite.T().Fatal("wrong number of columns in schema, expected 3, got ", len(schema.Fields))
+	}
+	////
+	rreq := &pb.ReadRequest{
+		Backend:           kvSuite.backendName,
+		Table:             table,
+		ShardingKeys:      []string{"mike", "joe"},
+		SortKeyRangeStart: "bb",
+	}
+
+	it, err := kvSuite.client.Read(rreq)
+	if err != nil {
+		kvSuite.T().Fatal(err)
+	}
+	for it.Next() {
+		frame = it.At()
+		if len(frame.Indices()) != 2 {
+			kvSuite.T().Fatal("wrong number of indices, expected 2, got ", len(frame.Indices()))
+		}
+		indexCol := frame.Indices()[0]
+		sortcol := frame.Indices()[1]
+		if frame.Len() != 3 {
+			kvSuite.T().Fatal("got different number of results, expected 3, got ", frame.Len())
+		}
+		for i := 0; i < frame.Len(); i++ {
+			currentKey, _ := indexCol.StringAt(i)
+			sorting, _ := sortcol.StringAt(i)
+			if !((currentKey == "mike" || currentKey == "joe") && sorting >= "bb") {
+				kvSuite.T().Fatal("key name does not match, expected mike.bb, joe.cc, or mike.dd, got ", frame)
+			}
+		}
+	}
+	////
+	rreq = &pb.ReadRequest{
+		Backend:           kvSuite.backendName,
+		Table:             table,
+		ShardingKeys:      []string{"mike"},
+		SortKeyRangeStart: "aa",
+		SortKeyRangeEnd:   "cc",
+	}
+
+	it, err = kvSuite.client.Read(rreq)
+	if err != nil {
+		kvSuite.T().Fatal(err)
+	}
+
+	for it.Next() {
+		frame = it.At()
+		if len(frame.Indices()) != 2 {
+			kvSuite.T().Fatal("wrong number of indices, expected 2, got ", len(frame.Indices()))
+		}
+		indexCol := frame.Indices()[0]
+		sortcol := frame.Indices()[1]
+		if frame.Len() != 2 {
+			kvSuite.T().Fatal("got different number of results, expected 2, got ", frame.Len())
+		}
+		for i := 0; i < frame.Len(); i++ {
+			currentKey, _ := indexCol.StringAt(i)
+			sorting, _ := sortcol.StringAt(i)
+			if !(currentKey == "mike" && (sorting == "aa" || sorting == "bb")) {
+				kvSuite.T().Fatal("key name does not match, expected mike.aa or mike.bb, got ", frame)
+			}
+		}
+	}
 }
 
 func (kvSuite *KvTestSuite) TestNullValuesWrite() {
@@ -199,7 +391,10 @@ func (kvSuite *KvTestSuite) TestNullValuesWrite() {
 	input := v3io.GetItemsInput{AttributeNames: []string{"__name", "n1", "n2", "n3", "n4"}}
 
 	iter, err := v3ioutils.NewAsyncItemsCursor(
-		kvSuite.v3ioContainer, &input, 1, nil, kvSuite.internalLogger, 0, []string{table + "/"})
+		kvSuite.v3ioContainer, &input, 1,
+		nil, kvSuite.internalLogger,
+		0, []string{table + "/"},
+		"", "")
 
 	for iter.Next() {
 		currentRow := iter.GetItem()
@@ -264,8 +459,8 @@ func (kvSuite *KvTestSuite) TestNullValuesRead() {
 		kvSuite.T().Fatalf("error putting test data, err: %v", res.Error)
 	}
 
-	oldSchema := v3ioutils.NewSchema("idx")
-	schema := v3ioutils.NewSchema("idx")
+	oldSchema := v3ioutils.NewSchema("idx", "")
+	schema := v3ioutils.NewSchema("idx", "")
 	_ = schema.AddField("idx", "", false)
 	_ = schema.AddField("n1", 12.6, true)
 	_ = schema.AddField("n2", "", true)
@@ -313,4 +508,141 @@ func (kvSuite *KvTestSuite) TestNullValuesRead() {
 	if err := it.Err(); err != nil {
 		kvSuite.T().Fatal(err)
 	}
+}
+
+func (kvSuite *KvTestSuite) TestRequestSpecificColumns() {
+	table := fmt.Sprintf("TestRequestSpecificColumns%d", time.Now().UnixNano())
+
+	frame := kvSuite.generateRandomSampleFrame(6, "idx", []string{"n1", "n2", "n3"})
+	wreq := &frames.WriteRequest{
+		Backend: kvSuite.backendName,
+		Table:   table,
+	}
+
+	appender, err := kvSuite.client.Write(wreq)
+	kvSuite.NoError(err)
+
+	err = appender.Add(frame)
+	kvSuite.NoError(err)
+
+	err = appender.WaitForComplete(3 * time.Second)
+	kvSuite.NoError(err)
+
+	time.Sleep(3 * time.Second) // Let DB sync
+
+	requestedColumns := []string{"n1", "n2"}
+	rreq := &pb.ReadRequest{
+		Backend: kvSuite.backendName,
+		Table:   table,
+		Columns: requestedColumns,
+	}
+
+	it, err := kvSuite.client.Read(rreq)
+	kvSuite.NoError(err)
+
+	for it.Next() {
+		fr := it.At()
+		if !(fr.Len() == frame.Len() || fr.Len()-1 == frame.Len()) {
+			kvSuite.T().Fatalf("wrong length: %d != %d", fr.Len(), frame.Len())
+		}
+		kvSuite.Require().EqualValues(requestedColumns, fr.Names(), "got other columns than requested")
+	}
+
+	err = it.Err()
+	kvSuite.NoError(err)
+}
+
+func (kvSuite *KvTestSuite) TestRequestSpecificColumnsWithKey() {
+	table := fmt.Sprintf("TestRequestSpecificColumnsWithKey%d", time.Now().UnixNano())
+
+	frame := kvSuite.generateRandomSampleFrame(6, "idx", []string{"n1", "n2", "n3"})
+	wreq := &frames.WriteRequest{
+		Backend: kvSuite.backendName,
+		Table:   table,
+	}
+
+	appender, err := kvSuite.client.Write(wreq)
+	kvSuite.NoError(err)
+
+	err = appender.Add(frame)
+	kvSuite.NoError(err)
+
+	err = appender.WaitForComplete(3 * time.Second)
+	kvSuite.NoError(err)
+
+	time.Sleep(3 * time.Second) // Let DB sync
+
+	requestedColumns := []string{"idx", "n1", "n2"}
+	rreq := &pb.ReadRequest{
+		Backend: kvSuite.backendName,
+		Table:   table,
+		Columns: requestedColumns,
+	}
+
+	it, err := kvSuite.client.Read(rreq)
+	kvSuite.NoError(err)
+
+	for it.Next() {
+		fr := it.At()
+		if !(fr.Len() == frame.Len() || fr.Len()-1 == frame.Len()) {
+			kvSuite.T().Fatalf("wrong length: %d != %d", fr.Len(), frame.Len())
+		}
+		kvSuite.Require().EqualValues(requestedColumns, fr.Names(), "got other columns than requested")
+		kvSuite.Require().Equal("_idx", fr.Indices()[0].Name(), "got wrong index name")
+	}
+
+	err = it.Err()
+	kvSuite.NoError(err)
+}
+
+func (kvSuite *KvTestSuite) TestDeleteWithFilter() {
+	table := fmt.Sprintf("kv_delete_filter%d", time.Now().UnixNano())
+
+	frame := kvSuite.generateRandomSampleFrame(5, "idx", []string{"n1", "n2"})
+	wreq := &frames.WriteRequest{
+		Backend: kvSuite.backendName,
+		Table:   table,
+	}
+
+	appender, err := kvSuite.client.Write(wreq)
+	if err != nil {
+		kvSuite.T().Fatal(err)
+	}
+
+	if err := appender.Add(frame); err != nil {
+		kvSuite.T().Fatal(err)
+	}
+
+	if err := appender.WaitForComplete(3 * time.Second); err != nil {
+		kvSuite.T().Fatal(err)
+	}
+	kvSuite.T().Log("delete")
+	dreq := &pb.DeleteRequest{
+		Backend: kvSuite.backendName,
+		Table:   table,
+		Filter:  "__mtime_secs > 0",
+	}
+
+	if err := kvSuite.client.Delete(dreq); err != nil {
+		kvSuite.T().Fatal(err)
+	}
+
+	// check only schema is left
+	kvSuite.T().Log("read")
+	rreq := &pb.ReadRequest{
+		Backend: kvSuite.backendName,
+		Table:   table,
+	}
+
+	it, err := kvSuite.client.Read(rreq)
+	kvSuite.NoError(err)
+
+	for it.Next() {
+		frame := it.At()
+		kvSuite.Require().Equal(frame.Len(), 0, "wrong length: %d != %d")
+	}
+	//make sure schema is not deleted
+	schemaInput := &v3io.GetObjectInput{Path: table + "/.#schema"}
+	_, err = kvSuite.v3ioContainer.GetObjectSync(schemaInput)
+	kvSuite.NoError(err, "schema is not found ")
 }
