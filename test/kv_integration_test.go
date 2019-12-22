@@ -647,6 +647,44 @@ func (kvSuite *KvTestSuite) TestDeleteWithFilter() {
 	kvSuite.NoError(err, "schema is not found ")
 }
 
+func (kvSuite *KvTestSuite) TestRequestSystemAttrs() {
+	table := fmt.Sprintf("TestRequestSystemAttrs%d", time.Now().UnixNano())
+
+	frame := kvSuite.generateRandomSampleFrame(5, "idx", []string{"n1", "n2"})
+	wreq := &frames.WriteRequest{
+		Backend: kvSuite.backendName,
+		Table:   table,
+	}
+
+	appender, err := kvSuite.client.Write(wreq)
+	kvSuite.NoError(err)
+
+	err = appender.Add(frame)
+	kvSuite.NoError(err)
+
+	err = appender.WaitForComplete(3 * time.Second)
+	kvSuite.NoError(err)
+
+	time.Sleep(3 * time.Second) // Let DB sync
+
+	requestedColumns := []string{"idx", "n1", "__name", "__gid", "__mode", "__mtime_nsecs", "__mtime_secs", "__size", "__uid", "__ctime_nsecs", "__ctime_secs"}
+	rreq := &pb.ReadRequest{
+		Backend: kvSuite.backendName,
+		Table:   table,
+		Columns: requestedColumns,
+	}
+
+	it, err := kvSuite.client.Read(rreq)
+	kvSuite.NoError(err)
+
+	for it.Next() {
+		fr := it.At()
+		kvSuite.Require().EqualValues(requestedColumns, fr.Names(), "got other columns than requested")
+	}
+
+	err = it.Err()
+	kvSuite.NoError(err)
+}
 func (kvSuite *KvTestSuite) TestNonExistingColumns() {
 	table := fmt.Sprintf("TestNonExistingColumns%d", time.Now().UnixNano())
 
