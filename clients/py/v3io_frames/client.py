@@ -23,6 +23,142 @@ from .errors import (CreateError, DeleteError, ExecuteError, ReadError,
 FAIL = fpb.FAIL
 
 
+class RawFrame:
+    def __init__(self, proto_frame):
+        self.raw_frame = proto_frame
+
+    def names(self):
+        """Returns all column names of the frame
+
+        Return Value
+        ----------
+            Column names
+        """
+        column_names = []
+        for col in self.raw_frame.columns:
+            column_names.append(col.name)
+        return column_names
+
+    def column(self, column_name):
+        """Get column by column name
+
+        Parameters
+        ----------
+        column_name : str
+            Column name to get
+
+        Return Value
+        ----------
+            Column object by the requested name
+        """
+        for col in self.raw_frame.columns:
+            if col.name == column_name:
+                return col
+
+        raise ReadError('no column named {}'.format(column_name))
+
+    def column_data(self, column_name):
+        """Get column's data by column name
+
+       Parameters
+       ----------
+       column_name : str
+           Column name to get
+
+       Return Value
+       ----------
+           List of values which represents the requested column's data
+       """
+        for col in self.raw_frame.columns:
+            if col.name == column_name:
+                if col.dtype == fpb.INTEGER:
+                    return col.ints
+                elif col.dtype == fpb.FLOAT:
+                    return col.floats
+                elif col.dtype == fpb.STRING:
+                    return col.strings
+                elif col.dtype == fpb.TIME:
+                    return col.times
+                elif col.dtype == fpb.BOOLEAN:
+                    return col.bools
+                else:
+                    raise ReadError('{} - unsupported type - {}'.format(column_name, col.dtype))
+
+        raise ReadError('no column named {}'.format(column_name))
+
+    def labels(self):
+        """Get frame's labels
+
+       Return Value
+       ----------
+           labels of the current frame. Only applicable to TSDB and Stream backends
+       """
+        return self.raw_frame.labels
+
+    def indices(self):
+        """Get frame's indices
+
+
+       Return Value
+       ----------
+           List of column objects representing the indices of the frame
+       """
+        return self.raw_frame.indices
+
+    def columns(self):
+        """Get all frame's columns
+
+       Return Value
+       ----------
+           List of column objects representing the columns of the frame
+       """
+        return self.raw_frame.columns
+
+    def __len__(self):
+        """Get the length of the frame
+
+       Return Value
+       ----------
+           Number of rows in the frame
+       """
+        if len(self.raw_frame.columns) > 0:
+            col = self.raw_frame.columns[0]
+            if col.dtype == fpb.INTEGER:
+                return len(col.ints)
+            elif col.dtype == fpb.FLOAT:
+                return len(col.floats)
+            elif col.dtype == fpb.STRING:
+                return len(col.strings)
+            elif col.dtype == fpb.TIME:
+                return len(col.times)
+            elif col.dtype == fpb.BOOLEAN:
+                return len(col.bools)
+        return 0
+
+    def is_null(self, index, column_name):
+        """Indicates whether a specific cell is null or not.
+
+       Parameters
+       ----------
+       index : str
+           Row index of the desired cell
+       column_name : str
+           Column name of the desired cell
+
+       Return Value
+       ----------
+           True - the current cell is null
+           False - the current cell has a value
+       """
+        if len(self.raw_frame.null_values) == 0:
+            return False
+
+        for null_column in self.raw_frame.null_values[index].nullColumns:
+            if null_column.key == column_name:
+                return True
+        return False
+
+
 class ClientBase:
     def __init__(self, address, session, frame_factory=pd.DataFrame,
                  concat=pd.concat):
@@ -53,7 +189,7 @@ class ClientBase:
 
     def read(self, backend='', table='', query='', columns=None, filter='',
              group_by='', limit=0, data_format='', row_layout=False,
-             max_in_message=0, marker='', iterator=False, **kw):
+             max_in_message=0, marker='', iterator=False, get_raw=False, **kw):
         """Reads data from a table or stream (run a data query)
 
         Common Parameters
@@ -85,6 +221,11 @@ class ClientBase:
         iterator : bool
             True - return a DataFrames iterator;
             False (default) - return a single DataFrame
+        get_raw : bool
+            False (default) - return Pandas Dataframe
+            True - return a raw data object rather then Pandas data frame.
+            This will boost performance at the expense of Pandas convenience.
+            Note: this mode will always return an iterator of frames.
         **kw
             Extra parameter for specific backends
 
@@ -107,7 +248,7 @@ class ClientBase:
         return self._read(
             backend, table, query, columns, filter,
             group_by, limit, data_format, row_layout,
-            max_in_message, marker, iterator, **kw)
+            max_in_message, marker, iterator, get_raw, **kw)
 
     def write(self, backend, table, dfs, expression='', condition='',
               labels=None, max_in_message=0, index_cols=None,

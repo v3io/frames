@@ -22,7 +22,6 @@ package kv
 
 import (
 	"fmt"
-
 	"github.com/v3io/frames"
 	"github.com/v3io/frames/backends"
 	"github.com/v3io/frames/backends/utils"
@@ -34,6 +33,7 @@ import (
 const (
 	indexColKey = "__name"
 )
+var systemAttrs = []string{"__gid", "__mode", "__mtime_nsecs", "__mtime_secs", "__size", "__uid", "__ctime_nsecs", "__ctime_secs"}
 
 // Read does a read request
 func (kv *Backend) Read(request *frames.ReadRequest) (frames.FrameIterator, error) {
@@ -142,6 +142,34 @@ func (ki *Iterator) Next() bool {
 		byName[field.Name] = col
 	}
 
+	indexKeyRequested := false
+	if specificColumnsRequested && len(columnNamesToReturn) != len(columns) {
+		if containsString(ki.request.Proto.Columns, indexColKey) {
+			indexKeyRequested = true
+			sysCol, err := frames.NewSliceColumn(indexColKey, make([]string, 0))
+			if err != nil {
+				ki.err = err
+				return false
+			}
+			columns = append(columns, sysCol)
+			byName[indexColKey] = sysCol
+		}
+		//if still not all columns found
+		if len(columnNamesToReturn) != len(columns) {
+			for _, attr := range systemAttrs {
+				if containsString(ki.request.Proto.Columns, attr) {
+					sysCol, err := frames.NewSliceColumn(attr, make([]int64, 0))
+					if err != nil {
+						ki.err = err
+						return false
+					}
+					columns = append(columns, sysCol)
+					byName[attr] = sysCol
+				}
+			}
+		}
+	}
+
 	for ; rowNum < int(ki.request.Proto.MessageLimit) && ki.iter.Next(); rowNum++ {
 		row := ki.iter.GetFields()
 
@@ -156,11 +184,12 @@ func (ki *Iterator) Next() bool {
 
 		for name, field := range row {
 			colName := name
-			if colName == indexColKey { // convert `__name` attribute name to the key column
+			if colName == indexColKey && !indexKeyRequested{ // convert `__name` attribute name to the key column
 				if hasKeyColumnAttribute {
 					continue
+				} else {
+					colName = ki.schema.Key
 				}
-				colName = ki.schema.Key
 			}
 
 			col, ok := byName[colName]
@@ -311,3 +340,4 @@ func containsString(s []string, subString string) bool {
 
 	return false
 }
+
