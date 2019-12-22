@@ -129,24 +129,9 @@ func schemaFromKeys(keyField string, rowSet []map[string]interface{}) (v3ioutils
 	var primaryKeyField string
 	var sortingKeyField string
 	if keyField == "" {
-		var possibleFullKeys []string
-		for columnName, canBeKey := range columnCanBeFullKey {
-			if canBeKey {
-				possibleFullKeys = append(possibleFullKeys, columnName)
-			}
-		}
-		var possiblePrimaryKeys []string
-		for columnName, canBeKey := range columnCanBePrimaryKey {
-			if canBeKey {
-				possiblePrimaryKeys = append(possiblePrimaryKeys, columnName)
-			}
-		}
-		var possibleSortingKeys []string
-		for columnName, canBeKey := range columnCanBeSortingKey {
-			if canBeKey {
-				possibleSortingKeys = append(possibleSortingKeys, columnName)
-			}
-		}
+		possibleFullKeys := filterOutFalse(columnCanBeFullKey)
+		possiblePrimaryKeys := filterOutFalse(columnCanBePrimaryKey)
+		possibleSortingKeys := filterOutFalse(columnCanBeSortingKey)
 		if len(possiblePrimaryKeys) == 1 {
 			primaryKeyField = possiblePrimaryKeys[0]
 			if len(possibleSortingKeys) == 1 {
@@ -180,4 +165,14 @@ func schemaFromKeys(keyField string, rowSet []map[string]interface{}) (v3ioutils
 	}
 
 	return newSchema, nil
+}
+
+func filterOutFalse(m map[string]bool) []string {
+	var res []string
+	for key, val := range m {
+		if val {
+			res = append(res, key)
+		}
+	}
+	return res
 }
