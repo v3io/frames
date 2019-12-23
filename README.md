@@ -252,7 +252,6 @@ The following `create` parameters are specific to the `tsdb` backend and are pas
   - **Requirement:** Optional
   - **Valid Values:** A string containing a comma-separated list of supported aggregation functions &mdash; `avg`| `count`| `last`| `max`| `min`| `rate`| `stddev`| `stdvar`| `sum`.
     For example, `"count,avg,min,max"`.
-  - **Default Value:** `"1h"` (1 hour)
 
 - <a id="method-create-tsdb-param-aggregation-granularity"></a>**aggregation-granularity** &mdash; Aggregation granularity; i.e., a time interval for applying pre-aggregation functions, if configured in the [`aggregates`](#method-create-tsdb-param-aggregates) parameter.
 
@@ -260,6 +259,7 @@ The following `create` parameters are specific to the `tsdb` backend and are pas
   - **Requirement:** Optional
   - **Valid Values:** A string of the format `"[0-9]+[mhd]"` &mdash; where '`m`' = minutes, '`h`' = hours, and '`d`' = days.
     For example, `"30m"` (30 minutes), `"2h"` (2 hours), or `"1d"` (1 day).
+  - **Default Value:** `"1h"` (1 hour)
 
 <a id="method-create-params-stream"></a>
 #### `stream` Backend `create` Parameters
