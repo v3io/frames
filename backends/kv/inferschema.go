@@ -53,16 +53,10 @@ func (b *Backend) inferSchema(request *frames.ExecRequest) error {
 	}
 
 	var rowSet []map[string]interface{}
-	var keys []string
 
 	for rowNum := 0; rowNum < maxrec && iter.Next(); rowNum++ {
 		row := iter.GetFields()
 		rowSet = append(rowSet, row)
-		key, ok := row["__name"]
-		if !ok {
-			return fmt.Errorf("key (__name) was not found in row")
-		}
-		keys = append(keys, key.(string))
 	}
 
 	if iter.Err() != nil {
@@ -146,10 +140,10 @@ func schemaFromKeys(keyField string, rowSet []map[string]interface{}) (v3ioutils
 		} else {
 			var reason string
 			if len(possibleFullKeys) == 0 {
-				reason = "no column matched __name attribute"
+				reason = "no column matched key attribute"
 			} else {
 				sort.Strings(possibleFullKeys)
-				reason = fmt.Sprintf("%d columns (%s) matched __name attribute", len(possibleFullKeys), strings.Join(possibleFullKeys, ", "))
+				reason = fmt.Sprintf("%d columns (%s) matched key attribute", len(possibleFullKeys), strings.Join(possibleFullKeys, ", "))
 			}
 			return nil, errors.Errorf("Could not determine which column is the table key because %s.", reason)
 		}
