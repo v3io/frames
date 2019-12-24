@@ -171,7 +171,7 @@ func (s *Server) handleRead(ctx *fasthttp.RequestCtx) {
 		requestInner.Session.Token = ""
 	}
 
-	s.logger.InfoWith("read request", "request", request)
+	s.logger.DebugWith("read request", "request", request)
 
 	ch := make(chan frames.Frame)
 	var apiError error
@@ -242,6 +242,14 @@ func (s *Server) handleWrite(ctx *fasthttp.RequestCtx) {
 	if req.InitialData != nil {
 		frame = frames.NewFrameFromProto(req.InitialData)
 	}
+
+	saveMode, err := frames.SaveModeFromString(req.SaveMode)
+	if err != nil {
+		s.logger.ErrorWith("bad write request", "error", err)
+		ctx.Error(err.Error(), http.StatusBadRequest)
+		return
+	}
+
 	request := &frames.WriteRequest{
 		Session:       req.Session,
 		Backend:       req.Backend,
@@ -250,6 +258,7 @@ func (s *Server) handleWrite(ctx *fasthttp.RequestCtx) {
 		Condition:     req.Condition,
 		Expression:    req.Expression,
 		HaveMore:      req.More,
+		SaveMode:      saveMode,
 	}
 
 	s.httpAuth(ctx, request.Session)

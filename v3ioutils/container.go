@@ -32,42 +32,17 @@ import (
 	v3iohttp "github.com/v3io/v3io-go/pkg/dataplane/http"
 	v3ioerrors "github.com/v3io/v3io-go/pkg/errors"
 	"github.com/v3io/v3io-tsdb/pkg/utils"
+	"github.com/valyala/fasthttp"
 )
 
 const v3ioUsersContainer = "users"
 const v3ioHomeVar = "$V3IO_HOME"
 
-func NewContainer(session *frames.Session, password string, token string, logger logger.Logger, workers int) (v3io.Container, error) {
-
-	var pass string
-	if password == "" {
-		pass = session.Password
-	} else {
-		pass = password
-	}
-
-	var tok string
-	if token == "" {
-		tok = session.Token
-	} else {
-		tok = token
-	}
-
-	newSessionInput := v3io.NewSessionInput{
-		Username:  session.User,
-		Password:  pass,
-		AccessKey: tok,
-	}
-	container, err := createContainer(
-		logger, session.Url, session.Container, &newSessionInput, workers, 0)
-	if err != nil {
-		return nil, errors.Wrap(err, "failed to create data container")
-	}
-
-	return container, nil
+func NewContainer(httpClient *fasthttp.Client, session *frames.Session, password string, token string, logger logger.Logger, workers int) (v3io.Container, error) {
+	return NewContainerWithRequestChannelLength(httpClient, session, password, token, logger, workers, 0)
 }
 
-func NewContainerWithRequestChannelLength(session *frames.Session, password string, token string, logger logger.Logger, workers int, requestChannelLen int) (v3io.Container, error) {
+func NewContainerWithRequestChannelLength(httpClient *fasthttp.Client, session *frames.Session, password string, token string, logger logger.Logger, workers int, requestChannelLen int) (v3io.Container, error) {
 
 	var pass string
 	if password == "" {
@@ -83,13 +58,19 @@ func NewContainerWithRequestChannelLength(session *frames.Session, password stri
 		tok = token
 	}
 
+	addr := session.Url
+	// Backward compatibility for non-URL addr parameter.
+	if !strings.HasPrefix(addr, "http://") && !strings.HasPrefix(addr, "https://") {
+		addr = "http://" + addr
+	}
+
 	newSessionInput := v3io.NewSessionInput{
+		URL:       addr,
 		Username:  session.User,
 		Password:  pass,
 		AccessKey: tok,
 	}
-	container, err := createContainer(
-		logger, session.Url, session.Container, &newSessionInput, workers, requestChannelLen)
+	container, err := createContainer(logger, httpClient, session.Container, &newSessionInput, workers, requestChannelLen)
 	if err != nil {
 		return nil, errors.Wrap(err, "failed to create data container")
 	}
@@ -98,18 +79,13 @@ func NewContainerWithRequestChannelLength(session *frames.Session, password stri
 }
 
 // CreateContainer creates a new container
-func createContainer(logger logger.Logger, addr, cont string, newSessionInput *v3io.NewSessionInput, workers int, requestChannelLen int) (v3io.Container, error) {
+func createContainer(logger logger.Logger, httpClient *fasthttp.Client, cont string, newSessionInput *v3io.NewSessionInput, workers int, requestChannelLen int) (v3io.Container, error) {
 	// create context
 	if workers == 0 {
 		workers = 8
 	}
 
-	// Backward compatibility for non-URL addr parameter.
-	if !strings.HasPrefix(addr, "http://") && !strings.HasPrefix(addr, "https://") {
-		addr = "http://" + addr
-	}
-
-	context, err := v3iohttp.NewContext(logger, &v3io.NewContextInput{ClusterEndpoints: []string{addr}, NumWorkers: workers, RequestChanLen: requestChannelLen})
+	context, err := v3iohttp.NewContext(logger, httpClient, &v3io.NewContextInput{NumWorkers: workers, RequestChanLen: requestChannelLen})
 	if err != nil {
 		return nil, errors.Wrap(err, "failed to create client")
 	}
@@ -186,10 +162,12 @@ func DeleteTable(logger logger.Logger, container v3io.Container, path, filter st
 		}
 	}
 
-	err := container.DeleteObjectSync(&v3io.DeleteObjectInput{Path: path})
-	if err != nil {
-		if !utils.IsNotExistsError(err) {
-			return errors.Wrapf(err, "Failed to delete table object '%s'.", path)
+	if filter == "" {
+		err := container.DeleteObjectSync(&v3io.DeleteObjectInput{Path: path})
+		if err != nil {
+			if !utils.IsNotExistsError(err) {
+				return errors.Wrapf(err, "Failed to delete table object '%s'.", path)
+			}
 		}
 	}
 
@@ -203,6 +181,9 @@ func getItemsWorker(container v3io.Container, input *v3io.GetItemsInput, fileNam
 			terminationChan <- nil
 			return
 		default:
+		}
+		if input.Filter != "" {
+			input.Filter += " and __name != '.#schema'"
 		}
 		resp, err := container.GetItemsSync(input)
 		if err != nil {

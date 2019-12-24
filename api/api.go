@@ -38,6 +38,7 @@ import (
 
 	"github.com/nuclio/logger"
 	"github.com/pkg/errors"
+	v3iohttp "github.com/v3io/v3io-go/pkg/dataplane/http"
 )
 
 const (
@@ -78,7 +79,7 @@ func New(logger logger.Logger, config *frames.Config) (*API, error) {
 
 // Read reads from database, emitting results to wf
 func (api *API) Read(request *frames.ReadRequest, out chan frames.Frame) error {
-	api.logger.InfoWith("read request", "request", request)
+	api.logger.DebugWith("read request", "request", request)
 
 	backend, ok := api.backends[request.Proto.Backend]
 
@@ -113,7 +114,7 @@ func (api *API) Write(request *frames.WriteRequest, in chan frames.Frame) (int, 
 		return -1, -1, fmt.Errorf(missingMsg)
 	}
 
-	api.logger.InfoWith("write request", "request", request)
+	api.logger.DebugWith("write request", "request", request)
 	backend, ok := api.backends[request.Backend]
 	if !ok {
 		api.logger.ErrorWith("unkown backend", "name", request.Backend)
@@ -270,7 +271,8 @@ func (api *API) createBackends(config *frames.Config) error {
 			return fmt.Errorf("unknown backend - %q", cfg.Type)
 		}
 
-		backend, err := factory(api.logger, cfg, config)
+		httpClient := v3iohttp.NewDefaultClient()
+		backend, err := factory(api.logger, httpClient, cfg, config)
 		if err != nil {
 			return errors.Wrapf(err, "%s:%s - can't create backend", cfg.Name, cfg.Type)
 		}

@@ -58,11 +58,16 @@ message Value {
     }
 }
 
+message NullValuesMap {
+    map<string, bool> nullColumns = 1;
+}
+
 message Frame {
     repeated Column columns = 1;
     repeated Column indices = 2;
     map<string, Value> labels = 3;
     string error = 4; // Used in errors when reading over HTTP
+    repeated NullValuesMap null_values = 5;
 }
 
 // TODO: Place these under TableSchema
@@ -152,6 +157,7 @@ message InitialWriteRequest {
     bool more = 6;
     repeated string partition_keys = 7;
     string condition = 8;
+    string save_mode = 9;
 }
 
 message WriteRequest {

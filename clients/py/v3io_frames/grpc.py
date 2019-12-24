@@ -19,7 +19,7 @@ from functools import wraps
 import grpc
 from . import frames_pb2 as fpb  # noqa
 from . import frames_pb2_grpc as fgrpc  # noqa
-from .client import ClientBase
+from .client import ClientBase, RawFrame
 from .errors import (CreateError, DeleteError, ExecuteError, ReadError,
                      WriteError)
 from .http import format_go_time
@@ -61,7 +61,7 @@ class Client(ClientBase):
 
     @grpc_raise(ReadError)
     def do_read(self, backend, table, query, columns, filter, group_by, limit,
-                data_format, row_layout, max_in_message, marker, **kw):
+                data_format, row_layout, max_in_message, marker, get_raw, **kw):
         # TODO: Create channel once?
         with new_channel(self.address) as channel:
             stub = fgrpc.FramesStub(channel)
@@ -81,18 +81,21 @@ class Client(ClientBase):
             )
             do_reorder = should_reorder_columns(backend, query, columns)
             for frame in stub.Read(request):
-                yield msg2df(frame, self.frame_factory,
-                             columns, do_reorder=do_reorder)
+                if get_raw:
+                    yield RawFrame(frame)
+                else:
+                    yield msg2df(frame, self.frame_factory,
+                                 columns, do_reorder=do_reorder)
 
     # We need to write "read" since once you have a yield in a function
     # (do_read) it'll always return a generator
     @grpc_raise(WriteError)
     def _read(self, backend, table, query, columns, filter, group_by, limit,
-              data_format, row_layout, max_in_message, marker, iterator, **kw):
+              data_format, row_layout, max_in_message, marker, iterator, get_raw, **kw):
         dfs = self.do_read(
             backend, table, query, columns, filter, group_by, limit,
-            data_format, row_layout, max_in_message, marker, **kw)
-        if not iterator:
+            data_format, row_layout, max_in_message, marker, get_raw, **kw)
+        if not iterator and not get_raw:
             return concat_dfs(dfs, self.frame_factory, self.concat)
         return dfs
 

@@ -21,12 +21,11 @@ such restriction.
 package kv
 
 import (
-	"encoding/json"
 	"fmt"
-
 	"github.com/v3io/frames"
 	"github.com/v3io/frames/backends"
 	"github.com/v3io/frames/backends/utils"
+	"github.com/v3io/frames/pb"
 	"github.com/v3io/frames/v3ioutils"
 	"github.com/v3io/v3io-go/pkg/dataplane"
 )
@@ -34,6 +33,7 @@ import (
 const (
 	indexColKey = "__name"
 )
+var systemAttrs = []string{"__gid", "__mode", "__mtime_nsecs", "__mtime_secs", "__size", "__uid", "__ctime_nsecs", "__ctime_secs"}
 
 // Read does a read request
 func (kv *Backend) Read(request *frames.ReadRequest) (frames.FrameIterator, error) {
@@ -69,38 +69,36 @@ func (kv *Backend) Read(request *frames.ReadRequest) (frames.FrameIterator, erro
 		true,
 		len(partitions)*numberOfWorkers)
 
-	input := v3io.GetItemsInput{Filter: request.Proto.Filter, AttributeNames: columns}
+	input := v3io.GetItemsInput{Filter: request.Proto.Filter, AttributeNames: columns, SortKeyRangeStart: request.Proto.SortKeyRangeStart, SortKeyRangeEnd: request.Proto.SortKeyRangeEnd}
 	kv.logger.DebugWith("read input", "input", input, "request", request)
 
 	iter, err := v3ioutils.NewAsyncItemsCursor(
-		container, &input, kv.numWorkers, request.Proto.ShardingKeys, kv.logger, 0, partitions)
+		container, &input, kv.numWorkers, request.Proto.ShardingKeys, kv.logger, 0, partitions,
+		request.Proto.SortKeyRangeStart, request.Proto.SortKeyRangeEnd)
 	if err != nil {
 		return nil, err
 	}
 
-	// Get Schema
-	schemaInput := &v3io.GetObjectInput{Path: tablePath + ".#schema"}
-	resp, err := container.GetObjectSync(schemaInput)
+	schemaInterface, err := v3ioutils.GetSchema(tablePath, container)
 	if err != nil {
 		return nil, err
 	}
-	schema := &v3ioutils.OldV3ioSchema{}
-	if err := json.Unmarshal(resp.HTTPResponse.Body(), schema); err != nil {
-		return nil, err
-	}
+	schemaObj := schemaInterface.(*v3ioutils.OldV3ioSchema)
 
-	newKVIter := Iterator{request: request, iter: iter, schema: schema, shouldDuplicateIndex: containsString(columns, schema.Key)}
+	shouldDuplicateSorting := schemaObj.SortingKey != "" && containsString(columns, schemaObj.SortingKey)
+	newKVIter := Iterator{request: request, iter: iter, schema: schemaObj, shouldDuplicateIndex: containsString(columns, schemaObj.Key), shouldDuplicateSorting: shouldDuplicateSorting}
 	return &newKVIter, nil
 }
 
 // Iterator is key/value iterator
 type Iterator struct {
-	request              *frames.ReadRequest
-	iter                 *v3ioutils.AsyncItemsCursor
-	err                  error
-	currFrame            frames.Frame
-	shouldDuplicateIndex bool
-	schema               *v3ioutils.OldV3ioSchema
+	request                *frames.ReadRequest
+	iter                   *v3ioutils.AsyncItemsCursor
+	err                    error
+	currFrame              frames.Frame
+	shouldDuplicateIndex   bool
+	schema                 *v3ioutils.OldV3ioSchema
+	shouldDuplicateSorting bool
 }
 
 // Next advances the iterator to next frame
@@ -110,6 +108,67 @@ func (ki *Iterator) Next() bool {
 
 	rowNum := 0
 	numOfSchemaFiles := 0
+	var nullColumns []*pb.NullValuesMap
+	hasAnyNulls := false
+
+	columnNamesToReturn := ki.request.Proto.Columns
+	specificColumnsRequested := len(columnNamesToReturn) != 0
+
+	//create columns
+	for _, field := range ki.schema.Fields {
+		if specificColumnsRequested && !containsString(ki.request.Proto.Columns, field.Name) {
+			continue
+		} else if !specificColumnsRequested {
+			columnNamesToReturn = append(columnNamesToReturn, field.Name)
+		}
+
+		f, err := ki.schema.GetField(field.Name)
+		if err != nil {
+			ki.err = err
+			return false
+		}
+		data, err := utils.NewColumnFromType(f.Type, 0)
+		if err != nil {
+			ki.err = err
+			return false
+		}
+
+		col, err := frames.NewSliceColumn(field.Name, data)
+		if err != nil {
+			ki.err = err
+			return false
+		}
+		columns = append(columns, col)
+		byName[field.Name] = col
+	}
+
+	indexKeyRequested := false
+	if specificColumnsRequested && len(columnNamesToReturn) != len(columns) {
+		if containsString(ki.request.Proto.Columns, indexColKey) {
+			indexKeyRequested = true
+			sysCol, err := frames.NewSliceColumn(indexColKey, make([]string, 0))
+			if err != nil {
+				ki.err = err
+				return false
+			}
+			columns = append(columns, sysCol)
+			byName[indexColKey] = sysCol
+		}
+		//if still not all columns found
+		if len(columnNamesToReturn) != len(columns) {
+			for _, attr := range systemAttrs {
+				if containsString(ki.request.Proto.Columns, attr) {
+					sysCol, err := frames.NewSliceColumn(attr, make([]int64, 0))
+					if err != nil {
+						ki.err = err
+						return false
+					}
+					columns = append(columns, sysCol)
+					byName[attr] = sysCol
+				}
+			}
+		}
+	}
 
 	for ; rowNum < int(ki.request.Proto.MessageLimit) && ki.iter.Next(); rowNum++ {
 		row := ki.iter.GetFields()
@@ -125,33 +184,20 @@ func (ki *Iterator) Next() bool {
 
 		for name, field := range row {
 			colName := name
-			if colName == indexColKey { // convert `__name` attribute name to the key column
+			if colName == indexColKey && !indexKeyRequested{ // convert `__name` attribute name to the key column
 				if hasKeyColumnAttribute {
 					continue
+				} else {
+					colName = ki.schema.Key
 				}
-				colName = ki.schema.Key
 			}
 
 			col, ok := byName[colName]
 			if !ok {
-				f, err := ki.schema.GetField(name)
-				if err != nil {
-					ki.err = err
-					return false
-				}
-				data, err := utils.NewColumnFromType(f.Type, rowNum-numOfSchemaFiles)
-				if err != nil {
-					ki.err = err
-					return false
-				}
-
-				col, err = frames.NewSliceColumn(colName, data)
-				if err != nil {
-					ki.err = err
-					return false
-				}
-				columns = append(columns, col)
-				byName[colName] = col
+				ki.err = fmt.Errorf("column '%v' for item with key: '%v' does not exist in the schema file. "+
+					"Your data structure was probably changed, try re-inferring the schema for the table",
+					colName, rowIndex)
+				return false
 			}
 
 			if err := utils.AppendColumn(col, field); err != nil {
@@ -161,7 +207,10 @@ func (ki *Iterator) Next() bool {
 		}
 
 		// fill columns with nil if there was no value
-		for name, col := range byName {
+		var currentNullMask pb.NullValuesMap
+		currentNullMask.NullColumns = make(map[string]bool)
+		for _, fieldName := range columnNamesToReturn {
+			name := fieldName
 			if name == ki.schema.Key && !hasKeyColumnAttribute {
 				name = indexColKey
 			}
@@ -170,12 +219,15 @@ func (ki *Iterator) Next() bool {
 			}
 
 			var err error
-			err = utils.AppendNil(col)
+			err = utils.AppendNil(byName[name])
 			if err != nil {
 				ki.err = err
 				return false
 			}
+			currentNullMask.NullColumns[name] = true
+			hasAnyNulls = true
 		}
+		nullColumns = append(nullColumns, &currentNullMask)
 	}
 
 	if ki.iter.Err() != nil {
@@ -191,31 +243,43 @@ func (ki *Iterator) Next() bool {
 
 	// If the only column that was requested is the key-column don't set it as an index.
 	// Otherwise, set the key column (if requested) to be the index or not depending on the `ResetIndex` value.
-	if !ki.request.Proto.ResetIndex && (len(columns) > 1 || columns[0].Name() != ki.schema.Key) {
-		indexCol, ok := byName[ki.schema.Key]
-		if ok {
+	if len(columns) > 0 && !ki.request.Proto.ResetIndex {
+		if len(columns) > 1 || columns[0].Name() != ki.schema.Key {
+			ki.handleIndices(ki.schema.Key, byName, ki.shouldDuplicateIndex, &indices, &columns)
 			delete(byName, ki.schema.Key)
-
-			// If a user requested specific columns containing the index, duplicate the index column
-			// to be an index and a column
-			if ki.shouldDuplicateIndex {
-				dupIndex := indexCol.CopyWithName(fmt.Sprintf("_%v", ki.schema.Key))
-				indices = []frames.Column{dupIndex}
-			} else {
-				indices = []frames.Column{indexCol}
-				columns = utils.RemoveColumn(ki.schema.Key, columns)
-			}
+		}
+		if  ki.schema.SortingKey != "" && (len(columns) > 1 || columns[0].Name() != ki.schema.SortingKey) {
+			ki.handleIndices(ki.schema.SortingKey, byName, ki.shouldDuplicateSorting, &indices, &columns)
+			delete(byName, ki.schema.SortingKey)
 		}
 	}
 
+	if !hasAnyNulls {
+		nullColumns = nil
+	}
 	var err error
-	ki.currFrame, err = frames.NewFrame(columns, indices, nil)
+	ki.currFrame, err = frames.NewFrameWithNullValues(columns, indices, nil, nullColumns)
 	if err != nil {
 		ki.err = err
 		return false
 	}
 
 	return true
+}
+
+func (ki *Iterator) handleIndices(index string, data map[string]frames.Column, shouldDup bool, indices *[]frames.Column, columns *[]frames.Column) {
+	col, ok := data[index]
+	if ok {
+		// If a user requested specific columns containing the index, duplicate the index column
+		// to be an index and a column
+		if shouldDup {
+			dupIndex := col.CopyWithName(fmt.Sprintf("_%v", index))
+			*indices = append(*indices, dupIndex)
+		} else {
+			*indices = append(*indices, col)
+			*columns = utils.RemoveColumn(index, *columns)
+		}
+	}
 }
 
 // Err return the last error
@@ -276,3 +340,4 @@ func containsString(s []string, subString string) bool {
 
 	return false
 }
+

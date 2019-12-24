@@ -27,6 +27,7 @@ import (
 
 	"github.com/nuclio/logger"
 	"github.com/v3io/frames"
+	"github.com/valyala/fasthttp"
 )
 
 var (
@@ -36,7 +37,7 @@ var (
 )
 
 // Factory is a backend factory
-type Factory func(logger.Logger, *frames.BackendConfig, *frames.Config) (frames.DataBackend, error)
+type Factory func(logger.Logger, *fasthttp.Client, *frames.BackendConfig, *frames.Config) (frames.DataBackend, error)
 
 // Register registers a backend factory for a type
 func Register(typ string, factory Factory) error {

@@ -26,6 +26,7 @@ import (
 
 	"github.com/nuclio/logger"
 	"github.com/v3io/v3io-go/pkg/dataplane"
+	"github.com/valyala/fasthttp"
 
 	"github.com/v3io/frames"
 	"github.com/v3io/frames/v3ioutils"
@@ -36,16 +37,18 @@ type Backend struct {
 	logger       logger.Logger
 	numWorkers   int
 	framesConfig *frames.Config
+	httpClient   *fasthttp.Client
 }
 
 // NewBackend return a new key/value backend
-func NewBackend(logger logger.Logger, config *frames.BackendConfig, framesConfig *frames.Config) (frames.DataBackend, error) {
+func NewBackend(logger logger.Logger, httpClient *fasthttp.Client, config *frames.BackendConfig, framesConfig *frames.Config) (frames.DataBackend, error) {
 
 	frames.InitBackendDefaults(config, framesConfig)
 	newBackend := Backend{
 		logger:       logger.GetChild("kv"),
 		numWorkers:   config.Workers,
 		framesConfig: framesConfig,
+		httpClient:   httpClient,
 	}
 
 	return &newBackend, nil
@@ -104,20 +107,6 @@ func (b *Backend) updateItem(request *frames.ExecRequest) error {
 	return container.UpdateItemSync(&v3io.UpdateItemInput{Path: path + key, Expression: &expr, Condition: condition})
 }
 
-/*func (b *Backend) newContainer(session *frames.Session) (v3io.Container, error) {
-
-	container, err := v3ioutils.NewContainer(
-		session,
-		b.framesConfig,
-		b.logger,
-		b.numWorkers,
-	)
-
-	return container, err
-}
-
-*/
-
 func (b *Backend) newConnection(session *frames.Session, password string, token string, path string, addSlash bool) (v3io.Container, string, error) {
 
 	session = frames.InitSessionDefaults(session, b.framesConfig)
@@ -128,6 +117,7 @@ func (b *Backend) newConnection(session *frames.Session, password string, token 
 
 	session.Container = containerName
 	container, err := v3ioutils.NewContainer(
+		b.httpClient,
 		session,
 		password,
 		token,
@@ -148,6 +138,7 @@ func (b *Backend) newConnectionWithRequestChannelLength(session *frames.Session,
 
 	session.Container = containerName
 	container, err := v3ioutils.NewContainerWithRequestChannelLength(
+		b.httpClient,
 		session,
 		password,
 		token,

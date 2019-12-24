@@ -36,34 +36,41 @@ def Client(address='', data_url='', container='', path='', user='',
            password='', token='', session_id='', frame_factory=pd.DataFrame,
            concat=pd.concat):
     """Creates a new Frames client object
+    NOTE: User authentication must be done using any of the following methods:
+    setting the `token` parameter or the V3IO_ACCESS_KEY environment variable
+    to a valid access key; setting the `user` and `password` parameters or the
+    V3IO_USERNAME and V3IO_PASSWORD environment variables to a valid username
+    and a matching password.
 
     Parameters
     ----------
-    address : str
+    address (Required) : str
         Address of the Frames service (framesd). Use the grpc:// prefix for
         gRPC (default; recommended) or the http:// prefix for HTTP.
         Use `framesd:8081` (gRPC; recommended) or `framesd:8080` for local
         execution on an Iguazio Data Science Platform ("the platform").
-    data_url : str
-        Base URL for accessing the backend data
+    data_url (Optional): str
+        Web-API base URL for accessing the backend data; default: the base URL
+        configured for the Frames service, which is typically the HTTPS URL of
+        the web-APIs service of the parent platform tenant
     container : str
         Container name (session info)
     path : str
         DEPRECATED
-    user : str
-        The username of a platform user with permissions to access the backend
-        data; can't be used with `token`
-    password : str
-        A platform password for the user configured in the `user` parameter;
-        required when `user` is set; can't be used with `token`
-    token : str
-        A valid platform access key that allows access to the backend data;
-        can't be used with `user` and `password`
+    user (Optional): str
+        Username of a platform user with permissions to access the backend
+        data; cannot be used with `token`
+    password (Required when `user` is set): str
+        Password for the user configured in the `user` parameter; cannot be
+        used with `token`
+    token (Optional): str
+        Platform access key that allows access to the backend data; cannot be
+        used with `user` or `password`
     session_id : str
-        Session ID
-    frame_factory : class
+        Session ID; currently, unused
+    frame_factory (Optional) : class
         DataFrame factory; currently, pandas DataFrame (default)
-    concat : function
+    concat (Optional): function
         Function for concatenating DataFrames; default: pandas concat
 
     Return Value
