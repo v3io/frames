@@ -242,7 +242,7 @@ func (b *Backend) Delete(request *frames.DeleteRequest) error {
 	if request.Proto.End != "" {
 		end, err = tsdbutils.Str2unixTime(request.Proto.End)
 		if err != nil {
-			return err
+			return errors.Wrap(err, "failed to parse end time")
 		}
 	}
 
@@ -250,7 +250,7 @@ func (b *Backend) Delete(request *frames.DeleteRequest) error {
 	if request.Proto.Start != "" {
 		start, err = tsdbutils.Str2unixTime(request.Proto.Start)
 		if err != nil {
-			return err
+			return errors.Wrap(err, "failed to parse start time")
 		}
 	}
 
