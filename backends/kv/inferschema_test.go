@@ -41,7 +41,7 @@ func (suite *InferSchemaTestSuite) TestInferSchemaWhenNoColumnMatches() {
 	}
 	_, err := schemaFromKeys(keyField, rowSet)
 	suite.Error(err)
-	suite.Equal("Could not determine which column is the table key because no column matched __name attribute.", err.Error())
+	suite.Equal("Could not determine which column is the table key because no column matched key attribute.", err.Error())
 }
 
 func (suite *InferSchemaTestSuite) TestInferSchemaWhenTwoColumnsMatch() {
@@ -53,7 +53,7 @@ func (suite *InferSchemaTestSuite) TestInferSchemaWhenTwoColumnsMatch() {
 	}
 	_, err := schemaFromKeys(keyField, rowSet)
 	suite.Error(err)
-	suite.Equal("Could not determine which column is the table key because 2 columns (name, second_name) matched __name attribute.", err.Error())
+	suite.Equal("Could not determine which column is the table key because 2 columns (name, second_name) matched key attribute.", err.Error())
 }
 
 func (suite *InferSchemaTestSuite) TestInferSchemaWhenTwoColumnsMatchButKeyIsProvided() {
