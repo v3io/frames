@@ -236,12 +236,12 @@ func (b *Backend) Create(request *frames.CreateRequest) error {
 // Delete deletes a table or part of it
 func (b *Backend) Delete(request *frames.DeleteRequest) error {
 
-	start, err := tsdbutils.Str2duration(request.Proto.Start)
+	start, err := tsdbutils.Str2unixTime(request.Proto.Start)
 	if err != nil {
 		return err
 	}
 
-	end, err := tsdbutils.Str2duration(request.Proto.End)
+	end, err := tsdbutils.Str2unixTime(request.Proto.End)
 	if err != nil {
 		return err
 	}
