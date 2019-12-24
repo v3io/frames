@@ -337,7 +337,7 @@ class ClientBase:
 
     def delete(self, backend, table, filter='', start='', end='',
                if_missing=FAIL):
-        """Deletes a table or stream or specific table items
+        """Deletes a table or stream
 
         Parameters
         ----------
@@ -346,24 +346,11 @@ class ClientBase:
         table : str
             Table or stream to delete or from which to delete specific items
         filter : str
-            ('kv' backend only) A filter expression that identifies specific
-            items to delete; for example, 'age<18'
+            [Not supported in this version]
         start : str
-             ('tsdb' backend only) Start (minimum) data sample time for the
-             delete operation, as a string containing an RFC 3339 time, a Unix
-             timestamp in milliseconds, a relative time (`'now'` or
-             `'now-[0-9]+[mhd]'`, where `m` = minutes, `h` = hours, and `'d'` =
-             days), or 0 for the earliest time; the default is an empty string
-             for when `end` is also not set - to delete the entire table - and
-             `0` when `end` is set
+            [Not supported in this version]
         end : str
-             ('tsdb' backend only) End (maximum) data sample time for the
-             delete operation, as a string containing an RFC 3339 time, a Unix
-             timestamp in milliseconds, a relative time (`'now'` or
-             `'now-[0-9]+[mhd]'`, where `m` = minutes, `h` = hours, and `'d'` =
-             days), or 0 for the earliest time; the default is an empty string
-             for when `start` is also not set - to delete the entire table -
-             and `0` when `start` is set
+            [Not supported in this version]
         if_missing : int (frames_pb2 pb.ErrorOptions)
             Determines the behavior when the specified table or stream doesn't
             exist - `FAIL` (default) to raise an error or `IGNORE` to ignore

@@ -60,7 +60,9 @@ Frames supports the following backend types:
 The `Client` class features the following methods for supporting basic data operations:
 
 - [`create`](#method-create) &mdash; creates a new TSDB table or stream ("backend data").
-- [`delete`](#method-delete) &mdash; deletes a table or stream or specific table items.
+- [`delete`](#method-delete) &mdash; deletes a table or stream.
+  <!-- [FUTURE-FRAMES-DELETE-BY-FILTER] IG-13892 -->
+  <!-- deletes a table or stream or specific table items. -->
 - [`read`](#method-read) &mdash; reads data from a table or stream into pandas DataFrames.
 - [`write`](#method-write) &mdash; writes data from pandas DataFrames to a table or stream.
 - [`execute`](#method-execute) &mdash; executes a backend-specific command on a table or stream.
@@ -575,22 +577,34 @@ df = client.read(backend="stream", table="mytable", seek="latest", shard_id="5")
 ```
 
 <a id="method-delete"></a>
-### `delete` Method
 
+Deletes a table or stream from a platform data container, according to the specified backend type.
+-->
+<!-- [FUTURE-FRAMES-DELETE-BY-FILTER] IG-13892 -->
+<!--
 Deletes a table or stream or specific table items from a platform data container, according to the specified backend type.
+-->
 
 - [Syntax](#method-delete-syntax)
+<!-- [FUTURE-FRAMES-DELETE-BY-FILTER] IG-13892 -->
+<!--
 - [`kv` backend `delete` parameters](#method-delete-params-kv)
 - [`tsdb` backend `delete` parameters](#method-delete-params-tsdb)
+-->
 - [Examples](#method-delete-examples)
 
 <a id="method-delete-syntax"></a>
 #### Syntax
 
 ```python
-delete(backend, table, filter='', start='', end='', if_missing=FAIL
+delete(backend, filter='', start='', end='', if_missing=FAIL
 ```
 
+> **Note:** The `filter`, `start`, and `end` parameters aren't supported in the current release.
+  <!-- [FUTURE-FRAMES-DELETE-BY-FILTER] IG-13892 -->
+
+<!-- [FUTURE-FRAMES-DELETE-BY-FILTER] IG-13892 -->
+<!--
 <a id="method-delete-params-kv"></a>
 #### `kv` Backend `delete` Parameters
 
@@ -628,6 +642,7 @@ The following `delete` parameters are specific to the `tsdb` backend; for more i
 > - Only full table partitions within the specified time frame (as determined by the `start` and `end` parameters) are deleted.
 >   Items within the specified time frames that reside within partitions that begin before the delete start time or end after the delete end time aren't deleted.
 >   The partition interval is calculated automatically based on the table's ingestion rate and is stored in the TSDB's `partitionerInterval` schema field (see the  **.schema** file).
+-->
 
 <a id="method-delete-examples"></a>
 #### `delete` Examples
@@ -637,15 +652,29 @@ The following `delete` parameters are specific to the `tsdb` backend; for more i
 ##### `kv` Backend
 
 ```python
+client.delete(backend="kv", table="mytable")
+```
+
+<!-- [FUTURE-FRAMES-DELETE-BY-FILTER] IG-13892 -->
+<!--
+```python
 client.delete(backend="kv", table="mytable", filter="age > 40")
 ```
+-->
 
 <a id="method-delete-examples-tsdb"></a>
 ##### `tsdb` Backend
 
 ```python
+client.delete(backend="tsdb", table="mytable")
+```
+
+<!-- [FUTURE-FRAMES-DELETE-BY-FILTER] IG-13892 -->
+<!--
+```python
 client.delete(backend="tsdb", table="mytable", start="now-1d", end="now-5h")
 ```
+-->
 
 <a id="method-delete-examples-stream"></a>
 ##### `stream` Backend
