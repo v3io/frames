@@ -81,7 +81,7 @@ This can be done by using any of the following alternative methods (documented i
   - <a id="user-auth-user-password"></a>Set the [`user`](#client-param-user) and [`password`](#client-param-password) constructor parameters to the username and password of a platform user with the required data-access permissions.
   <br/>
 
-  > **Note:** You can't use both methods concurrently: setting both the `token` and `user` and `password` parameters in the same constructor call will produce an error.
+  > **Note:** You cannot use both methods concurrently: setting both the `token` and `user` and `password` parameters in the same constructor call will produce an error.
 
 - <a id="user-auth-client-envar"></a>Set the authentication credentials in environment variables, by using either of the following methods:
 
@@ -215,10 +215,10 @@ The `create` method is supported by the `tsdb` and `stream` backends, but not by
 #### Syntax
 
 ```python
-create(backend, table[, attrs=None])
+create(backend, table, attrs=None, schema=None, if_exists=FAIL)
 ```
-<!-- [IntInfo] (26.9.19) (sharonl) We omitted `schema=None` because the
-  `schema` parameter is used only with the `csv` testing backend. -->
+<!-- [IntInfo] (26.9.19) (sharonl) The `schema` parameter is used only with the
+  `csv` testing backend. -->
 
 <a id="method-create-common-params"></a>
 #### Common `create` Parameters
@@ -246,19 +246,20 @@ The following `create` parameters are specific to the `tsdb` backend and are pas
   - **Valid Values:** A string of the format `"[0-9]+/[smh]"` &mdash; where '`s`' = seconds, '`m`' = minutes, and '`h`' = hours.
     For example, `"1/s"` (one sample per minute), `"20/m"` (20 samples per minute), or `"50/h"` (50 samples per hour).
 
-- <a id="method-create-tsdb-param-aggregates"></a>**aggregates** &mdash; Default aggregates to calculate in real time during the samples ingestion.
+- <a id="method-create-tsdb-param-aggregates"></a>**aggregates** &mdash; A list of aggregation functions for executing in real time during the samples ingestion ("pre-aggregation").
 
   - **Type:** `str`
   - **Requirement:** Optional
   - **Valid Values:** A string containing a comma-separated list of supported aggregation functions &mdash; `avg`| `count`| `last`| `max`| `min`| `rate`| `stddev`| `stdvar`| `sum`.
     For example, `"count,avg,min,max"`.
 
-- <a id="method-create-tsdb-param-aggregation-granularity"></a>**aggregation-granularity** &mdash; Aggregation granularity; i.e., a time interval for applying the aggregation functions, if configured in the [`aggregates`](#method-create-tsdb-param-aggregates) parameter.
+- <a id="method-create-tsdb-param-aggregation-granularity"></a>**aggregation-granularity** &mdash; Aggregation granularity; i.e., a time interval for applying pre-aggregation functions, if configured in the [`aggregates`](#method-create-tsdb-param-aggregates) parameter.
 
   - **Type:** `str`
   - **Requirement:** Optional
   - **Valid Values:** A string of the format `"[0-9]+[mhd]"` &mdash; where '`m`' = minutes, '`h`' = hours, and '`d`' = days.
     For example, `"30m"` (30 minutes), `"2h"` (2 hours), or `"1d"` (1 day).
+  - **Default Value:** `"1h"` (1 hour)
 
 <a id="method-create-params-stream"></a>
 #### `stream` Backend `create` Parameters
@@ -331,17 +332,13 @@ Writes data from a DataFrame to a table or stream in a platform data container, 
 <a id="method-write-syntax"></a>
 #### Syntax
 
-<!--
 ```python
-write(backend, table, dfs, expression="", condition="", labels=None,
+write(backend, table, dfs, expression='', condition='', labels=None,
     max_in_message=0, index_cols=None, partition_keys=None)
 ```
--->
+
+> **Note:** The `expression` and `partition_keys` parameters aren't supported in the current release.
 <!-- [c-no-update-expression-support] -->
-```python
-write(backend, table, dfs, condition="", labels=None, max_in_message=0,
-    index_cols=None, partition_keys=None)
-```
 
 <a id="method-write-common-params"></a>
 #### Common `write` Parameters
@@ -357,7 +354,6 @@ All Frames backends that support the `write` method support the following common
   > For example, the `kv` backend supports only a single index column for the primary-key item attribute, while the `tsdb` backend supports additional index columns for metric labels.
 - <a id="method-write-param-labels"></a>**labels** (Optional) &mdash; This parameter is currently applicable only to the `tsdb` backend (although it's available for all backends) and is therefore documented as part of the `write` method's [`tsdb` backend parameters](#method-write-tsdb-param-labels).
 - <a id="method-write-param-max_in_message"></a>**max_in_message** (Optional) (default: `0`)
-- <a id="method-writse-param-partition_keys"></a>**partition_keys** (Optional) (default: `None`) &mdash; `[]str` &mdash; [**Not supported in this version**]
 
 <a id="method-write-params-kv"></a>
 #### `kv` Backend `write` Parameters
@@ -440,10 +436,12 @@ Reads data from a backend.
 #### Syntax
 
 ```python
-read(backend="", table="", query="", columns=None, filter="", group_by="",
-    limit=0, data_format="", row_layout=False, max_in_message=0, marker="",
+read(backend='', table='', query='', columns=None, filter='', group_by='',
+    limit=0, data_format='', row_layout=False, max_in_message=0, marker='',
     iterator=False, **kw)
 ```
+
+> **Note:** The `limit`, `data_format`, `row_layout`, and `marker` parameters aren't supported in the current release.
 
 <a id="method-read-common-params"></a>
 #### Common `read` Parameters
@@ -451,70 +449,92 @@ read(backend="", table="", query="", columns=None, filter="", group_by="",
 All Frames backends that support the `read` method support the following common parameters:
 
 - <a id="method-read-param-iterator"></a>**iterator** &mdash; (Optional) (default: `False`) &mdash; `bool` &mdash; `True` to return a DataFrames iterator; `False` to return a single DataFrame.
+
 - <a id="method-read-param-filter"></a>**filter** (Optional) &mdash; `str` &mdash; A query filter.
   For example, `filter="col1=='my_value'"`.
   <br/>
-  This parameter can't be used concurrently with the `query` parameter.
+  This parameter cannot be used concurrently with the `query` parameter of the `tsdb` backend.
+
 - <a id="method-read-param-columns"></a>**columns** &mdash; `[]str` &mdash; A list of attributes (columns) to return.
   <br/>
-  This parameter can't be used concurrently with the `query` parameter.
-- <a id="method-read-param-data_format"></a>**data_format** &mdash; `str` &mdash; The data format. [**Not supported in this version**]
-- <a id="method-read-param-marker"></a>**marker** &mdash; `str` &mdash; A query marker. [**Not supported in this version**]
-- <a id="method-read-param-limit"></a>**limit** &mdash; `int` &mdash; The maximum number of rows to return. [**Not supported in this version**]
-- <a id="method-read-param-row_layout"></a>**row_layout** (Optional) (default: `False`) &mdash; `bool` &mdash; `True` to use a row layout; `False` (default) to use a column layout. [**Not supported in this version**]
+  This parameter cannot be used concurrently with the `query` parameter of the `tsdb` backend.
 
 <a id="method-read-params-kv"></a>
 #### `kv` Backend `read` Parameters
 
 The following `read` parameters are specific to the `kv` backend; for more information about these parameters, see the platform's NoSQL documentation:
 
-- <a id="method-read-kv-param-reset_index"></a>**reset_index** &mdash; `bool` &mdash; Reset the index. When set to `false` (default), the DataFrame will have the key column of the v3io kv as the index column.
-  When set to `true`, the index will be reset to a range index.
 - <a id="method-read-kv-param-max_in_message"></a>**max_in_message** &mdash; `int` &mdash; The maximum number of rows per message.
-- <a id="method-read-kv-param-"></a>**sharding_keys** &mdash; `[]string` (**Experimental**) &mdash; A list of specific sharding keys to query, for range-scan formatted tables only.
-- <a id="method-read-kv-param-segments"></a>**segments** &mdash; `[]int64` [**Not supported in this version**]
-- <a id="method-read-kv-param-total_segments"></a>**total_segments** &mdash; `int64` [**Not supported in this version**]
-- <a id="method-read-kv-param-sort_key_range_start"></a>**sort_key_range_start** &mdash; `str` [**Not supported in this version**]
-- <a id="method-read-kv-param-sort_key_range_end"></a>**sort_key_range_end** &mdash; `str` [**Not supported in this version**]
+
+The following parameters are passed as keyword arguments via the `kw` parameter:
+
+- <a id="method-read-kv-param-reset_index"></a>**reset_index** &mdash; `bool` &mdash; Determines whether to reset the index index column of the returned DataFrame: `True` &mdash; reset the index column by setting it to the auto-generated pandas range-index column; `False` (default) &mdash; set the index column to the table's primary-key attribute.
+
+- <a id="method-read-kv-param-sharding_keys"></a>**sharding_keys** &mdash; `[]string` &mdash; A list of specific sharding keys to query, for range-scan formatted tables only.
+  <!-- [IntInfo] Tech Preview [TECH-PREVIEW-FRAMES-KV-READ-SHARDING-KEYS-PARAM]
+  -->
 
 <a id="method-read-params-tsdb"></a>
 #### `tsdb` Backend `read` Parameters
 
 The following `read` parameters are specific to the `tsdb` backend; for more information about these parameters, see the [V3IO TSDB documentation](https://github.com/v3io/v3io-tsdb#v3io-tsdb):
 
+- <a id="method-read-tsdb-param-group_by"></a>**group_by** (Optional) &mdash; `str` &mdash; A group-by query string.
+  <br/>
+  This parameter cannot be used concurrently with the `query` parameter.
+
+- <a id="method-read-tsdb-param-query"></a>**query** (Optional) &mdash; `str` &mdash; A query string in SQL format.
+  > **Note:**
+  > - When setting the `query` parameter, you must provide the path to the TSDB table as part of the `FROM` caluse in the query string and not in the `read` method's [`table`](#client-method-param-table) parameter.
+  > - This parameter cannot be set concurrently with the following parameters: [`aggregators`](#method-read-tsdb-param-aggregators), [`columns`](#method-read-tsdb-param-columns), [`filter`](#method-read-tsdb-param-filter), or [`group_by`](#method-read-tsdb-param-group_by) parameters.
+
+The following parameters are passed as keyword arguments via the `kw` parameter:
+
 - <a id="method-read-tsdb-param-start"></a>**start** &mdash; `str` &mdash; Start (minimum) time for the read operation, as a string containing an RFC 3339 time, a Unix timestamp in milliseconds, a relative time of the format `"now"` or `"now-[0-9]+[mhd]"` (where `m` = minutes, `h` = hours, and `'d'` = days), or 0 for the earliest time.
   For example: `"2016-01-02T15:34:26Z"`; `"1451748866"`; `"now-90m"`; `"0"`.
   <br/>
   The default start time is `<end time> - 1h`.
+
 - <a id="method-read-tsdb-param-end"></a>**end** &mdash; `str` &mdash; End (maximum) time for the read operation, as a string containing an RFC 3339 time, a Unix timestamp in milliseconds, a relative time of the format `"now"` or `"now-[0-9]+[mhd]"` (where `m` = minutes, `h` = hours, and `'d'` = days), or 0 for the earliest time.
   For example: `"2018-09-26T14:10:20Z"`; `"1537971006000"`; `"now-3h"`; `"now-7d"`.
   <br/>
   The default end time is `"now"`.
-- <a id="method-read-tsdb-param-step"></a>**step** (Optional) &mdash; `str` &mdash; For an aggregation query, this parameter specifies the aggregation interval for applying the aggregation functions; by default, the aggregation is applied to all sample data within the requested time range.<br/>
-  When the query doesn't include aggregates, this parameter specifies an interval for downsampling the raw sample data.
-- <a id="method-read-tsdb-param-aggregators"></a>**aggregators** (Optional) &mdash; `str` &mdash; Aggregation information to return, as a comma-separated list of supported aggregation functions.
-- <a id="method-read-tsdb-param-aggregationWindow"></a>**aggregationWindow** (Optional) &mdash; `str` &mdash; Aggregation interval for applying the aggregation functions, if set in the [`aggregators`](#"method-read-tsdb-param-aggregators) or [`query`](#method-read-tsdb-param-query) parameters.
-- <a id="method-read-tsdb-param-query"></a>**query** (Optional) &mdash; `str` &mdash; A query string in SQL format.
-  > **Note:** When the `query` parameter is set, you can either specify the target table within the query string (`FROM <table>`) or by setting the `table` parameter of the `read` method to the table path.
-  > When the `query` string specifies the target table, the value of the `table` parameter (if set) is ignored.
-- <a id="method-read-tsdb-param-group_by"></a>**group_by** (Optional) &mdash; `str` &mdash; A group-by query  string.
+
+- <a id="method-read-tsdb-param-step"></a>**step** (Optional) &mdash; `str` &mdash; The query step (interval), which determines the points over the query's time range at which to perform aggregations (for an aggregation query) or downsample the data (for a query without aggregators).
+  The default step is the query's time range, which can be configured via the [start](#method-read-tsdb-param-start) and [end](#method-read-tsdb-param-end) parameters.
+
+- <a id="method-read-tsdb-param-aggregators"></a>**aggregators** (Optional) &mdash; `str` &mdash; Aggregation information to return, as a comma-separated list of supported aggregation functions ("aggregators").
+  The following aggregation functions are supported for over-time aggregation (across each unique label set); for cross-series aggregation (across all metric labels), add "`_all`" to the end of the function name:
   <br/>
-  This parameter can't be used concurrently with the `query` parameter.
+  `avg` | `count` | `last` | `max` | `min` | `rate` | `stddev` | `stdvar` | `sum`
+  <br/>
+  This parameter cannot be used concurrently with the `query` parameter.
+
+- <a id="method-read-tsdb-param-aggregationWindow"></a>**aggregationWindow** (Optional) &mdash; `str` &mdash; Aggregation interval for applying over-time aggregation functions, if set in the [`aggregators`](#method-read-tsdb-param-aggregators) or [`query`](#method-read-tsdb-param-query) parameters, as a string of the format `"[0-9]+[mhd]"` where '`m`' = minutes, '`h`' = hours, and '`d`' = days.
+  The default aggregation window is the query's aggregation [step](#method-read-tsdb-param-step).
+  When using the default aggregation window, the aggregation window starts at the aggregation step; when the `aggregationWindow` parameter is set, the aggregation window ends at the aggregation step. 
+
 - <a id="method-read-tsdb-param-multi_index"></a>**multi_index** (Optional) &mdash; `bool` &mdash; `True` to receive the read results as multi-index DataFrames where the labels are used as index columns in addition to the metric sample-time primary-key attribute; `False` (default) only the timestamp will function as the index.
-  <!-- [IntInfo] This parameter is available via the `kw` read parameter. -->
 
 <a id="method-read-params-stream"></a>
 #### `stream` Backend `read` Parameters
 
-The following `read` parameters are specific to the `stream` backend; for more information about these parameters, see the [platform's streams documentation](https://www.iguazio.com/docs/concepts/latest-release/streams):
+The following `read` parameters are specific to the `stream` backend and are passed as keyword arguments via the `kw` parameter; for more information about these parameters, see the [platform's streams documentation](https://www.iguazio.com/docs/concepts/latest-release/streams):
 
-- <a id="method-read-stream-param-seek"></a>**seek** &mdash; `str` &mdash; Valid values:  `"time" | "seq"/"sequence" | "latest" | "earliest"`.
+- <a id="method-read-stream-param-seek"></a>**seek** &mdash; `str` (Required) &mdash; Seek type.
+  Valid values: `"time"` | `"seq"` | `"sequence"` | `"latest"` | `"earliest"`.
   <br/>
-  If the `"seq"|"sequence"` seek type is set, you need to provide the desired record sequence ID via the [`sequence`](#method-read-stream-param-sequence) parameter.
+  When the `"seq"` or `"sequence"` seek type is set, you must set the [`sequence`](#method-read-stream-param-sequence) parameter to the desired record sequence number.
   <br/>
-  If the `time` seek type is set, you need to provide the desired start time via the `start` parameter.
-- <a id="method-read-stream-param-shard_id"></a>**shard_id** &mdash; `str`
-- <a id="method-read-stream-param-sequence"></a>**sequence** &mdash; `int64` (Optional)
+  When the `time` seek type is set, you must set the [`start`](#method-read-stream-param-start) parameter to the desired seek start time.
+
+- <a id="method-read-stream-param-shard_id"></a>**shard_id** &mdash; `str` (Required) The ID of the stream shard from which to read.
+  Valid values: `"0"` ... `"<stream shard count> - 1"`.
+
+- <a id="method-read-stream-param-sequence"></a>**sequence** &mdash; `int64` (Required when [`seek`](#method-read-stream-param-seek) = `"sequence"`) &mdash; The sequence number of the record from which to start reading.
+
+- <a id="method-read-stream-param-start"></a>**start** &mdash; `str` (Required when [`seek`](#method-read-stream-param-seek) = `"time"`) &mdash; The earliest record ingestion time from which to start reading, as a string containing an RFC 3339 time, a Unix timestamp in milliseconds, a relative time of the format `"now"` or `"now-[0-9]+[mhd]"` (where `m` = minutes, `h` = hours, and `'d'` = days), or 0 for the earliest time.
+  For example: `"2016-01-02T15:34:26Z"`; `"1451748866"`; `"now-90m"`; `"0"`.
 
 <a id="method-read-return-value"></a>
 #### Return Value
@@ -523,12 +543,11 @@ The following `read` parameters are specific to the `stream` backend; for more i
 - When the value of the `iterator` parameter is `True` &mdash; returns a
   DataFrames iterator.
 
+<!-- [IntInfo] See IG-14065. -->
+<!-- 
 > **Note:** The returned DataFrames include a `labels` DataFrame attribute with backend-specific data, if applicable.
 > For example, for the `stream` backend, this attribute holds the sequence number of the last stream record that was read.
-<!-- [IntInfo] (26.9.19) For the `kv` backend - no relevant "labels" data.
-  For the `tsdb` backend - a labels set. When reading a DFs iterator, each DF
-  represents a unique label set, as reflected in the `labels` DF attribute, but
-  when reading a single DF, it' currently unclear what `labels` should hold. -->
+-->
 
 <a id="method-read-examples"></a>
 #### `read` Examples
@@ -569,7 +588,7 @@ Deletes a table or stream or specific table items from a platform data container
 #### Syntax
 
 ```python
-delete(backend, table, filter="", start="", end="")
+delete(backend, table, filter='', start='', end='', if_missing=FAIL
 ```
 
 <a id="method-delete-params-kv"></a>
