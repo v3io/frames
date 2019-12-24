@@ -67,6 +67,7 @@ func (kv *Backend) Write(request *frames.WriteRequest) (frames.FrameAppender, er
 		tablePath:    tablePath,
 		responseChan: make(chan *v3io.Response, 1000),
 		commChan:     make(chan int, 2),
+		doneChan:     make(chan bool),
 		logger:       kv.logger,
 		schema:       v3ioutils.NewSchema("idx"),
 	}
@@ -344,7 +345,6 @@ func (a *Appender) indexValFunc(frame frames.Frame) (func(int) interface{}, erro
 func (a *Appender) respWaitLoop(timeout time.Duration) {
 	responses := 0
 	requests := -1
-	a.doneChan = make(chan bool)
 	a.logger.Debug("write wait loop started")
 	timer := time.NewTimer(timeout)
 
