@@ -197,27 +197,33 @@ class ClientBase:
         backend : str
             Backend name ('kv', 'tsdb', 'stream')
         table : str
-            Table to query; ignored when `query` references a specific table
+            Table or stream to query; ignored when the table path is set in
+            the `query` parameter (for the 'tsdb' backend)
         query : str
-            Query string, in SQL format
+            ('tsdb' backend only) SQL query string
         columns : []str
-            List of item attributes (columns) to return;
-            can't be used with `query`
+            List of item attributes (columns) to return (default - all);
+            cannot be used with `query`
         filter : str
-            Query filter; can't be used with `query`
+            Query filter as a platform filter expression; cannot be used with
+            `query`
         group_by : str
-            A group-by query string; can't be used with `query`
+            ('tsdb' backend only) A group-by query string; cannot be used with
+            `query`
         limit: int
             Maximum number of rows to return
+            [Not supported in this version]
         data_format : str
             Data format
+            [Not supported in this version]
         row_layout : bool
             True to use a row layout; False (default) to use a column layout
             [Not supported in this version]
         max_in_message : int
-            Maximum number of rows per message
+            Maximum number of rows to read in each message (read chunk size)
         marker : str
-            Query marker; can't be used with the `query` parameter
+            Query marker; cannot be used with `query`
+            [Not supported in this version]
         iterator : bool
             True - return a DataFrames iterator;
             False (default) - return a single DataFrame
@@ -227,14 +233,12 @@ class ClientBase:
             This will boost performance at the expense of Pandas convenience.
             Note: this mode will always return an iterator of frames.
         **kw
-            Extra parameter for specific backends
+            Variable-length list of additional keyword (named) arguments
 
         Return Value
         ----------
             - When `iterator` is False (default) - returns a single DataFrame.
             - When `iterator` is True - returns a DataFrames iterator.
-            The returned DataFrames include a "labels" DataFrame attribute with
-            backend-specific data, if applicable.
         """
         if not backend:
             raise ReadError('no backend')
@@ -263,21 +267,24 @@ class ClientBase:
             Table to write to
         dfs : a single DataFrame, a DataFrames list, or a DataFrames iterator
             One or more DataFrames containing the data to write.
-            For the "tsdb" backend - the DF must contain one or more non-index
+            For the 'kv' backend - the DF must contain a single index column
+            for the item's primary-key attribute (= the item name).
+            For the 'tsdb' backend - the DF must contain one or more non-index
             columns for the sample metrics and a single time index column for
             the sample time, and can optionally contain additional string index
             columns for metric labels that apply to the current DataFrame row.
         expression : str
             A platform update expression that determines the update logic for
-            all items in the DataFrame [Not supported in this version]
+            all items in the DataFrame
+            [Not supported in this version]
         condition : str
             A platform condition expression that defines a condition for
             performing the write operation
         labels : dict (`{<label>: <value>[, <label>: <value>, ...]}`)
-            Currently applicable only to the "tsdb" backend - a dictionary of
-            sample labels of type string that apply to all the DataFrame rows
+            ('tsdb' backend only) A dictionary of sample labels of type
+            string that apply to all the DataFrame rows
         max_in_message : int
-            Maximum number of rows to send per message
+            Maximum number of rows to write in each message (write chunk size)
         index_cols : []str
             List of column names to be used as the index columns for the write
             operation; by default, the DataFrame's index columns are used
@@ -286,7 +293,8 @@ class ClientBase:
             Optional values: errorIfTableExists (default), overwriteTable,
              updateItem, overwriteItem, createNewItemsOnly
         partition_keys : []str
-            Partition keys [Not supported in this version]
+            Partition keys
+            [Not supported in this version]
 
         Return Value
         ----------
@@ -312,10 +320,10 @@ class ClientBase:
             Backend name
         table (Required) : str
             Table to create
-        attrs (Required for the "tsdb" backend; optional otherwise : dict
+        attrs (Required for the 'tsdb' backend; optional otherwise : dict
             A dictionary of backend-specific parameters (arguments)
         schema (Optional) : Schema or None
-            Table schema; used for testing purposes with the "csv" backend
+            Table schema; used for testing purposes with the 'csv' backend
         if_exists : int
             One of IGNORE or FAIL
 
@@ -338,21 +346,21 @@ class ClientBase:
         table : str
             Table or stream to delete or from which to delete specific items
         filter : str
-            (`kv` backend only) A filter expression that identifies specific
-            items to delete; for example, "age<18"
+            ('kv' backend only) A filter expression that identifies specific
+            items to delete; for example, 'age<18'
         start : str
-             (`tsdb` backend only) Start (minimum) data sample time for the
+             ('tsdb' backend only) Start (minimum) data sample time for the
              delete operation, as a string containing an RFC 3339 time, a Unix
-             timestamp in milliseconds, a relative time (`"now"` or
-             `"now-[0-9]+[mhd]"`, where `m` = minutes, `h` = hours, and `'d'` =
+             timestamp in milliseconds, a relative time (`'now'` or
+             `'now-[0-9]+[mhd]'`, where `m` = minutes, `h` = hours, and `'d'` =
              days), or 0 for the earliest time; the default is an empty string
              for when `end` is also not set - to delete the entire table - and
              `0` when `end` is set
         end : str
-             (`tsdb` backend only) End (maximum) data sample time for the
+             ('tsdb' backend only) End (maximum) data sample time for the
              delete operation, as a string containing an RFC 3339 time, a Unix
-             timestamp in milliseconds, a relative time (`"now"` or
-             `"now-[0-9]+[mhd]"`, where `m` = minutes, `h` = hours, and `'d'` =
+             timestamp in milliseconds, a relative time (`'now'` or
+             `'now-[0-9]+[mhd]'`, where `m` = minutes, `h` = hours, and `'d'` =
              days), or 0 for the earliest time; the default is an empty string
              for when `start` is also not set - to delete the entire table -
              and `0` when `start` is set
