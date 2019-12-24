@@ -59,13 +59,13 @@ def Client(address='', data_url='', container='', path='', user='',
         DEPRECATED
     user (Optional): str
         Username of a platform user with permissions to access the backend
-        data; can't be used with `token`
+        data; cannot be used with `token`
     password (Required when `user` is set): str
-        Password for the user configured in the `user` parameter; can't be used
-        with `token`
+        Password for the user configured in the `user` parameter; cannot be
+        used with `token`
     token (Optional): str
-        Platform access key that allows access to the backend data; can't be
-        used with `user` and `password`
+        Platform access key that allows access to the backend data; cannot be
+        used with `user` or `password`
     session_id : str
         Session ID; currently, unused
     frame_factory (Optional) : class
