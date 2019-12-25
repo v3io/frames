@@ -21,11 +21,11 @@ such restriction.
 package tsdb
 
 import (
+	"github.com/v3io/v3io-tsdb/pkg/config"
 	"time"
 
 	"github.com/pkg/errors"
 	"github.com/v3io/frames"
-	"github.com/v3io/v3io-tsdb/pkg/config"
 	"github.com/v3io/v3io-tsdb/pkg/pquerier"
 	"github.com/v3io/v3io-tsdb/pkg/tsdb"
 	tsdbutils "github.com/v3io/v3io-tsdb/pkg/utils"
@@ -41,11 +41,13 @@ type tsdbIteratorOld struct {
 }
 
 type tsdbIterator struct {
-	request     *frames.ReadRequest
-	set         pquerier.FrameSet
-	err         error
-	withColumns bool
-	currFrame   frames.Frame
+	request          *frames.ReadRequest
+	set              pquerier.FrameSet
+	err              error
+	withColumns      bool
+	currFrame        frames.Frame
+	currTsdbFramePos int
+	currTsdbFrame    frames.Frame
 }
 
 func (b *Backend) Read(request *frames.ReadRequest) (frames.FrameIterator, error) {
@@ -146,54 +148,80 @@ func oldQuery(adapter *tsdb.V3ioAdapter, request *frames.ReadRequest, from, to, 
 }
 
 func (i *tsdbIterator) Next() bool {
-	if i.set.NextFrame() {
-		frame, err := i.set.GetFrame()
-		if err != nil {
-			i.err = err
-			return false
-		}
-		labels := map[string]interface{}{}
+	var frame frames.Frame
+	var err error
 
-		columns := make([]frames.Column, len(frame.Names()))
-		indices := frame.Indices()
-		for i, colName := range frame.Names() {
-			columns[i], _ = frame.Column(colName) // Because we are iterating over the Names() it is safe to discard the error
-		}
+	frameSizeLimit := 256
+	if i.request.Proto.MessageLimit > 0 {
+		frameSizeLimit = int(i.request.Proto.MessageLimit)
+	}
 
-		for labelName, labelValue := range frame.Labels() {
-			name := labelName
-			if name == config.PrometheusMetricNameAttribute {
-				name = "metric_name"
-			}
-
-			labels[name] = labelValue
-			icol, err := frames.NewLabelColumn(name, labelValue, frame.Len())
+	if i.currTsdbFrame == nil {
+		if i.set.NextFrame() {
+			i.currTsdbFrame, err = i.set.GetFrame()
 			if err != nil {
 				i.err = err
 				return false
 			}
-
-			if i.request.Proto.MultiIndex {
-				indices = append(indices, icol)
-			} else {
-				columns = append(columns, icol)
+		} else {
+			if i.set.Err() != nil {
+				i.err = i.set.Err()
 			}
+			return false
+		}
+	}
+
+	nextPos := i.currTsdbFramePos + frameSizeLimit
+	if nextPos > i.currTsdbFrame.Len() {
+		nextPos = i.currTsdbFrame.Len()
+	}
+	frame, err = i.currTsdbFrame.Slice(i.currTsdbFramePos, nextPos)
+	if err != nil {
+		i.err = errors.Wrap(err, "Failed to slice data frame")
+		return false
+	}
+	if nextPos == i.currTsdbFrame.Len() {
+		i.currTsdbFrame = nil
+		i.currTsdbFramePos = 0
+	} else {
+		i.currTsdbFramePos = nextPos
+	}
+
+	labels := map[string]interface{}{}
+
+	columns := make([]frames.Column, len(frame.Names()))
+	indices := frame.Indices()
+	for i, colName := range frame.Names() {
+		columns[i], _ = frame.Column(colName) // Because we are iterating over the Names() it is safe to discard the error
+	}
+
+	for labelName, labelValue := range frame.Labels() {
+		name := labelName
+		if name == config.PrometheusMetricNameAttribute {
+			name = "metric_name"
 		}
 
-		i.currFrame, err = frames.NewFrame(columns, indices, labels)
+		labels[name] = labelValue
+		icol, err := frames.NewLabelColumn(name, labelValue, frame.Len())
 		if err != nil {
 			i.err = err
 			return false
 		}
 
-		return true
+		if i.request.Proto.MultiIndex {
+			indices = append(indices, icol)
+		} else {
+			columns = append(columns, icol)
+		}
 	}
 
-	if i.set.Err() != nil {
-		i.err = i.set.Err()
+	i.currFrame, err = frames.NewFrame(columns, indices, labels)
+	if err != nil {
+		i.err = err
+		return false
 	}
 
-	return false
+	return true
 }
 
 func (i *tsdbIterator) Err() error {

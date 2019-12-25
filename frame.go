@@ -266,7 +266,7 @@ func validateSlice(start int, end int, size int) error {
 		return fmt.Errorf("start out of bounds")
 	}
 
-	if end >= size {
+	if end > size {
 		return fmt.Errorf("end out of bounds")
 	}
 
