@@ -21,15 +21,15 @@ such restriction.
 package tsdb
 
 import (
-	"github.com/v3io/v3io-tsdb/pkg/config"
+	"strings"
 	"time"
 
 	"github.com/pkg/errors"
 	"github.com/v3io/frames"
+	"github.com/v3io/v3io-tsdb/pkg/config"
 	"github.com/v3io/v3io-tsdb/pkg/pquerier"
 	"github.com/v3io/v3io-tsdb/pkg/tsdb"
 	tsdbutils "github.com/v3io/v3io-tsdb/pkg/utils"
-	"strings"
 )
 
 type tsdbIteratorOld struct {
