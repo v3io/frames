@@ -72,7 +72,7 @@ func (tsdbSuite *TsdbTestSuite) generateSampleFrameWithEndTime(t testing.TB, end
 	size := 60
 	times := make([]time.Time, size)
 	for i := range times {
-		times[i] = end.Add(-time.Duration(size - i) * time.Second * 300)
+		times[i] = end.Add(-time.Duration(size-i) * time.Second * 300)
 	}
 
 	index, err := frames.NewSliceColumn("idx", times)
@@ -139,7 +139,7 @@ func (tsdbSuite *TsdbTestSuite) TestAll() {
 	}
 
 	tsdbSuite.T().Log("write")
-	anchorTime := time.Unix(157728271, 0)
+	anchorTime, _ := time.Parse(time.RFC3339, "2019-12-12T05:00:00Z")
 	frame := tsdbSuite.generateSampleFrame(tsdbSuite.T(), anchorTime)
 	wreq := &frames.WriteRequest{
 		Backend: tsdbSuite.backendName,
@@ -216,7 +216,7 @@ func (tsdbSuite *TsdbTestSuite) TestAllStringMetric() {
 	}
 
 	tsdbSuite.T().Log("write")
-	anchorTime := time.Unix(1577282715, 0)
+	anchorTime, _ := time.Parse(time.RFC3339, "2019-12-12T05:00:00Z")
 	frame := tsdbSuite.generateSampleFrameWithStringMetric(tsdbSuite.T(), anchorTime)
 	wreq := &frames.WriteRequest{
 		Backend: tsdbSuite.backendName,
@@ -327,7 +327,7 @@ func (tsdbSuite *TsdbTestSuite) TestDeleteWithTimestamp() {
 		Backend: tsdbSuite.backendName,
 		Table:   table,
 		Start:   "0",
-		End:     "now",
+		End:     "157728271500000", // Very high upper bound to catch all samples
 	}
 
 	it, err := tsdbSuite.client.Read(rreq)
@@ -393,7 +393,7 @@ func (tsdbSuite *TsdbTestSuite) TestDeleteWithRelativeTime() {
 		Backend: tsdbSuite.backendName,
 		Table:   table,
 		Start:   "0",
-		End:     "now",
+		End:     "157728271500000", // Very high upper bound to catch all samples
 	}
 
 	it, err := tsdbSuite.client.Read(rreq)
@@ -459,7 +459,7 @@ func (tsdbSuite *TsdbTestSuite) TestDeleteWithRFC3339Time() {
 		Backend: tsdbSuite.backendName,
 		Table:   table,
 		Start:   "0",
-		End:     "now",
+		End:     "157728271500000", // Very high upper bound to catch all samples
 	}
 
 	it, err := tsdbSuite.client.Read(rreq)
