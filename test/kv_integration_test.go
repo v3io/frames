@@ -714,9 +714,7 @@ func (kvSuite *KvTestSuite) TestNonExistingColumns() {
 		Columns: []string{"n1", "kk"},
 	}
 
-	it, err := kvSuite.client.Read(rreq)
-	kvSuite.NoError(err)
-	if it.Err() == nil {
-		kvSuite.T().Fatal("error was expected when reading a non existing column")
-	}
+	it, _ := kvSuite.client.Read(rreq)
+	it.Next()
+	kvSuite.NotEmptyf(it.Err(), "error was expected when reading a non existing column")
 }
