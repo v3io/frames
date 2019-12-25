@@ -26,6 +26,7 @@ import (
 	"reflect"
 	"strings"
 	"sync"
+	"time"
 	"unsafe"
 
 	"github.com/v3io/frames"
@@ -235,15 +236,22 @@ func (b *Backend) Create(request *frames.CreateRequest) error {
 
 // Delete deletes a table or part of it
 func (b *Backend) Delete(request *frames.DeleteRequest) error {
+	var err error
 
-	start, err := tsdbutils.Str2duration(request.Proto.Start)
-	if err != nil {
-		return err
+	end := time.Now().Unix() * 1000
+	if request.Proto.End != "" {
+		end, err = tsdbutils.Str2unixTime(request.Proto.End)
+		if err != nil {
+			return errors.Wrap(err, "failed to parse end time")
+		}
 	}
 
-	end, err := tsdbutils.Str2duration(request.Proto.End)
-	if err != nil {
-		return err
+	start := end - 1000*3600 // Default start time = one hour before the end time
+	if request.Proto.Start != "" {
+		start, err = tsdbutils.Str2unixTime(request.Proto.Start)
+		if err != nil {
+			return errors.Wrap(err, "failed to parse start time")
+		}
 	}
 
 	delAll := request.Proto.Start == "" && request.Proto.End == ""
