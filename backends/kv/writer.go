@@ -324,18 +324,20 @@ func genExpr(expr string, frame frames.Frame, index int) (string, error) {
 		}
 
 		args = append(args, "{"+name+"}")
-		valString := ""
+		valString := valueToTypedExpressionString(val)
 
-		switch col.DType() {
-		case frames.IntType:
-			valString = fmt.Sprintf("%d", val)
-		case frames.FloatType:
-			valString = fmt.Sprintf("%f", val.(float64))
-		case frames.StringType, frames.TimeType:
-			valString = "'" + val.(string) + "'"
-		default:
-			valString = fmt.Sprintf("%v", val)
+		args = append(args, valString)
+	}
+
+	for _, indexCol := range frame.Indices() {
+		indexName := indexCol.Name()
+		val, err := utils.ColAt(indexCol, index)
+		if err != nil {
+			return "", err
 		}
+
+		args = append(args, "{"+indexName+"}")
+		valString := valueToTypedExpressionString(val)
 
 		args = append(args, valString)
 	}
@@ -548,31 +550,35 @@ func getUpdateExpressionFromRow(columns map[string]frames.Column,
 			return "", nil, nil, err
 		}
 
-		expression.WriteString(valueToTypedExpressionString(val, name))
+		expression.WriteString(valueWithNameToTypedExpressionString(val, name))
 	}
 
 	key := indexValFunc(index)
 	// Add key column as an attribute
-	expression.WriteString(valueToTypedExpressionString(key, indexName))
+	expression.WriteString(valueWithNameToTypedExpressionString(key, indexName))
 
 	var sortingVal interface{}
 	if sortingKeyName != "" {
 		sortingVal = sortingKeyValFunc(index)
-		expression.WriteString(valueToTypedExpressionString(sortingVal, sortingKeyName))
+		expression.WriteString(valueWithNameToTypedExpressionString(sortingVal, sortingKeyName))
 	}
 
 	return expression.String(), key, sortingVal, nil
 }
 
-func valueToTypedExpressionString(value interface{}, name string) string {
+func valueWithNameToTypedExpressionString(value interface{}, name string) string {
+	return fmt.Sprintf("%v=%v;", name, valueToTypedExpressionString(value))
+}
+
+func valueToTypedExpressionString(value interface{}) string {
 	switch typedVal := value.(type) {
 	case string:
-		return fmt.Sprintf("%v='%v';", name, typedVal)
+		return fmt.Sprintf("'%v'", typedVal)
 	case time.Time:
 		seconds := typedVal.Unix()
 		nanos := typedVal.Nanosecond()
-		return fmt.Sprintf("%v=%v:%v;", name, seconds, nanos)
+		return fmt.Sprintf("%v:%v", seconds, nanos)
 	default:
-		return fmt.Sprintf("%v=%v;", name, value)
+		return fmt.Sprintf("%v", value)
 	}
 }

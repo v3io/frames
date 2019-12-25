@@ -46,9 +46,9 @@ func (tsdbSuite *TsdbTestSuite) generateSampleFrame(t testing.TB) frames.Frame {
 	}
 
 	columns := []frames.Column{
-		floatCol(t, "cpu", index.Len()),
-		floatCol(t, "mem", index.Len()),
-		floatCol(t, "disk", index.Len()),
+		FloatCol(t, "cpu", index.Len()),
+		FloatCol(t, "mem", index.Len()),
+		FloatCol(t, "disk", index.Len()),
 	}
 
 	frame, err := frames.NewFrame(columns, []frames.Column{index}, nil)
@@ -73,7 +73,7 @@ func (tsdbSuite *TsdbTestSuite) generateSampleFrameWithStringMetric(t testing.TB
 	}
 
 	columns := []frames.Column{
-		stringCol(t, "host", index.Len()),
+		StringCol(t, "host", index.Len()),
 	}
 
 	frame, err := frames.NewFrame(columns, []frames.Column{index}, nil)
