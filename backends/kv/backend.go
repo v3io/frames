@@ -107,20 +107,6 @@ func (b *Backend) updateItem(request *frames.ExecRequest) error {
 	return container.UpdateItemSync(&v3io.UpdateItemInput{Path: path + key, Expression: &expr, Condition: condition})
 }
 
-/*func (b *Backend) newContainer(session *frames.Session) (v3io.Container, error) {
-
-	container, err := v3ioutils.NewContainer(
-		session,
-		b.framesConfig,
-		b.logger,
-		b.numWorkers,
-	)
-
-	return container, err
-}
-
-*/
-
 func (b *Backend) newConnection(session *frames.Session, password string, token string, path string, addSlash bool) (v3io.Container, string, error) {
 
 	session = frames.InitSessionDefaults(session, b.framesConfig)

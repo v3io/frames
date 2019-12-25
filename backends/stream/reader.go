@@ -88,7 +88,7 @@ func (b *Backend) Read(request *frames.ReadRequest) (frames.FrameIterator, error
 		input.Type = v3io.SeekShardInputTypeEarliest
 	default:
 		return nil, fmt.Errorf(
-			"Stream seek type %s is invalid, use time | seq | latest | earliest", request.Proto.Start)
+			"Stream seek type %s is invalid, use 'earliest' | 'latest' | 'seq'/'sequence' | 'time'", request.Proto.Start)
 
 	}
 

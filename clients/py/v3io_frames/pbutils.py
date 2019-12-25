@@ -249,7 +249,10 @@ def series2col(s, name):
         kw['dtype'] = fpb.BOOLEAN
     elif is_time_dtype(s.dtype):
         if s.dt.tz:
-            s = s.dt.tz_localize(pytz.UTC)
+            try:
+                s = s.dt.tz_localize(pytz.UTC)
+            except TypeError:
+                s = s.dt.tz_convert('UTC')
         kw['times'] = s.astype(np.int64)
         kw['dtype'] = fpb.TIME
     elif is_categorical_dtype(s.dtype):
