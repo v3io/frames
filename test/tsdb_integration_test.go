@@ -68,6 +68,32 @@ func (tsdbSuite *TsdbTestSuite) generateSampleFrame(t testing.TB, anchorTime tim
 	return frame
 }
 
+func (tsdbSuite *TsdbTestSuite) generateSampleFrameWithEndTime(t testing.TB, end time.Time) frames.Frame {
+	size := 60
+	times := make([]time.Time, size)
+	for i := range times {
+		times[i] = end.Add(-time.Duration(size - i) * time.Second * 300)
+	}
+
+	index, err := frames.NewSliceColumn("idx", times)
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	columns := []frames.Column{
+		floatCol(t, "cpu", index.Len()),
+		floatCol(t, "mem", index.Len()),
+		floatCol(t, "disk", index.Len()),
+	}
+
+	frame, err := frames.NewFrame(columns, []frames.Column{index}, nil)
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	return frame
+}
+
 func (tsdbSuite *TsdbTestSuite) generateSampleFrameWithStringMetric(t testing.TB, anchorTime time.Time) frames.Frame {
 	size := 60 // TODO
 	times := make([]time.Time, size)
@@ -176,7 +202,7 @@ func (tsdbSuite *TsdbTestSuite) TestAll() {
 
 }
 
-func (tsdbSuite *TsdbTestSuite) NoTestAllStringMetric() {
+func (tsdbSuite *TsdbTestSuite) TestAllStringMetric() {
 	table := fmt.Sprintf("tsdb_test_all%d", time.Now().UnixNano())
 
 	tsdbSuite.T().Log("create")
@@ -248,4 +274,255 @@ func (tsdbSuite *TsdbTestSuite) NoTestAllStringMetric() {
 		tsdbSuite.T().Fatal(err)
 	}
 
+}
+
+func (tsdbSuite *TsdbTestSuite) TestDeleteWithTimestamp() {
+	table := fmt.Sprintf("TestDeleteWithTimestamp%d", time.Now().UnixNano())
+
+	tsdbSuite.T().Log("create")
+	req := &pb.CreateRequest{
+		Backend: tsdbSuite.backendName,
+		Table:   table,
+	}
+	req.SetAttribute("rate", "1/s")
+	if err := tsdbSuite.client.Create(req); err != nil {
+		tsdbSuite.T().Fatal(err)
+	}
+
+	tsdbSuite.T().Log("write")
+	end, _ := time.Parse(time.RFC3339, "2019-12-12T05:00:00Z")
+
+	frame := tsdbSuite.generateSampleFrameWithEndTime(tsdbSuite.T(), end)
+	wreq := &frames.WriteRequest{
+		Backend: tsdbSuite.backendName,
+		Table:   table,
+	}
+
+	appender, err := tsdbSuite.client.Write(wreq)
+	if err != nil {
+		tsdbSuite.T().Fatal(err)
+	}
+
+	if err := appender.Add(frame); err != nil {
+		tsdbSuite.T().Fatal(err)
+	}
+
+	if err := appender.WaitForComplete(3 * time.Second); err != nil {
+		tsdbSuite.T().Fatal(err)
+	}
+
+	tsdbSuite.T().Log("delete")
+	dreq := &pb.DeleteRequest{
+		Backend: tsdbSuite.backendName,
+		Table:   table,
+		Start:   "1576069387000",
+		End:     "1576414987000",
+	}
+
+	if err := tsdbSuite.client.Delete(dreq); err != nil {
+		tsdbSuite.T().Fatal(err)
+	}
+
+	rreq := &pb.ReadRequest{
+		Backend: tsdbSuite.backendName,
+		Table:   table,
+		Start:   "0",
+		End:     "now",
+	}
+
+	it, err := tsdbSuite.client.Read(rreq)
+	if err != nil {
+		tsdbSuite.T().Fatal(err)
+	}
+
+	tsdbSuite.Require().False(it.Next(), "expecting no results")
+
+	if err := it.Err(); err != nil {
+		tsdbSuite.T().Fatal(err)
+	}
+}
+
+func (tsdbSuite *TsdbTestSuite) TestDeleteWithRelativeTime() {
+	table := fmt.Sprintf("TestDeleteWithRelativeTime%d", time.Now().UnixNano())
+
+	tsdbSuite.T().Log("create")
+	req := &pb.CreateRequest{
+		Backend: tsdbSuite.backendName,
+		Table:   table,
+	}
+	req.SetAttribute("rate", "1/s")
+	if err := tsdbSuite.client.Create(req); err != nil {
+		tsdbSuite.T().Fatal(err)
+	}
+
+	tsdbSuite.T().Log("write")
+	end, _ := time.Parse(time.RFC3339, "2019-12-12T05:00:00Z")
+
+	frame := tsdbSuite.generateSampleFrameWithEndTime(tsdbSuite.T(), end)
+	wreq := &frames.WriteRequest{
+		Backend: tsdbSuite.backendName,
+		Table:   table,
+	}
+
+	appender, err := tsdbSuite.client.Write(wreq)
+	if err != nil {
+		tsdbSuite.T().Fatal(err)
+	}
+
+	if err := appender.Add(frame); err != nil {
+		tsdbSuite.T().Fatal(err)
+	}
+
+	if err := appender.WaitForComplete(3 * time.Second); err != nil {
+		tsdbSuite.T().Fatal(err)
+	}
+
+	tsdbSuite.T().Log("delete")
+	dreq := &pb.DeleteRequest{
+		Backend: tsdbSuite.backendName,
+		Table:   table,
+		Start:   "0",
+		End:     "now-1h",
+	}
+
+	if err := tsdbSuite.client.Delete(dreq); err != nil {
+		tsdbSuite.T().Fatal(err)
+	}
+
+	rreq := &pb.ReadRequest{
+		Backend: tsdbSuite.backendName,
+		Table:   table,
+		Start:   "0",
+		End:     "now",
+	}
+
+	it, err := tsdbSuite.client.Read(rreq)
+	if err != nil {
+		tsdbSuite.T().Fatal(err)
+	}
+
+	tsdbSuite.Require().False(it.Next(), "expecting no results")
+
+	if err := it.Err(); err != nil {
+		tsdbSuite.T().Fatal(err)
+	}
+}
+
+func (tsdbSuite *TsdbTestSuite) TestDeleteWithRFC3339Time() {
+	table := fmt.Sprintf("TestDeleteWithRFC3339Time%d", time.Now().UnixNano())
+
+	tsdbSuite.T().Log("create")
+	req := &pb.CreateRequest{
+		Backend: tsdbSuite.backendName,
+		Table:   table,
+	}
+	req.SetAttribute("rate", "1/s")
+	if err := tsdbSuite.client.Create(req); err != nil {
+		tsdbSuite.T().Fatal(err)
+	}
+
+	tsdbSuite.T().Log("write")
+	end, _ := time.Parse(time.RFC3339, "2019-12-12T05:00:00Z")
+
+	frame := tsdbSuite.generateSampleFrameWithEndTime(tsdbSuite.T(), end)
+	wreq := &frames.WriteRequest{
+		Backend: tsdbSuite.backendName,
+		Table:   table,
+	}
+
+	appender, err := tsdbSuite.client.Write(wreq)
+	if err != nil {
+		tsdbSuite.T().Fatal(err)
+	}
+
+	if err := appender.Add(frame); err != nil {
+		tsdbSuite.T().Fatal(err)
+	}
+
+	if err := appender.WaitForComplete(3 * time.Second); err != nil {
+		tsdbSuite.T().Fatal(err)
+	}
+
+	tsdbSuite.T().Log("delete")
+	dreq := &pb.DeleteRequest{
+		Backend: tsdbSuite.backendName,
+		Table:   table,
+		Start:   "2019-12-11T05:00:00Z",
+		End:     "2019-12-15T05:00:00Z",
+	}
+
+	if err := tsdbSuite.client.Delete(dreq); err != nil {
+		tsdbSuite.T().Fatal(err)
+	}
+
+	rreq := &pb.ReadRequest{
+		Backend: tsdbSuite.backendName,
+		Table:   table,
+		Start:   "0",
+		End:     "now",
+	}
+
+	it, err := tsdbSuite.client.Read(rreq)
+	if err != nil {
+		tsdbSuite.T().Fatal(err)
+	}
+
+	tsdbSuite.Require().False(it.Next(), "expecting no results")
+
+	if err := it.Err(); err != nil {
+		tsdbSuite.T().Fatal(err)
+	}
+}
+
+func (tsdbSuite *TsdbTestSuite) TestDeleteAll() {
+	table := fmt.Sprintf("TestDeleteAll%d", time.Now().UnixNano())
+
+	tsdbSuite.T().Log("create")
+	req := &pb.CreateRequest{
+		Backend: tsdbSuite.backendName,
+		Table:   table,
+	}
+	req.SetAttribute("rate", "1/s")
+	if err := tsdbSuite.client.Create(req); err != nil {
+		tsdbSuite.T().Fatal(err)
+	}
+
+	tsdbSuite.T().Log("write")
+	end, _ := time.Parse(time.RFC3339, "2019-12-12T05:00:00Z")
+
+	frame := tsdbSuite.generateSampleFrameWithEndTime(tsdbSuite.T(), end)
+	wreq := &frames.WriteRequest{
+		Backend: tsdbSuite.backendName,
+		Table:   table,
+	}
+
+	appender, err := tsdbSuite.client.Write(wreq)
+	if err != nil {
+		tsdbSuite.T().Fatal(err)
+	}
+
+	if err := appender.Add(frame); err != nil {
+		tsdbSuite.T().Fatal(err)
+	}
+
+	if err := appender.WaitForComplete(3 * time.Second); err != nil {
+		tsdbSuite.T().Fatal(err)
+	}
+
+	tsdbSuite.T().Log("delete")
+	dreq := &pb.DeleteRequest{
+		Backend: tsdbSuite.backendName,
+		Table:   table,
+		Start:   "",
+		End:     "",
+	}
+
+	if err := tsdbSuite.client.Delete(dreq); err != nil {
+		tsdbSuite.T().Fatal(err)
+	}
+
+	input := v3io.GetItemInput{Path: table}
+	_, err = tsdbSuite.v3ioContainer.GetItemSync(&input)
+
+	tsdbSuite.Require().Error(err, "expected error but finished successfully")
 }
