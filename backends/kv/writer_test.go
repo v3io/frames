@@ -74,28 +74,24 @@ func generateSequentialSampleFrameWithTypes(t *testing.T, size int, indexName st
 }
 
 func TestGenExpr(t *testing.T) {
-	frame := generateSequentialSampleFrameWithTypes(t, 5,
+	frame := generateSequentialSampleFrameWithTypes(t, 1,
 		"idx", map[string]string{"n1": "float", "n2": "time", "n3": "string", "n4": "bool"})
 	expression := "n1={n1};n2={n2};n3={n3};n4={n4};idx={idx};"
 
-	frameData := test.FrameToDataMap(frame)
+	frameData := test.FrameToDataMap(frame)["0"]
 
-	i := 0
-	for key, data := range frameData {
-		actual, err := genExpr(expression, frame, i)
-		if err != nil {
-			t.Fatalf("failed to generate expression, err: %v", err)
-		}
+	actual, err := genExpr(expression, frame, 0)
+	if err != nil {
+		t.Fatalf("failed to generate expression, err: %v", err)
+	}
 
-		idx, n1, n2, n3, n4 := key, data["n1"], data["n2"], data["n3"], data["n4"]
-		n2Time := n2.(time.Time)
-		n2Seconds, n2Nanos := n2Time.Unix(), n2Time.Nanosecond()
+	idx, n1, n2, n3, n4 := frameData["idx"], frameData["n1"], frameData["n2"], frameData["n3"], frameData["n4"]
+	n2Time := n2.(time.Time)
+	n2Seconds, n2Nanos := n2Time.Unix(), n2Time.Nanosecond()
 
-		expected := fmt.Sprintf("n1=%v;n2=%v:%v;n3='%v';n4=%v;idx=%v;", n1, n2Seconds, n2Nanos, n3, n4, idx)
+	expected := fmt.Sprintf("n1=%v;n2=%v:%v;n3='%v';n4=%v;idx=%v;", n1, n2Seconds, n2Nanos, n3, n4, idx)
 
-		if expected != actual {
-			t.Fatalf("expression didn't match expected. \nexpected: %v, \n actual: %v", expected, actual)
-		}
-		i++
+	if expected != actual {
+		t.Fatalf("expression didn't match expected. \nexpected: %v \n actual: %v", expected, actual)
 	}
 }
