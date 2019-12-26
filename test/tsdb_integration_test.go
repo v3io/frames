@@ -2,7 +2,6 @@ package test
 
 import (
 	"fmt"
-	"strconv"
 	"testing"
 	"time"
 
@@ -36,42 +35,7 @@ func GetTsdbTestsConstructorFunc() SuiteCreateFunc {
 	}
 }
 
-func (tsdbSuite *TsdbTestSuite) generateSampleFrame(t testing.TB, anchorTime time.Time) frames.Frame {
-	size := 60 // TODO
-	times := make([]time.Time, size)
-	end := anchorTime.Truncate(time.Hour)
-	for i := range times {
-		times[i] = end.Add(-time.Duration(size-i) * time.Second * 300)
-	}
-
-	index, err := frames.NewSliceColumn("idx", times)
-	if err != nil {
-		t.Fatal(err)
-	}
-	labelSlice := make([]string, size)
-	for i := 0; i < size; i++ {
-		labelSlice[i] = strconv.FormatBool(i > size/2)
-	}
-	labelCol, err := frames.NewSliceColumn("somelabel", labelSlice)
-	if err != nil {
-		t.Fatal(err)
-	}
-
-	columns := []frames.Column{
-		floatCol(t, "cpu", index.Len()),
-		floatCol(t, "mem", index.Len()),
-		floatCol(t, "disk", index.Len()),
-	}
-
-	frame, err := frames.NewFrame(columns, []frames.Column{index, labelCol}, nil)
-	if err != nil {
-		t.Fatal(err)
-	}
-
-	return frame
-}
-
-func (tsdbSuite *TsdbTestSuite) generateSampleFrameWithEndTime(t testing.TB, end time.Time) frames.Frame {
+func (tsdbSuite *TsdbTestSuite) generateSampleFrame(t testing.TB, end time.Time) frames.Frame {
 	size := 60
 	times := make([]time.Time, size)
 	for i := range times {
@@ -295,7 +259,7 @@ func (tsdbSuite *TsdbTestSuite) TestDeleteWithTimestamp() {
 	tsdbSuite.T().Log("write")
 	end, _ := time.Parse(time.RFC3339, "2019-12-12T05:00:00Z")
 
-	frame := tsdbSuite.generateSampleFrameWithEndTime(tsdbSuite.T(), end)
+	frame := tsdbSuite.generateSampleFrame(tsdbSuite.T(), end)
 	wreq := &frames.WriteRequest{
 		Backend: tsdbSuite.backendName,
 		Table:   table,
@@ -361,7 +325,7 @@ func (tsdbSuite *TsdbTestSuite) TestDeleteWithRelativeTime() {
 	tsdbSuite.T().Log("write")
 	end, _ := time.Parse(time.RFC3339, "2019-12-12T05:00:00Z")
 
-	frame := tsdbSuite.generateSampleFrameWithEndTime(tsdbSuite.T(), end)
+	frame := tsdbSuite.generateSampleFrame(tsdbSuite.T(), end)
 	wreq := &frames.WriteRequest{
 		Backend: tsdbSuite.backendName,
 		Table:   table,
@@ -427,7 +391,7 @@ func (tsdbSuite *TsdbTestSuite) TestDeleteWithRFC3339Time() {
 	tsdbSuite.T().Log("write")
 	end, _ := time.Parse(time.RFC3339, "2019-12-12T05:00:00Z")
 
-	frame := tsdbSuite.generateSampleFrameWithEndTime(tsdbSuite.T(), end)
+	frame := tsdbSuite.generateSampleFrame(tsdbSuite.T(), end)
 	wreq := &frames.WriteRequest{
 		Backend: tsdbSuite.backendName,
 		Table:   table,
@@ -493,7 +457,7 @@ func (tsdbSuite *TsdbTestSuite) TestDeleteAll() {
 	tsdbSuite.T().Log("write")
 	end, _ := time.Parse(time.RFC3339, "2019-12-12T05:00:00Z")
 
-	frame := tsdbSuite.generateSampleFrameWithEndTime(tsdbSuite.T(), end)
+	frame := tsdbSuite.generateSampleFrame(tsdbSuite.T(), end)
 	wreq := &frames.WriteRequest{
 		Backend: tsdbSuite.backendName,
 		Table:   table,
