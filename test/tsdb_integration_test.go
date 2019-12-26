@@ -13,6 +13,9 @@ import (
 	v3io "github.com/v3io/v3io-go/pkg/dataplane"
 )
 
+// Very high upper bound to catch all samples
+const veryHighTimestamp = "157728271500000"
+
 type TsdbTestSuite struct {
 	suite.Suite
 	tablePath      string
@@ -167,7 +170,7 @@ func (tsdbSuite *TsdbTestSuite) TestAll() {
 		Backend:      tsdbSuite.backendName,
 		Table:        table,
 		Start:        "0",
-		End:          "157728271500000", // Very high upper bound to catch all samples
+		End:          veryHighTimestamp,
 		MessageLimit: 10,
 	}
 
@@ -244,7 +247,7 @@ func (tsdbSuite *TsdbTestSuite) TestAllStringMetric() {
 		Backend: tsdbSuite.backendName,
 		Table:   table,
 		Start:   "0",
-		End:     "157728271500000", // Very high upper bound to catch all samples
+		End:     veryHighTimestamp,
 	}
 
 	it, err := tsdbSuite.client.Read(rreq)
@@ -327,7 +330,7 @@ func (tsdbSuite *TsdbTestSuite) TestDeleteWithTimestamp() {
 		Backend: tsdbSuite.backendName,
 		Table:   table,
 		Start:   "0",
-		End:     "157728271500000", // Very high upper bound to catch all samples
+		End:     veryHighTimestamp,
 	}
 
 	it, err := tsdbSuite.client.Read(rreq)
@@ -393,7 +396,7 @@ func (tsdbSuite *TsdbTestSuite) TestDeleteWithRelativeTime() {
 		Backend: tsdbSuite.backendName,
 		Table:   table,
 		Start:   "0",
-		End:     "157728271500000", // Very high upper bound to catch all samples
+		End:     veryHighTimestamp,
 	}
 
 	it, err := tsdbSuite.client.Read(rreq)
@@ -459,7 +462,7 @@ func (tsdbSuite *TsdbTestSuite) TestDeleteWithRFC3339Time() {
 		Backend: tsdbSuite.backendName,
 		Table:   table,
 		Start:   "0",
-		End:     "157728271500000", // Very high upper bound to catch all samples
+		End:     veryHighTimestamp,
 	}
 
 	it, err := tsdbSuite.client.Read(rreq)
