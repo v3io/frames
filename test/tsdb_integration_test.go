@@ -349,7 +349,7 @@ func (tsdbSuite *TsdbTestSuite) TestDeleteWithRelativeTime() {
 		Backend: tsdbSuite.backendName,
 		Table:   table,
 		Start:   "0",
-		End:     veryHighTimestamp,
+		End:     "now-1h",
 	}
 
 	if err := tsdbSuite.client.Delete(dreq); err != nil {
