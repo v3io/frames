@@ -323,7 +323,7 @@ func genExpr(expr string, frame frames.Frame, index int) (string, error) {
 			return "", err
 		}
 
-		args = append(args, "{"+name+"}")
+		args = append(args, fmt.Sprintf("{%v}", name))
 		valString := valueToTypedExpressionString(val)
 
 		args = append(args, valString)
@@ -336,7 +336,7 @@ func genExpr(expr string, frame frames.Frame, index int) (string, error) {
 			return "", err
 		}
 
-		args = append(args, "{"+indexName+"}")
+		args = append(args, fmt.Sprintf("{%v}", indexName))
 		valString := valueToTypedExpressionString(val)
 
 		args = append(args, valString)
@@ -543,31 +543,38 @@ func getUpdateExpressionFromRow(columns map[string]frames.Column,
 	// set row values from columns
 	for name, col := range columns {
 		if isNull(index, name) {
-			expression.WriteString(fmt.Sprintf("delete(%v);", name))
+			expression.WriteString("delete(")
+			expression.WriteString(name)
+			expression.WriteString(");")
 		}
 		val, err := utils.ColAt(col, index)
 		if err != nil {
 			return "", nil, nil, err
 		}
 
-		expression.WriteString(valueWithNameToTypedExpressionString(val, name))
+		expression.WriteString(name)
+		expression.WriteString("=")
+		expression.WriteString(valueToTypedExpressionString(val))
+		expression.WriteString(";")
 	}
 
 	key := indexValFunc(index)
 	// Add key column as an attribute
-	expression.WriteString(valueWithNameToTypedExpressionString(key, indexName))
+	expression.WriteString(indexName)
+	expression.WriteString("=")
+	expression.WriteString(valueToTypedExpressionString(key))
+	expression.WriteString(";")
 
 	var sortingVal interface{}
 	if sortingKeyName != "" {
 		sortingVal = sortingKeyValFunc(index)
-		expression.WriteString(valueWithNameToTypedExpressionString(sortingVal, sortingKeyName))
+		expression.WriteString(sortingKeyName)
+		expression.WriteString("=")
+		expression.WriteString(valueToTypedExpressionString(sortingVal))
+		expression.WriteString(";")
 	}
 
 	return expression.String(), key, sortingVal, nil
-}
-
-func valueWithNameToTypedExpressionString(value interface{}, name string) string {
-	return fmt.Sprintf("%v=%v;", name, valueToTypedExpressionString(value))
 }
 
 func valueToTypedExpressionString(value interface{}) string {
