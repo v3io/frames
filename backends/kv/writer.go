@@ -50,9 +50,10 @@ type Appender struct {
 }
 
 const (
-	errorCodeString              = "ErrorCode"
-	falseConditionOuterErrorCode = "16777244"
-	falseConditionInnerErrorCode = "16777245"
+	errorCodeString                        = "ErrorCode"
+	falseConditionOuterErrorCode           = "16777244"
+	falseConditionInnerErrorCode           = "16777245"
+	createNewItemOnlyExistingItemErrorCode = "369098809"
 )
 
 // Write support writing to backend
@@ -488,8 +489,8 @@ func isOnlyNewItemUpdateModeItemExistError(err error, mode string) bool {
 	errString := err.Error()
 
 	if mode == frames.CreateNewItemsOnly.GetNginxModeName() &&
-		strings.Count(errString, errorCodeString) == 1 &&
-		strings.Contains(errString, falseConditionOuterErrorCode) {
+		strings.Count(errString, errorCodeString) == 2 &&
+		strings.Contains(errString, createNewItemOnlyExistingItemErrorCode) {
 		return true
 	}
 
