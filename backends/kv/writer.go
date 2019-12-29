@@ -324,19 +324,21 @@ func genExpr(expr string, frame frames.Frame, index int) (string, error) {
 			return "", err
 		}
 
-		args = append(args, "{"+name+"}")
-		valString := ""
+		args = append(args, fmt.Sprintf("{%v}", name))
+		valString := valueToTypedExpressionString(val)
 
-		switch col.DType() {
-		case frames.IntType:
-			valString = fmt.Sprintf("%d", val)
-		case frames.FloatType:
-			valString = fmt.Sprintf("%f", val.(float64))
-		case frames.StringType, frames.TimeType:
-			valString = "'" + val.(string) + "'"
-		default:
-			valString = fmt.Sprintf("%v", val)
+		args = append(args, valString)
+	}
+
+	for _, indexCol := range frame.Indices() {
+		indexName := indexCol.Name()
+		val, err := utils.ColAt(indexCol, index)
+		if err != nil {
+			return "", err
 		}
+
+		args = append(args, fmt.Sprintf("{%v}", indexName))
+		valString := valueToTypedExpressionString(val)
 
 		args = append(args, valString)
 	}
@@ -542,38 +544,49 @@ func getUpdateExpressionFromRow(columns map[string]frames.Column,
 	// set row values from columns
 	for name, col := range columns {
 		if isNull(index, name) {
-			expression.WriteString(fmt.Sprintf("delete(%v);", name))
+			expression.WriteString("delete(")
+			expression.WriteString(name)
+			expression.WriteString(");")
 		}
 		val, err := utils.ColAt(col, index)
 		if err != nil {
 			return "", nil, nil, err
 		}
 
-		expression.WriteString(valueToTypedExpressionString(val, name))
+		expression.WriteString(name)
+		expression.WriteString("=")
+		expression.WriteString(valueToTypedExpressionString(val))
+		expression.WriteString(";")
 	}
 
 	key := indexValFunc(index)
 	// Add key column as an attribute
-	expression.WriteString(valueToTypedExpressionString(key, indexName))
+	expression.WriteString(indexName)
+	expression.WriteString("=")
+	expression.WriteString(valueToTypedExpressionString(key))
+	expression.WriteString(";")
 
 	var sortingVal interface{}
 	if sortingKeyName != "" {
 		sortingVal = sortingKeyValFunc(index)
-		expression.WriteString(valueToTypedExpressionString(sortingVal, sortingKeyName))
+		expression.WriteString(sortingKeyName)
+		expression.WriteString("=")
+		expression.WriteString(valueToTypedExpressionString(sortingVal))
+		expression.WriteString(";")
 	}
 
 	return expression.String(), key, sortingVal, nil
 }
 
-func valueToTypedExpressionString(value interface{}, name string) string {
+func valueToTypedExpressionString(value interface{}) string {
 	switch typedVal := value.(type) {
 	case string:
-		return fmt.Sprintf("%v='%v';", name, typedVal)
+		return fmt.Sprintf("'%v'", typedVal)
 	case time.Time:
 		seconds := typedVal.Unix()
 		nanos := typedVal.Nanosecond()
-		return fmt.Sprintf("%v=%v:%v;", name, seconds, nanos)
+		return fmt.Sprintf("%v:%v", seconds, nanos)
 	default:
-		return fmt.Sprintf("%v=%v;", name, value)
+		return fmt.Sprintf("%v", value)
 	}
 }

@@ -81,7 +81,7 @@ func (kvSuite *KvTestSuite) generateRandomSampleFrame(size int, indexName string
 
 	columns := make([]frames.Column, len(columnNames))
 	for i, name := range columnNames {
-		columns[i] = floatCol(kvSuite.T(), name, size)
+		columns[i] = FloatCol(kvSuite.T(), name, size)
 	}
 
 	frame, err := frames.NewFrame(columns, []frames.Column{icol}, nil)
@@ -107,7 +107,7 @@ func (kvSuite *KvTestSuite) generateSequentialSampleFrame(size int, indexName st
 
 	columns := make([]frames.Column, len(columnNames))
 	for i, name := range columnNames {
-		columns[i] = floatCol(kvSuite.T(), name, size)
+		columns[i] = FloatCol(kvSuite.T(), name, size)
 	}
 
 	frame, err := frames.NewFrame(columns, []frames.Column{icol}, nil)
@@ -136,13 +136,13 @@ func (kvSuite *KvTestSuite) generateSequentialSampleFrameWithTypes(size int, ind
 	for columnName, columnType := range columnNames {
 		switch columnType {
 		case "string":
-			columns[i] = stringCol(kvSuite.T(), columnName, size)
+			columns[i] = StringCol(kvSuite.T(), columnName, size)
 		case "float":
-			columns[i] = floatCol(kvSuite.T(), columnName, size)
+			columns[i] = FloatCol(kvSuite.T(), columnName, size)
 		case "bool":
-			columns[i] = boolCol(kvSuite.T(), columnName, size)
+			columns[i] = BoolCol(kvSuite.T(), columnName, size)
 		case "time":
-			columns[i] = timeCol(kvSuite.T(), columnName, size)
+			columns[i] = TimeCol(kvSuite.T(), columnName, size)
 		default:
 			kvSuite.T().Fatalf("type %v not supported", columnType)
 		}
@@ -232,7 +232,7 @@ func (kvSuite *KvTestSuite) TestRangeScan() {
 	}
 
 	columns := []frames.Column{
-		stringCol(kvSuite.T(), "n1", len(index)),
+		StringCol(kvSuite.T(), "n1", len(index)),
 	}
 
 	frame, err := frames.NewFrame(columns, []frames.Column{icol, sortcol}, nil)
@@ -351,10 +351,10 @@ func (kvSuite *KvTestSuite) TestNullValuesWrite() {
 	}
 
 	columns := []frames.Column{
-		floatCol(kvSuite.T(), "n1", len(index)),
-		stringCol(kvSuite.T(), "n2", len(index)),
-		boolCol(kvSuite.T(), "n3", len(index)),
-		timeCol(kvSuite.T(), "n4", len(index)),
+		FloatCol(kvSuite.T(), "n1", len(index)),
+		StringCol(kvSuite.T(), "n2", len(index)),
+		BoolCol(kvSuite.T(), "n3", len(index)),
+		TimeCol(kvSuite.T(), "n4", len(index)),
 	}
 
 	nullValues := initializeNullColumns(len(index))
