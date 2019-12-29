@@ -16,7 +16,7 @@ import (
 
 type SuiteCreateFunc = func(frames.Client, v3io.Container, logger.Logger) suite.TestingSuite
 
-func floatCol(t testing.TB, name string, size int) frames.Column {
+func FloatCol(t testing.TB, name string, size int) frames.Column {
 	random := rand.New(rand.NewSource(time.Now().UnixNano()))
 	floats := make([]float64, size)
 	for i := range floats {
@@ -31,7 +31,7 @@ func floatCol(t testing.TB, name string, size int) frames.Column {
 	return col
 }
 
-func stringCol(t testing.TB, name string, size int) frames.Column {
+func StringCol(t testing.TB, name string, size int) frames.Column {
 	strings := make([]string, size)
 	for i := range strings {
 		strings[i] = fmt.Sprintf("val-%d", i)
@@ -44,7 +44,7 @@ func stringCol(t testing.TB, name string, size int) frames.Column {
 	return col
 }
 
-func boolCol(t testing.TB, name string, size int) frames.Column {
+func BoolCol(t testing.TB, name string, size int) frames.Column {
 	bools := make([]bool, size)
 	for i := range bools {
 		bools[i] = true
@@ -57,7 +57,7 @@ func boolCol(t testing.TB, name string, size int) frames.Column {
 	return col
 }
 
-func timeCol(t testing.TB, name string, size int) frames.Column {
+func TimeCol(t testing.TB, name string, size int) frames.Column {
 	times := make([]time.Time, size)
 	now := time.Now()
 	for i := range times {

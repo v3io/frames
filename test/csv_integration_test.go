@@ -58,7 +58,7 @@ func (csvSuite *CsvTestSuite) generateSampleFrame(t testing.TB) frames.Frame {
 	}
 	columns = append(columns, col)
 
-	col = floatCol(t, "floats", size)
+	col = FloatCol(t, "floats", size)
 	columns = append(columns, col)
 
 	ints := make([]int64, size)
@@ -71,7 +71,7 @@ func (csvSuite *CsvTestSuite) generateSampleFrame(t testing.TB) frames.Frame {
 	}
 	columns = append(columns, col)
 
-	col = stringCol(t, "strings", size)
+	col = StringCol(t, "strings", size)
 	columns = append(columns, col)
 
 	times := make([]time.Time, size)
