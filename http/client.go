@@ -270,6 +270,10 @@ func (it *streamFrameIterator) Next() bool {
 	msg := &pb.Frame{}
 
 	err = it.decoder.Decode(msg)
+	if msg.Error != "" {
+		it.err = fmt.Errorf(msg.Error)
+		return false
+	}
 	if err == nil {
 		it.frame = frames.NewFrameFromProto(msg)
 		return true
