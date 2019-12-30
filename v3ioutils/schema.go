@@ -64,7 +64,7 @@ type V3ioSchema interface {
 type OldV3ioSchema struct {
 	Fields           []OldSchemaField `json:"fields"`
 	Key              string           `json:"key"`
-	SortingKey       string           `json:"sortingKey"`
+	SortingKey       string           `json:"sortingKey,omitempty"`
 	HashingBucketNum int              `json:"hashingBucketNum"`
 }
 
