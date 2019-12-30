@@ -77,6 +77,8 @@ def Client(address='', data_url='', container='', path='', user='',
     ----------
     A new `Client` object
     """
+    if not (address.startswith("grpc://") or address.startswith("https://") or address.startswith("http://")):
+        address = "grpc://" + address
     protocol = urlparse(address).scheme or 'grpc'
     if protocol not in _known_protocols:
         raise ValueError('unknown protocol - {}'.format(protocol))
