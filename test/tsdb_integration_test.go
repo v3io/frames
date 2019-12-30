@@ -12,6 +12,9 @@ import (
 	v3io "github.com/v3io/v3io-go/pkg/dataplane"
 )
 
+// Very high upper bound to catch all samples
+const veryHighTimestamp = "157728271500000"
+
 type TsdbTestSuite struct {
 	suite.Suite
 	tablePath      string
@@ -32,38 +35,11 @@ func GetTsdbTestsConstructorFunc() SuiteCreateFunc {
 	}
 }
 
-func (tsdbSuite *TsdbTestSuite) generateSampleFrame(t testing.TB) frames.Frame {
-	size := 60 // TODO
-	times := make([]time.Time, size)
-	end := time.Now().Truncate(time.Hour)
-	for i := range times {
-		times[i] = end.Add(-time.Duration(size - i) * time.Second * 300)
-	}
-
-	index, err := frames.NewSliceColumn("idx", times)
-	if err != nil {
-		t.Fatal(err)
-	}
-
-	columns := []frames.Column{
-		floatCol(t, "cpu", index.Len()),
-		floatCol(t, "mem", index.Len()),
-		floatCol(t, "disk", index.Len()),
-	}
-
-	frame, err := frames.NewFrame(columns, []frames.Column{index}, nil)
-	if err != nil {
-		t.Fatal(err)
-	}
-
-	return frame
-}
-
-func (tsdbSuite *TsdbTestSuite) generateSampleFrameWithEndTime(t testing.TB, end time.Time) frames.Frame {
+func (tsdbSuite *TsdbTestSuite) generateSampleFrame(t testing.TB, end time.Time) frames.Frame {
 	size := 60
 	times := make([]time.Time, size)
 	for i := range times {
-		times[i] = end.Add(-time.Duration(size - i) * time.Second * 300)
+		times[i] = end.Add(-time.Duration(size-i) * time.Second * 300)
 	}
 
 	index, err := frames.NewSliceColumn("idx", times)
@@ -72,9 +48,9 @@ func (tsdbSuite *TsdbTestSuite) generateSampleFrameWithEndTime(t testing.TB, end
 	}
 
 	columns := []frames.Column{
-		floatCol(t, "cpu", index.Len()),
-		floatCol(t, "mem", index.Len()),
-		floatCol(t, "disk", index.Len()),
+		FloatCol(t, "cpu", index.Len()),
+		FloatCol(t, "mem", index.Len()),
+		FloatCol(t, "disk", index.Len()),
 	}
 
 	frame, err := frames.NewFrame(columns, []frames.Column{index}, nil)
@@ -85,12 +61,12 @@ func (tsdbSuite *TsdbTestSuite) generateSampleFrameWithEndTime(t testing.TB, end
 	return frame
 }
 
-func (tsdbSuite *TsdbTestSuite) generateSampleFrameWithStringMetric(t testing.TB) frames.Frame {
+func (tsdbSuite *TsdbTestSuite) generateSampleFrameWithStringMetric(t testing.TB, anchorTime time.Time) frames.Frame {
 	size := 60 // TODO
 	times := make([]time.Time, size)
-	end := time.Now().Truncate(time.Hour)
+	end := anchorTime.Truncate(time.Hour)
 	for i := range times {
-		times[i] = end.Add(-time.Duration(size - i) * time.Second * 300)
+		times[i] = end.Add(-time.Duration(size-i) * time.Second * 300)
 	}
 
 	index, err := frames.NewSliceColumn("idx", times)
@@ -99,7 +75,7 @@ func (tsdbSuite *TsdbTestSuite) generateSampleFrameWithStringMetric(t testing.TB
 	}
 
 	columns := []frames.Column{
-		stringCol(t, "host", index.Len()),
+		StringCol(t, "host", index.Len()),
 	}
 
 	frame, err := frames.NewFrame(columns, []frames.Column{index}, nil)
@@ -130,7 +106,8 @@ func (tsdbSuite *TsdbTestSuite) TestAll() {
 	}
 
 	tsdbSuite.T().Log("write")
-	frame := tsdbSuite.generateSampleFrame(tsdbSuite.T())
+	anchorTime, _ := time.Parse(time.RFC3339, "2019-12-12T05:00:00Z")
+	frame := tsdbSuite.generateSampleFrame(tsdbSuite.T(), anchorTime)
 	wreq := &frames.WriteRequest{
 		Backend: tsdbSuite.backendName,
 		Table:   table,
@@ -154,10 +131,11 @@ func (tsdbSuite *TsdbTestSuite) TestAll() {
 
 	tsdbSuite.T().Log("read")
 	rreq := &pb.ReadRequest{
-		Backend: tsdbSuite.backendName,
-		Table:   table,
-		Start:   "now-7h",
-		End:     "now",
+		Backend:      tsdbSuite.backendName,
+		Table:        table,
+		Start:        "0",
+		End:          veryHighTimestamp,
+		MessageLimit: 10,
 	}
 
 	it, err := tsdbSuite.client.Read(rreq)
@@ -165,12 +143,14 @@ func (tsdbSuite *TsdbTestSuite) TestAll() {
 		tsdbSuite.T().Fatal(err)
 	}
 
+	resultCount := 0
 	for it.Next() {
-		// TODO: More checks
 		fr := it.At()
-		if !(fr.Len() == frame.Len() || fr.Len()-1 == frame.Len()) {
-			tsdbSuite.T().Fatalf("wrong length: %d != %d", fr.Len(), frame.Len())
-		}
+		resultCount += fr.Len()
+	}
+	// TODO: More checks
+	if !(resultCount == frame.Len() || resultCount-1 == frame.Len()) {
+		tsdbSuite.T().Fatalf("wrong length: %d != %d", resultCount, frame.Len())
 	}
 
 	if err := it.Err(); err != nil {
@@ -203,7 +183,8 @@ func (tsdbSuite *TsdbTestSuite) TestAllStringMetric() {
 	}
 
 	tsdbSuite.T().Log("write")
-	frame := tsdbSuite.generateSampleFrameWithStringMetric(tsdbSuite.T())
+	anchorTime, _ := time.Parse(time.RFC3339, "2019-12-12T05:00:00Z")
+	frame := tsdbSuite.generateSampleFrameWithStringMetric(tsdbSuite.T(), anchorTime)
 	wreq := &frames.WriteRequest{
 		Backend: tsdbSuite.backendName,
 		Table:   table,
@@ -229,8 +210,8 @@ func (tsdbSuite *TsdbTestSuite) TestAllStringMetric() {
 	rreq := &pb.ReadRequest{
 		Backend: tsdbSuite.backendName,
 		Table:   table,
-		Start:   "now-7h",
-		End:     "now",
+		Start:   "0",
+		End:     veryHighTimestamp,
 	}
 
 	it, err := tsdbSuite.client.Read(rreq)
@@ -278,7 +259,7 @@ func (tsdbSuite *TsdbTestSuite) TestDeleteWithTimestamp() {
 	tsdbSuite.T().Log("write")
 	end, _ := time.Parse(time.RFC3339, "2019-12-12T05:00:00Z")
 
-	frame := tsdbSuite.generateSampleFrameWithEndTime(tsdbSuite.T(), end)
+	frame := tsdbSuite.generateSampleFrame(tsdbSuite.T(), end)
 	wreq := &frames.WriteRequest{
 		Backend: tsdbSuite.backendName,
 		Table:   table,
@@ -313,7 +294,7 @@ func (tsdbSuite *TsdbTestSuite) TestDeleteWithTimestamp() {
 		Backend: tsdbSuite.backendName,
 		Table:   table,
 		Start:   "0",
-		End:     "now",
+		End:     veryHighTimestamp,
 	}
 
 	it, err := tsdbSuite.client.Read(rreq)
@@ -344,7 +325,7 @@ func (tsdbSuite *TsdbTestSuite) TestDeleteWithRelativeTime() {
 	tsdbSuite.T().Log("write")
 	end, _ := time.Parse(time.RFC3339, "2019-12-12T05:00:00Z")
 
-	frame := tsdbSuite.generateSampleFrameWithEndTime(tsdbSuite.T(), end)
+	frame := tsdbSuite.generateSampleFrame(tsdbSuite.T(), end)
 	wreq := &frames.WriteRequest{
 		Backend: tsdbSuite.backendName,
 		Table:   table,
@@ -379,7 +360,7 @@ func (tsdbSuite *TsdbTestSuite) TestDeleteWithRelativeTime() {
 		Backend: tsdbSuite.backendName,
 		Table:   table,
 		Start:   "0",
-		End:     "now",
+		End:     veryHighTimestamp,
 	}
 
 	it, err := tsdbSuite.client.Read(rreq)
@@ -410,7 +391,7 @@ func (tsdbSuite *TsdbTestSuite) TestDeleteWithRFC3339Time() {
 	tsdbSuite.T().Log("write")
 	end, _ := time.Parse(time.RFC3339, "2019-12-12T05:00:00Z")
 
-	frame := tsdbSuite.generateSampleFrameWithEndTime(tsdbSuite.T(), end)
+	frame := tsdbSuite.generateSampleFrame(tsdbSuite.T(), end)
 	wreq := &frames.WriteRequest{
 		Backend: tsdbSuite.backendName,
 		Table:   table,
@@ -445,7 +426,7 @@ func (tsdbSuite *TsdbTestSuite) TestDeleteWithRFC3339Time() {
 		Backend: tsdbSuite.backendName,
 		Table:   table,
 		Start:   "0",
-		End:     "now",
+		End:     veryHighTimestamp,
 	}
 
 	it, err := tsdbSuite.client.Read(rreq)
@@ -476,7 +457,7 @@ func (tsdbSuite *TsdbTestSuite) TestDeleteAll() {
 	tsdbSuite.T().Log("write")
 	end, _ := time.Parse(time.RFC3339, "2019-12-12T05:00:00Z")
 
-	frame := tsdbSuite.generateSampleFrameWithEndTime(tsdbSuite.T(), end)
+	frame := tsdbSuite.generateSampleFrame(tsdbSuite.T(), end)
 	wreq := &frames.WriteRequest{
 		Backend: tsdbSuite.backendName,
 		Table:   table,
