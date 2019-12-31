@@ -127,7 +127,7 @@ func (b *Backend) put(request *frames.ExecRequest) error {
 	data := varData.GetSval()
 
 	clientInfo := ""
-	if val, ok := request.Proto.Args["clientinfo"]; ok {
+	if val, ok := request.Proto.Args["client_info"]; ok {
 		clientInfo = val.GetSval()
 	}
 

@@ -189,7 +189,7 @@ class ClientBase:
 
     def read(self, backend='', table='', query='', columns=None, filter='',
              group_by='', limit=0, data_format='', row_layout=False,
-             max_in_message=0, marker='', iterator=False, get_raw=False, **kw):
+             max_rows_in_msg=0, marker='', iterator=False, get_raw=False, **kw):
         """Reads data from a table or stream (run a data query)
 
         Common Parameters
@@ -219,7 +219,7 @@ class ClientBase:
         row_layout : bool
             True to use a row layout; False (default) to use a column layout
             [Not supported in this version]
-        max_in_message : int
+         max_rows_in_msg : int
             Maximum number of rows to read in each message (read chunk size)
         marker : str
             Query marker; cannot be used with `query`
@@ -246,16 +246,16 @@ class ClientBase:
             raise ReadError('missing data')
         # TODO: More validation
 
-        if max_in_message > 0:
+        if  max_rows_in_msg > 0:
             iterator = True
 
         return self._read(
             backend, table, query, columns, filter,
             group_by, limit, data_format, row_layout,
-            max_in_message, marker, iterator, get_raw, **kw)
+            max_rows_in_msg, marker, iterator, get_raw, **kw)
 
     def write(self, backend, table, dfs, expression='', condition='',
-              labels=None, max_in_message=0, index_cols=None,
+              labels=None,  max_rows_in_msg=0, index_cols=None,
               save_mode='errorIfTableExists', partition_keys=None):
         """Writes data to a table or stream
 
@@ -283,7 +283,7 @@ class ClientBase:
         labels : dict (`{<label>: <value>[, <label>: <value>, ...]}`)
             ('tsdb' backend only) A dictionary of sample labels of type
             string that apply to all the DataFrame rows
-        max_in_message : int
+         max_rows_in_msg : int
             Maximum number of rows to write in each message (write chunk size)
         index_cols : []str
             List of column names to be used as the index columns for the write
@@ -304,8 +304,8 @@ class ClientBase:
         if isinstance(dfs, pd.DataFrame):
             dfs = [dfs]
 
-        if max_in_message:
-            dfs = self._iter_chunks(dfs, max_in_message)
+        if  max_rows_in_msg:
+            dfs = self._iter_chunks(dfs,  max_rows_in_msg)
 
         request = self._encode_write(
             backend, table, expression, condition, save_mode, partition_keys)
