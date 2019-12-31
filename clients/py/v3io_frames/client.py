@@ -311,7 +311,7 @@ class ClientBase:
             backend, table, expression, condition, save_mode, partition_keys)
         return self._write(request, dfs, labels, index_cols)
 
-    def create(self, backend, table, attrs=None, schema=None, if_exists=FAIL):
+    def create(self, backend, table, schema=None, if_exists=FAIL, **kw):
         """Creates a new TSDB table or stream
 
         Parameters
@@ -333,7 +333,7 @@ class ClientBase:
             On request error or backend error
         """
         self._validate_request(backend, table, CreateError)
-        return self._create(backend, table, attrs, schema, if_exists)
+        return self._create(backend, table, schema, if_exists, kw)
 
     def delete(self, backend, table, filter='', start='', end='',
                if_missing=FAIL):

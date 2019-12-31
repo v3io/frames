@@ -178,36 +178,17 @@ func (b *Backend) GetQuerier(session *frames.Session, password string, token str
 // Create creates a table
 func (b *Backend) Create(request *frames.CreateRequest) error {
 
-	attrs := request.Proto.Attributes()
-
-	attr, ok := attrs["rate"]
-	if !ok {
+	rate := request.Proto.Rate
+	if request.Proto.Rate == "" {
 		return errors.New("Must specify 'rate' attribute to specify maximum sample rate, e.g. '1/m'")
-	}
-	rate, isStr := attr.(string)
-	if !isStr {
-		return errors.New("'rate' attribute must be a string, e.g. '1/m'")
 	}
 
 	aggregationGranularity := config.DefaultAggregationGranularity
-	attr, ok = attrs["aggregation-granularity"]
-	if ok {
-		val, isStr := attr.(string)
-		if !isStr {
-			return errors.New("'aggregation-granularity' attribute must be a string")
-		}
-		aggregationGranularity = val
+	if request.Proto.AggregationGranularity != "" {
+		aggregationGranularity = request.Proto.AggregationGranularity
 	}
 
-	defaultRollups := ""
-	attr, ok = attrs["aggregates"]
-	if ok {
-		val, isStr := attr.(string)
-		if !isStr {
-			return errors.New("'aggregates' attribute must be a string")
-		}
-		defaultRollups = val
-	}
+	defaultRollups := request.Proto.Aggregates
 
 	session := frames.InitSessionDefaults(request.Proto.Session, b.framesConfig)
 	containerName, path, err := v3ioutils.ProcessPaths(session, request.Proto.Table, false)

@@ -32,7 +32,7 @@ SESSION_ENV_KEY = 'V3IO_SESSION'
 _known_protocols = {'grpc', 'http', 'https'}
 
 
-def Client(address='', data_url='', container='', path='', user='',
+def Client(address='',  container='', data_url='', path='', user='',
            password='', token='', session_id='', frame_factory=pd.DataFrame,
            concat=pd.concat):
     """Creates a new Frames client object

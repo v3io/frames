@@ -114,7 +114,7 @@ class Client(ClientBase):
         return resp.json()
 
     @connection_error(CreateError)
-    def _create(self, backend, table, attrs, schema, if_exists):
+    def _create(self, backend, table, schema, if_exists, **kw):
         request = {
             'session': pb2py(self.session),
             'backend': backend,
@@ -123,7 +123,7 @@ class Client(ClientBase):
             'schema': pb2py(schema),
             'if_exists': if_exists,
         }
-
+        request.update(kw)
         url = self._url_for('create')
         headers = self._headers()
         resp = requests.post(url, verify=False, headers=headers, json=request)

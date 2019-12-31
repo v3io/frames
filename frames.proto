@@ -183,9 +183,15 @@ message CreateRequest {
     Session session = 1;
     string backend = 2; // name of the backend
     string table = 3; // Table name (path)
-    map<string, Value> attribute_map = 4; // List of attributes used for creating the table
-    TableSchema schema = 5; // Schema (for describing unstructured/schemaless data)
-    ErrorOptions if_exists = 6;
+    TableSchema schema = 4; // Schema (for describing unstructured/schemaless data)
+    ErrorOptions if_exists = 5;
+    // TSDB
+    string rate = 6; //Sample rate
+    string aggregates = 7;
+    string aggregation_granularity = 8;
+    // Stream
+    int64 shards = 9;
+    int64 retention_hours = 10;
 }
 
 message CreateResponse {}
