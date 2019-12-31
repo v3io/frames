@@ -1,7 +1,7 @@
 FRAMES_TAG ?= latest
 FRAMES_REPOSITORY ?= iguazio/
 FRAMES_PATH ?= src/github.com/v3io/frames
-FRAMES_BUILD_COMMAND ?= GO111MODULE=on go build -o $(GOPATH)/bin/framesd-$(FRAMES_TAG)-$(GOOS)-$(GOARCH) -ldflags "-X main.Version=$(FRAMES_TAG)" ./cmd/framesd
+FRAMES_BUILD_COMMAND ?= GO111MODULE=on go build -o framesd-$(FRAMES_TAG)-$(GOOS)-$(GOARCH) -ldflags "-X main.Version=$(FRAMES_TAG)" ./cmd/framesd
 
 .PHONY: build
 build:
@@ -94,7 +94,7 @@ bench-py:
 	./_scripts/py_benchmark.py
 
 .PHONY: frames-bin
-frames-bin: ensure-gopath
+frames-bin:
 	$(FRAMES_BUILD_COMMAND)
 
 .PHONY: frames
@@ -108,9 +108,3 @@ frames:
 		--env FRAMES_TAG=$(FRAMES_TAG) \
 		golang:1.12 \
 		make frames-bin
-
-.PHONY: ensure-gopath
-ensure-gopath:
-ifndef GOPATH
-	$(error GOPATH must be set)
-endif
