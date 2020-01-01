@@ -244,13 +244,12 @@ class ClientBase:
             raise ReadError('no backend')
         if not (table or query):
             raise ReadError('missing data')
-        # TODO: More validation
 
-        if  max_rows_in_msg > 0:
+        if max_rows_in_msg > 0:
             iterator = True
 
         return self._read(
-            backend, table, query, columns, filter,
+            self._alias_backends(backend), table, query, columns, filter,
             group_by, limit, data_format, row_layout,
             max_rows_in_msg, marker, iterator, get_raw, **kw)
 
@@ -304,11 +303,11 @@ class ClientBase:
         if isinstance(dfs, pd.DataFrame):
             dfs = [dfs]
 
-        if  max_rows_in_msg:
+        if max_rows_in_msg:
             dfs = self._iter_chunks(dfs,  max_rows_in_msg)
 
         request = self._encode_write(
-            backend, table, expression, condition, save_mode, partition_keys)
+            self._alias_backends(backend), table, expression, condition, save_mode, partition_keys)
         return self._write(request, dfs, labels, index_cols)
 
     def create(self, backend, table, schema=None, if_exists=FAIL, **kw):
@@ -333,7 +332,7 @@ class ClientBase:
             On request error or backend error
         """
         self._validate_request(backend, table, CreateError)
-        return self._create(backend, table, schema, if_exists, kw)
+        return self._create(self._alias_backends(backend), table, schema, if_exists, kw)
 
     def delete(self, backend, table, filter='', start='', end='',
                if_missing=FAIL):
@@ -374,7 +373,7 @@ class ClientBase:
             On request error or backend error
         """
         self._validate_request(backend, table, DeleteError)
-        return self._delete(backend, table, filter, start, end, if_missing)
+        return self._delete(self._alias_backends(backend), table, filter, start, end, if_missing)
 
     def execute(self, backend, table, command='', args=None, expression=''):
         """Executes a backend-specific command on a table or stream
@@ -398,7 +397,7 @@ class ClientBase:
             On request error or backend error
         """
         self._validate_request(backend, table, ExecuteError)
-        return self._execute(backend, table, command, args, expression)
+        return self._execute(self._alias_backends(backend), table, command, args, expression)
 
     def _fix_address(self, address):
         return address
@@ -433,3 +432,9 @@ class ClientBase:
             while i < len(df):
                 yield df[i:i + size]
                 i += size
+
+    def _alias_backends(self, backend):
+        if backend == "nosql":
+            return "kv"
+        else:
+            return backend

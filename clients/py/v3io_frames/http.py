@@ -119,7 +119,6 @@ class Client(ClientBase):
             'session': pb2py(self.session),
             'backend': backend,
             'table': table,
-            'attribute_map': attrs,
             'schema': pb2py(schema),
             'if_exists': if_exists,
         }
