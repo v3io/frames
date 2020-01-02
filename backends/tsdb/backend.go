@@ -105,7 +105,7 @@ func (b *Backend) newAdapter(session *frames.Session, password string, token str
 		password,
 		token,
 		b.logger,
-		cfg.Workers,
+		b.backendConfig.V3ioGoWorkers,
 	)
 
 	if err != nil {
