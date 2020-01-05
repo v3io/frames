@@ -179,7 +179,7 @@ def df2msg(df, labels=None, index_cols=None):
         indices = [series2col(s, s.name) for s in serieses]
 
     schema = get_actual_types(df)
-    df, null_values = normalize_df(df, schema)
+    df, null_values = normalize_df(df.copy(), schema)
 
     is_range = isinstance(df.columns, pd.RangeIndex)
     columns = []
