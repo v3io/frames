@@ -106,17 +106,16 @@ class Client(ClientBase):
             stub.Write(write_stream(request, dfs, labels, index_cols))
 
     @grpc_raise(CreateError)
-    def _create(self, backend, table, attrs, schema, if_exists):
-        attrs = pb_map(attrs)
+    def _create(self, backend, table, schema, if_exists, **kw):
         with new_channel(self.address) as channel:
             stub = fgrpc.FramesStub(channel)
             request = fpb.CreateRequest(
                 session=self.session,
                 backend=backend,
                 table=table,
-                attribute_map=attrs,
                 schema=schema,
                 if_exists=if_exists,
+                **kw
             )
             stub.Create(request)
 

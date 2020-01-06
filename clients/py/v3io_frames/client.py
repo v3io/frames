@@ -332,7 +332,7 @@ class ClientBase:
             On request error or backend error
         """
         self._validate_request(backend, table, CreateError)
-        return self._create(self._alias_backends(backend), table, schema, if_exists, kw)
+        return self._create(self._alias_backends(backend), table, schema, if_exists, **kw)
 
     def delete(self, backend, table, filter='', start='', end='',
                if_missing=FAIL):
