@@ -21,14 +21,13 @@ import pandas as pd
 import pytz
 from google.protobuf.message import Message
 from pandas.core.dtypes.dtypes import CategoricalDtype
+from pandas.api.types import is_datetime64_any_dtype as is_datetime
 
 from . import frames_pb2 as fpb
 from .dtypes import dtype_of
 from .errors import MessageError, WriteError
 
-_ts = pd.Series(pd.Timestamp(0))
-_time_dt = _ts.dtype
-_time_tz_dt = _ts.dt.tz_localize(pytz.UTC).dtype
+
 pb_list_types = (
     message.RepeatedCompositeContainer,
     message.RepeatedScalarContainer,
@@ -180,7 +179,7 @@ def df2msg(df, labels=None, index_cols=None):
         indices = [series2col(s, s.name) for s in serieses]
 
     schema = get_actual_types(df)
-    df, null_values = normalize_df(df, schema)
+    df, null_values = normalize_df(df.copy(), schema)
 
     is_range = isinstance(df.columns, pd.RangeIndex)
     columns = []
@@ -220,7 +219,10 @@ def series2col_with_dtype(s, name, dtype):
         kw['dtype'] = fpb.BOOLEAN
     elif dtype == fpb.TIME:
         if s.dt.tz:
-            s = s.dt.tz_localize(pytz.UTC)
+            try:
+                s = s.dt.tz_localize(pytz.UTC)
+            except TypeError:
+                s = s.dt.tz_convert('UTC')
         kw['times'] = s.astype(np.int64)
         kw['dtype'] = fpb.TIME
     else:
@@ -247,7 +249,7 @@ def series2col(s, name):
     elif s.dtype == np.bool:
         kw['bools'] = s
         kw['dtype'] = fpb.BOOLEAN
-    elif is_time_dtype(s.dtype):
+    elif is_datetime(s.dtype):
         if s.dt.tz:
             try:
                 s = s.dt.tz_localize(pytz.UTC)
@@ -351,7 +353,7 @@ def get_actual_types(df):
                                  .format(col_name, type(x)))
         elif col.dtype == np.bool:
             column_types[col.name] = fpb.BOOLEAN
-        elif is_time_dtype(col.dtype):
+        elif is_datetime(col.dtype):
             column_types[col.name] = fpb.TIME
         elif is_categorical_dtype(col.dtype):
             # We assume catgorical data is strings
@@ -386,10 +388,6 @@ def is_float_dtype(dtype):
         dtype == np.float32 or \
         dtype == np.float16 or \
         dtype == np.float
-
-
-def is_time_dtype(dtype):
-    return dtype == _time_dt or dtype == _time_tz_dt
 
 
 def is_categorical_dtype(dtype):

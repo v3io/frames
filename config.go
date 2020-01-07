@@ -97,6 +97,10 @@ func InitBackendDefaults(cfg *BackendConfig, framesConfig *Config) {
 			cfg.Workers = 8
 		}
 	}
+
+	if cfg.V3ioGoWorkers == 0 {
+		cfg.V3ioGoWorkers = 32
+	}
 }
 
 // Validate validates the configuration
@@ -128,9 +132,10 @@ func (c *Config) Validate() error {
 
 // BackendConfig is default backend configuration
 type BackendConfig struct {
-	Type    string `json:"type"` // v3io, csv, ...
-	Name    string `json:"name"`
-	Workers int    `json:"workers"`
+	Type          string `json:"type"` // v3io, csv, ...
+	Name          string `json:"name"`
+	Workers       int    `json:"workers"`
+	V3ioGoWorkers int    `json:"v3ioGoWorkers"`
 	// backend specific options
 	Options map[string]interface{} `json:"options"`
 

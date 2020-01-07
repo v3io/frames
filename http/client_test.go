@@ -23,43 +23,23 @@ package http
 import (
 	"fmt"
 	"testing"
-	"testing/quick"
 )
 
 func TestNewClient(t *testing.T) {
-	fn := func(url string) bool {
-		if url == "" {
-			return true
-		}
 
-		client, err := NewClient(url, nil, nil)
-		if err != nil {
-			t.Logf("can't create client - %s", err)
-			return false
-		}
+	hostname := "iguaz.io"
 
-		if client.URL != fmt.Sprintf("http://%s", url) {
-			t.Logf("URL mismatch: %q != %q", client.URL, url)
-			return false
-		}
-
-		if client.logger == nil {
-			t.Log("no logger")
-			return false
-		}
-
-		return true
-	}
-
-	if err := quick.Check(fn, nil); err != nil {
+	client, err := NewClient(hostname, nil, nil)
+	if err != nil {
 		t.Fatal(err)
 	}
-}
 
-func TestClientRead(t *testing.T) {
-	t.Skip("TODO")
-}
+	if client.URL != fmt.Sprintf("http://%s", hostname) {
+		t.Fatalf("URL mismatch: %q != %q", client.URL, hostname)
 
-func TestClientWrite(t *testing.T) {
-	t.Skip("TODO")
+	}
+
+	if client.logger == nil {
+		t.Fatal("no logger")
+	}
 }
