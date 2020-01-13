@@ -105,7 +105,7 @@ podTemplate(label: "${git_project}-${label}", inheritFrom: "jnlp-docker-golang-p
                     parallel(
                             'upload linux binaries': {
                                 container('jnlp') {
-                                    github.upload_asset(git_project, git_project_user, "framesd-${github.TAG_VERSION}-linux-amd64", RELEASE_ID, GIT_TOKEN, "${github.BUILD_FOLDER}")
+                                    github.upload_asset(git_project, git_project_user, "framesd-${github.TAG_VERSION}-linux-amd64", RELEASE_ID, GIT_TOKEN, "${github.BUILD_FOLDER}/src/github.com/${git_project_upstream_user}/${git_project}")
                                 }
                             },
                             'upload linux binaries artifactory': {
@@ -113,18 +113,18 @@ podTemplate(label: "${git_project}-${label}", inheritFrom: "jnlp-docker-golang-p
                                     withCredentials([
                                             string(credentialsId: pipelinex.PackagesRepo.ARTIFACTORY_IGUAZIO[2], variable: 'PACKAGES_ARTIFACTORY_PASSWORD')
                                     ]) {
-                                        common.upload_file_to_artifactory(pipelinex.PackagesRepo.ARTIFACTORY_IGUAZIO[0], pipelinex.PackagesRepo.ARTIFACTORY_IGUAZIO[1], PACKAGES_ARTIFACTORY_PASSWORD, "iguazio-devops/k8s", "framesd-${github.TAG_VERSION}-linux-amd64", "${github.BUILD_FOLDER}")
+                                        common.upload_file_to_artifactory(pipelinex.PackagesRepo.ARTIFACTORY_IGUAZIO[0], pipelinex.PackagesRepo.ARTIFACTORY_IGUAZIO[1], PACKAGES_ARTIFACTORY_PASSWORD, "iguazio-devops/k8s", "framesd-${github.TAG_VERSION}-linux-amd64", "${github.BUILD_FOLDER}/src/github.com/${git_project_upstream_user}/${git_project}")
                                     }
                                 }
                             },
                             'upload darwin binaries': {
                                 container('jnlp') {
-                                    github.upload_asset(git_project, git_project_user, "framesd-${github.TAG_VERSION}-darwin-amd64", RELEASE_ID, GIT_TOKEN, "${github.BUILD_FOLDER}")
+                                    github.upload_asset(git_project, git_project_user, "framesd-${github.TAG_VERSION}-darwin-amd64", RELEASE_ID, GIT_TOKEN, "${github.BUILD_FOLDER}/src/github.com/${git_project_upstream_user}/${git_project}")
                                 }
                             },
                             'upload windows binaries': {
                                 container('jnlp') {
-                                    github.upload_asset(git_project, git_project_user, "framesd-${github.TAG_VERSION}-windows-amd64", RELEASE_ID, GIT_TOKEN, "${github.BUILD_FOLDER}")
+                                    github.upload_asset(git_project, git_project_user, "framesd-${github.TAG_VERSION}-windows-amd64", RELEASE_ID, GIT_TOKEN, "${github.BUILD_FOLDER}/src/github.com/${git_project_upstream_user}/${git_project}")
                                 }
                             },
                             'upload to pypi': {
