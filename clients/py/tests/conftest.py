@@ -43,6 +43,7 @@ server_timeout = 30  # seconds
 
 extra_backends = [
     {'type': 'kv'},
+    {'type': 'mysql'},
     {'type': 'stream'},
     {'type': 'tsdb', 'workers': 16},
 ]

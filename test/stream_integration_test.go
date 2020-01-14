@@ -72,9 +72,9 @@ func (streamSuite *StreamTestSuite) TestAll() {
 	req := &pb.CreateRequest{
 		Backend: streamSuite.backendName,
 		Table:   table,
+		RetentionHours: 48,
+		Shards: 1,
 	}
-	req.SetAttribute("retention_hours", 48)
-	req.SetAttribute("shards", 1)
 
 	if err := streamSuite.client.Create(req); err != nil {
 		streamSuite.T().Fatal(err)

@@ -88,27 +88,6 @@ func (v *Value) SetValue(i interface{}) error {
 	return nil
 }
 
-// Attributes return the attibutes
-// TODO: Calculate once (how to add field in generate protobuf code?)
-func (r *CreateRequest) Attributes() map[string]interface{} {
-	return AsGoMap(r.AttributeMap)
-}
-
-// SetAttribute sets an attribute
-func (r *CreateRequest) SetAttribute(key string, value interface{}) error {
-	if r.AttributeMap == nil {
-		r.AttributeMap = make(map[string]*Value)
-	}
-
-	pbVal := &Value{}
-	if err := pbVal.SetValue(value); err != nil {
-		return err
-	}
-
-	r.AttributeMap[key] = pbVal
-	return nil
-}
-
 // NSToTime returns time from epoch nanoseconds
 func NSToTime(ns int64) time.Time {
 	return time.Unix(ns/1e9, ns%1e9)

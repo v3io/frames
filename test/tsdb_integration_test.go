@@ -99,8 +99,8 @@ func (tsdbSuite *TsdbTestSuite) TestAll() {
 	req := &pb.CreateRequest{
 		Backend: tsdbSuite.backendName,
 		Table:   table,
+		Rate: "1/m",
 	}
-	req.SetAttribute("rate", "1/m")
 	if err := tsdbSuite.client.Create(req); err != nil {
 		tsdbSuite.T().Fatal(err)
 	}
@@ -176,8 +176,8 @@ func (tsdbSuite *TsdbTestSuite) TestAllStringMetric() {
 	req := &pb.CreateRequest{
 		Backend: tsdbSuite.backendName,
 		Table:   table,
+		Rate: "1/m",
 	}
-	req.SetAttribute("rate", "1/m")
 	if err := tsdbSuite.client.Create(req); err != nil {
 		tsdbSuite.T().Fatal(err)
 	}
@@ -250,8 +250,8 @@ func (tsdbSuite *TsdbTestSuite) TestDeleteWithTimestamp() {
 	req := &pb.CreateRequest{
 		Backend: tsdbSuite.backendName,
 		Table:   table,
+		Rate: "1/s",
 	}
-	req.SetAttribute("rate", "1/s")
 	if err := tsdbSuite.client.Create(req); err != nil {
 		tsdbSuite.T().Fatal(err)
 	}
@@ -316,8 +316,8 @@ func (tsdbSuite *TsdbTestSuite) TestDeleteWithRelativeTime() {
 	req := &pb.CreateRequest{
 		Backend: tsdbSuite.backendName,
 		Table:   table,
+		Rate: "1/s",
 	}
-	req.SetAttribute("rate", "1/s")
 	if err := tsdbSuite.client.Create(req); err != nil {
 		tsdbSuite.T().Fatal(err)
 	}
@@ -382,8 +382,8 @@ func (tsdbSuite *TsdbTestSuite) TestDeleteWithRFC3339Time() {
 	req := &pb.CreateRequest{
 		Backend: tsdbSuite.backendName,
 		Table:   table,
+		Rate: "1/s",
 	}
-	req.SetAttribute("rate", "1/s")
 	if err := tsdbSuite.client.Create(req); err != nil {
 		tsdbSuite.T().Fatal(err)
 	}
@@ -448,8 +448,8 @@ func (tsdbSuite *TsdbTestSuite) TestDeleteAll() {
 	req := &pb.CreateRequest{
 		Backend: tsdbSuite.backendName,
 		Table:   table,
+		Rate: "1/s",
 	}
-	req.SetAttribute("rate", "1/s")
 	if err := tsdbSuite.client.Create(req); err != nil {
 		tsdbSuite.T().Fatal(err)
 	}

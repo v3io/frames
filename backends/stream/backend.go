@@ -22,7 +22,6 @@ package stream
 
 import (
 	"fmt"
-	"reflect"
 	"strings"
 
 	"github.com/nuclio/logger"
@@ -62,25 +61,20 @@ func (b *Backend) Create(request *frames.CreateRequest) error {
 
 	// TODO: check if Stream exist, if it already has the desired params can silently ignore, may need a -silent flag
 
-	var isInt bool
-	attrs := request.Proto.Attributes()
 	shards := int64(1)
 
-	shardsVar, ok := attrs["shards"]
-	if ok {
-		shards, isInt = shardsVar.(int64)
-		fmt.Println(reflect.TypeOf(shardsVar))
-		if !isInt || shards < 1 {
-			return errors.Errorf("Shards attribute must be a positive integer (got %v)", shardsVar)
+	if request.Proto.Shards != 0 {
+		shards = request.Proto.Shards
+		if shards < 1 {
+			return errors.Errorf("Shards attribute must be a positive integer (got %v)", shards)
 		}
 	}
 
 	retention := int64(24)
-	retentionVar, ok := attrs["retention_hours"]
-	if ok {
-		retention, isInt = retentionVar.(int64)
-		if !isInt || retention < 1 {
-			return errors.Errorf("retention_hours attribute must be a positive integer (got %v)", retentionVar)
+	if request.Proto.RetentionHours != 0 {
+		retention = request.Proto.RetentionHours
+		if retention < 1 {
+			return errors.Errorf("retention_hours attribute must be a positive integer (got %v)", retention)
 		}
 	}
 
@@ -133,7 +127,7 @@ func (b *Backend) put(request *frames.ExecRequest) error {
 	data := varData.GetSval()
 
 	clientInfo := ""
-	if val, ok := request.Proto.Args["clientinfo"]; ok {
+	if val, ok := request.Proto.Args["client_info"]; ok {
 		clientInfo = val.GetSval()
 	}
 

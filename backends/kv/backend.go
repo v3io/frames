@@ -75,7 +75,7 @@ func (b *Backend) Delete(request *frames.DeleteRequest) error {
 func (b *Backend) Exec(request *frames.ExecRequest) (frames.Frame, error) {
 	cmd := strings.TrimSpace(strings.ToLower(request.Proto.Command))
 	switch cmd {
-	case "infer", "inferschema":
+	case "infer", "infer_schema":
 		return nil, b.inferSchema(request)
 	case "update":
 		return nil, b.updateItem(request)
