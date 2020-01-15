@@ -189,7 +189,7 @@ class ClientBase:
 
     def read(self, backend='', table='', query='', columns=None, filter='',
              group_by='', limit=0, data_format='', row_layout=False,
-             max_in_message=0, marker='', iterator=False, get_raw=False, **kw):
+             max_rows_in_msg=0, marker='', iterator=False, get_raw=False, **kw):
         """Reads data from a table or stream (run a data query)
 
         Common Parameters
@@ -219,7 +219,7 @@ class ClientBase:
         row_layout : bool
             True to use a row layout; False (default) to use a column layout
             [Not supported in this version]
-        max_in_message : int
+         max_rows_in_msg : int
             Maximum number of rows to read in each message (read chunk size)
         marker : str
             Query marker; cannot be used with `query`
@@ -244,18 +244,17 @@ class ClientBase:
             raise ReadError('no backend')
         if not (table or query):
             raise ReadError('missing data')
-        # TODO: More validation
 
-        if max_in_message > 0:
+        if max_rows_in_msg > 0:
             iterator = True
 
         return self._read(
-            backend, table, query, columns, filter,
+            self._alias_backends(backend), table, query, columns, filter,
             group_by, limit, data_format, row_layout,
-            max_in_message, marker, iterator, get_raw, **kw)
+            max_rows_in_msg, marker, iterator, get_raw, **kw)
 
     def write(self, backend, table, dfs, expression='', condition='',
-              labels=None, max_in_message=0, index_cols=None,
+              labels=None,  max_rows_in_msg=0, index_cols=None,
               save_mode='errorIfTableExists', partition_keys=None):
         """Writes data to a table or stream
 
@@ -283,7 +282,7 @@ class ClientBase:
         labels : dict (`{<label>: <value>[, <label>: <value>, ...]}`)
             ('tsdb' backend only) A dictionary of sample labels of type
             string that apply to all the DataFrame rows
-        max_in_message : int
+         max_rows_in_msg : int
             Maximum number of rows to write in each message (write chunk size)
         index_cols : []str
             List of column names to be used as the index columns for the write
@@ -304,14 +303,14 @@ class ClientBase:
         if isinstance(dfs, pd.DataFrame):
             dfs = [dfs]
 
-        if max_in_message:
-            dfs = self._iter_chunks(dfs, max_in_message)
+        if max_rows_in_msg:
+            dfs = self._iter_chunks(dfs,  max_rows_in_msg)
 
         request = self._encode_write(
-            backend, table, expression, condition, save_mode, partition_keys)
+            self._alias_backends(backend), table, expression, condition, save_mode, partition_keys)
         return self._write(request, dfs, labels, index_cols)
 
-    def create(self, backend, table, attrs=None, schema=None, if_exists=FAIL):
+    def create(self, backend, table, schema=None, if_exists=FAIL, **kw):
         """Creates a new TSDB table or stream
 
         Parameters
@@ -320,12 +319,12 @@ class ClientBase:
             Backend name
         table (Required) : str
             Table to create
-        attrs (Required for the 'tsdb' backend; optional otherwise : dict
-            A dictionary of backend-specific parameters (arguments)
         schema (Optional) : Schema or None
             Table schema; used for testing purposes with the 'csv' backend
         if_exists : int
             One of IGNORE or FAIL
+        **kw (Required for the 'tsdb' backend; optional otherwise
+            Variable-length list of additional keyword (named) arguments
 
         Raises
         ------
@@ -333,7 +332,7 @@ class ClientBase:
             On request error or backend error
         """
         self._validate_request(backend, table, CreateError)
-        return self._create(backend, table, attrs, schema, if_exists)
+        return self._create(self._alias_backends(backend), table, schema, if_exists, **kw)
 
     def delete(self, backend, table, filter='', start='', end='',
                if_missing=FAIL):
@@ -374,7 +373,7 @@ class ClientBase:
             On request error or backend error
         """
         self._validate_request(backend, table, DeleteError)
-        return self._delete(backend, table, filter, start, end, if_missing)
+        return self._delete(self._alias_backends(backend), table, filter, start, end, if_missing)
 
     def execute(self, backend, table, command='', args=None, expression=''):
         """Executes a backend-specific command on a table or stream
@@ -398,7 +397,7 @@ class ClientBase:
             On request error or backend error
         """
         self._validate_request(backend, table, ExecuteError)
-        return self._execute(backend, table, command, args, expression)
+        return self._execute(self._alias_backends(backend), table, command, args, expression)
 
     def _fix_address(self, address):
         return address
@@ -433,3 +432,9 @@ class ClientBase:
             while i < len(df):
                 yield df[i:i + size]
                 i += size
+
+    def _alias_backends(self, backend):
+        if backend == "nosql":
+            return "kv"
+        else:
+            return backend
