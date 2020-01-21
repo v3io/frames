@@ -131,16 +131,22 @@ def msg2df(frame, frame_factory, columns=None, do_reorder=True):
 
 
 def col2series(col, index):
+    current_dtype = ""
     if col.dtype == fpb.BOOLEAN:
         data = col.bools
+        current_dtype = "bool"
     elif col.dtype == fpb.FLOAT:
         data = col.floats
+        current_dtype = "float"
     elif col.dtype == fpb.INTEGER:
         data = col.ints
+        current_dtype = "int"
     elif col.dtype == fpb.STRING:
         data = col.strings
+        current_dtype = "object"
     elif col.dtype == fpb.TIME:
         data = [pd.Timestamp(t, unit='ns') for t in col.times]
+        current_dtype = "datetime64[ns, UTC]"
     else:
         raise MessageError('unknown dtype - {}'.format(col.dtype))
 
@@ -151,7 +157,7 @@ def col2series(col, index):
                              index=index,
                              name=col.name)
     else:
-        data = pd.Series(data, index=index, name=col.name)
+        data = pd.Series(data, index=index, name=col.name, dtype=current_dtype)
 
     return data
 
