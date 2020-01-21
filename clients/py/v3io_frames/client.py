@@ -245,9 +245,6 @@ class ClientBase:
         if not (table or query):
             raise ReadError('missing data')
 
-        if max_rows_in_msg > 0:
-            iterator = True
-
         return self._read(
             self._alias_backends(backend), table, query, columns, filter,
             group_by, limit, data_format, row_layout,
