@@ -252,7 +252,7 @@ class ClientBase:
 
     def write(self, backend, table, dfs, expression='', condition='',
               labels=None,  max_rows_in_msg=0, index_cols=None,
-              save_mode='errorIfTableExists', partition_keys=None):
+              save_mode='createNewItemsOnly', partition_keys=None):
         """Writes data to a table or stream
 
         Parameters
@@ -286,8 +286,8 @@ class ClientBase:
             operation; by default, the DataFrame's index columns are used
         save_mode : str
             Save mode.
-            Optional values: errorIfTableExists (default), overwriteTable,
-             updateItem, overwriteItem, createNewItemsOnly
+            Optional values: createNewItemsOnly(default), overwriteTable,
+             updateItem, overwriteItem, errorIfTableExists
         partition_keys : []str
             Partition keys
             [Not supported in this version]
