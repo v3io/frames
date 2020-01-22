@@ -161,11 +161,12 @@ func DeleteTable(logger logger.Logger, container v3io.Container, path, filter st
 			deletesTerminated++
 		}
 	}
-
-	err := container.DeleteObjectSync(&v3io.DeleteObjectInput{Path: path})
-	if err != nil {
-		if !utils.IsNotExistsError(err) {
-			return errors.Wrapf(err, "Failed to delete table object '%s'.", path)
+	if filter == "" {
+		err := container.DeleteObjectSync(&v3io.DeleteObjectInput{Path: path})
+		if err != nil {
+			if !utils.IsNotExistsError(err) {
+				return errors.Wrapf(err, "Failed to delete table object '%s'.", path)
+			}
 		}
 	}
 
@@ -179,6 +180,9 @@ func getItemsWorker(container v3io.Container, input *v3io.GetItemsInput, fileNam
 			terminationChan <- nil
 			return
 		default:
+		}
+		if input.Filter != "" {
+			input.Filter += " and __name != '.#schema'"
 		}
 		resp, err := container.GetItemsSync(input)
 		if err != nil {
