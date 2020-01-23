@@ -156,7 +156,7 @@ func (i *tsdbIterator) Next() bool {
 		frameSizeLimit = int(i.request.Proto.MessageLimit)
 	}
 
-	if i.currTsdbFrame == nil {
+	for i.currTsdbFrame == nil || i.currTsdbFrame.Len() == 0 {
 		if i.set.NextFrame() {
 			i.currTsdbFrame, err = i.set.GetFrame()
 			if err != nil {
