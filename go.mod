@@ -7,11 +7,12 @@ require (
 	github.com/nuclio/logger v0.0.1
 	github.com/nuclio/zap v0.0.2
 	github.com/pkg/errors v0.8.1
-	github.com/v3io/v3io-go v0.0.0-20191028130819-9c754a5e5e271408f59c291fd201f369cfe1b776
-	github.com/v3io/v3io-tsdb v0.9.11
+	github.com/v3io/v3io-go v0.0.5-0.20191205125653-9003ae83f0b6
+	github.com/v3io/v3io-tsdb v0.9.12
 	github.com/valyala/fasthttp v1.2.0
 	github.com/xwb1989/sqlparser v0.0.0-20180606152119-120387863bf2
 	golang.org/x/net v0.0.0-20181114220301-adae6a3d119a
+	golang.org/x/sync v0.0.0-20181108010431-42b317875d0f // indirect
 	google.golang.org/grpc v1.17.0
 )
 
