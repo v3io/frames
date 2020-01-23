@@ -678,10 +678,16 @@ execute(backend, table, command="", args=None)
 
 All Frames backends that support the `execute` method support the following common parameters:
 
+- <a id="method-except-param-command"></a>**command** &mdash; The command to execute.
+
+  - **Type:** `str`
+  - **Requirement:** Required
+  - **Valid Values:** Backend-specific; see the [`kv`](#method-execute-kv-cmds) and [`stream`](#method-execute-stream-cmds) `execute` commands
+
 - <a id="method-except-param-args"></a>**args** &mdash; A dictionary of `<argument name>: <value>` pairs for passing command-specific parameters (arguments).
 
   - **Type:** `dict`
-  - **Requirement:** Optional
+  - **Requirement and Valid Values:** Backend-specific; see the [`kv`](#method-execute-kv-cmds) and [`stream`](#method-execute-stream-cmds) `execute` commands
   - **Default Value:** `None`
 
 <a id="method-execute-kv-cmds"></a>
