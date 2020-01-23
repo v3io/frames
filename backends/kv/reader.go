@@ -194,7 +194,6 @@ func (ki *Iterator) Next() bool {
 	if !ki.request.Proto.ResetIndex && (len(columns) > 1 || columns[0].Name() != ki.schema.Key) {
 		indexCol, ok := byName[ki.schema.Key]
 		if ok {
-			columns = utils.RemoveColumn(ki.schema.Key, columns)
 			delete(byName, ki.schema.Key)
 
 			// If a user requested specific columns containing the index, duplicate the index column
