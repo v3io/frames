@@ -24,6 +24,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"os"
+	"time"
 )
 
 // LogConfig is the logging configuration
@@ -130,10 +131,11 @@ func (c *Config) Validate() error {
 
 // BackendConfig is default backend configuration
 type BackendConfig struct {
-	Type          string `json:"type"` // v3io, csv, ...
-	Name          string `json:"name"`
-	Workers       int    `json:"workers"`
-	V3ioGoWorkers int    `json:"v3ioGoWorkers"`
+	Type              string        `json:"type"` // v3io, csv, ...
+	Name              string        `json:"name"`
+	Workers           int           `json:"workers"`
+	InactivityTimeout time.Duration `json:"inactvitiyTimeout"`
+	V3ioGoWorkers     int           `json:"v3ioGoWorkers"`
 	// backend specific options
 	Options map[string]interface{} `json:"options"`
 

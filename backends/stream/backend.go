@@ -175,6 +175,7 @@ func (b *Backend) newConnection(session *frames.Session, password string, token 
 		token,
 		b.logger,
 		b.backendConfig.Workers,
+		0,
 	)
 
 	return container, newPath, err

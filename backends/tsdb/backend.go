@@ -52,6 +52,7 @@ type Backend struct {
 	framesConfig  *frames.Config
 	logger        logger.Logger
 	httpClient    *fasthttp.Client
+	inactivityTimeout time.Duration
 }
 
 // NewBackend return a new tsdb backend
@@ -69,6 +70,7 @@ func NewBackend(logger logger.Logger, httpClient *fasthttp.Client, cfg *frames.B
 		backendConfig: cfg,
 		framesConfig:  framesConfig,
 		httpClient:    httpClient,
+		inactivityTimeout: cfg.InactivityTimeout,
 	}
 
 	return &newBackend, nil
@@ -77,13 +79,13 @@ func NewBackend(logger logger.Logger, httpClient *fasthttp.Client, cfg *frames.B
 func (b *Backend) newConfig(session *frames.Session) *config.V3ioConfig {
 
 	cfg := &config.V3ioConfig{
-		WebApiEndpoint: session.Url,
-		Container:      session.Container,
-		Username:       session.User,
-		Password:       session.Password,
-		AccessKey:      session.Token,
-		Workers:        b.backendConfig.Workers,
-		LogLevel:       b.framesConfig.Log.Level,
+		WebApiEndpoint:               session.Url,
+		Container:                    session.Container,
+		Username:                     session.User,
+		Password:                     session.Password,
+		AccessKey:                    session.Token,
+		Workers:                      b.backendConfig.Workers,
+		LogLevel:                     b.framesConfig.Log.Level,
 		LoadPartitionsFromSchemaFile: true,
 	}
 	return config.WithDefaults(cfg)
@@ -107,6 +109,7 @@ func (b *Backend) newAdapter(session *frames.Session, password string, token str
 		token,
 		b.logger,
 		b.backendConfig.V3ioGoWorkers,
+		b.inactivityTimeout,
 	)
 
 	if err != nil {

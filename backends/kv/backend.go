@@ -23,6 +23,7 @@ package kv
 import (
 	"fmt"
 	"strings"
+	"time"
 
 	"github.com/nuclio/logger"
 	"github.com/v3io/v3io-go/pkg/dataplane"
@@ -36,6 +37,7 @@ import (
 type Backend struct {
 	logger       logger.Logger
 	numWorkers   int
+	inactivityTimeout time.Duration
 	framesConfig *frames.Config
 	httpClient   *fasthttp.Client
 }
@@ -49,6 +51,7 @@ func NewBackend(logger logger.Logger, httpClient *fasthttp.Client, config *frame
 		numWorkers:   config.Workers,
 		framesConfig: framesConfig,
 		httpClient:   httpClient,
+		inactivityTimeout: config.InactivityTimeout,
 	}
 
 	return &newBackend, nil
@@ -137,6 +140,7 @@ func (b *Backend) newConnection(session *frames.Session, password string, token 
 		token,
 		b.logger,
 		b.numWorkers,
+		b.inactivityTimeout,
 	)
 
 	return container, newPath, err
@@ -159,6 +163,7 @@ func (b *Backend) newConnectionWithRequestChannelLength(session *frames.Session,
 		b.logger,
 		b.numWorkers,
 		requestChannelLen,
+		b.inactivityTimeout,
 	)
 
 	return container, newPath, err
