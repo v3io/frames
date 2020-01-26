@@ -84,7 +84,7 @@ func (b *Backend) newConfig(session *frames.Session) *config.V3ioConfig {
 		AccessKey:                    session.Token,
 		Workers:                      b.backendConfig.Workers,
 		LogLevel:                     b.framesConfig.Log.Level,
-		LoadPartitionsFromSchemaFile: b.framesConfig.TsdbLoadPartitionsFromSchema,
+		LoadPartitionsFromSchemaAttr: b.framesConfig.TsdbLoadPartitionsFromSchemaAttr,
 	}
 	return config.WithDefaults(cfg)
 }

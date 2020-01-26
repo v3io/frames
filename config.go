@@ -47,8 +47,8 @@ type Config struct {
 	// Number of parallel V3IO worker routines
 	Workers int `json:"workers"`
 
-	QuerierCacheSize             int  `json:"querierCacheSize"`
-	TsdbLoadPartitionsFromSchema bool `json:"tsdbLoadPartitionsFromSchema"`
+	QuerierCacheSize                 int  `json:"querierCacheSize"`
+	TsdbLoadPartitionsFromSchemaAttr bool `json:"tsdbLoadPartitionsFromSchemaAttr"`
 
 	Backends []*BackendConfig `json:"backends,omitempty"`
 }
