@@ -46,25 +46,25 @@ def Client(address='',  container='', data_url='', path='', user='',
     ----------
     address (Required) : str
         Address of the Frames service (framesd). Use the grpc:// prefix for
-        gRPC (default; recommended) or the http:// prefix for HTTP.
-        Use `framesd:8081` (gRPC; recommended) or `framesd:8080` for local
-        execution on an Iguazio Data Science Platform ("the platform").
+        gRPC (default; recommended) or the http:// prefix for HTTP; for local
+        execution on an Iguazio Data Science Platform ("the platform"), use
+        `framesd:8081` (gRPC; recommended) or `framesd:8080` (HTTP)
     data_url (Optional): str
         Web-API base URL for accessing the backend data; default: the base URL
-        configured for the Frames service, which is typically the HTTPS URL of
-        the web-APIs service of the parent platform tenant
+        configured for the Frames service; for the platform backends, this is
+        typically the HTTPS URL of the web-APIs service of the parent tenant
     container : str
         Container name (session info)
     path : str
         DEPRECATED
     user (Optional): str
-        Username of a platform user with permissions to access the backend
-        data; cannot be used with `token`
+        Username of a user with permissions to access the backend data; cannot
+        be used with `token`
     password (Required when `user` is set): str
         Password for the user configured in the `user` parameter; cannot be
         used with `token`
     token (Optional): str
-        Platform access key that allows access to the backend data; cannot be
+        Token (access key) that allows access to the backend data; cannot be
         used with `user` or `password`
     session_id : str
         Session ID; currently, unused
