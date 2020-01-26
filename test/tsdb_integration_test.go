@@ -2,6 +2,7 @@ package test
 
 import (
 	"fmt"
+	"math/rand"
 	"testing"
 	"time"
 
@@ -178,9 +179,8 @@ func (tsdbSuite *TsdbTestSuite) TestRegressionIG14560() {
 		Table:   table,
 		Rate:    "1/m",
 	}
-	if err := tsdbSuite.client.Create(req); err != nil {
-		tsdbSuite.T().Fatal(err)
-	}
+	err := tsdbSuite.client.Create(req)
+	tsdbSuite.Require().NoError()
 
 	tsdbSuite.T().Log("write")
 	times := []time.Time{
@@ -191,17 +191,21 @@ func (tsdbSuite *TsdbTestSuite) TestRegressionIG14560() {
 		time.Unix(1559669265, 0),
 		time.Unix(1559669965, 0),
 	}
+
+	floats := []float64{12.4, 30.1, 18.2, 234.2, 23.11, 91.2}
+
+	col, err := frames.NewSliceColumn(name, floats)
+	tsdbSuite.Require().NoError(err)
+
 	index, err := frames.NewSliceColumn("idx", times)
 	tsdbSuite.Require().NoError(err)
 
 	columns := []frames.Column{
-		FloatCol(t, "cpu", index.Len()),
+		FloatCol(tsdbSuite.T(), "cpu", index.Len()),
 	}
 
 	frame, err := frames.NewFrame(columns, []frames.Column{index}, nil)
-	if err != nil {
-		t.Fatal(err)
-	}
+	tsdbSuite.Require().NoError(err)
 
 	wreq := &frames.WriteRequest{
 		Backend: tsdbSuite.backendName,
