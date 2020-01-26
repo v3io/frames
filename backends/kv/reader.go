@@ -36,7 +36,7 @@ const (
 )
 var systemAttrs = []string{"__gid", "__mode", "__mtime_nsecs", "__mtime_secs", "__size", "__uid", "__ctime_nsecs", "__ctime_secs"}
 
-// Read does a read request
+// Read sends a read request
 func (kv *Backend) Read(request *frames.ReadRequest) (frames.FrameIterator, error) {
 
 	if request.Proto.MessageLimit == 0 {
@@ -62,7 +62,7 @@ func (kv *Backend) Read(request *frames.ReadRequest) (frames.FrameIterator, erro
 	if len(request.Proto.ShardingKeys) > 0 {
 		numberOfWorkers = len(request.Proto.ShardingKeys)
 	}
-	// Create a new v3io connection with specific RequestChannel length
+	// Create a new platform (v3io) connection with specific RequestChannel length
 	container, tablePath, err = kv.newConnectionWithRequestChannelLength(request.Proto.Session,
 		request.Password.Get(),
 		request.Token.Get(),
@@ -115,7 +115,7 @@ func (ki *Iterator) Next() bool {
 	columnNamesToReturn := ki.request.Proto.Columns
 	specificColumnsRequested := len(columnNamesToReturn) != 0
 
-	//create columns
+	// Create columns
 	for _, field := range ki.schema.Fields {
 		if specificColumnsRequested && !containsString(ki.request.Proto.Columns, field.Name) {
 			continue
@@ -155,7 +155,7 @@ func (ki *Iterator) Next() bool {
 			columns = append(columns, sysCol)
 			byName[indexColKey] = sysCol
 		}
-		//if still not all columns found
+		// If still not all columns found
 		if len(columnNamesToReturn) != len(columns) {
 			for _, attr := range systemAttrs {
 				if containsString(ki.request.Proto.Columns, attr) {
@@ -172,7 +172,7 @@ func (ki *Iterator) Next() bool {
 	}
 
 	if specificColumnsRequested && len(columns) != len(ki.request.Proto.Columns) {
-		//requested column that doesn't exist
+		// Requested a column that doesn't exist
 		for _, reqCol := range ki.request.Proto.Columns {
 			found := false
 			for _, col := range columns {
@@ -182,7 +182,7 @@ func (ki *Iterator) Next() bool {
 				}
 			}
 			if !found {
-				ki.err = fmt.Errorf("column %v doesn't exist", reqCol)
+				ki.err = fmt.Errorf("column '%v' doesn't exist", reqCol)
 				return false
 			}
 		}
@@ -211,8 +211,8 @@ func (ki *Iterator) Next() bool {
 
 			col, ok := byName[colName]
 			if !ok {
-				ki.err = fmt.Errorf("column '%v' for item with key: '%v' does not exist in the schema file. "+
-					"Your data structure was probably changed, try re-inferring the schema for the table",
+				ki.err = fmt.Errorf("column '%v' for item with key: '%v' doesn't exist in the schema file. "+
+					"Your data structure was probably changed; try re-inferring the schema for the table.",
 					colName, rowIndex)
 				return false
 			}
@@ -223,7 +223,7 @@ func (ki *Iterator) Next() bool {
 			}
 		}
 
-		// fill columns with nil if there was no value
+		// Fill columns with nil if there was no value
 		var currentNullMask pb.NullValuesMap
 		currentNullMask.NullColumns = make(map[string]bool)
 		for _, fieldName := range columnNamesToReturn {
@@ -258,7 +258,7 @@ func (ki *Iterator) Next() bool {
 
 	var indices []frames.Column
 
-	// If the only column that was requested is the key-column don't set it as an index.
+	// If the only column that was requested is the key column, don't set it as an index.
 	// Otherwise, set the key column (if requested) to be the index or not depending on the `ResetIndex` value.
 	if len(columns) > 0 && !ki.request.Proto.ResetIndex {
 		if len(columns) > 1 || columns[0].Name() != ki.schema.Key {
@@ -287,8 +287,8 @@ func (ki *Iterator) Next() bool {
 func (ki *Iterator) handleIndices(index string, data map[string]frames.Column, shouldDup bool, indices *[]frames.Column, columns *[]frames.Column) {
 	col, ok := data[index]
 	if ok {
-		// If a user requested specific columns containing the index, duplicate the index column
-		// to be an index and a column
+        // If a user requested specific columns containing the index, duplicate
+        // the index column to be an index and a column
 		if shouldDup {
 			dupIndex := col.CopyWithName(fmt.Sprintf("_%v", index))
 			*indices = append(*indices, dupIndex)
@@ -299,12 +299,12 @@ func (ki *Iterator) handleIndices(index string, data map[string]frames.Column, s
 	}
 }
 
-// Err return the last error
+// Err returns the last error
 func (ki *Iterator) Err() error {
 	return ki.err
 }
 
-// At return the current frames
+// At returns the current frames
 func (ki *Iterator) At() frames.Frame {
 	return ki.currFrame
 }

@@ -56,7 +56,7 @@ const (
 	createNewItemOnlyExistingItemErrorCode = "369098809"
 )
 
-// Write support writing to backend
+// Write supports writing to the backend
 func (kv *Backend) Write(request *frames.WriteRequest) (frames.FrameAppender, error) {
 
 	container, tablePath, err := kv.newConnection(request.Session, request.Password.Get(), request.Token.Get(), request.Table, true)
@@ -87,7 +87,7 @@ func (kv *Backend) Write(request *frames.WriteRequest) (frames.FrameAppender, er
 			}
 			schema = nil
 		case frames.ErrorIfTableExists:
-			return nil, fmt.Errorf("table '%v' already exists, either use a differnet save mode or save to a different table", tablePath)
+			return nil, fmt.Errorf("table '%v' already exists; either use a differnet save mode or save to a different table", tablePath)
 		}
 	}
 
@@ -309,7 +309,7 @@ func (a *Appender) update(frame frames.Frame) error {
 	return nil
 }
 
-// generate the update expression or condition
+// Generates an update expression or condition
 func genExpr(expr string, frame frames.Frame, index int) (string, error) {
 	args := make([]string, 0)
 
@@ -347,7 +347,7 @@ func genExpr(expr string, frame frames.Frame, index int) (string, error) {
 	return r.Replace(expr), nil
 }
 
-// convert Col name to a v3io valid attr name
+// Converts a column name to a valid platform (v3io) attribute name
 // TODO: may want to also update the name in the Column object
 func validColName(name string) string {
 	for i := 0; i < len(name); i++ {
@@ -372,7 +372,7 @@ func (a *Appender) indexValFunc(frame frames.Frame) (func(int) interface{}, erro
 	if indices := frame.Indices(); len(indices) > 0 {
 		indexCol = indices[0]
 	} else {
-		// If no index column exist use range index
+		// If no index column exists, use range index
 		return func(i int) interface{} {
 			return a.rowsProcessed + i
 		}, nil
@@ -414,7 +414,7 @@ func (a *Appender) funcFromCol(indexCol frames.Column) (func(int) interface{}, e
 			return false
 		}
 	default:
-		return nil, fmt.Errorf("unknown column type - %v", indexCol.DType())
+		return nil, fmt.Errorf("unknown column type - '%v'", indexCol.DType())
 	}
 	return fn, nil
 }
@@ -438,13 +438,13 @@ func (a *Appender) respWaitLoop(timeout time.Duration) {
 			input := resp.Request().Input.(*v3io.UpdateItemInput)
 
 			if resp.Error != nil {
-				// If condition was evaluated as false log this and discard error.
+				// If condition evaluated to false, log this and discard error
 				if isFalseConditionError(resp.Error) {
-					a.logger.Info("condition was evaluated to false for item %v", resp.Request().Input)
+					a.logger.Info("condition for item '%v' evaluated to false", resp.Request().Input)
 				} else if isOnlyNewItemUpdateModeItemExistError(resp.Error, input.UpdateMode) {
-					a.logger.Info("trying to write to existing item with 'CreateNewItemsOnly' update mode, item: %v", resp.Request().Input)
+					a.logger.Info("trying to write to an existing item with update mode 'CreateNewItemsOnly' (item: '%v')", resp.Request().Input)
 				} else {
-					a.logger.ErrorWith("failed write response", "error", resp.Error)
+					a.logger.ErrorWith("failed-write response", "error", resp.Error)
 					a.asyncErr = resp.Error
 				}
 			}
@@ -462,8 +462,8 @@ func (a *Appender) respWaitLoop(timeout time.Duration) {
 
 		case <-timer.C:
 			if !active {
-				a.logger.ErrorWith("Resp loop timed out! ", "requests", requests, "response", responses)
-				a.asyncErr = fmt.Errorf("Resp loop timed out!")
+				a.logger.ErrorWith("Response loop timed out. ", "requests", requests, "response", responses)
+				a.asyncErr = fmt.Errorf("Response loop timed out.")
 				a.doneChan <- true
 				return
 			}
@@ -472,7 +472,7 @@ func (a *Appender) respWaitLoop(timeout time.Duration) {
 	}
 }
 
-// Check if the current error was caused specifically because the condition was evaluated to false.
+// Check whether the current error was caused specifically because the condition was evaluated to false.
 func isFalseConditionError(err error) bool {
 	errString := err.Error()
 
@@ -504,7 +504,7 @@ func getMapFromRow(columns map[string]frames.Column,
 	indexName, sortingKeyName string) (map[string]interface{}, interface{}, interface{}, error) {
 	row := make(map[string]interface{})
 
-	// set row values from columns
+	// Set row values from columns
 	for name, col := range columns {
 		if isNull(index, name) {
 			continue
@@ -541,7 +541,7 @@ func getUpdateExpressionFromRow(columns map[string]frames.Column,
 	indexName, sortingKeyName string) (string, interface{}, interface{}, error) {
 	expression := strings.Builder{}
 
-	// set row values from columns
+	// Set row values from columns
 	for name, col := range columns {
 		if isNull(index, name) {
 			expression.WriteString("delete(")

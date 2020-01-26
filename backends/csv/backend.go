@@ -54,17 +54,17 @@ func NewBackend(logger logger.Logger, httpClient *fasthttp.Client, config *frame
 	return backend, nil
 }
 
-// Create will create a table
+// Create creates a CSV file
 func (b *Backend) Create(request *frames.CreateRequest) error {
 	csvPath := b.csvPath(request.Proto.Table)
 	// TODO: Overwrite?
 	if fileExists(csvPath) {
-		return fmt.Errorf("table %q already exists", request.Proto.Table)
+		return fmt.Errorf("file '%q' already exists", request.Proto.Table)
 	}
 
 	file, err := os.Create(csvPath)
 	if err != nil {
-		return errors.Wrapf(err, "can't create table file")
+		return errors.Wrapf(err, "cannot create file")
 	}
 
 	defer file.Close()
@@ -84,12 +84,12 @@ func (b *Backend) Create(request *frames.CreateRequest) error {
 
 	csvWriter := csv.NewWriter(file)
 	if err := csvWriter.Write(names); err != nil {
-		return errors.Wrapf(err, "can't create header")
+		return errors.Wrapf(err, "cannot create header")
 	}
 
 	csvWriter.Flush()
 	if err := file.Sync(); err != nil {
-		return errors.Wrap(err, "can't flush csv file")
+		return errors.Wrap(err, "cannot flush CSV file")
 	}
 
 	return nil
@@ -99,11 +99,11 @@ func (b *Backend) Create(request *frames.CreateRequest) error {
 func (b *Backend) Delete(request *frames.DeleteRequest) error {
 	csvPath := b.csvPath(request.Proto.Table)
 	if request.Proto.IfMissing == frames.FailOnError && !fileExists(csvPath) {
-		return fmt.Errorf("table %q doesn't exist", request.Proto.Table)
+		return fmt.Errorf("path to file '%q' doesn't exist", request.Proto.Table)
 	}
 
 	if err := os.Remove(csvPath); err != nil {
-		return errors.Wrapf(err, "can't delete %q", request.Proto.Table)
+		return errors.Wrapf(err, "cannot delete file '%q'", request.Proto.Table)
 	}
 
 	return nil
@@ -119,7 +119,7 @@ func (b *Backend) Read(request *frames.ReadRequest) (frames.FrameIterator, error
 	reader := csv.NewReader(file)
 	columns, err := reader.Read()
 	if err != nil {
-		return nil, errors.Wrap(err, "can't read header (columns)")
+		return nil, errors.Wrap(err, "cannot read header (columns)")
 	}
 
 	it := &FrameIterator{
@@ -150,7 +150,7 @@ func (b *Backend) Write(request *frames.WriteRequest) (frames.FrameAppender, err
 
 	if request.ImmidiateData != nil {
 		if err := ca.Add(request.ImmidiateData); err != nil {
-			return nil, errors.Wrap(err, "can't Add ImmidiateData")
+			return nil, errors.Wrap(err, "cannot add immidiate data")
 		}
 	}
 
@@ -183,7 +183,7 @@ func (b *Backend) Exec(request *frames.ExecRequest) (frames.Frame, error) {
 			bld := frames.NewSliceColumnBuilder(name, frames.IntType, nRows)
 			for r := 0; r < nRows; r++ {
 				if err := bld.Set(r, r*c); err != nil {
-					b.logger.WarnWith("can't set column value", "name", name, "row", r)
+					b.logger.WarnWith("cannot set column value", "name", name, "row", r)
 				}
 			}
 			cols[c] = bld.Finish()
@@ -191,7 +191,7 @@ func (b *Backend) Exec(request *frames.ExecRequest) (frames.Frame, error) {
 		return frames.NewFrame(cols, nil, nil)
 	}
 
-	return nil, fmt.Errorf("CSV backend does not support %q exec command", request.Proto.Command)
+	return nil, fmt.Errorf("CSV backend doesn't support execute command '%q'", request.Proto.Command)
 }
 
 func (b *Backend) csvPath(table string) string {
@@ -215,7 +215,7 @@ type FrameIterator struct {
 func (it *FrameIterator) Next() bool {
 	rows, err := it.readNextRows()
 	if err != nil {
-		it.logger.ErrorWith("can't read rows", "error", err)
+		it.logger.ErrorWith("cannot read rows", "error", err)
 		it.err = err
 		return false
 	}
@@ -226,7 +226,7 @@ func (it *FrameIterator) Next() bool {
 
 	it.frame, err = it.buildFrame(rows)
 	if err != nil {
-		it.logger.ErrorWith("can't build frame", "error", err)
+		it.logger.ErrorWith("cannot build a DataFrames iterator", "error", err)
 		it.err = err
 		return false
 	}
@@ -258,7 +258,7 @@ func (it *FrameIterator) readNextRows() ([][]string, error) {
 		}
 
 		if len(row) != len(it.columnNames) {
-			err := fmt.Errorf("%s:%d num columns don't match headers (%d != %d)", it.path, it.nRows, len(row), len(it.columnNames))
+			err := fmt.Errorf("%s (row %d) number of columns doesn't match headers (%d != %d)", it.path, it.nRows, len(row), len(it.columnNames))
 			it.logger.ErrorWith("row size mismatch", "error", err, "row", it.nRows)
 			return nil, err
 		}
@@ -356,13 +356,13 @@ func (it *FrameIterator) buildFrame(rows [][]string) (frames.Frame, error) {
 			}
 			data = typedData
 		default:
-			return nil, fmt.Errorf("%s - unknown type %T", colName, val0)
+			return nil, fmt.Errorf("%s - unknown type '%T'", colName, val0)
 		}
 
 		col, err = frames.NewSliceColumn(colName, data)
 		if err != nil {
-			it.logger.ErrorWith("can't build column", "error", err, "column", colName)
-			return nil, errors.Wrapf(err, "can't build column %s", colName)
+			it.logger.ErrorWith("cannot build column", "error", err, "column", colName)
+			return nil, errors.Wrapf(err, "cannot build column '%s'", colName)
 		}
 
 		columns[c] = col
@@ -417,8 +417,8 @@ func (ca *csvAppender) Add(frame frames.Frame) error {
 	names := frame.Names()
 	if !ca.headerWritten {
 		if err := ca.csvWriter.Write(names); err != nil {
-			ca.logger.ErrorWith("can't write header", "error", err)
-			return errors.Wrap(err, "can't write header")
+			ca.logger.ErrorWith("cannot write header", "error", err)
+			return errors.Wrap(err, "cannot write header")
 		}
 		ca.headerWritten = true
 	}
@@ -428,22 +428,22 @@ func (ca *csvAppender) Add(frame frames.Frame) error {
 		for c, name := range names {
 			col, err := frame.Column(name)
 			if err != nil {
-				ca.logger.ErrorWith("can't get column", "error", err)
-				return errors.Wrap(err, "can't get column")
+				ca.logger.ErrorWith("cannot get column", "error", err)
+				return errors.Wrap(err, "cannot get column")
 			}
 
 			val, err := utils.ColAt(col, r)
 			if err != nil {
-				ca.logger.ErrorWith("can't get value", "error", err, "name", name, "row", r)
-				return errors.Wrapf(err, "%s:%d can't get value", name, r)
+				ca.logger.ErrorWith("cannot get value", "error", err, "name", name, "row", r)
+				return errors.Wrapf(err, "%s:%d cannot get value", name, r)
 			}
 
 			record[c] = fmt.Sprintf("%v", val)
 		}
 
 		if err := ca.csvWriter.Write(record); err != nil {
-			ca.logger.ErrorWith("can't write record", "error", err)
-			return errors.Wrap(err, "can't write record")
+			ca.logger.ErrorWith("cannot write record", "error", err)
+			return errors.Wrap(err, "cannot write record")
 		}
 	}
 
@@ -459,7 +459,7 @@ type syncer interface {
 func (ca *csvAppender) WaitForComplete(timeout time.Duration) error {
 	ca.csvWriter.Flush()
 	if err := ca.csvWriter.Error(); err != nil {
-		ca.logger.ErrorWith("csv Flush", "error", err)
+		ca.logger.ErrorWith("CSV flush", "error", err)
 		return err
 	}
 

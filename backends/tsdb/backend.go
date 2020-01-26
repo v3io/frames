@@ -44,7 +44,7 @@ import (
 	"github.com/valyala/fasthttp"
 )
 
-// Backend is a tsdb backend
+// Backend is a TSDB backend
 type Backend struct {
 	queriers      *lru.Cache
 	queriersLock  sync.Mutex
@@ -54,7 +54,7 @@ type Backend struct {
 	httpClient    *fasthttp.Client
 }
 
-// NewBackend return a new tsdb backend
+// NewBackend returns a new TSDB backend
 func NewBackend(logger logger.Logger, httpClient *fasthttp.Client, cfg *frames.BackendConfig, framesConfig *frames.Config) (frames.DataBackend, error) {
 
 	frames.InitBackendDefaults(cfg, framesConfig)
@@ -113,7 +113,7 @@ func (b *Backend) newAdapter(session *frames.Session, password string, token str
 	}
 
 	cfg.TablePath = newPath
-	b.logger.DebugWith("tsdb config", "config", cfg)
+	b.logger.DebugWith("TSDB configuration", "config", cfg)
 	adapter, err := tsdb.NewV3ioAdapter(cfg, container, b.logger)
 	if err != nil {
 		return nil, err
@@ -157,7 +157,7 @@ func (b *Backend) GetQuerier(session *frames.Session, password string, token str
 	if !found {
 		b.queriersLock.Lock()
 		defer b.queriersLock.Unlock()
-		qry, found = b.queriers.Get(key) // Double-checked locking
+		qry, found = b.queriers.Get(key) // Double-check locking
 		if !found {
 			var err error
 			adapter, err := b.newAdapter(session, password, token, path)
@@ -175,7 +175,7 @@ func (b *Backend) GetQuerier(session *frames.Session, password string, token str
 	return qry.(*pquerier.V3ioQuerier), nil
 }
 
-// Create creates a table
+// Create creates a TSDB table
 func (b *Backend) Create(request *frames.CreateRequest) error {
 
 	rate := request.Proto.Rate
@@ -202,10 +202,10 @@ func (b *Backend) Create(request *frames.CreateRequest) error {
 	cfg.AccessKey = request.Token.Get()
 
 	cfg.TablePath = path
-	dbSchema, err := schema.NewSchema(cfg, rate, aggregationGranularity, defaultRollups, "") // todo: support create table with cross label aggregates
+	dbSchema, err := schema.NewSchema(cfg, rate, aggregationGranularity, defaultRollups, "") // TODO: support create table with cross-label aggregates
 
 	if err != nil {
-		return errors.Wrap(err, "Failed to create a TSDB schema.")
+		return errors.Wrap(err, "failed to create a TSDB schema")
 	}
 
 	err = tsdb.CreateTSDB(cfg, dbSchema)
@@ -257,7 +257,7 @@ func (b *Backend) Delete(request *frames.DeleteRequest) error {
 
 // Exec executes a command
 func (b *Backend) Exec(request *frames.ExecRequest) (frames.Frame, error) {
-	return nil, fmt.Errorf("TSDB backend does not support Exec")
+	return nil, fmt.Errorf("TSDB backend doesn't support the 'execute' command")
 }
 
 func (b *Backend) ignoreCreateExists(request *frames.CreateRequest, err error) bool {
@@ -265,12 +265,12 @@ func (b *Backend) ignoreCreateExists(request *frames.CreateRequest, err error) b
 		return false
 	}
 
-	// TODO: Ask tsdb to return specific error value, this is brittle
-	return err == nil || strings.Contains(err.Error(), "A TSDB table already exists")
+	// TODO: Ask TSDB to return  specific error value; this is brittle
+	return err == nil || strings.Contains(err.Error(), "TSDB table already exists")
 }
 
 func (b *Backend) isSchemaNotFoundError(err error) bool {
-	return strings.Contains(err.Error(), "No TSDB schema file found")
+	return strings.Contains(err.Error(), "no TSDB schema file found")
 }
 
 func init() {
