@@ -2,7 +2,6 @@ package test
 
 import (
 	"fmt"
-	"math/rand"
 	"testing"
 	"time"
 
@@ -180,7 +179,7 @@ func (tsdbSuite *TsdbTestSuite) TestRegressionIG14560() {
 		Rate:    "1/m",
 	}
 	err := tsdbSuite.client.Create(req)
-	tsdbSuite.Require().NoError()
+	tsdbSuite.Require().NoError(err)
 
 	tsdbSuite.T().Log("write")
 	times := []time.Time{
@@ -192,18 +191,15 @@ func (tsdbSuite *TsdbTestSuite) TestRegressionIG14560() {
 		time.Unix(1559669965, 0),
 	}
 
-	floats := []float64{12.4, 30.1, 18.2, 234.2, 23.11, 91.2}
+	cpu := []float64{12.4, 30.1, 18.2, 234.2, 23.11, 91.2}
 
-	col, err := frames.NewSliceColumn(name, floats)
+	cpuCol, err := frames.NewSliceColumn("cpu", cpu)
 	tsdbSuite.Require().NoError(err)
 
 	index, err := frames.NewSliceColumn("idx", times)
 	tsdbSuite.Require().NoError(err)
 
-	columns := []frames.Column{
-		FloatCol(tsdbSuite.T(), "cpu", index.Len()),
-	}
-
+	columns := []frames.Column{cpuCol}
 	frame, err := frames.NewFrame(columns, []frames.Column{index}, nil)
 	tsdbSuite.Require().NoError(err)
 
@@ -232,8 +228,8 @@ func (tsdbSuite *TsdbTestSuite) TestRegressionIG14560() {
 	rreq := &pb.ReadRequest{
 		Backend:      tsdbSuite.backendName,
 		Table:        table,
-		Start:        "0",
-		End:          veryHighTimestamp,
+		Start:        "1530349527000",
+		End:          "1559293527000",
 		MessageLimit: 10,
 	}
 
@@ -247,14 +243,8 @@ func (tsdbSuite *TsdbTestSuite) TestRegressionIG14560() {
 		fr := it.At()
 		resultCount += fr.Len()
 	}
-	// TODO: More checks
-	if !(resultCount == frame.Len() || resultCount-1 == frame.Len()) {
-		tsdbSuite.T().Fatalf("wrong length: %d != %d", resultCount, frame.Len())
-	}
-
-	if err := it.Err(); err != nil {
-		tsdbSuite.T().Fatal(err)
-	}
+	tsdbSuite.Require().Equal(0, resultCount)
+	tsdbSuite.Require().NoError(it.Err())
 
 	tsdbSuite.T().Log("delete")
 	dreq := &pb.DeleteRequest{
@@ -262,10 +252,8 @@ func (tsdbSuite *TsdbTestSuite) TestRegressionIG14560() {
 		Table:   table,
 	}
 
-	if err := tsdbSuite.client.Delete(dreq); err != nil {
-		tsdbSuite.T().Fatal(err)
-	}
-
+	err = tsdbSuite.client.Delete(dreq)
+	tsdbSuite.Require().NoError(err)
 }
 
 func (tsdbSuite *TsdbTestSuite) TestAllStringMetric() {
