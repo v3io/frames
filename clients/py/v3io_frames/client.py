@@ -227,12 +227,12 @@ class ClientBase:
             [Not supported in this version]
         iterator (Optional) : bool
             True - return a DataFrames iterator;
-            False (default) - return a single DataFrame
+            False (default except for get_raw=True) - return a single DataFrame
         get_raw (Optional) : bool
             False (default) - return the data in pandas DataFrames.
-            True - return the data in a raw-data object, which boosts
-                   performance at the expense of pandas convenience.
-                   Note: this mode always returns a DataFrames iterator.
+            True - return the data in raw-data frames using Cap'n Proto, which
+                   boosts performance at the expense of pandas convenience.
+                   Note: `read` always returns a frames iterator for this mode.
         **kw
             Variable-length list of additional keyword (named) arguments
 
