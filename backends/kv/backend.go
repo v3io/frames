@@ -35,11 +35,11 @@ import (
 
 // Backend is key/value backend
 type Backend struct {
-	logger       logger.Logger
-	numWorkers   int
+	logger            logger.Logger
+	numWorkers        int
 	inactivityTimeout time.Duration
-	framesConfig *frames.Config
-	httpClient   *fasthttp.Client
+	framesConfig      *frames.Config
+	httpClient        *fasthttp.Client
 }
 
 // NewBackend return a new key/value backend
@@ -47,10 +47,10 @@ func NewBackend(logger logger.Logger, httpClient *fasthttp.Client, config *frame
 
 	frames.InitBackendDefaults(config, framesConfig)
 	newBackend := Backend{
-		logger:       logger.GetChild("kv"),
-		numWorkers:   config.Workers,
-		framesConfig: framesConfig,
-		httpClient:   httpClient,
+		logger:            logger.GetChild("kv"),
+		numWorkers:        config.Workers,
+		framesConfig:      framesConfig,
+		httpClient:        httpClient,
 		inactivityTimeout: config.InactivityTimeout,
 	}
 

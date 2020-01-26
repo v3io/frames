@@ -107,7 +107,7 @@ func createContainer(logger logger.Logger,
 	}
 
 	if inactivityTimeout == 0 {
-		inactivityTimeout = 30 * time.Second
+		inactivityTimeout = 60 * time.Second
 	}
 
 	context, err := v3iohttp.NewContext(logger, httpClient, &v3io.NewContextInput{

@@ -46,12 +46,12 @@ import (
 
 // Backend is a tsdb backend
 type Backend struct {
-	queriers      *lru.Cache
-	queriersLock  sync.Mutex
-	backendConfig *frames.BackendConfig
-	framesConfig  *frames.Config
-	logger        logger.Logger
-	httpClient    *fasthttp.Client
+	queriers          *lru.Cache
+	queriersLock      sync.Mutex
+	backendConfig     *frames.BackendConfig
+	framesConfig      *frames.Config
+	logger            logger.Logger
+	httpClient        *fasthttp.Client
 	inactivityTimeout time.Duration
 }
 
@@ -65,11 +65,11 @@ func NewBackend(logger logger.Logger, httpClient *fasthttp.Client, cfg *frames.B
 	}
 
 	newBackend := Backend{
-		queriers:      lru.New(querierCacheSize),
-		logger:        logger.GetChild("tsdb"),
-		backendConfig: cfg,
-		framesConfig:  framesConfig,
-		httpClient:    httpClient,
+		queriers:          lru.New(querierCacheSize),
+		logger:            logger.GetChild("tsdb"),
+		backendConfig:     cfg,
+		framesConfig:      framesConfig,
+		httpClient:        httpClient,
 		inactivityTimeout: cfg.InactivityTimeout,
 	}
 

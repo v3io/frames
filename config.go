@@ -131,11 +131,12 @@ func (c *Config) Validate() error {
 
 // BackendConfig is default backend configuration
 type BackendConfig struct {
-	Type              string        `json:"type"` // v3io, csv, ...
-	Name              string        `json:"name"`
-	Workers           int           `json:"workers"`
-	InactivityTimeout time.Duration `json:"inactvitiyTimeout"`
-	V3ioGoWorkers     int           `json:"v3ioGoWorkers"`
+	Type                  string        `json:"type"` // v3io, csv, ...
+	Name                  string        `json:"name"`
+	Workers               int           `json:"workers"`
+	InactivityTimeout     time.Duration `json:"inactvitiyTimeout"`
+	V3ioGoWorkers         int           `json:"v3ioGoWorkers"`
+	MaxConnectionsPerHost int           `json:"maxConnectionsPerHost"`
 	// backend specific options
 	Options map[string]interface{} `json:"options"`
 

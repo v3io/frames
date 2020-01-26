@@ -90,6 +90,9 @@ func NewServer(config *frames.Config, addr string, logger logger.Logger) (*Serve
 
 	pb.RegisterFramesServer(server.server, server)
 	reflection.Register(server.server)
+
+	server.logger.InfoWith("GRPC server started", "address", server.address)
+
 	return server, nil
 }
 

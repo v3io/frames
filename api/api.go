@@ -265,19 +265,31 @@ func (api *API) populateQuery(request *frames.ReadRequest) error {
 func (api *API) createBackends(config *frames.Config) error {
 	api.backends = make(map[string]frames.DataBackend)
 
-	for _, cfg := range config.Backends {
-		factory := backends.GetFactory(cfg.Type)
+	for _, backendConfig := range config.Backends {
+		factory := backends.GetFactory(backendConfig.Type)
 		if factory == nil {
-			return fmt.Errorf("unknown backend - %q", cfg.Type)
+			return fmt.Errorf("unknown backend - %q", backendConfig.Type)
 		}
 
 		httpClient := v3iohttp.NewDefaultClient()
-		backend, err := factory(api.logger, httpClient, cfg, config)
-		if err != nil {
-			return errors.Wrapf(err, "%s:%s - can't create backend", cfg.Name, cfg.Type)
+
+		maxConnectionsPerHost := backendConfig.MaxConnectionsPerHost
+		if maxConnectionsPerHost == 0 {
+			maxConnectionsPerHost = 4096
 		}
 
-		api.backends[cfg.Name] = backend
+		httpClient.MaxConnsPerHost = maxConnectionsPerHost
+
+		backend, err := factory(api.logger, httpClient, backendConfig, config)
+		if err != nil {
+			return errors.Wrapf(err, "%s:%s - can't create backend", backendConfig.Name, backendConfig.Type)
+		}
+
+		api.backends[backendConfig.Name] = backend
+
+		api.logger.InfoWith("Backend created",
+			"maxConnectionsPerHost", maxConnectionsPerHost,
+			"config", backendConfig)
 	}
 
 	return nil
