@@ -776,6 +776,8 @@ All Frames backends that support the `execute` method support the following comm
 <a id="method-execute-nosql-cmds"></a>
 ### `nosql` Backend `execute` Commands
 
+The following `execute` commands are specific to the `nosql` backend; for more information, see the [platform Frames NoSQL-backend reference](https://www.iguazio.com/docs/reference/latest-release/api-reference/frames/nosql/execute/):
+
 - <a id="method-execute-nosql-cmd-infer"></a>**infer | infer_schema** &mdash; Infers the data schema of a given NoSQL table and creates a schema file for the table.
 
   Example:
@@ -796,6 +798,8 @@ All Frames backends that support the `execute` method support the following comm
 
 <a id="method-execute-stream-cmds"></a>
 ### `stream` Backend `execute` Commands
+
+The following `execute` commands are specific to the `stream` backend; for more information, see the [platform Frames streaming-backend reference](https://www.iguazio.com/docs/reference/latest-release/api-reference/frames/stream/execute/):
 
 - <a id="method-execute-stream-cmd-put"></a>**put** &mdash; Adds records to a stream.
 
