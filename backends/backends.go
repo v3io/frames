@@ -22,12 +22,12 @@ package backends
 
 import (
 	"fmt"
-	v3io "github.com/v3io/v3io-go/pkg/dataplane"
 	"strings"
 	"sync"
 
 	"github.com/nuclio/logger"
 	"github.com/v3io/frames"
+	v3io "github.com/v3io/v3io-go/pkg/dataplane"
 )
 
 var (
