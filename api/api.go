@@ -269,21 +269,22 @@ func (api *API) createBackends(config *frames.Config) error {
 	httpClient := v3iohttp.NewDefaultClient()
 	httpClient.MaxConnsPerHost = config.MaxConnections
 
-	api.logger.InfoWith("Creating context",
-		"transportWorkers", config.TransportWorkers,
-		"transportRequestChanLegth", config.TransportRequestChanLegth)
-
-	// create a single context for the entire adapter
-	v3ioContext, err := v3iohttp.NewContext(api.logger, httpClient, &v3io.NewContextInput{
-		NumWorkers:     config.TransportWorkers,
-		RequestChanLen: config.TransportRequestChanLegth,
-	})
-
-	if err != nil {
-		return errors.Wrap(err, "Failed to create v3io context")
-	}
-
 	for _, backendConfig := range config.Backends {
+		api.logger.InfoWith("Creating v3io context for backend",
+			"backend", backendConfig.Name,
+			"workers", backendConfig.V3ioGoWorkers,
+			"requestChanLength", backendConfig.V3ioGoRequestChanLength)
+
+		// create a context for the backend
+		v3ioContext, err := v3iohttp.NewContext(api.logger, httpClient, &v3io.NewContextInput{
+			NumWorkers:     backendConfig.V3ioGoWorkers,
+			RequestChanLen: backendConfig.V3ioGoRequestChanLength,
+		})
+
+		if err != nil {
+			return errors.Wrap(err, "Failed to create v3io context for backend")
+		}
+
 		factory := backends.GetFactory(backendConfig.Type)
 		if factory == nil {
 			return fmt.Errorf("unknown backend - %q", backendConfig.Type)
