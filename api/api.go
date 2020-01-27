@@ -24,6 +24,7 @@ package api
 
 import (
 	"fmt"
+	v3io "github.com/v3io/v3io-go/pkg/dataplane"
 	"strings"
 	"time"
 
@@ -265,31 +266,36 @@ func (api *API) populateQuery(request *frames.ReadRequest) error {
 func (api *API) createBackends(config *frames.Config) error {
 	api.backends = make(map[string]frames.DataBackend)
 
+	httpClient := v3iohttp.NewDefaultClient()
+	httpClient.MaxConnsPerHost = config.MaxConnections
+
+	api.logger.InfoWith("Creating context",
+		"transportWorkers", config.TransportWorkers,
+		"transportRequestChanLegth", config.TransportRequestChanLegth)
+
+	// create a single context for the entire adapter
+	v3ioContext, err := v3iohttp.NewContext(api.logger, httpClient, &v3io.NewContextInput{
+		NumWorkers:     config.TransportWorkers,
+		RequestChanLen: config.TransportRequestChanLegth,
+	})
+
+	if err != nil {
+		return errors.Wrap(err, "Failed to create v3io context")
+	}
+
 	for _, backendConfig := range config.Backends {
 		factory := backends.GetFactory(backendConfig.Type)
 		if factory == nil {
 			return fmt.Errorf("unknown backend - %q", backendConfig.Type)
 		}
 
-		httpClient := v3iohttp.NewDefaultClient()
-
-		maxConnectionsPerHost := backendConfig.MaxConnectionsPerHost
-		if maxConnectionsPerHost == 0 {
-			maxConnectionsPerHost = 4096
-		}
-
-		httpClient.MaxConnsPerHost = maxConnectionsPerHost
-
-		backend, err := factory(api.logger, httpClient, backendConfig, config)
+		backend, err := factory(api.logger, v3ioContext, backendConfig, config)
 		if err != nil {
 			return errors.Wrapf(err, "%s:%s - can't create backend", backendConfig.Name, backendConfig.Type)
 		}
 
 		api.backends[backendConfig.Name] = backend
 
-		api.logger.InfoWith("Backend created",
-			"maxConnectionsPerHost", maxConnectionsPerHost,
-			"config", backendConfig)
 	}
 
 	return nil

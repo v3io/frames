@@ -24,7 +24,6 @@ import (
 	"encoding/json"
 	"fmt"
 	"os"
-	"time"
 )
 
 // LogConfig is the logging configuration
@@ -39,11 +38,14 @@ type Config struct {
 	DefaultTimeout int       `json:"timeout,omitempty"`
 
 	// default V3IO connection details
-	WebAPIEndpoint string `json:"webApiEndpoint"`
-	Container      string `json:"container"`
-	Username       string `json:"username,omitempty"`
-	Password       string `json:"password,omitempty"`
-	SessionKey     string `json:"sessionKey,omitempty"`
+	WebAPIEndpoint            string `json:"webApiEndpoint"`
+	Container                 string `json:"container"`
+	Username                  string `json:"username,omitempty"`
+	Password                  string `json:"password,omitempty"`
+	SessionKey                string `json:"sessionKey,omitempty"`
+	MaxConnections            int    `json:"maxConnections"`
+	TransportRequestChanLegth int    `json:"transportRequestChanLength"`
+	TransportWorkers          int    `json:"transportWorkers"`
 
 	// Number of parallel V3IO worker routines
 	Workers int `json:"workers"`
@@ -57,6 +59,18 @@ type Config struct {
 func (c *Config) InitDefaults() error {
 	if c.DefaultTimeout == 0 {
 		c.DefaultTimeout = 30
+	}
+
+	if c.MaxConnections == 0 {
+		c.MaxConnections = 16 * 1024
+	}
+
+	if c.TransportWorkers == 0 {
+		c.TransportWorkers = 16 * 1024
+	}
+
+	if c.TransportRequestChanLegth == 0 {
+		c.TransportRequestChanLegth = c.TransportWorkers * 64
 	}
 
 	return nil
@@ -96,10 +110,6 @@ func InitBackendDefaults(cfg *BackendConfig, framesConfig *Config) {
 			cfg.Workers = 8
 		}
 	}
-
-	if cfg.V3ioGoWorkers == 0 {
-		cfg.V3ioGoWorkers = 32
-	}
 }
 
 // Validate validates the configuration
@@ -131,12 +141,11 @@ func (c *Config) Validate() error {
 
 // BackendConfig is default backend configuration
 type BackendConfig struct {
-	Type                  string        `json:"type"` // v3io, csv, ...
-	Name                  string        `json:"name"`
-	Workers               int           `json:"workers"`
-	InactivityTimeout     time.Duration `json:"inactvitiyTimeout"`
-	V3ioGoWorkers         int           `json:"v3ioGoWorkers"`
-	MaxConnectionsPerHost int           `json:"maxConnectionsPerHost"`
+	Type              string `json:"type"` // v3io, csv, ...
+	Name              string `json:"name"`
+	Workers           int    `json:"workers"`
+	InactivityTimeout string `json:"inactvitiyTimeout"`
+
 	// backend specific options
 	Options map[string]interface{} `json:"options"`
 

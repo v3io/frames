@@ -22,6 +22,7 @@ package tsdb
 
 import (
 	"fmt"
+	v3io "github.com/v3io/v3io-go/pkg/dataplane"
 	"hash/fnv"
 	"reflect"
 	"strings"
@@ -41,7 +42,6 @@ import (
 	"github.com/v3io/v3io-tsdb/pkg/tsdb"
 	"github.com/v3io/v3io-tsdb/pkg/tsdb/schema"
 	tsdbutils "github.com/v3io/v3io-tsdb/pkg/utils"
-	"github.com/valyala/fasthttp"
 )
 
 // Backend is a tsdb backend
@@ -51,12 +51,12 @@ type Backend struct {
 	backendConfig     *frames.BackendConfig
 	framesConfig      *frames.Config
 	logger            logger.Logger
-	httpClient        *fasthttp.Client
+	v3ioContext       v3io.Context
 	inactivityTimeout time.Duration
 }
 
 // NewBackend return a new tsdb backend
-func NewBackend(logger logger.Logger, httpClient *fasthttp.Client, cfg *frames.BackendConfig, framesConfig *frames.Config) (frames.DataBackend, error) {
+func NewBackend(logger logger.Logger, v3ioContext v3io.Context, cfg *frames.BackendConfig, framesConfig *frames.Config) (frames.DataBackend, error) {
 
 	frames.InitBackendDefaults(cfg, framesConfig)
 	querierCacheSize := framesConfig.QuerierCacheSize
@@ -69,8 +69,8 @@ func NewBackend(logger logger.Logger, httpClient *fasthttp.Client, cfg *frames.B
 		logger:            logger.GetChild("tsdb"),
 		backendConfig:     cfg,
 		framesConfig:      framesConfig,
-		httpClient:        httpClient,
-		inactivityTimeout: cfg.InactivityTimeout,
+		v3ioContext:       v3ioContext,
+		inactivityTimeout: 0,
 	}
 
 	return &newBackend, nil
@@ -103,14 +103,11 @@ func (b *Backend) newAdapter(session *frames.Session, password string, token str
 	cfg := b.newConfig(session)
 
 	container, err := v3ioutils.NewContainer(
-		b.httpClient,
+		b.v3ioContext,
 		session,
 		password,
 		token,
-		b.logger,
-		b.backendConfig.V3ioGoWorkers,
-		b.inactivityTimeout,
-	)
+		b.logger)
 
 	if err != nil {
 		return nil, err

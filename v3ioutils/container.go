@@ -21,42 +21,25 @@ such restriction.
 package v3ioutils
 
 import (
-	"net/http"
-	"strings"
-	"time"
-
 	"encoding/binary"
 	"github.com/nuclio/logger"
 	"github.com/pkg/errors"
 	"github.com/v3io/frames"
 	v3io "github.com/v3io/v3io-go/pkg/dataplane"
-	v3iohttp "github.com/v3io/v3io-go/pkg/dataplane/http"
 	v3ioerrors "github.com/v3io/v3io-go/pkg/errors"
 	"github.com/v3io/v3io-tsdb/pkg/utils"
-	"github.com/valyala/fasthttp"
+	"net/http"
+	"strings"
 )
 
 const v3ioUsersContainer = "users"
 const v3ioHomeVar = "$V3IO_HOME"
 
-func NewContainer(httpClient *fasthttp.Client,
+func NewContainer(v3ioContext v3io.Context,
 	session *frames.Session,
 	password string,
 	token string,
-	logger logger.Logger,
-	workers int,
-	inactivityTimeout time.Duration) (v3io.Container, error) {
-	return NewContainerWithRequestChannelLength(httpClient, session, password, token, logger, workers, 0, inactivityTimeout)
-}
-
-func NewContainerWithRequestChannelLength(httpClient *fasthttp.Client,
-	session *frames.Session,
-	password string,
-	token string,
-	logger logger.Logger,
-	workers int,
-	requestChannelLen int,
-	inactivityTimeout time.Duration) (v3io.Container, error) {
+	logger logger.Logger) (v3io.Container, error) {
 
 	var pass string
 	if password == "" {
@@ -84,7 +67,7 @@ func NewContainerWithRequestChannelLength(httpClient *fasthttp.Client,
 		Password:  pass,
 		AccessKey: tok,
 	}
-	container, err := createContainer(logger, httpClient, session.Container, &newSessionInput, workers, requestChannelLen, inactivityTimeout)
+	container, err := createContainer(logger, v3ioContext, session.Container, &newSessionInput)
 	if err != nil {
 		return nil, errors.Wrap(err, "failed to create data container")
 	}
@@ -94,37 +77,16 @@ func NewContainerWithRequestChannelLength(httpClient *fasthttp.Client,
 
 // CreateContainer creates a new container
 func createContainer(logger logger.Logger,
-	httpClient *fasthttp.Client,
-	cont string,
-	newSessionInput *v3io.NewSessionInput,
-	workers int,
-	requestChannelLen int,
-	inactivityTimeout time.Duration) (v3io.Container, error) {
+	v3ioContext v3io.Context,
+	containerName string,
+	newSessionInput *v3io.NewSessionInput) (v3io.Container, error) {
 
-	// create context
-	if workers == 0 {
-		workers = 8
-	}
-
-	if inactivityTimeout == 0 {
-		inactivityTimeout = 60 * time.Second
-	}
-
-	context, err := v3iohttp.NewContext(logger, httpClient, &v3io.NewContextInput{
-		NumWorkers:        workers,
-		RequestChanLen:    requestChannelLen,
-		InactivityTimeout: inactivityTimeout,
-	})
-	if err != nil {
-		return nil, errors.Wrap(err, "failed to create client")
-	}
-
-	session, err := context.NewSession(newSessionInput)
+	session, err := v3ioContext.NewSession(newSessionInput)
 	if err != nil {
 		return nil, errors.Wrap(err, "failed to create session")
 	}
 
-	container, err := session.NewContainer(&v3io.NewContainerInput{ContainerName: cont})
+	container, err := session.NewContainer(&v3io.NewContainerInput{ContainerName: containerName})
 	if err != nil {
 		return nil, errors.Wrap(err, "failed to create container")
 	}
