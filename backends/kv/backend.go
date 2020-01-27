@@ -43,9 +43,6 @@ type Backend struct {
 
 // NewBackend return a new key/value backend
 func NewBackend(logger logger.Logger, v3ioContext v3io.Context, config *frames.BackendConfig, framesConfig *frames.Config) (frames.DataBackend, error) {
-
-	frames.InitBackendDefaults(config, framesConfig)
-
 	newBackend := Backend{
 		logger:            logger.GetChild("kv"),
 		numWorkers:        config.Workers,

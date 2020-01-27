@@ -270,6 +270,8 @@ func (api *API) createBackends(config *frames.Config) error {
 	httpClient.MaxConnsPerHost = config.MaxConnections
 
 	for _, backendConfig := range config.Backends {
+		frames.InitBackendDefaults(backendConfig, config)
+
 		api.logger.InfoWith("Creating v3io context for backend",
 			"backend", backendConfig.Name,
 			"workers", backendConfig.V3ioGoWorkers,

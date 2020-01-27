@@ -57,8 +57,6 @@ type Backend struct {
 
 // NewBackend return a new tsdb backend
 func NewBackend(logger logger.Logger, v3ioContext v3io.Context, cfg *frames.BackendConfig, framesConfig *frames.Config) (frames.DataBackend, error) {
-
-	frames.InitBackendDefaults(cfg, framesConfig)
 	querierCacheSize := framesConfig.QuerierCacheSize
 	if querierCacheSize == 0 {
 		querierCacheSize = 64

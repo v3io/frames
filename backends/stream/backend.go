@@ -44,8 +44,6 @@ type Backend struct {
 
 // NewBackend return a new v3io stream backend
 func NewBackend(logger logger.Logger, v3ioContext v3io.Context, cfg *frames.BackendConfig, framesConfig *frames.Config) (frames.DataBackend, error) {
-
-	frames.InitBackendDefaults(cfg, framesConfig)
 	newBackend := Backend{
 		logger:        logger.GetChild("stream"),
 		backendConfig: cfg,
