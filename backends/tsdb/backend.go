@@ -77,14 +77,14 @@ func NewBackend(logger logger.Logger, httpClient *fasthttp.Client, cfg *frames.B
 func (b *Backend) newConfig(session *frames.Session) *config.V3ioConfig {
 
 	cfg := &config.V3ioConfig{
-		WebApiEndpoint: session.Url,
-		Container:      session.Container,
-		Username:       session.User,
-		Password:       session.Password,
-		AccessKey:      session.Token,
-		Workers:        b.backendConfig.Workers,
-		LogLevel:       b.framesConfig.Log.Level,
-		LoadPartitionsFromSchemaFile: true,
+		WebApiEndpoint:               session.Url,
+		Container:                    session.Container,
+		Username:                     session.User,
+		Password:                     session.Password,
+		AccessKey:                    session.Token,
+		Workers:                      b.backendConfig.Workers,
+		LogLevel:                     b.framesConfig.Log.Level,
+		LoadPartitionsFromSchemaAttr: b.framesConfig.TsdbLoadPartitionsFromSchemaAttr,
 	}
 	return config.WithDefaults(cfg)
 }
