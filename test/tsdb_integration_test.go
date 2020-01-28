@@ -99,7 +99,7 @@ func (tsdbSuite *TsdbTestSuite) TestAll() {
 	req := &pb.CreateRequest{
 		Backend: tsdbSuite.backendName,
 		Table:   table,
-		Rate: "1/m",
+		Rate:    "1/m",
 	}
 	if err := tsdbSuite.client.Create(req); err != nil {
 		tsdbSuite.T().Fatal(err)
@@ -169,6 +169,93 @@ func (tsdbSuite *TsdbTestSuite) TestAll() {
 
 }
 
+func (tsdbSuite *TsdbTestSuite) TestRegressionIG14560() {
+	table := fmt.Sprintf("tsdb_test_all%d", time.Now().UnixNano())
+
+	tsdbSuite.T().Log("create")
+	req := &pb.CreateRequest{
+		Backend: tsdbSuite.backendName,
+		Table:   table,
+		Rate:    "1/m",
+	}
+	err := tsdbSuite.client.Create(req)
+	tsdbSuite.Require().NoError(err)
+
+	tsdbSuite.T().Log("write")
+	times := []time.Time{
+		time.Unix(1559668665, 0),
+		time.Unix(1559668705, 0),
+		time.Unix(1559668755, 0),
+		time.Unix(1559668965, 0),
+		time.Unix(1559669265, 0),
+		time.Unix(1559669965, 0),
+	}
+
+	cpu := []float64{12.4, 30.1, 18.2, 234.2, 23.11, 91.2}
+
+	cpuCol, err := frames.NewSliceColumn("cpu", cpu)
+	tsdbSuite.Require().NoError(err)
+
+	index, err := frames.NewSliceColumn("idx", times)
+	tsdbSuite.Require().NoError(err)
+
+	columns := []frames.Column{cpuCol}
+	frame, err := frames.NewFrame(columns, []frames.Column{index}, nil)
+	tsdbSuite.Require().NoError(err)
+
+	wreq := &frames.WriteRequest{
+		Backend: tsdbSuite.backendName,
+		Table:   table,
+	}
+
+	appender, err := tsdbSuite.client.Write(wreq)
+	if err != nil {
+		tsdbSuite.T().Fatal(err)
+	}
+
+	tsdbSuite.T().Logf("saving frame to '%v', length: %v", table, frame.Len())
+	if err := appender.Add(frame); err != nil {
+		tsdbSuite.T().Fatal(err)
+	}
+
+	if err := appender.WaitForComplete(3 * time.Second); err != nil {
+		tsdbSuite.T().Fatal(err)
+	}
+
+	time.Sleep(3 * time.Second) // Let DB sync
+
+	tsdbSuite.T().Log("read")
+	rreq := &pb.ReadRequest{
+		Backend:      tsdbSuite.backendName,
+		Table:        table,
+		Start:        "1530349527000",
+		End:          "1559293527000",
+		MessageLimit: 10,
+	}
+
+	it, err := tsdbSuite.client.Read(rreq)
+	if err != nil {
+		tsdbSuite.T().Fatal(err)
+	}
+
+	resultCount := 0
+	for it.Next() {
+		fr := it.At()
+		resultCount += fr.Len()
+	}
+	tsdbSuite.Require().Equal(0, resultCount)
+	tsdbSuite.Require().NoError(it.Err())
+
+	tsdbSuite.T().Log("delete")
+	dreq := &pb.DeleteRequest{
+		Backend: tsdbSuite.backendName,
+		Table:   table,
+	}
+
+	err = tsdbSuite.client.Delete(dreq)
+	tsdbSuite.Require().NoError(err)
+}
+
 func (tsdbSuite *TsdbTestSuite) TestAllStringMetric() {
 	table := fmt.Sprintf("tsdb_test_all%d", time.Now().UnixNano())
 
@@ -176,7 +263,7 @@ func (tsdbSuite *TsdbTestSuite) TestAllStringMetric() {
 	req := &pb.CreateRequest{
 		Backend: tsdbSuite.backendName,
 		Table:   table,
-		Rate: "1/m",
+		Rate:    "1/m",
 	}
 	if err := tsdbSuite.client.Create(req); err != nil {
 		tsdbSuite.T().Fatal(err)
@@ -250,7 +337,7 @@ func (tsdbSuite *TsdbTestSuite) TestDeleteWithTimestamp() {
 	req := &pb.CreateRequest{
 		Backend: tsdbSuite.backendName,
 		Table:   table,
-		Rate: "1/s",
+		Rate:    "1/s",
 	}
 	if err := tsdbSuite.client.Create(req); err != nil {
 		tsdbSuite.T().Fatal(err)
@@ -316,7 +403,7 @@ func (tsdbSuite *TsdbTestSuite) TestDeleteWithRelativeTime() {
 	req := &pb.CreateRequest{
 		Backend: tsdbSuite.backendName,
 		Table:   table,
-		Rate: "1/s",
+		Rate:    "1/s",
 	}
 	if err := tsdbSuite.client.Create(req); err != nil {
 		tsdbSuite.T().Fatal(err)
@@ -382,7 +469,7 @@ func (tsdbSuite *TsdbTestSuite) TestDeleteWithRFC3339Time() {
 	req := &pb.CreateRequest{
 		Backend: tsdbSuite.backendName,
 		Table:   table,
-		Rate: "1/s",
+		Rate:    "1/s",
 	}
 	if err := tsdbSuite.client.Create(req); err != nil {
 		tsdbSuite.T().Fatal(err)
@@ -448,7 +535,7 @@ func (tsdbSuite *TsdbTestSuite) TestDeleteAll() {
 	req := &pb.CreateRequest{
 		Backend: tsdbSuite.backendName,
 		Table:   table,
-		Rate: "1/s",
+		Rate:    "1/s",
 	}
 	if err := tsdbSuite.client.Create(req); err != nil {
 		tsdbSuite.T().Fatal(err)
