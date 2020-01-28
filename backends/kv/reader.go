@@ -287,8 +287,8 @@ func (ki *Iterator) Next() bool {
 func (ki *Iterator) handleIndices(index string, data map[string]frames.Column, shouldDup bool, indices *[]frames.Column, columns *[]frames.Column) {
 	col, ok := data[index]
 	if ok {
-        // If a user requested specific columns containing the index, duplicate
-        // the index column to be an index and a column
+		// If a user requested specific columns containing the index, duplicate
+		// the index column to be an index and a column
 		if shouldDup {
 			dupIndex := col.CopyWithName(fmt.Sprintf("_%v", index))
 			*indices = append(*indices, dupIndex)
