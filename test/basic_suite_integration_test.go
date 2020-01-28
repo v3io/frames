@@ -226,6 +226,8 @@ func runServer(t testing.TB, root string, grpcPort int, httpPort int) *exec.Cmd 
 		"-o", exePath,
 		"../cmd/framesd/framesd.go",
 	)
+	cmd.Stdout = os.Stdout
+	cmd.Stderr = os.Stderr
 	if err := cmd.Run(); err != nil {
 		t.Fatal(err)
 	}
