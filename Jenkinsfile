@@ -145,6 +145,8 @@ podTemplate(label: "${git_project}-${label}", inheritFrom: "jnlp-docker-golang-p
                                                     common.shellc("TRAVIS_REPO_SLUG=v3io/frames V3IO_PYPI_USER=${V3IO_PYPI_USER} V3IO_PYPI_PASSWORD=${V3IO_PYPI_PASSWORD} TRAVIS_TAG=${FRAMES_PYPI_VERSION} make pypi")
                                                 } catch (err) {
                                                     unstable("Failed uploading to pypi")
+                                                    // Do not continue stages
+                                                    throw err
                                                 }
                                             }
                                         }
