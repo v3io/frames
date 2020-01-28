@@ -13,7 +13,6 @@
 # limitations under the License.
 
 import warnings
-from datetime import datetime
 
 import google.protobuf.pyext._message as message
 import numpy as np
