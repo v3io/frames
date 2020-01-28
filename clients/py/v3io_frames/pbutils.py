@@ -12,21 +12,22 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+import warnings
+from datetime import datetime
+
 import google.protobuf.pyext._message as message
 import numpy as np
 import pandas as pd
 import pytz
-import warnings
 from google.protobuf.message import Message
 from pandas.core.dtypes.dtypes import CategoricalDtype
+from pandas.api.types import is_datetime64_any_dtype as is_datetime
 
 from . import frames_pb2 as fpb
 from .dtypes import dtype_of
 from .errors import MessageError, WriteError
 
-_ts = pd.Series(pd.Timestamp(0))
-_time_dt = _ts.dtype
-_time_tz_dt = _ts.dt.tz_localize(pytz.UTC).dtype
+
 pb_list_types = (
     message.RepeatedCompositeContainer,
     message.RepeatedScalarContainer,
@@ -217,9 +218,12 @@ def series2col(s, name):
     elif s.dtype == np.bool:
         kw['bools'] = s
         kw['dtype'] = fpb.BOOLEAN
-    elif is_time_dtype(s.dtype):
+    elif is_datetime(s.dtype):
         if s.dt.tz:
-            s = s.dt.tz_localize(pytz.UTC)
+            try:
+                s = s.dt.tz_localize(pytz.UTC)
+            except TypeError:
+                s = s.dt.tz_convert('UTC')
         kw['times'] = s.astype(np.int64)
         kw['dtype'] = fpb.TIME
     elif is_categorical_dtype(s.dtype):
@@ -255,10 +259,6 @@ def is_float_dtype(dtype):
         dtype == np.float32 or \
         dtype == np.float16 or \
         dtype == np.float
-
-
-def is_time_dtype(dtype):
-    return dtype == _time_dt or dtype == _time_tz_dt
 
 
 def is_categorical_dtype(dtype):
