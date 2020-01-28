@@ -80,7 +80,7 @@ func (b *Backend) Exec(request *frames.ExecRequest) (frames.Frame, error) {
 	case "update":
 		return nil, b.updateItem(request)
 	}
-	return nil, fmt.Errorf("NoSQL backend doesn't support execute commend '%s'", cmd)
+	return nil, fmt.Errorf("NoSQL backend doesn't support execute command '%s'", cmd)
 }
 
 func (b *Backend) updateItem(request *frames.ExecRequest) error {

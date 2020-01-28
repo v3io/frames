@@ -115,7 +115,7 @@ func (b *Backend) Exec(request *frames.ExecRequest) (frames.Frame, error) {
 	case "put":
 		return nil, b.put(request)
 	}
-	return nil, fmt.Errorf("streaming backend doesn't support execute commend '%s'", cmd)
+	return nil, fmt.Errorf("streaming backend doesn't support execute command '%s'", cmd)
 }
 
 func (b *Backend) put(request *frames.ExecRequest) error {
