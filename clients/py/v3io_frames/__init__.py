@@ -17,9 +17,10 @@
 __version__ = '0.4.1'
 
 import json
-import pandas as pd
 from os import environ
 from urllib.parse import urlparse
+
+import pandas as pd
 
 from .errors import *  # noqa
 from .frames_pb2 import TableSchema as Schema, SchemaKey, FAIL, IGNORE, Session  # noqa
@@ -70,7 +71,9 @@ def Client(address='', data_url='', container='', path='', user='',
     ----------
     A new `Client` object
     """
-    if not (address.startswith("grpc://") or address.startswith("https://") or address.startswith("http://")):
+    if not (address.startswith("grpc://") or
+            address.startswith("https://") or
+            address.startswith("http://")):
         address = "grpc://" + address
     protocol = urlparse(address).scheme or 'grpc'
     if protocol not in _known_protocols:
