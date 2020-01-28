@@ -392,7 +392,7 @@ class ClientBase:
               - 'update' - update a table item
                 [Not supported in this version]
             - For the 'stream' backend -
-              - 'put' - add a record to a stream shard 
+              - 'put' - add a record to a stream shard
         args : dict
             A dictionary of command-specific parameters (arguments)
         expression (Optional; required for the 'update' command) : str
