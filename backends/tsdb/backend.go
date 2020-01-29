@@ -22,7 +22,6 @@ package tsdb
 
 import (
 	"fmt"
-	v3io "github.com/v3io/v3io-go/pkg/dataplane"
 	"hash/fnv"
 	"reflect"
 	"strings"
@@ -33,6 +32,7 @@ import (
 	"github.com/v3io/frames"
 	"github.com/v3io/frames/backends"
 
+	v3io "github.com/v3io/v3io-go/pkg/dataplane"
 	"github.com/golang/groupcache/lru"
 	"github.com/nuclio/logger"
 	"github.com/pkg/errors"
@@ -84,7 +84,7 @@ func (b *Backend) newConfig(session *frames.Session) *config.V3ioConfig {
 		AccessKey:                    session.Token,
 		Workers:                      b.backendConfig.Workers,
 		LogLevel:                     b.framesConfig.Log.Level,
-		LoadPartitionsFromSchemaFile: true,
+		LoadPartitionsFromSchemaAttr: b.framesConfig.TsdbLoadPartitionsFromSchemaAttr,
 	}
 	return config.WithDefaults(cfg)
 }
