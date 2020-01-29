@@ -2,7 +2,6 @@
 
 [![GoDoc](https://godoc.org/github.com/v3io/frames?status.svg)](https://godoc.org/github.com/v3io/frames)
 [![License](https://img.shields.io/badge/License-Apache%202.0-blue.svg)](https://opensource.org/licenses/Apache-2.0)
-[![Documentation](https://readthedocs.org/projects/v3io_frames/badge/?version=latest)](https://v3io-frames.readthedocs.io/en/latest/)
 
 V3IO Frames (**"Frames"**) is a multi-model open-source data-access library, developed by Iguazio, which provides a unified high-performance DataFrame API for working with data in the data store of the [Iguazio Data Science Platform](https://www.iguazio.com) (**"the platform"**).
 
