@@ -43,7 +43,6 @@ type Config struct {
 	Username       string `json:"username,omitempty"`
 	Password       string `json:"password,omitempty"`
 	SessionKey     string `json:"sessionKey,omitempty"`
-	MaxConnections int    `json:"maxConnections"`
 
 	// Number of parallel V3IO worker routines
 	Workers int `json:"workers"`
@@ -58,10 +57,6 @@ type Config struct {
 func (c *Config) InitDefaults() error {
 	if c.DefaultTimeout == 0 {
 		c.DefaultTimeout = 30
-	}
-
-	if c.MaxConnections == 0 {
-		c.MaxConnections = 16 * 1024
 	}
 
 	for _, backendConfig := range c.Backends {
@@ -131,6 +126,7 @@ type BackendConfig struct {
 	Workers                 int    `json:"workers"`
 	V3ioGoWorkers           int    `json:"v3ioGoWorkers"`
 	V3ioGoRequestChanLength int    `json:"v3ioGoRequestChanLength"`
+	MaxConnections int    		`json:"maxConnections"`
 
 	// backend specific options
 	Options map[string]interface{} `json:"options"`
@@ -194,16 +190,20 @@ func initBackendDefaults(cfg *BackendConfig, framesConfig *Config) {
 		}
 	}
 
+	if cfg.MaxConnections == 0 {
+		cfg.MaxConnections = 2048
+	}
+
 	if cfg.V3ioGoWorkers == 0 {
 		switch cfg.Name {
 		case "csv", "stream":
 			cfg.V3ioGoWorkers = 256
 		default:
-			cfg.V3ioGoWorkers = 4 * 1024
+			cfg.V3ioGoWorkers = cfg.MaxConnections / 2
 		}
 	}
 
 	if cfg.V3ioGoRequestChanLength == 0 {
-		cfg.V3ioGoRequestChanLength = cfg.V3ioGoWorkers * 64
+		cfg.V3ioGoRequestChanLength = cfg.V3ioGoWorkers * 256
 	}
 }

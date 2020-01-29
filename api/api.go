@@ -266,14 +266,15 @@ func (api *API) populateQuery(request *frames.ReadRequest) error {
 func (api *API) createBackends(config *frames.Config) error {
 	api.backends = make(map[string]frames.DataBackend)
 
-	httpClient := v3iohttp.NewDefaultClient()
-	httpClient.MaxConnsPerHost = config.MaxConnections
-
 	for _, backendConfig := range config.Backends {
+		httpClient := v3iohttp.NewClient(nil, 0)
+		httpClient.MaxConnsPerHost = backendConfig.MaxConnections
+
 		api.logger.InfoWith("Creating v3io context for backend",
 			"backend", backendConfig.Name,
 			"workers", backendConfig.V3ioGoWorkers,
-			"requestChanLength", backendConfig.V3ioGoRequestChanLength)
+			"requestChanLength", backendConfig.V3ioGoRequestChanLength,
+			"maxConnsPerHost", backendConfig.MaxConnections)
 
 		// create a context for the backend
 		v3ioContext, err := v3iohttp.NewContext(api.logger, httpClient, &v3io.NewContextInput{
