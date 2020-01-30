@@ -248,24 +248,23 @@ All Frames backends that support the `create` method support the following commo
 <a id="method-create-params-tsdb"></a>
 #### `tsdb` Backend `create` Parameters
 
-The following `create` parameters are specific to the `tsdb` backend and are passed as keyword arguments via the `kw` parameter; for more information, see the [platform Frames TSDB-backend reference](https://www.iguazio.com/docs/reference/latest-release/api-reference/frames/tsdb/create/):
+The following `create` parameters are specific to the `tsdb` backend and are passed as keyword arguments via the `kw` parameter; for more information and examples, see the platform's [Frames TSDB-backend reference](https://www.iguazio.com/docs/reference/latest-release/api-reference/frames/tsdb/create/):
 
-- <a id="method-create-tsdb-param-rate"></a>**rate** &mdash; The ingestion rate of the TSDB metric samples.
-  It's recommended that you set the rate to the average expected ingestion rate, and that the ingestion rates for a given TSDB table don't vary significantly; when there's a big difference in the ingestion rates (for example, x10), use separate TSDB tables.
+- <a id="method-create-tsdb-param-rate"></a>**rate** &mdash; metric-samples ingestion rate.
 
   - **Type:** `str`
   - **Requirement:** Required
   - **Valid Values:** A string of the format `"[0-9]+/[smh]"` &mdash; where '`s`' = seconds, '`m`' = minutes, and '`h`' = hours.
     For example, `"1/s"` (one sample per minute), `"20/m"` (20 samples per minute), or `"50/h"` (50 samples per hour).
 
-- <a id="method-create-tsdb-param-aggregates"></a>**aggregates** &mdash; A list of aggregation functions for executing in real time during the samples ingestion ("pre-aggregation").
+- <a id="method-create-tsdb-param-aggregates"></a>**aggregates** &mdash; A list of aggregation functions for real-time aggregation during the samples ingestion ("pre-aggregation").
 
   - **Type:** `str`
   - **Requirement:** Optional
   - **Valid Values:** A string containing a comma-separated list of supported aggregation functions &mdash; `avg`| `count`| `last`| `max`| `min`| `rate`| `stddev`| `stdvar`| `sum`.
     For example, `"count,avg,min,max"`.
 
-- <a id="method-create-tsdb-param-aggregation_granularity"></a>**aggregation_granularity** &mdash; Aggregation granularity; i.e., a time interval for applying pre-aggregation functions, if configured in the [`aggregates`](#method-create-tsdb-param-aggregates) parameter.
+- <a id="method-create-tsdb-param-aggregation_granularity"></a>**aggregation_granularity** &mdash; Aggregation granularity; applicable when the [`aggregates`](#method-create-tsdb-param-aggregates) parameter is set.
 
   - **Type:** `str`
   - **Requirement:** Optional
@@ -276,7 +275,7 @@ The following `create` parameters are specific to the `tsdb` backend and are pas
 <a id="method-create-params-stream"></a>
 #### `stream` Backend `create` Parameters
 
-The following `create` parameters are specific to the `stream` backend and are passed as keyword arguments via the `kw` parameter; for more information, see the [platform Frames streaming-backend reference](https://www.iguazio.com/docs/reference/latest-release/api-reference/frames/stream/create/):
+The following `create` parameters are specific to the `stream` backend and are passed as keyword arguments via the `kw` parameter; for more information and examples, see the platform's [Frames streaming-backend reference](https://www.iguazio.com/docs/reference/latest-release/api-reference/frames/stream/create/):
 
 - <a id="method-create-stream-param-shards"></a>**shards** &mdash; The number of stream shards to create.
 
@@ -300,35 +299,24 @@ The following `create` parameters are specific to the `stream` backend and are p
 <a id="method-create-examples-tsdb"></a>
 ##### `tsdb` Backend
 
-- Create a TSDB table named "mytable" in the root directory of the client's data container with an ingestion rate of 10 samples per minute:
+```python
+client.create("tsdb", table="mytsdb", rate="10/m")
+```
 
-  ```python
-  client.create("tsdb", table="mytable", rate="10/m")
-  ```
-
-- Create a TSDB table named "my_metrics" in a **tsdb** directory in the client's data container with an ingestion rate of 1 sample per second.
- The table is created with the `count`, `avg`, `min`, and `max` aggregates and an aggregation granularity of 1 hour:
-
-  ```python
-  client.create("tsdb", table="/tsdb/my_metrics", rate="1/s", aggregates="count,avg,min,max", aggregation_granularity="1h")
-  ```
+```python
+client.create("tsdb", table="/tsdb/my_metrics", rate="1/s", aggregates="count,avg,min,max", aggregation_granularity="1h")
+```
 
 <a id="method-create-examples-stream"></a>
 ##### `stream` Backend
 
-- Create a stream named "mystream" in the root directory of the client's data container.
-  The stream has 6 shards and a retention period of 1 hour (default):
+```python
+client.create("stream", table="/mystream", shards=3)
+```
 
-  ```python
-  client.create("stream", table="/mystream", shards=6)
-  ```
-
-- Create a stream named "stream1" in a "my_streams" directory in the client's data container.
-  The stream has 24 shards (default) and a retention period of 2 hours:
-
-  ```python
-  client.create("stream", table="/my_streams/stream1", retention_hours=2)
-  ```
+```python
+client.create("stream", table="/my_streams/stream1", retention_hours=2)
+```
 
 <a id="method-write"></a>
 ### `write` Method
@@ -359,7 +347,6 @@ write(backend, table, dfs, expression='', condition='', labels=None,
 All Frames backends that support the `write` method support the following common parameters:
 
 - <a id="method-write-param-dfs"></a>**dfs** &mdash; One or more DataFrames containing the data to write.
-  (See the [`tsdb` backend-specific parameters](#method-write-tsdb-param-dfs).)
 
   - **Type:** A single DataFrame, a list of DataFrames, or a DataFrames iterator
   - **Requirement:** Required
@@ -393,7 +380,7 @@ All Frames backends that support the `write` method support the following common
 <a id="method-write-params-nosql"></a>
 #### `nosql` Backend `write` Parameters
 
-The following `write` parameters are specific to the `nosql` backend; for more information, see the [platform Frames NoSQL-backend reference](https://www.iguazio.com/docs/reference/latest-release/api-reference/frames/nosql/write/):
+The following `write` parameters are specific to the `nosql` backend; for more information and examples, see the platform's [Frames NoSQL-backend reference](https://www.iguazio.com/docs/reference/latest-release/api-reference/frames/nosql/write/):
 
 <!--
 - <a id="method-write-nosql-param-expression"></a>**expression** (Optional) (default: `None`) &mdash; A platform update expression that determines how to update the table for all items in the DataFrame.
@@ -409,7 +396,6 @@ client.write(backend="nosql", table="mytable", dfs=df, expression="city='NY'", c
     -->
 
 - <a id="method-write-nosql-param-condition"></a>**condition** &mdash; A platform condition expression that defines conditions for performing the write operation.
-  For detailed information about platform condition expressions, see the [platform documentation](https://www.iguazio.com/docs/reference/latest-release/expressions/condition-expression/).
 
   - **Type:** `str`
   - **Requirement:** Optional
@@ -429,28 +415,20 @@ client.write(backend="nosql", table="mytable", dfs=df, expression="city='NY'", c
 <a id="method-write-params-tsdb"></a>
 #### `tsdb` Backend `write` Parameters
 
-The following `write` parameter descriptions are specific to the `tsdb` backend; for more information, see the [platform Frames TSDB-backend reference](https://www.iguazio.com/docs/reference/latest-release/api-reference/frames/tsdb/write/):
+The following `write` parameter descriptions are specific to the `tsdb` backend; for more information and examples, see the platform's [Frames TSDB-backend reference](https://www.iguazio.com/docs/reference/latest-release/api-reference/frames/tsdb/write/):
 
-- <a id="method-write-tsdb-param-dfs"></a>**dfs** (Required) &mdash; A single DataFrame, a list of DataFrames, or a DataFrames iterator &mdash; One or more DataFrames containing the data to write.
-  This is a common `write` parameter, but the following information is specific to the `tsdb` backend:
-
-  - You must define one or more non-index DataFrame columns that represent the sample metrics; the name of the column is the metric name and its values is the sample data (i.e., the ingested metric).
-  - You must define a single index column whose value is the sample time of the data.
-    This column serves as the table's primary-key attribute.
-    Note that a TSDB DataFrame cannot have more than one index column of a time data type.
-  - <a id="tsdb-label-index-columns"></a>You can optionally define string index columns that represent metric labels for the current DataFrame row.
-    Note that you can also define labels for all DataFrame rows by using the [`labels`](#method-write-tsdb-param-labels) parameter (in addition or instead of using column indexes to apply labels to a specific row).
-
-- <a id="method-write-tsdb-param-labels"></a>**labels** (Optional) (default: `None`) &mdash; `dict` &mdash; A dictionary of metric labels of the format `{<label>: <value>[, <label>: <value>, ...]}`, which will be applied to all the DataFrame rows (i.e., to all the ingested metric samples).
+- <a id="method-write-tsdb-param-labels"></a>**labels** &mdash; A dictionary of metric labels of the format `{<label>: <value>[, <label>: <value>, ...]}` to apply to all the DataFrame rows.
   For example, `{"os": "linux", "arch": "x86"}`.
-  Note that you can also define labels for a specific DataFrame row by adding a string index column to the row (in addition or instead of using the `labels` parameter to define labels for all rows), as explained in the description of the [`dfs`](#tsdb-label-index-columns) parameter.
+
+  - **Type:** `dict`
+  - **Requirement:** Optional
+  - **Default Value:** `None`
 
 <a id="method-write-examples"></a>
 #### `write` Examples
 
 <a id="method-write-examples-nosql"></a>
 ##### `nosql` Backend
-<!-- TODO: Add example descriptions. -->
 
 ```python
 data = [["tom", 10, "TLV"], ["nick", 15, "Berlin"], ["juli", 14, "NY"]]
@@ -459,13 +437,26 @@ df.set_index("name", inplace=True)
 client.write(backend="nosql", table="mytable", dfs=df, condition="age>14")
 ```
 
-<!-- TODO: Add examples.
 <a id="method-write-examples-tsdb"></a>
 ##### `tsdb` Backend
 
+```python
+from datetime import datetime
+df = pd.DataFrame(data=[[30.1, 12.7]], index=[[datetime.now()], ["1"]],
+                  columns=["cpu", "disk"])
+df.index.names = ["time", "node"]
+client.write(backend="tsdb", table="mytsdb", dfs=df)
+```
+
 <a id="method-stream-examples-tsdb"></a>
 ##### `stream` Backend
--->
+
+```python
+import numpy as np
+df = pd.DataFrame(np.random.rand(9, 3) * 100,
+                  columns=["cpu", "mem", "disk"])
+client.write("stream", table="mystream", dfs=df)
+```
 
 <a id="method-read"></a>
 ### `read` Method
@@ -496,7 +487,7 @@ read(backend='', table='', query='', columns=None, filter='', group_by='',
 
 All Frames backends that support the `read` method support the following common parameters:
 
-- <a id="method-read-param-iterator"></a>**iterator** &mdash; Determines whether to return a pandas DataFrames iterator or a single DataFrame: `True` &mdash; return a DataFrames iterator; `False` &mdash; return a single DataFrame.
+- <a id="method-read-param-iterator"></a>**iterator** &mdash; set to `True` to to return a pandas DataFrames iterator; `False` (default) returns a single DataFrame.
 
   - **Type:** `bool`
   - **Requirement:** Optional
@@ -532,79 +523,128 @@ All Frames backends that support the `read` method support the following common 
 <a id="method-read-params-nosql"></a>
 #### `nosql` Backend `read` Parameters
 
-The following `read` parameters are specific to the `nosql` backend; for more information, see the [platform Frames NoSQL-backend reference](https://www.iguazio.com/docs/reference/latest-release/api-reference/frames/nosql/read/):
+The following `read` parameters are specific to the `nosql` backend; for more information and examples, see the platform's [Frames NoSQL-backend reference](https://www.iguazio.com/docs/reference/latest-release/api-reference/frames/nosql/read/):
 
-- <a id="method-read-nosql-param-max_rows_in_msg"></a>**max_rows_in_msg** &mdash; `int` &mdash; The maximum number of rows per message.
+- <a id="method-read-nosql-param-max_rows_in_msg"></a>**max_rows_in_msg** &mdash; The maximum number of rows per message.
+
+  - **Type:** `int`
+  - **Requirement:** Optional
 
 The following parameters are passed as keyword arguments via the `kw` parameter:
 
-- <a id="method-read-nosql-param-reset_index"></a>**reset_index** &mdash; `bool` &mdash; Determines whether to reset the index index column of the returned DataFrame: `True` &mdash; reset the index column by setting it to the auto-generated pandas range-index column; `False` (default) &mdash; set the index column to the table's primary-key attribute.
+- <a id="method-read-nosql-param-reset_index"></a>**reset_index** &mdash; Set to `True` to reset the index column of the returned DataFrame and use the auto-generated pandas range-index column; `False` (default) sets the index column to the table's primary-key attribute.
 
-- <a id="method-read-nosql-param-sharding_keys"></a>**sharding_keys** **[Tech Preview]** &mdash; `[]string` &mdash; A list of specific sharding keys to query, for range-scan formatted tables only.
+  - **Type:** `bool`
+  - **Requirement:** Optional
+  - **Default Value:** `False`
+
+- <a id="method-read-nosql-param-sharding_keys"></a>**sharding_keys** **[Tech Preview]** &mdash; A list of specific sharding keys to query, for range-scan formatted tables only.
   <!-- [IntInfo] Tech Preview [TECH-PREVIEW-FRAMES-KV-READ-SHARDING-KEYS-PARAM]
   -->
+
+  - **Type:** `[]str`
+  - **Requirement:** Optional
 
 <a id="method-read-params-tsdb"></a>
 #### `tsdb` Backend `read` Parameters
 
-The following `read` parameters are specific to the `tsdb` backend; for more information, see the [platform Frames TSDB-backend reference](https://www.iguazio.com/docs/reference/latest-release/api-reference/frames/tsdb/read/):
+The following `read` parameters are specific to the `tsdb` backend; for more information and examples, see the platform's [Frames TSDB-backend reference](https://www.iguazio.com/docs/reference/latest-release/api-reference/frames/tsdb/read/):
 
-- <a id="method-read-tsdb-param-group_by"></a>**group_by** **[Tech Preview]** (Optional) &mdash; `str` &mdash; A group-by query string.
+- <a id="method-read-tsdb-param-group_by"></a>**group_by** **[Tech Preview]** &mdash; A group-by query string.
   <br/>
   This parameter cannot be used concurrently with the `query` parameter.
 
-- <a id="method-read-tsdb-param-query"></a>**query** **[Tech Preview]** (Optional) &mdash; `str` &mdash; A query string in SQL format.
+  - **Type:** `str`
+  - **Requirement:** Optional
+
+- <a id="method-read-tsdb-param-query"></a>**query** **[Tech Preview]** &mdash; A query string in SQL format.
   > **Note:**
   > - When setting the `query` parameter, you must provide the path to the TSDB table as part of the `FROM` caluse in the query string and not in the `read` method's [`table`](#client-method-param-table) parameter.
   > - This parameter cannot be set concurrently with the following parameters: [`aggregators`](#method-read-tsdb-param-aggregators), [`columns`](#method-read-tsdb-param-columns), [`filter`](#method-read-tsdb-param-filter), or [`group_by`](#method-read-tsdb-param-group_by) parameters.
 
+  - **Type:** `str`
+  - **Requirement:** Optional
+
 The following parameters are passed as keyword arguments via the `kw` parameter:
 
-- <a id="method-read-tsdb-param-start"></a>**start** &mdash; `str` &mdash; Start (minimum) time for the read operation, as a string containing an RFC 3339 time, a Unix timestamp in milliseconds, a relative time of the format `"now"` or `"now-[0-9]+[mhd]"` (where `m` = minutes, `h` = hours, and `'d'` = days), or 0 for the earliest time.
-  For example: `"2016-01-02T15:34:26Z"`; `"1451748866"`; `"now-90m"`; `"0"`.
-  <br/>
-  The default start time is `<end time> - 1h`.
+- <a id="method-read-tsdb-param-start"></a>**start** &mdash; Start (minimum) time for the read operation.
 
-- <a id="method-read-tsdb-param-end"></a>**end** &mdash; `str` &mdash; End (maximum) time for the read operation, as a string containing an RFC 3339 time, a Unix timestamp in milliseconds, a relative time of the format `"now"` or `"now-[0-9]+[mhd]"` (where `m` = minutes, `h` = hours, and `'d'` = days), or 0 for the earliest time.
-  For example: `"2018-09-26T14:10:20Z"`; `"1537971006000"`; `"now-3h"`; `"now-7d"`.
-  <br/>
-  The default end time is `"now"`.
+  - **Type:** `str`
+  - **Requirement:** Optional
+  - **Valid Values:** A string containing an RFC 3339 time, a Unix timestamp in milliseconds, a relative time of the format `"now"` or `"now-[0-9]+[mhd]"` (where `m` = minutes, `h` = hours, and `'d'` = days), or 0 for the earliest time.
+    For example: `"2016-01-02T15:34:26Z"`; `"1451748866"`; `"now-90m"`; `"0"`.
+  - **Default Value:** `<end time> - 1h`
 
-- <a id="method-read-tsdb-param-step"></a>**step** (Optional) &mdash; `str` &mdash; The query step (interval), which determines the points over the query's time range at which to perform aggregations (for an aggregation query) or downsample the data (for a query without aggregators).
+- <a id="method-read-tsdb-param-end"></a>**end** &mdash; End (maximum) time for the read operation.
+
+  - **Type:** `str`
+  - **Requirement:** Optional
+  - **Valid Values:** A string containing an RFC 3339 time, a Unix timestamp in milliseconds, a relative time of the format `"now"` or `"now-[0-9]+[mhd]"` (where `m` = minutes, `h` = hours, and `'d'` = days), or 0 for the earliest time.
+    For example: `"2018-09-26T14:10:20Z"`; `"1537971006000"`; `"now-3h"`; `"now-7d"`.
+  - **Default Value:** `now`
+
+- <a id="method-read-tsdb-param-step"></a>**step** &mdash; The query aggregation or downsampling step.
   The default step is the query's time range, which can be configured via the [start](#method-read-tsdb-param-start) and [end](#method-read-tsdb-param-end) parameters.
 
-- <a id="method-read-tsdb-param-aggregators"></a>**aggregators** (Optional) &mdash; `str` &mdash; Aggregation information to return, as a comma-separated list of supported aggregation functions ("aggregators").
-  The following aggregation functions are supported for over-time aggregation (across each unique label set); for cross-series aggregation (across all metric labels), add "`_all`" to the end of the function name:
-  <br/>
-  `avg` | `count` | `last` | `max` | `min` | `rate` | `stddev` | `stdvar` | `sum`
+  - **Type:** `str`
+  - **Requirement:** Optional
+
+- <a id="method-read-tsdb-param-aggregators"></a>**aggregators** &mdash; Aggregation information to return, as a comma-separated list of supported aggregation functions ("aggregators").
   <br/>
   This parameter cannot be used concurrently with the `query` parameter.
 
-- <a id="method-read-tsdb-param-aggregation_window"></a>**aggregation_window** **[Tech Preview]** (Optional) &mdash; `str` &mdash; Aggregation interval for applying over-time aggregation functions, if set in the [`aggregators`](#method-read-tsdb-param-aggregators) or [`query`](#method-read-tsdb-param-query) parameters, as a string of the format `"[0-9]+[mhd]"` where '`m`' = minutes, '`h`' = hours, and '`d`' = days.
-  The default aggregation window is the query's aggregation [step](#method-read-tsdb-param-step).
-  When using the default aggregation window, the aggregation window starts at the aggregation step; when the `aggregation_window` parameter is set, the aggregation window ends at the aggregation step. 
+  - **Type:** `str`
+  - **Requirement:** Optional
+  - **Valid Value:** The following aggregation functions are supported for over-time aggregation (across each unique label set); for cross-series aggregation (across all metric labels), add "`_all`" to the end of the function name:
+    <br/>
+    `avg` | `count` | `last` | `max` | `min` | `rate` | `stddev` | `stdvar` | `sum`
 
-- <a id="method-read-tsdb-param-multi_index"></a>**multi_index** (Optional) &mdash; `bool` &mdash; `True` to receive the read results as multi-index DataFrames where the labels are used as index columns in addition to the metric sample-time primary-key attribute; `False` (default) only the timestamp will function as the index.
+- <a id="method-read-tsdb-param-aggregation_window"></a>**aggregation_window** **[Tech Preview]** &mdash; Aggregation interval for applying over-time aggregation functions, if set in the [`aggregators`](#method-read-tsdb-param-aggregators) or [`query`](#method-read-tsdb-param-query) parameters.
+
+  - **Type:** `str`
+  - **Requirement:** Optional
+  - **Valid Values:** A string of the format `"[0-9]+[mhd]"` where '`m`' = minutes, '`h`' = hours, and '`d`' = days.
+      For example, `"30m"` (30 minutes), `"2h"` (2 hours), or `"1d"` (1 day).
+  - **Default Value:** The query's aggregation [step](#method-read-tsdb-param-step)
+
+- <a id="method-read-tsdb-param-multi_index"></a>**multi_index** &mdash; set to `True` to display labels as index columns in the read results; `False` (default) displays only the metric's sample time as an index column.
+
+  - **Type:** `bool`
+  - **Requirement:** Optional
+  - **Default Value:** `False`
 
 <a id="method-read-params-stream"></a>
 #### `stream` Backend `read` Parameters
 
-The following `read` parameters are specific to the `stream` backend and are passed as keyword arguments via the `kw` parameter; for more information, see the [platform Frames streaming-backend reference](https://www.iguazio.com/docs/reference/latest-release/api-reference/frames/stream/read/):
+The following `read` parameters are specific to the `stream` backend and are passed as keyword arguments via the `kw` parameter; for more information and examples, see the platform's [Frames streaming-backend reference](https://www.iguazio.com/docs/reference/latest-release/api-reference/frames/stream/read/):
 
-- <a id="method-read-stream-param-seek"></a>**seek** &mdash; `str` (Required) &mdash; Seek type.
-  Valid values: `"time"` | `"seq"` | `"sequence"` | `"latest"` | `"earliest"`.
+- <a id="method-read-stream-param-seek"></a>**seek** &mdash; Seek type.
   <br/>
   When the `"seq"` or `"sequence"` seek type is set, you must set the [`sequence`](#method-read-stream-param-sequence) parameter to the desired record sequence number.
   <br/>
   When the `time` seek type is set, you must set the [`start`](#method-read-stream-param-start) parameter to the desired seek start time.
 
-- <a id="method-read-stream-param-shard_id"></a>**shard_id** &mdash; `str` (Required) The ID of the stream shard from which to read.
-  Valid values: `"0"` ... `"<stream shard count> - 1"`.
+  - **Type:** `str`
+  - **Requirement:** Required
+  - **Valid Values:** `"time"` | `"seq"` | `"sequence"` | `"latest"` | `"earliest"`
 
-- <a id="method-read-stream-param-sequence"></a>**sequence** &mdash; `int64` (Required when [`seek`](#method-read-stream-param-seek) = `"sequence"`) &mdash; The sequence number of the record from which to start reading.
+- <a id="method-read-stream-param-shard_id"></a>**shard_id** &mdash; The ID of the stream shard from which to read.
 
-- <a id="method-read-stream-param-start"></a>**start** &mdash; `str` (Required when [`seek`](#method-read-stream-param-seek) = `"time"`) &mdash; The earliest record ingestion time from which to start reading, as a string containing an RFC 3339 time, a Unix timestamp in milliseconds, a relative time of the format `"now"` or `"now-[0-9]+[mhd]"` (where `m` = minutes, `h` = hours, and `'d'` = days), or 0 for the earliest time.
-  For example: `"2016-01-02T15:34:26Z"`; `"1451748866"`; `"now-90m"`; `"0"`.
+  - **Type:** `str`
+  - **Requirement:** Required
+  - **Valid values:** `"0"` ... `"<stream shard count> - 1"`
+
+- <a id="method-read-stream-param-sequence"></a>**sequence** &mdash; The sequence number of the record from which to start reading.
+
+  - **Type:** `int64`
+  - **Requirement:** Required
+
+- <a id="method-read-stream-param-start"></a>**start** &mdash; The earliest record ingestion time from which to start reading.
+
+  - **Type:** `str`
+  - **Requirement:** Required when [`seek`](#method-read-stream-param-seek) = `"time"`
+  - **Valid Values:** A string containing an RFC 3339 time, a Unix timestamp in milliseconds, a relative time of the format `"now"` or `"now-[0-9]+[mhd]"` (where `m` = minutes, `h` = hours, and `'d'` = days), or 0 for the earliest time.
+    For example: `"2016-01-02T15:34:26Z"`; `"1451748866"`; `"now-90m"`; `"0"`.
 
 <a id="method-read-return-value"></a>
 #### Return Value
@@ -612,7 +652,7 @@ The following `read` parameters are specific to the `stream` backend and are pas
 - When the value of the [`iterator`](#method-read-param-iterator) parameter is `False` (default) &mdash; returns a single DataFrame; not applicable when [`get_raw`](#method-read-param-get_raw) is `True`.
 - When the value of the `iterator` or `get_raw` parameter is `True` &mdash; returns a DataFrames iterator.
 
-> **Note:** The method returns pandas DataFrames except when the `get_raw` is set to `True` to return raw-data frames.
+> **Note:** The method returns pandas DataFrames except when the `get_raw` parameter is set to `True` to return raw-data frames.
 
 <!-- [IntInfo] See IG-14065. -->
 <!-- 
@@ -622,7 +662,6 @@ The following `read` parameters are specific to the `stream` backend and are pas
 
 <a id="method-read-examples"></a>
 #### `read` Examples
-<!-- TODO: Add example descriptions. -->
 
 <a id="method-read-examples-nosql"></a>
 ##### `nosql` Backend
@@ -635,14 +674,18 @@ df = client.read(backend="nosql", table="mytable", filter="col1>666")
 ##### `tsdb` Backend
 
 ```python
-df = client.read(backend="tsdb", query="select avg(cpu) as cpu, avg(diskio), avg(network) from mytable where os='win'", start="now-1d", end="now", step="2h")
+df = client.read("tsdb", table="mytsdb" start="0", multi_index=True)
+```
+
+```python
+df = client.read(backend="tsdb", query="select avg(cpu) as cpu, avg(disk) from 'mytsdb' where node='1'", start="now-1d", end="now", step="2h")
 ```
 
 <a id="method-stream-examples-tsdb"></a>
 ##### `stream` Backend
 
 ```python
-df = client.read(backend="stream", table="mytable", seek="latest", shard_id="5")
+df = client.read(backend="stream", table="mystream", seek="latest", shard_id="5")
 ```
 
 <a id="method-delete"></a>
@@ -681,20 +724,18 @@ delete(backend, table, filter='', start='', end='', if_missing=FAIL
 <a id="method-delete-params-nosql"></a>
 #### `nosql` Backend `delete` Parameters
 
-The following `delete` parameters are specific to the `nosql` backend; for more information, see the [platform Frames NoSQL-backend reference](https://www.iguazio.com/docs/reference/latest-release/api-reference/frames/nosql/delete/):
+The following `delete` parameters are specific to the `nosql` backend; for more information and examples, see the platform's [Frames NoSQL-backend reference](https://www.iguazio.com/docs/reference/latest-release/api-reference/frames/nosql/delete/):
 
 - <a id="method-delete-nosql-param-filter"></a>**filter** &mdash; A filter expression that identifies specific items to delete.
-  For detailed information about platform filter expressions, see the [platform documentation](https://www.iguazio.com/docs/reference/latest-release/expressions/condition-expression/#filter-expression).
-  > **Note:** When the `filter` parameter isn't set, the entire table and its schema file (**.#schema**) are deleted.
 
   - **Type:** `str`
   - **Requirement:** Optional
-  - **Default Value:** `""`
+  - **Default Value:** `""` &mdash; delete the entire table and its schema file
 
 <a id="method-delete-params-tsdb"></a>
 #### `tsdb` Backend `delete` Parameters
 
-The following `delete` parameters are specific to the `tsdb` backend; for more information, see the [platform Frames TSDB-backend reference](https://www.iguazio.com/docs/reference/latest-release/api-reference/frames/tsdb/delete/):
+The following `delete` parameters are specific to the `tsdb` backend; for more information and examples, see the platform's [Frames TSDB-backend reference](https://www.iguazio.com/docs/reference/latest-release/api-reference/frames/tsdb/delete/):
 
 - <a id="method-delete-tsdb-param-start"></a>**start** &mdash; Start (minimum) time for the delete operation &mdash; i.e., delete only items whose data sample time is at or after (`>=`) the specified start time.
 
@@ -702,7 +743,7 @@ The following `delete` parameters are specific to the `tsdb` backend; for more i
   - **Requirement:** Optional
   - **Valid Values:** A string containing an RFC 3339 time, a Unix timestamp in milliseconds, a relative time of the format `"now"` or `"now-[0-9]+[mhd]"` (where `m` = minutes, `h` = hours, and `'d'` = days), or 0 for the earliest time.
     For example: `"2016-01-02T15:34:26Z"`; `"1451748866"`; `"now-90m"`; `"0"`.
-  - **Default Value:** `""` when neither `start` nor [`end`](#method-delete-tsdb-param-end) are set &mdash; to delete the entire table and its schema file (**.schema**) &mdash; and `0` when `end` is set
+  - **Default Value:** `""` when neither `start` nor [`end`](#method-delete-tsdb-param-end) are set &mdash; delete the entire table and its schema file (**.schema**); `0` when `end` is set
 
 - <a id="method-delete-tsdb-param-end"></a>**end** &mdash; `str` &mdash; End (maximum) time for the delete operation &mdash; i.e., delete only items whose data sample time is before or at (`<=`) the specified end time.
 
@@ -710,7 +751,7 @@ The following `delete` parameters are specific to the `tsdb` backend; for more i
   - **Requirement:** Optional
   - **Valid Values:** A string containing an RFC 3339 time, a Unix timestamp in milliseconds, a relative time of the format `"now"` or `"now-[0-9]+[mhd]"` (where `m` = minutes, `h` = hours, and `'d'` = days), or 0 for the earliest time.
     For example: `"2018-09-26T14:10:20Z"`; `"1537971006000"`; `"now-3h"`; `"now-7d"`.
-  - **Default Value:** `""` when neither [`start`](#method-delete-tsdb-param-start) nor `end` are set &mdash; to delete the entire table and its schema file (**.schema**) &mdash; and `0` when `start` is set
+  - **Default Value:** `""` when neither [`start`](#method-delete-tsdb-param-start) nor `end` are set &mdash; delete the entire table and its schema file (**.schema**); `0` when `start` is set
 
 > **Note:**
 > - When neither the [`start`](#method-delete-tsdb-param-start) nor [`end`](#method-delete-tsdb-param-end) parameters are set, the entire TSDB table and its schema file are deleted.
@@ -733,14 +774,15 @@ client.delete(backend="nosql", table="mytable", filter="age > 40")
 ##### `tsdb` Backend
 
 ```python
-client.delete(backend="tsdb", table="mytable", start="now-1d", end="now-5h")
+client.delete(backend="tsdb", table="mytsdb", start="now-1d", end="now-5h")
 ```
 
 <a id="method-delete-examples-stream"></a>
 ##### `stream` Backend
 
 ```python
-client.delete(backend="stream", table="mystream")
+from v3io_frames import frames_pb2 as fpb
+client.delete(backend="stream", table="mystream", if_missing=fpb.IGNORE)
 ```
 
 <a id="method-execute"></a>
@@ -771,18 +813,18 @@ All Frames backends that support the `execute` method support the following comm
 
   - **Type:** `str`
   - **Requirement:** Required
-  - **Valid Values:** Backend-specific; see the [`nosql`](#method-execute-nosql-cmds) and [`stream`](#method-execute-stream-cmds) `execute` commands
+  - **Valid Values:** Backend-specific
 
 - <a id="method-except-param-args"></a>**args** &mdash; A dictionary of `<argument name>: <value>` pairs for passing command-specific parameters (arguments).
 
   - **Type:** `dict`
-  - **Requirement and Valid Values:** Backend-specific; see the [`nosql`](#method-execute-nosql-cmds) and [`stream`](#method-execute-stream-cmds) `execute` commands
+  - **Requirement and Valid Values:** Backend-specific
   - **Default Value:** `None`
 
 <a id="method-execute-nosql-cmds"></a>
 #### `nosql` Backend `execute` Commands
 
-The following `execute` commands are specific to the `nosql` backend; for more information, see the [platform Frames NoSQL-backend reference](https://www.iguazio.com/docs/reference/latest-release/api-reference/frames/nosql/execute/):
+The following `execute` commands are specific to the `nosql` backend; for more information and examples, see the platform's [Frames NoSQL-backend reference](https://www.iguazio.com/docs/reference/latest-release/api-reference/frames/nosql/execute/):
 
 - <a id="method-execute-nosql-cmd-infer"></a>**infer | infer_schema** &mdash; Infers the data schema of a given NoSQL table and creates a schema file for the table.
 
@@ -805,13 +847,15 @@ The following `execute` commands are specific to the `nosql` backend; for more i
 <a id="method-execute-stream-cmds"></a>
 #### `stream` Backend `execute` Commands
 
-The following `execute` commands are specific to the `stream` backend; for more information, see the [platform Frames streaming-backend reference](https://www.iguazio.com/docs/reference/latest-release/api-reference/frames/stream/execute/):
+The following `execute` commands are specific to the `stream` backend; for more information and examples, see the platform's [Frames streaming-backend reference](https://www.iguazio.com/docs/reference/latest-release/api-reference/frames/stream/execute/):
 
-- <a id="method-execute-stream-cmd-put"></a>**put** &mdash; Adds records to a stream.
+- <a id="method-execute-stream-cmd-put"></a>**put** &mdash; Adds records to a stream shard.
 
   Example:
   ```python
-  client.execute(backend="stream", table="mystream", command="put", args={"data": "this a record", "client_info": "some_info", "partition": "partition_key"})
+  client.execute('stream', table="mystream", command='put',
+                 args={'data': '{"cpu": 12.4, "mem": 31.1, "disk": 12.7}',
+                       "client_info": "my custom info", "partition": "PK1"})
   ```
 
 <a id="contributing"></a>
