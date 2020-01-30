@@ -151,7 +151,7 @@ Client(address=""[, data_url=""], container=""[, user="", password="", token=""]
   - **Type:** `str`
   - **Requirement:** Required when the [`user`](#client-param-user) parameter is set.
 
-- <a id="client-param-token"></a>**token** &mdash; A valid access key that allows access to the backend data.
+- <a id="client-param-token"></a>**token** &mdash; A valid token that allows access to the backend data, such as a platform access key for the platform backends.
   See [User Authentication](#user-authentication).
 
   - **Type:** `str`
@@ -165,7 +165,7 @@ Returns a new Frames `Client` data object.
 <a id="client-constructor-examples"></a>
 #### Examples
 
-The following examples, for local platform execution, both create a Frames client for accessing data in the "users" container by using the authentication credentials of user "iguazio"; the first example uses access-key authentication while the second example uses username and password authentication (see [User Authentication](#user-authentication)):
+The following examples, for local platform execution, both create a Frames client for accessing data in the "users" container by using the authentication credentials of user "iguazio"; the first example uses token (access-key) authentication while the second example uses username and password authentication (see [User Authentication](#user-authentication)):
 
 ```python
 import v3io_frames as v3f
@@ -780,7 +780,7 @@ All Frames backends that support the `execute` method support the following comm
   - **Default Value:** `None`
 
 <a id="method-execute-nosql-cmds"></a>
-### `nosql` Backend `execute` Commands
+#### `nosql` Backend `execute` Commands
 
 The following `execute` commands are specific to the `nosql` backend; for more information, see the [platform Frames NoSQL-backend reference](https://www.iguazio.com/docs/reference/latest-release/api-reference/frames/nosql/execute/):
 
@@ -803,7 +803,7 @@ The following `execute` commands are specific to the `nosql` backend; for more i
   <!-- [IntInfo] [c-no-update-expression-support] -->
 
 <a id="method-execute-stream-cmds"></a>
-### `stream` Backend `execute` Commands
+#### `stream` Backend `execute` Commands
 
 The following `execute` commands are specific to the `stream` backend; for more information, see the [platform Frames streaming-backend reference](https://www.iguazio.com/docs/reference/latest-release/api-reference/frames/stream/execute/):
 
