@@ -32,6 +32,7 @@ import (
 	"github.com/v3io/frames"
 	"github.com/v3io/frames/backends"
 
+	v3io "github.com/v3io/v3io-go/pkg/dataplane"
 	"github.com/golang/groupcache/lru"
 	"github.com/nuclio/logger"
 	"github.com/pkg/errors"
@@ -41,34 +42,33 @@ import (
 	"github.com/v3io/v3io-tsdb/pkg/tsdb"
 	"github.com/v3io/v3io-tsdb/pkg/tsdb/schema"
 	tsdbutils "github.com/v3io/v3io-tsdb/pkg/utils"
-	"github.com/valyala/fasthttp"
 )
 
 // Backend is a tsdb backend
 type Backend struct {
-	queriers      *lru.Cache
-	queriersLock  sync.Mutex
-	backendConfig *frames.BackendConfig
-	framesConfig  *frames.Config
-	logger        logger.Logger
-	httpClient    *fasthttp.Client
+	queriers          *lru.Cache
+	queriersLock      sync.Mutex
+	backendConfig     *frames.BackendConfig
+	framesConfig      *frames.Config
+	logger            logger.Logger
+	v3ioContext       v3io.Context
+	inactivityTimeout time.Duration
 }
 
 // NewBackend return a new tsdb backend
-func NewBackend(logger logger.Logger, httpClient *fasthttp.Client, cfg *frames.BackendConfig, framesConfig *frames.Config) (frames.DataBackend, error) {
-
-	frames.InitBackendDefaults(cfg, framesConfig)
+func NewBackend(logger logger.Logger, v3ioContext v3io.Context, cfg *frames.BackendConfig, framesConfig *frames.Config) (frames.DataBackend, error) {
 	querierCacheSize := framesConfig.QuerierCacheSize
 	if querierCacheSize == 0 {
 		querierCacheSize = 64
 	}
 
 	newBackend := Backend{
-		queriers:      lru.New(querierCacheSize),
-		logger:        logger.GetChild("tsdb"),
-		backendConfig: cfg,
-		framesConfig:  framesConfig,
-		httpClient:    httpClient,
+		queriers:          lru.New(querierCacheSize),
+		logger:            logger.GetChild("tsdb"),
+		backendConfig:     cfg,
+		framesConfig:      framesConfig,
+		v3ioContext:       v3ioContext,
+		inactivityTimeout: 0,
 	}
 
 	return &newBackend, nil
@@ -101,13 +101,11 @@ func (b *Backend) newAdapter(session *frames.Session, password string, token str
 	cfg := b.newConfig(session)
 
 	container, err := v3ioutils.NewContainer(
-		b.httpClient,
+		b.v3ioContext,
 		session,
 		password,
 		token,
-		b.logger,
-		b.backendConfig.V3ioGoWorkers,
-	)
+		b.logger)
 
 	if err != nil {
 		return nil, err

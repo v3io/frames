@@ -59,6 +59,10 @@ func (c *Config) InitDefaults() error {
 		c.DefaultTimeout = 30
 	}
 
+	for _, backendConfig := range c.Backends {
+		initBackendDefaults(backendConfig, c)
+	}
+
 	return nil
 }
 
@@ -86,20 +90,6 @@ func InitSessionDefaults(session *Session, framesConfig *Config) *Session {
 	}
 
 	return session
-}
-
-// InitBackendDefaults initializes default configuration for backend
-func InitBackendDefaults(cfg *BackendConfig, framesConfig *Config) {
-	if cfg.Workers == 0 {
-		cfg.Workers = framesConfig.Workers
-		if cfg.Workers == 0 {
-			cfg.Workers = 8
-		}
-	}
-
-	if cfg.V3ioGoWorkers == 0 {
-		cfg.V3ioGoWorkers = 32
-	}
 }
 
 // Validate validates the configuration
@@ -131,10 +121,13 @@ func (c *Config) Validate() error {
 
 // BackendConfig is default backend configuration
 type BackendConfig struct {
-	Type          string `json:"type"` // v3io, csv, ...
-	Name          string `json:"name"`
-	Workers       int    `json:"workers"`
-	V3ioGoWorkers int    `json:"v3ioGoWorkers"`
+	Type                    string `json:"type"` // v3io, csv, ...
+	Name                    string `json:"name"`
+	Workers                 int    `json:"workers"`
+	V3ioGoWorkers           int    `json:"v3ioGoWorkers"`
+	V3ioGoRequestChanLength int    `json:"v3ioGoRequestChanLength"`
+	MaxConnections int    		`json:"maxConnections"`
+
 	// backend specific options
 	Options map[string]interface{} `json:"options"`
 
@@ -186,4 +179,31 @@ func firstVal(args ...string) string {
 	}
 
 	return ""
+}
+
+// InitBackendDefaults initializes default configuration for backend
+func initBackendDefaults(cfg *BackendConfig, framesConfig *Config) {
+	if cfg.Workers == 0 {
+		cfg.Workers = framesConfig.Workers
+		if cfg.Workers == 0 {
+			cfg.Workers = 8
+		}
+	}
+
+	if cfg.MaxConnections == 0 {
+		cfg.MaxConnections = 2048
+	}
+
+	if cfg.V3ioGoWorkers == 0 {
+		switch cfg.Name {
+		case "csv", "stream":
+			cfg.V3ioGoWorkers = 256
+		default:
+			cfg.V3ioGoWorkers = cfg.MaxConnections / 2
+		}
+	}
+
+	if cfg.V3ioGoRequestChanLength == 0 {
+		cfg.V3ioGoRequestChanLength = cfg.V3ioGoWorkers * 256
+	}
 }

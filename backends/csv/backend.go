@@ -31,7 +31,7 @@ import (
 
 	"github.com/nuclio/logger"
 	"github.com/pkg/errors"
-	"github.com/valyala/fasthttp"
+	v3io "github.com/v3io/v3io-go/pkg/dataplane"
 
 	"github.com/v3io/frames"
 	"github.com/v3io/frames/backends"
@@ -45,7 +45,7 @@ type Backend struct {
 }
 
 // NewBackend returns a new CSV backend
-func NewBackend(logger logger.Logger, httpClient *fasthttp.Client, config *frames.BackendConfig, framesConfig *frames.Config) (frames.DataBackend, error) {
+func NewBackend(logger logger.Logger, v3ioContext v3io.Context, config *frames.BackendConfig, framesConfig *frames.Config) (frames.DataBackend, error) {
 	backend := &Backend{
 		rootDir: config.RootDir,
 		logger:  logger.GetChild("csv"),

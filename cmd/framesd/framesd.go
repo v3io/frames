@@ -96,7 +96,6 @@ func main() {
 		log.Fatalf("error: can't start gRPC server - %s", err)
 	}
 
-	fmt.Printf("server running on http=%s, grpc=%s\n", config.httpAddr, config.grpcAddr)
 	for hsrv.State() == frames.RunningState && gsrv.State() == frames.RunningState {
 		time.Sleep(time.Second)
 	}
@@ -108,6 +107,4 @@ func main() {
 	if err := gsrv.Err(); err != nil {
 		log.Fatalf("error: gRPC server error - %s", err)
 	}
-
-	fmt.Println("server down")
 }

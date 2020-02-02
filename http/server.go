@@ -120,7 +120,7 @@ func (s *Server) Start() error {
 	}()
 
 	s.SetState(frames.RunningState)
-	s.logger.InfoWith("server started", "address", s.address)
+	s.logger.InfoWith("HTTP server started", "address", s.address)
 	return nil
 }
 
