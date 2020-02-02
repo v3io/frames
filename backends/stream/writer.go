@@ -64,10 +64,16 @@ type streamAppender struct {
 	responseChan chan *v3io.Response
 	commChan     chan int
 	logger       logger.Logger
+	closed        bool
 }
 
 // TODO: make it async
 func (a *streamAppender) Add(frame frames.Frame) error {
+	if a.closed {
+		err := errors.New("Adding on a closed stream appender")
+		a.logger.Error(err)
+		return err
+	}
 	records := make([]*v3io.StreamRecord, 0, frame.Len())
 	iter := frame.IterRows(true)
 	for iter.Next() {
@@ -91,4 +97,8 @@ func (a *streamAppender) Add(frame frames.Frame) error {
 
 func (a *streamAppender) WaitForComplete(timeout time.Duration) error {
 	return nil
+}
+
+func (a *streamAppender) Close() {
+	a.closed = true
 }

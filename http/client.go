@@ -371,3 +371,6 @@ func pbWriteReq(req *frames.WriteRequest) (*pb.InitialWriteRequest, error) {
 
 	return msg, nil
 }
+
+func (a *streamFrameAppender) Close() {
+}

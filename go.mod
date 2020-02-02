@@ -18,3 +18,5 @@ require (
 )
 
 replace github.com/xwb1989/sqlparser => github.com/v3io/sqlparser v0.0.0-20190306105200-4d7273501871
+
+replace github.com/v3io/v3io-tsdb => github.com/dinal/v3io-tsdb v0.0.3-0.20200202172427-c46560c037a2

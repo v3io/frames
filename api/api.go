@@ -123,6 +123,7 @@ func (api *API) Write(request *frames.WriteRequest, in chan frames.Frame) (int, 
 	}
 
 	appender, err := backend.Write(request)
+	defer appender.Close()
 	if err != nil {
 		msg := "backend Write failed"
 		api.logger.ErrorWith(msg, "error", err)
