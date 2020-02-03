@@ -118,7 +118,7 @@ class Client(ClientBase):
             stub.Create(request)
 
     @grpc_raise(DeleteError)
-    def _delete(self, backend, table, filter, start, end, if_missing):
+    def _delete(self, backend, table, filter, start, end, if_missing, metrics):
         start, end = time2str(start), time2str(end)
         with new_channel(self.address) as channel:
             stub = fgrpc.FramesStub(channel)
@@ -130,6 +130,7 @@ class Client(ClientBase):
                 start=start,
                 end=end,
                 if_missing=if_missing,
+                metrics=metrics,
             )
             stub.Delete(request)
 

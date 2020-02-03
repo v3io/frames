@@ -355,7 +355,7 @@ func (s *Server) handleDelete(ctx *fasthttp.RequestCtx) {
 	}
 
 	if err := s.api.Delete(request); err != nil {
-		ctx.Error("can't delete", http.StatusInternalServerError)
+		ctx.Error(err.Error(), http.StatusInternalServerError)
 		return
 	}
 

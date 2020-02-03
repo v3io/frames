@@ -13,12 +13,13 @@
 # limitations under the License.
 
 import json
-import requests
 import struct
 from base64 import b64decode
 from datetime import datetime
 from functools import partial, wraps
 from itertools import chain
+
+import requests
 from requests.exceptions import RequestException
 from urllib3.exceptions import HTTPError
 
@@ -131,7 +132,7 @@ class Client(ClientBase):
             raise CreateError(resp.text)
 
     @connection_error(DeleteError)
-    def _delete(self, backend, table, filter, start, end, if_missing):
+    def _delete(self, backend, table, filter, start, end, if_missing, metrics):
         request = {
             'session': pb2py(self.session),
             'backend': backend,
@@ -140,6 +141,7 @@ class Client(ClientBase):
             'start': start,
             'end': end,
             'if_missing': if_missing,
+            'metrics': metrics,
         }
 
         convert_go_times(request, ('start', 'end'))

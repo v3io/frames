@@ -174,7 +174,7 @@ class ClientBase:
         return self._create(backend, table, attrs, schema, if_exists)
 
     def delete(self, backend, table, filter='', start='', end='',
-               if_missing=FAIL):
+               if_missing=FAIL, metrics=[]):
         """Deletes a table or stream or specific table items
 
         Parameters
@@ -199,6 +199,8 @@ class ClientBase:
              days), or 0 for the earliest time; the default is "now"
         if_missing : int
             One of IGNORE or FAIL
+        metrics : string
+             (`tsdb` backend only) List of specific metric names to delete.
 
         Raises
         ------
@@ -206,7 +208,7 @@ class ClientBase:
             On request error or backend error
         """
         self._validate_request(backend, table, DeleteError)
-        return self._delete(backend, table, filter, start, end, if_missing)
+        return self._delete(backend, table, filter, start, end, if_missing, metrics)
 
     def execute(self, backend, table, command='', args=None, expression=''):
         """Executes a backend-specific command on a table or stream
