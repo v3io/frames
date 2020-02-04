@@ -257,3 +257,6 @@ func (fa *frameAppender) WaitForComplete(timeout time.Duration) error {
 	_, err := fa.stream.CloseAndRecv()
 	return err
 }
+
+func (fa *frameAppender) Close() {
+}

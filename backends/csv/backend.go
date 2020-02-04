@@ -410,9 +410,15 @@ type csvAppender struct {
 	writer        io.Writer
 	csvWriter     *csv.Writer
 	headerWritten bool
+	closed        bool
 }
 
 func (ca *csvAppender) Add(frame frames.Frame) error {
+	if ca.closed {
+		err := errors.New("Adding on a closed csv appender")
+		ca.logger.Error(err)
+		return err
+	}
 	ca.logger.InfoWith("adding frame", "size", frame.Len())
 	names := frame.Names()
 	if !ca.headerWritten {
@@ -457,6 +463,11 @@ type syncer interface {
 
 // WaitForComplete wait for write completion
 func (ca *csvAppender) WaitForComplete(timeout time.Duration) error {
+	if ca.closed {
+		err := errors.New("Adding on a closed csv appender")
+		ca.logger.Error(err)
+		return err
+	}
 	ca.csvWriter.Flush()
 	if err := ca.csvWriter.Error(); err != nil {
 		ca.logger.ErrorWith("csv Flush", "error", err)
@@ -468,6 +479,10 @@ func (ca *csvAppender) WaitForComplete(timeout time.Duration) error {
 	}
 
 	return nil
+}
+
+func (ca *csvAppender) Close() {
+	ca.closed = true
 }
 
 func fileExists(path string) bool {
