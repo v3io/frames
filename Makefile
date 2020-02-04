@@ -11,6 +11,13 @@ build:
 		--tag $(FRAMES_REPOSITORY)frames:$(FRAMES_TAG) \
 		.
 
+build-framulate:
+	docker build \
+		--build-arg FRAMES_VERSION=$(FRAMES_TAG) \
+		--file cmd/framulate/Dockerfile \
+		--tag $(FRAMES_REPOSITORY)framulate:$(FRAMES_TAG) \
+		.
+
 .PHONY: test
 test: test-go test-py
 

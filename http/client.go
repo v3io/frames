@@ -22,9 +22,11 @@ package http
 
 import (
 	"bytes"
+	"crypto/tls"
 	"encoding/base64"
 	"encoding/json"
 	"fmt"
+	"github.com/valyala/fasthttp"
 	"io"
 	"net/http"
 	neturl "net/url"
@@ -38,11 +40,34 @@ import (
 	"github.com/v3io/frames/pb"
 )
 
+type httpResponseReaderCloser struct {
+	httpResponse *fasthttp.Response
+	bodyReader   bytes.Reader
+}
+
+func newHTTPResponseReaderCloser(httpResponse *fasthttp.Response) httpResponseReaderCloser {
+	newHTTPResponseReaderCloser := httpResponseReaderCloser{}
+	newHTTPResponseReaderCloser.bodyReader.Reset(httpResponse.Body())
+
+	return newHTTPResponseReaderCloser
+}
+
+func (rc *httpResponseReaderCloser) Read(p []byte) (n int, err error) {
+	return rc.bodyReader.Read(p)
+}
+
+func (rc *httpResponseReaderCloser) Close() error {
+	fmt.Println("RESPONSE RELEASED")
+	fasthttp.ReleaseResponse(rc.httpResponse)
+	return nil
+}
+
 // Client is v3io HTTP streaming client
 type Client struct {
-	URL     string
-	logger  logger.Logger
-	session *frames.Session
+	url        *neturl.URL
+	logger     logger.Logger
+	session    *frames.Session
+	httpClient *fasthttp.Client
 }
 
 var (
@@ -68,13 +93,13 @@ func NewClient(url string, session *frames.Session, logger logger.Logger) (*Clie
 		return nil, fmt.Errorf("empty URL")
 	}
 
-	u, err := neturl.Parse(url)
+	netURL, err := neturl.Parse(url)
 	if err != nil {
 		return nil, fmt.Errorf("bad URL - %s", err)
 	}
 
-	if u.Scheme == "" {
-		url = fmt.Sprintf("http://%s", url)
+	if netURL.Scheme == "" {
+		netURL.Scheme = "http"
 	}
 
 	if session == nil {
@@ -85,10 +110,17 @@ func NewClient(url string, session *frames.Session, logger logger.Logger) (*Clie
 		}
 	}
 
+	httpClient := fasthttp.Client{
+		TLSConfig: &tls.Config{
+			InsecureSkipVerify: true,
+		},
+	}
+
 	client := &Client{
-		URL:     url,
-		session: session,
-		logger:  logger,
+		url:        netURL,
+		session:    session,
+		logger:     logger,
+		httpClient: &httpClient,
 	}
 
 	return client, nil
@@ -100,32 +132,41 @@ func (c *Client) Read(request *pb.ReadRequest) (frames.FrameIterator, error) {
 		request.Session = c.session
 	}
 
-	var buf bytes.Buffer
-	if err := json.NewEncoder(&buf).Encode(request); err != nil {
-		return nil, errors.Wrap(err, "can't encode query")
-	}
-
-	req, err := http.NewRequest("POST", c.URL+"/read", &buf)
+	marshalledRequest, err := json.Marshal(request)
 	if err != nil {
-		return nil, errors.Wrap(err, "can't create HTTP request")
+		return nil, errors.Wrap(err, "Failed to marshall request")
 	}
 
-	resp, err := http.DefaultClient.Do(req)
+	httpRequest := fasthttp.AcquireRequest()
+	httpRequest.URI().SetScheme(c.url.Scheme)
+	httpRequest.URI().SetHost(c.url.Host)
+	httpRequest.URI().SetPath(c.url.Path + "/read")
+	httpRequest.SetBody(marshalledRequest)
+	httpRequest.Header.SetContentType("application/json")
+	httpRequest.Header.SetMethod("POST")
+
+	httpResponse := fasthttp.AcquireResponse()
+
+	err = c.httpClient.Do(httpRequest, httpResponse)
 	if err != nil {
-		return nil, errors.Wrap(err, "can't call API")
+		return nil, errors.Wrap(err, "Failed to call API")
 	}
 
-	if resp.StatusCode != http.StatusOK {
-		defer resp.Body.Close()
+	fasthttp.ReleaseRequest(httpRequest)
+
+	if httpResponse.StatusCode() != http.StatusOK {
+		defer fasthttp.ReleaseResponse(httpResponse)
 		var buf bytes.Buffer
-		io.Copy(&buf, resp.Body)
+		buf.Write(httpResponse.Body())
 
-		return nil, fmt.Errorf("API returned with bad code - %d\n%s", resp.StatusCode, buf.String())
+		return nil, fmt.Errorf("API returned with bad code - %d\n%s", httpResponse.StatusCode(), buf.String())
 	}
+
+	httpResponseReaderCloser := newHTTPResponseReaderCloser(httpResponse)
 
 	it := &streamFrameIterator{
-		reader:  resp.Body,
-		decoder: frames.NewDecoder(resp.Body),
+		reader:  &httpResponseReaderCloser,
+		decoder: frames.NewDecoder(&httpResponseReaderCloser),
 		logger:  c.logger,
 	}
 
@@ -154,10 +195,14 @@ func (c *Client) Write(request *frames.WriteRequest) (frames.FrameAppender, erro
 	}
 
 	reader, writer := io.Pipe()
-	req, err := http.NewRequest("POST", c.URL+"/write", io.MultiReader(&buf, reader))
-	if err != nil {
-		return nil, errors.Wrap(err, "can't create HTTP request")
-	}
+
+	httpRequest := fasthttp.AcquireRequest()
+	httpRequest.URI().SetScheme(c.url.Scheme)
+	httpRequest.URI().SetHost(c.url.Host)
+	httpRequest.URI().SetPath(c.url.Path + "/write")
+	httpRequest.Header.SetContentType("application/json")
+	httpRequest.Header.SetMethod("POST")
+	httpRequest.SetBodyStream(io.MultiReader(&buf, reader), -1)
 
 	appender := &streamFrameAppender{
 		writer:  writer,
@@ -168,12 +213,13 @@ func (c *Client) Write(request *frames.WriteRequest) (frames.FrameAppender, erro
 
 	// Call API in a goroutine since it's going to block reading from pipe
 	go func() {
-		resp, err := http.DefaultClient.Do(req)
+		httpResponse := fasthttp.AcquireResponse()
+		err := c.httpClient.Do(httpRequest, httpResponse)
 		if err != nil {
 			c.logger.ErrorWith("error calling API", "error", err)
 		}
 
-		appender.ch <- &appenderHTTPResponse{resp, err}
+		appender.ch <- &appenderHTTPResponse{httpResponse, err}
 	}()
 
 	return appender, nil
@@ -185,7 +231,7 @@ func (c *Client) Delete(request *pb.DeleteRequest) error {
 		request.Session = c.session
 	}
 
-	_, err := c.jsonCall("/delete", request)
+	_, err := c.jsonCall("/delete", request, false)
 	return err
 }
 
@@ -195,7 +241,7 @@ func (c *Client) Create(request *pb.CreateRequest) error {
 		request.Session = c.session
 	}
 
-	_, err := c.jsonCall("/create", request)
+	_, err := c.jsonCall("/create", request, false)
 	return err
 }
 
@@ -205,16 +251,17 @@ func (c *Client) Exec(request *pb.ExecRequest) (frames.Frame, error) {
 		request.Session = c.session
 	}
 
-	resp, err := c.jsonCall("/exec", request)
+	httpResponse, err := c.jsonCall("/exec", request, true)
 	if err != nil {
 		return nil, err
 	}
 
-	defer resp.Body.Close()
+	defer fasthttp.ReleaseResponse(httpResponse)
 	var reply struct {
 		Frame string `json:"frame"`
 	}
-	if err := json.NewDecoder(resp.Body).Decode(&reply); err != nil {
+
+	if err := json.Unmarshal(httpResponse.Body(), &reply); err != nil {
 		return nil, errors.Wrap(err, "bad JSON reply")
 	}
 
@@ -230,30 +277,40 @@ func (c *Client) Exec(request *pb.ExecRequest) (frames.Frame, error) {
 	return frames.UnmarshalFrame(data)
 }
 
-func (c *Client) jsonCall(path string, request interface{}) (*http.Response, error) {
+func (c *Client) jsonCall(path string, request interface{}, returnResponse bool) (*fasthttp.Response, error) {
 	var buf bytes.Buffer
 
 	if err := json.NewEncoder(&buf).Encode(request); err != nil {
 		return nil, errors.Wrap(err, "can't encode request")
 	}
 
-	req, err := http.NewRequest("POST", c.URL+path, &buf)
+	httpRequest := fasthttp.AcquireRequest()
+	httpRequest.URI().SetScheme(c.url.Scheme)
+	httpRequest.URI().SetHost(c.url.Host)
+	httpRequest.URI().SetPath(path)
+	httpRequest.SetBody(buf.Bytes())
+	httpRequest.Header.SetContentType("application/json")
+	httpRequest.Header.SetMethod("POST")
+
+	httpResponse := fasthttp.AcquireResponse()
+
+	err := c.httpClient.Do(httpRequest, httpResponse)
+	fasthttp.ReleaseRequest(httpRequest)
 	if err != nil {
-		return nil, errors.Wrap(err, "can't create HTTP request")
+		fasthttp.ReleaseResponse(httpResponse)
+		return nil, err
 	}
 
-	req.Header.Set("Content-Type", "application/json")
-
-	resp, err := http.DefaultClient.Do(req)
-	if err != nil {
-		return nil, errors.Wrap(err, "can't call server")
+	if httpResponse.StatusCode() != http.StatusOK {
+		return httpResponse, fmt.Errorf("error calling server - %q", httpResponse.StatusCode())
 	}
 
-	if resp.StatusCode != http.StatusOK {
-		return resp, fmt.Errorf("error calling server - %q", resp.Status)
+	if !returnResponse {
+		fasthttp.ReleaseResponse(httpResponse)
+		httpResponse = nil
 	}
 
-	return resp, nil
+	return httpResponse, nil
 }
 
 // streamFrameIterator implements FrameIterator over io.Reader
@@ -299,8 +356,8 @@ func (it *streamFrameIterator) Err() error {
 }
 
 type appenderHTTPResponse struct {
-	resp *http.Response
-	err  error
+	httpResponse *fasthttp.Response
+	err          error
 }
 
 // streamFrameAppender implements FrameAppender over io.Writer
@@ -336,14 +393,16 @@ func (a *streamFrameAppender) WaitForComplete(timeout time.Duration) error {
 
 	select {
 	case hr := <-a.ch:
-		if hr.resp.StatusCode != http.StatusOK {
-			var buf bytes.Buffer
-			io.Copy(&buf, hr.resp.Body)
-			hr.resp.Body.Close()
-			return fmt.Errorf("server returned error - %d\n%s", hr.resp.StatusCode, buf.String())
+		if hr.httpResponse.StatusCode() != http.StatusOK {
+			err := fmt.Errorf("Server returned error: %d\n%s",
+				hr.httpResponse.StatusCode(),
+				string(hr.httpResponse.Body()))
+			fasthttp.ReleaseResponse(hr.httpResponse)
+
+			return err
 		}
 
-		hr.resp.Body.Close()
+		fasthttp.ReleaseResponse(hr.httpResponse)
 		return hr.err
 	case <-time.After(timeout):
 		return fmt.Errorf("timeout after %s", timeout)
