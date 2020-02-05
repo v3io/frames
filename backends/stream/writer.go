@@ -64,7 +64,7 @@ type streamAppender struct {
 	responseChan chan *v3io.Response
 	commChan     chan int
 	logger       logger.Logger
-	closed        bool
+	closed       bool
 }
 
 // TODO: make it async

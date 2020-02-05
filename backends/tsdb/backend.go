@@ -32,11 +32,11 @@ import (
 	"github.com/v3io/frames"
 	"github.com/v3io/frames/backends"
 
-	v3io "github.com/v3io/v3io-go/pkg/dataplane"
 	"github.com/golang/groupcache/lru"
 	"github.com/nuclio/logger"
 	"github.com/pkg/errors"
 	"github.com/v3io/frames/v3ioutils"
+	v3io "github.com/v3io/v3io-go/pkg/dataplane"
 	"github.com/v3io/v3io-tsdb/pkg/config"
 	"github.com/v3io/v3io-tsdb/pkg/pquerier"
 	"github.com/v3io/v3io-tsdb/pkg/tsdb"

@@ -292,7 +292,6 @@ func (a *Appender) WaitForComplete(timeout time.Duration) error {
 	return a.asyncErr
 }
 
-
 func (a *Appender) Close() {
 
 }

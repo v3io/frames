@@ -126,7 +126,7 @@ type BackendConfig struct {
 	Workers                 int    `json:"workers"`
 	V3ioGoWorkers           int    `json:"v3ioGoWorkers"`
 	V3ioGoRequestChanLength int    `json:"v3ioGoRequestChanLength"`
-	MaxConnections int    		`json:"maxConnections"`
+	MaxConnections          int    `json:"maxConnections"`
 
 	// backend specific options
 	Options map[string]interface{} `json:"options"`
