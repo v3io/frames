@@ -57,7 +57,6 @@ func (rc *httpResponseReaderCloser) Read(p []byte) (n int, err error) {
 }
 
 func (rc *httpResponseReaderCloser) Close() error {
-	fmt.Println("RESPONSE RELEASED")
 	fasthttp.ReleaseResponse(rc.httpResponse)
 	return nil
 }
