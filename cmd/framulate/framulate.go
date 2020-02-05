@@ -35,9 +35,11 @@ type framulate struct {
 	maxParallelSeriesCreate int
 	numSeriesCreatedByTable []int
 	numSeriesCreated        uint64
+	deleteTables            bool
+	writeDummySeries        bool
 
 	seriesTimestamps []time.Time
-	seriesValues []float64
+	seriesValues     []float64
 }
 
 func newFramulate(ctx context.Context,
@@ -47,13 +49,18 @@ func newFramulate(ctx context.Context,
 	accessKey string,
 	maxInflightRequests int,
 	maxParallelTablesCreate int,
-	maxParallelSeriesCreate int) (*framulate, error) {
+	maxParallelSeriesCreate int,
+	deleteTables bool,
+	writeDummySeries bool,
+	numDatapointsPerSeries int) (*framulate, error) {
 	var err error
 
 	newFramulate := framulate{
 		framesURL:               framesURL,
 		maxParallelTablesCreate: maxParallelTablesCreate,
 		maxParallelSeriesCreate: maxParallelSeriesCreate,
+		deleteTables:            deleteTables,
+		writeDummySeries:        writeDummySeries,
 	}
 
 	newFramulate.taskPool, err = repeatingtask.NewPool(ctx,
@@ -77,14 +84,17 @@ func newFramulate(ctx context.Context,
 
 	newFramulate.logger.DebugWith("Creating frames client",
 		"container", session.Container,
-		"user", session.User)
+		"user", session.User,
+		"deleteTables", deleteTables,
+		"writeDummySeries", writeDummySeries,
+		"numDatapointsPerSeries", numDatapointsPerSeries)
 
 	newFramulate.framesClient, err = http.NewClient(newFramulate.framesURL, &session, newFramulate.logger)
 	if err != nil {
 		return nil, errors.Wrap(err, "Failed to create client")
 	}
 
-	numDatapoints := 24 * 90
+	numDatapoints := numDatapointsPerSeries
 
 	newFramulate.seriesTimestamps = newFramulate.getRandomSeriesTimestamps(numDatapoints)
 	newFramulate.seriesValues = newFramulate.getRandomSeriesValues(numDatapoints, 0, 200)
@@ -107,9 +117,9 @@ func (f *framulate) start(numTables int, numSeriesPerTable int) error {
 
 			f.logger.DebugWith("Series created",
 				"total", currentNumSeriesCreated,
-				"%", currentNumSeriesCreated * 100.0 / (numTables * numSeriesPerTable),
-				"s/s", currentNumSeriesCreated - lastNumSeriesCreated,
-				)
+				"%", currentNumSeriesCreated*100.0/(numTables*numSeriesPerTable),
+				"s/s", currentNumSeriesCreated-lastNumSeriesCreated,
+			)
 
 			lastNumSeriesCreated = currentNumSeriesCreated
 
@@ -122,7 +132,7 @@ func (f *framulate) start(numTables int, numSeriesPerTable int) error {
 	}
 
 	f.logger.DebugWith("Waiting to create series")
-	time.Sleep(10 * time.Second)
+	time.Sleep(3 * time.Second)
 
 	if err := f.createTSDBSeries(numTables, numSeriesPerTable); err != nil {
 		return errors.Wrap(err, "Failed to create TSDB series")
@@ -147,13 +157,15 @@ func (f *framulate) createTSDBTables(numTables int) error {
 		Handler: func(cookie interface{}, repetitionIndex int) error {
 			tableName := f.getTableName(repetitionIndex)
 
-			//f.logger.DebugWith("Deleting table", "tableName", tableName)
-			//
-			//// try to delete first and ignore error
-			//f.framesClient.Delete(&pb.DeleteRequest{
-			//	Backend: "tsdb",
-			//	Table:   tableName,
-			//})
+			if f.deleteTables {
+				f.logger.DebugWith("Deleting table", "tableName", tableName)
+
+				// try to delete first and ignore error
+				f.framesClient.Delete(&pb.DeleteRequest{
+					Backend: "tsdb",
+					Table:   tableName,
+				})
+			}
 
 			f.logger.DebugWith("Creating table", "tableName", tableName)
 
@@ -169,8 +181,15 @@ func (f *framulate) createTSDBTables(numTables int) error {
 				return errors.Wrap(err, "Failed creating table")
 			}
 
-			// write a dummy series to write the schema not in parallel (workaround)
-			return f.writeSeriesToTable(tableName, 9999999)
+			if f.writeDummySeries {
+
+				// write a dummy series to write the schema not in parallel (workaround)
+				return f.writeSeriesToTable(tableName, 9999999)
+			} else {
+				f.logger.DebugWith("Not writing dummy series", "tableName", tableName)
+			}
+
+			return nil
 		},
 	}
 
@@ -291,6 +310,9 @@ func main() {
 	numSeriesPerTable := 0
 	maxParallelSeriesCreate := 0
 	maxParallelTablesCreate := 0
+	deleteTables := false
+	writeDummySeries := true
+	numDatapointsPerSeries := 4
 
 	flag.StringVar(&framesURL, "url", "", "")
 	flag.StringVar(&containerName, "container-name", "", "")
@@ -301,6 +323,10 @@ func main() {
 	flag.IntVar(&numSeriesPerTable, "num-series-per-table", 512, "")
 	flag.IntVar(&maxParallelTablesCreate, "max-parallel-tables-create", 8, "")
 	flag.IntVar(&maxParallelSeriesCreate, "max-parallel-series-create", 512, "")
+	flag.BoolVar(&deleteTables, "delete-tables", false, "")
+	flag.BoolVar(&writeDummySeries, "write-dummy-series", true, "")
+	flag.IntVar(&numDatapointsPerSeries, "num-datapoints-per-series", 4, "")
+
 	flag.Parse()
 
 	framulateInstance, err := newFramulate(context.TODO(),
@@ -310,7 +336,10 @@ func main() {
 		accessKey,
 		maxInflightRequests,
 		maxParallelTablesCreate,
-		maxParallelSeriesCreate)
+		maxParallelSeriesCreate,
+		deleteTables,
+		writeDummySeries,
+		numDatapointsPerSeries)
 	if err != nil {
 		os.Exit(1)
 	}
