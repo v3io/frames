@@ -38,8 +38,8 @@ func TestNewClient(t *testing.T) {
 			return false
 		}
 
-		if client.URL != fmt.Sprintf("http://%s", url) {
-			t.Logf("URL mismatch: %q != %q", client.URL, url)
+		if client.url.String() != fmt.Sprintf("http://%s", url) {
+			t.Logf("URL mismatch: %q != %q", client.url, url)
 			return false
 		}
 
