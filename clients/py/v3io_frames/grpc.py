@@ -61,29 +61,6 @@ class Client(ClientBase):
             ('grpc.max_receive_message_length', GRPC_MESSAGE_SIZE),
         ]
 
-        if not self._persist_connection:
-            self._channel_options.extend([
-                # Maximum time that a channel may have no outstanding rpcs, after which the
-                #   server will close the connection. Int valued, milliseconds
-                #   must be >=1
-                # ('grpc.keepalive_time_ms', 1),
-                #
-                # # Maximum time that a channel may have no outstanding rpcs, after which the
-                # #   server will close the connection. Int valued, milliseconds.
-                # ('grpc.max_connection_idle_ms', 0),
-                #
-                #
-                # # Is it permissible to send keepalive pings without any outstanding streams.
-                # ('grpc.keepalive_permit_without_calls', False),
-
-                # After a duration of this time the client/server pings its peer to see if the
-                #     transport is still alive. Int valued, milliseconds
-                # ('grpc.keepalive_timeout_ms', 5000),
-                # ('grpc.http2.max_pings_without_data', 0),
-                # ('grpc.http2.min_time_between_pings_ms', 10000),
-                # ('grpc.http2.min_ping_interval_without_data_ms', 5000),
-            ])
-
         self._channel = None
 
         # create the session object, persist it between requests
