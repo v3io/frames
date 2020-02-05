@@ -84,8 +84,6 @@ func NewServer(config *frames.Config, addr string, logger logger.Logger) (*Serve
 		return nil, errors.Wrap(err, "can't create API")
 	}
 
-	logger.ErrorWith("*** VERSION 1 ***")
-
 	srv := &Server{
 		ServerBase: frames.NewServerBase(),
 

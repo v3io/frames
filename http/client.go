@@ -26,7 +26,6 @@ import (
 	"encoding/base64"
 	"encoding/json"
 	"fmt"
-	"github.com/valyala/fasthttp"
 	"io"
 	"net/http"
 	neturl "net/url"
@@ -38,6 +37,7 @@ import (
 
 	"github.com/v3io/frames"
 	"github.com/v3io/frames/pb"
+	"github.com/valyala/fasthttp"
 )
 
 type httpResponseReaderCloser struct {
