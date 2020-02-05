@@ -16,15 +16,13 @@ import pandas as pd
 from os import environ
 
 from . import frames_pb2 as fpb
-from .errors import (CreateError, DeleteError, ExecuteError, ReadError,
-                     WriteError)
+from .errors import CreateError, DeleteError, ExecuteError, ReadError, WriteError
 
 FAIL = fpb.FAIL
 
 
 class ClientBase:
-    def __init__(self, address, session, frame_factory=pd.DataFrame,
-                 concat=pd.concat):
+    def __init__(self, address, session, persist_connection, frame_factory=pd.DataFrame, concat=pd.concat):
         """Creates a new Frames client object
 
         Parameters
@@ -33,6 +31,8 @@ class ClientBase:
             Address of the Frames service (framesd)
         session : Session
             Session object
+        persist_connection:
+            Boolean, whether to persist underlying client connection
         frame_factory : class
             DataFrame factory; currently, pandas and cuDF are supported
         concat : function
@@ -47,6 +47,7 @@ class ClientBase:
             raise ValueError('empty address')
         self.address = self._fix_address(address)
         self.session = session
+        self._persist_connection = persist_connection
         self.frame_factory = frame_factory
         self.concat = concat
 

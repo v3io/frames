@@ -20,19 +20,13 @@ import grpc
 from . import frames_pb2 as fpb  # noqa
 from . import frames_pb2_grpc as fgrpc  # noqa
 from .client import ClientBase
-from .errors import (CreateError, DeleteError, ExecuteError, ReadError,
-                     WriteError)
+from .errors import CreateError, DeleteError, ExecuteError, ReadError, WriteError
 from .http import format_go_time
 from .pbutils import msg2df, pb_map, df2msg
 from .pdutils import concat_dfs, should_reorder_columns
 
 IGNORE, FAIL = fpb.IGNORE, fpb.FAIL
-_scheme_prefix = 'grpc://'
 GRPC_MESSAGE_SIZE = 128 * (1 << 20)  # 128MB
-channel_options = [
-    ('grpc.max_send_message_length', GRPC_MESSAGE_SIZE),
-    ('grpc.max_receive_message_length', GRPC_MESSAGE_SIZE),
-]
 
 
 def grpc_raise(err_cls):
@@ -54,35 +48,81 @@ def grpc_raise(err_cls):
 
 
 class Client(ClientBase):
+    def __init__(self, *args, **kwargs):
+
+        # before parent initializer calls _fix_address()
+        self._scheme_prefix = 'grpc://'
+
+        super(Client, self).__init__(*args, **kwargs)
+
+        # default channel options
+        self._channel_options = [
+            ('grpc.max_send_message_length', GRPC_MESSAGE_SIZE),
+            ('grpc.max_receive_message_length', GRPC_MESSAGE_SIZE),
+        ]
+
+        if not self._persist_connection:
+            self._channel_options.extend([
+                # Maximum time that a channel may have no outstanding rpcs, after which the
+                #   server will close the connection. Int valued, milliseconds
+                #   must be >=1
+                # ('grpc.keepalive_time_ms', 1),
+                #
+                # # Maximum time that a channel may have no outstanding rpcs, after which the
+                # #   server will close the connection. Int valued, milliseconds.
+                # ('grpc.max_connection_idle_ms', 0),
+                #
+                #
+                # # Is it permissible to send keepalive pings without any outstanding streams.
+                # ('grpc.keepalive_permit_without_calls', False),
+
+                # After a duration of this time the client/server pings its peer to see if the
+                #     transport is still alive. Int valued, milliseconds
+                # ('grpc.keepalive_timeout_ms', 5000),
+                # ('grpc.http2.max_pings_without_data', 0),
+                # ('grpc.http2.min_time_between_pings_ms', 10000),
+                # ('grpc.http2.min_ping_interval_without_data_ms', 5000),
+            ])
+
+        self._channel = None
+
+        # create the session object, persist it between requests
+        self._open_new_channel()
+
+    def __del__(self):
+        self._channel.close()
+
     def _fix_address(self, address):
-        if address.startswith(_scheme_prefix):
-            return address[len(_scheme_prefix):]
+        if address.startswith(self._scheme_prefix):
+            return address[len(self._scheme_prefix):]
         return address
+
+    def _open_new_channel(self):
+        self._channel = grpc.insecure_channel(self.address, options=self._channel_options)
 
     @grpc_raise(ReadError)
     def do_read(self, backend, table, query, columns, filter, group_by, limit,
                 data_format, row_layout, max_in_message, marker, **kw):
-        # TODO: Create channel once?
-        with new_channel(self.address) as channel:
-            stub = fgrpc.FramesStub(channel)
-            request = fpb.ReadRequest(
-                session=self.session,
-                backend=backend,
-                query=query,
-                table=table,
-                columns=columns,
-                filter=filter,
-                group_by=group_by,
-                message_limit=max_in_message,
-                limit=limit,
-                row_layout=row_layout,
-                marker=marker,
-                **kw
-            )
-            do_reorder = should_reorder_columns(backend, query, columns)
-            for frame in stub.Read(request):
-                yield msg2df(frame, self.frame_factory,
-                             columns, do_reorder=do_reorder)
+
+        stub = fgrpc.FramesStub(self._channel)
+        request = fpb.ReadRequest(
+            session=self.session,
+            backend=backend,
+            query=query,
+            table=table,
+            columns=columns,
+            filter=filter,
+            group_by=group_by,
+            message_limit=max_in_message,
+            limit=limit,
+            row_layout=row_layout,
+            marker=marker,
+            **kw
+        )
+        do_reorder = should_reorder_columns(backend, query, columns)
+        for frame in stub.Read(request):
+            yield msg2df(frame, self.frame_factory,
+                         columns, do_reorder=do_reorder)
 
     # We need to write "read" since once you have a yield in a function
     # (do_read) it'll always return a generator
@@ -98,61 +138,53 @@ class Client(ClientBase):
 
     @grpc_raise(WriteError)
     def _write(self, request, dfs, labels, index_cols):
-        with new_channel(self.address) as channel:
-            stub = fgrpc.FramesStub(channel)
-            stub.Write(write_stream(request, dfs, labels, index_cols))
+        stub = fgrpc.FramesStub(self._channel)
+        stub.Write(write_stream(request, dfs, labels, index_cols))
 
     @grpc_raise(CreateError)
     def _create(self, backend, table, attrs, schema, if_exists):
         attrs = pb_map(attrs)
-        with new_channel(self.address) as channel:
-            stub = fgrpc.FramesStub(channel)
-            request = fpb.CreateRequest(
-                session=self.session,
-                backend=backend,
-                table=table,
-                attribute_map=attrs,
-                schema=schema,
-                if_exists=if_exists,
-            )
-            stub.Create(request)
+        stub = fgrpc.FramesStub(self._channel)
+        request = fpb.CreateRequest(
+            session=self.session,
+            backend=backend,
+            table=table,
+            attribute_map=attrs,
+            schema=schema,
+            if_exists=if_exists,
+        )
+        stub.Create(request)
 
     @grpc_raise(DeleteError)
     def _delete(self, backend, table, filter, start, end, if_missing):
         start, end = time2str(start), time2str(end)
-        with new_channel(self.address) as channel:
-            stub = fgrpc.FramesStub(channel)
-            request = fpb.DeleteRequest(
-                session=self.session,
-                backend=backend,
-                table=table,
-                filter=filter,
-                start=start,
-                end=end,
-                if_missing=if_missing,
-            )
-            stub.Delete(request)
+        stub = fgrpc.FramesStub(self._channel)
+        request = fpb.DeleteRequest(
+            session=self.session,
+            backend=backend,
+            table=table,
+            filter=filter,
+            start=start,
+            end=end,
+            if_missing=if_missing,
+        )
+        stub.Delete(request)
 
     @grpc_raise(ExecuteError)
     def _execute(self, backend, table, command, args, expression):
         args = pb_map(args)
-        with new_channel(self.address) as channel:
-            stub = fgrpc.FramesStub(channel)
-            request = fpb.ExecRequest(
-                session=self.session,
-                backend=backend,
-                table=table,
-                command=command,
-                args=args,
-                expression=expression,
-            )
-            resp = stub.Exec(request)
-            if resp.frame:
-                return msg2df(resp.frame, self.frame_factory)
-
-
-def new_channel(address):
-    return grpc.insecure_channel(address, options=channel_options)
+        stub = fgrpc.FramesStub(self._channel)
+        request = fpb.ExecRequest(
+            session=self.session,
+            backend=backend,
+            table=table,
+            command=command,
+            args=args,
+            expression=expression,
+        )
+        resp = stub.Exec(request)
+        if resp.frame:
+            return msg2df(resp.frame, self.frame_factory)
 
 
 def write_stream(request, dfs, labels, index_cols):
