@@ -16,13 +16,15 @@ import pandas as pd
 from os import environ
 
 from . import frames_pb2 as fpb
-from .errors import CreateError, DeleteError, ExecuteError, ReadError, WriteError
+from .errors import (CreateError, DeleteError, ExecuteError, ReadError,
+                     WriteError)
 
 FAIL = fpb.FAIL
 
 
 class ClientBase:
-    def __init__(self, address, session, persist_connection, frame_factory=pd.DataFrame, concat=pd.concat):
+    def __init__(self, address, session, persist_connection,
+                 frame_factory=pd.DataFrame, concat=pd.concat):
         """Creates a new Frames client object
 
         Parameters

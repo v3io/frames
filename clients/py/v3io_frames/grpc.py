@@ -20,7 +20,8 @@ import grpc
 from . import frames_pb2 as fpb  # noqa
 from . import frames_pb2_grpc as fgrpc  # noqa
 from .client import ClientBase
-from .errors import CreateError, DeleteError, ExecuteError, ReadError, WriteError
+from .errors import (CreateError, DeleteError, ExecuteError, ReadError,
+                     WriteError)
 from .http import format_go_time
 from .pbutils import msg2df, pb_map, df2msg
 from .pdutils import concat_dfs, should_reorder_columns
@@ -75,7 +76,8 @@ class Client(ClientBase):
         return address
 
     def _open_new_channel(self):
-        self._channel = grpc.insecure_channel(self.address, options=self._channel_options)
+        self._channel = grpc.insecure_channel(self.address,
+                                              options=self._channel_options)
 
     @grpc_raise(ReadError)
     def do_read(self, backend, table, query, columns, filter, group_by, limit,

@@ -24,7 +24,8 @@ from urllib3.exceptions import HTTPError
 
 from . import frames_pb2 as fpb
 from .client import ClientBase
-from .errors import CreateError, DeleteError, Error, ExecuteError, ReadError, WriteError
+from .errors import (CreateError, DeleteError, Error, ExecuteError, ReadError,
+                     WriteError)
 from .frames_pb2 import Frame
 from .pbutils import df2msg, msg2df, pb2py
 from .pdutils import concat_dfs, should_reorder_columns
@@ -95,7 +96,10 @@ class Client(ClientBase):
         request.update(kw)
 
         url = self._url_for('read')
-        resp = self._session.post(url, json=request, headers=self._get_headers(json=True), stream=True)
+        resp = self._session.post(url,
+                                  json=request,
+                                  headers=self._get_headers(json=True),
+                                  stream=True)
         if not resp.ok:
             raise Error('cannot call API - {}'.format(resp.text))
 
@@ -197,8 +201,9 @@ class Client(ClientBase):
     def _get_headers(self, json=False):
         headers = {'Accept-Encoding': ''}
 
-        # we disable keep alive on the session to cover cases of rapid and tight instantiations
-        # and usages of the client, in which case request's tcp connection is harmful and will result in
+        # we disable keep alive on the session to cover cases of rapid
+        # and tight instantiations and usages of the client, in which
+        # case request's tcp connection is harmful and will result in
         # NewConnectionError under stress
         if not self._persist_connection:
             headers['Connection'] = 'close'

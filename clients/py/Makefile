@@ -24,7 +24,7 @@ upload:
 clean_pyc:
 	find . -name '*.pyc' -exec rm {} \;
 
-.PHONY: flask8
+.PHONY: flake8
 flake8:
 	PIPENV_IGNORE_VIRTUALENVS=1 \
 	    pipenv run flake8 \
