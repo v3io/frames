@@ -23,7 +23,7 @@ FAIL = fpb.FAIL
 
 
 class ClientBase:
-    def __init__(self, address, session, persist_connection,
+    def __init__(self, address, session, persist_connection=False,
                  frame_factory=pd.DataFrame, concat=pd.concat):
         """Creates a new Frames client object
 
