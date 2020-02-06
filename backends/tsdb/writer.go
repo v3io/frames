@@ -275,3 +275,7 @@ func (a *tsdbAppender) WaitForComplete(timeout time.Duration) error {
 	_, err := a.appender.WaitForCompletion(timeout)
 	return err
 }
+
+func (a *tsdbAppender) Close() {
+	a.appender.Close()
+}

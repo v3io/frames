@@ -56,7 +56,7 @@ type Config struct {
 // InitDefaults initializes the defaults for configuration
 func (c *Config) InitDefaults() error {
 	if c.DefaultTimeout == 0 {
-		c.DefaultTimeout = 30
+		c.DefaultTimeout = 300
 	}
 
 	for _, backendConfig := range c.Backends {
@@ -126,7 +126,7 @@ type BackendConfig struct {
 	Workers                 int    `json:"workers"`
 	V3ioGoWorkers           int    `json:"v3ioGoWorkers"`
 	V3ioGoRequestChanLength int    `json:"v3ioGoRequestChanLength"`
-	MaxConnections int    		`json:"maxConnections"`
+	MaxConnections          int    `json:"maxConnections"`
 
 	// backend specific options
 	Options map[string]interface{} `json:"options"`

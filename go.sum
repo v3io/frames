@@ -67,8 +67,8 @@ github.com/stretchr/testify v1.3.0 h1:TivCn/peBQ7UY8ooIcPgZFpTNSz0Q2U6UrFlUfqbe0
 github.com/stretchr/testify v1.3.0/go.mod h1:M5WIy9Dh21IEIfnGCwXGc5bZfKNJtfHm1UVUgZn+9EI=
 github.com/stretchr/testify v1.4.0 h1:2E4SXV/wtOkTonXsotYi4li6zVWxYlZuYNCXe9XRJyk=
 github.com/stretchr/testify v1.4.0/go.mod h1:j7eGeouHqKxXV5pUuKE4zz7dFj8WfuZ+81PSLYec5m4=
-github.com/talIguaz/v3io-tsdb v0.0.0-20200205160022-13068e367a16 h1:WRARKdpJYq7iCTEVYoK6tF7WmOXqegFBS7zBHMGWa5U=
-github.com/talIguaz/v3io-tsdb v0.0.0-20200205160022-13068e367a16/go.mod h1:Z6qZrj8Cb1CCLWfgk/166QM0oaUzdwMJ9G39shhUg6k=
+github.com/talIguaz/v3io-tsdb v0.0.0-20200206121311-d2b4c43fc690 h1:yu6niQ0RvDGzVSsM8RLFb6JdJiWk8cCh19rchmxeoEA=
+github.com/talIguaz/v3io-tsdb v0.0.0-20200206121311-d2b4c43fc690/go.mod h1:Z6qZrj8Cb1CCLWfgk/166QM0oaUzdwMJ9G39shhUg6k=
 github.com/tinylib/msgp v1.1.1 h1:TnCZ3FIuKeaIy+F45+Cnp+caqdXGy4z74HvwXN+570Y=
 github.com/tinylib/msgp v1.1.1/go.mod h1:+d+yLhGm8mzTaHzB+wgMYrodPfmZrzkirds8fDWklFE=
 github.com/v3io/frames v0.6.8-v0.9.11/go.mod h1:V3j8yjzhNNGXjosCBn7Qf8C8jo25Y+7Ge/SkTK9ya9Q=

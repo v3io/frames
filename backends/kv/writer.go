@@ -292,6 +292,10 @@ func (a *Appender) WaitForComplete(timeout time.Duration) error {
 	return a.asyncErr
 }
 
+func (a *Appender) Close() {
+
+}
+
 func (a *Appender) indexValFunc(frame frames.Frame) (func(int) interface{}, error) {
 	var indexCol frames.Column
 
