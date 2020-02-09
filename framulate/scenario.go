@@ -11,6 +11,7 @@ import (
 
 type scenario interface {
 	Start() error
+	LogStatistics()
 }
 
 type abstractScenario struct {

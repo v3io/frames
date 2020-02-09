@@ -13,6 +13,7 @@ import (
 type writeVerifyScenario struct {
 	*abstractScenario
 	numSeriesCreated uint64
+	lastNumSeriesCreated int
 }
 
 func newWriteVerifyScenario(parentLogger logger.Logger,
@@ -36,24 +37,6 @@ func newWriteVerifyScenario(parentLogger logger.Logger,
 func (s *writeVerifyScenario) Start() error {
 	s.logger.DebugWith("Starting", "config", s.config.Scenario.WriteVerify)
 
-	go func() {
-		var lastNumSeriesCreated int
-
-		for {
-			currentNumSeriesCreated := int(s.numSeriesCreated)
-
-			s.logger.DebugWith("Series created",
-				"total", currentNumSeriesCreated,
-				"%", currentNumSeriesCreated*100.0/(s.config.Scenario.WriteVerify.NumTables*s.config.Scenario.WriteVerify.NumSeriesPerTable),
-				"s/s", currentNumSeriesCreated-lastNumSeriesCreated,
-			)
-
-			lastNumSeriesCreated = currentNumSeriesCreated
-
-			time.Sleep(1 * time.Second)
-		}
-	}()
-
 	if err := s.createTSDBTables(s.config.Scenario.WriteVerify.NumTables); err != nil {
 		return errors.Wrap(err, "Failed to create TSDB tables")
 	}
@@ -66,9 +49,23 @@ func (s *writeVerifyScenario) Start() error {
 		return errors.Wrap(err, "Failed to create TSDB series")
 	}
 
-	s.logger.DebugWith("Done")
+	// doesn't actually flush properly. wait a bit for logs
+	s.logger.Flush()
+	time.Sleep(3 * time.Second)
 
 	return nil
+}
+
+func (s *writeVerifyScenario) LogStatistics() {
+	currentNumSeriesCreated := int(s.numSeriesCreated)
+
+	s.logger.DebugWith("Series created",
+		"total", currentNumSeriesCreated,
+		"%", currentNumSeriesCreated*100.0/(s.config.Scenario.WriteVerify.NumTables*s.config.Scenario.WriteVerify.NumSeriesPerTable),
+		"s/s", currentNumSeriesCreated-s.lastNumSeriesCreated,
+	)
+
+	s.lastNumSeriesCreated = currentNumSeriesCreated
 }
 
 func (s *writeVerifyScenario) createTSDBTables(numTables int) error {
@@ -86,16 +83,14 @@ func (s *writeVerifyScenario) createTSDBTables(numTables int) error {
 			tableName := s.getTableName(repetitionIndex)
 
 			if s.config.Cleanup {
-				s.logger.DebugWith("Deleting table", "tableName", tableName)
-
 				// try to delete first and ignore error
 				err := s.framulate.framesClient.Delete(&pb.DeleteRequest{
 					Backend: "tsdb",
 					Table:   tableName,
 				})
 
-				if err != nil {
-					// could be that it doesn't exist... TODO: check other errors
+				if err == nil {
+					s.logger.DebugWith("Table deleted", "tableName", tableName)
 				}
 			}
 
@@ -115,7 +110,7 @@ func (s *writeVerifyScenario) createTSDBTables(numTables int) error {
 
 			if s.config.Scenario.WriteVerify.WriteDummySeries {
 				columns := map[string]interface{}{
-					s.getSeriesName(repetitionIndex): s.getRandomSeriesValues(1, 0, 1),
+					"dummy": s.getRandomSeriesValues(1, 0, 1),
 				}
 
 				indices := map[string]interface{}{

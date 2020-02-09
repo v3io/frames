@@ -3,6 +3,7 @@ package framulate
 import (
 	"context"
 	"github.com/nuclio/errors"
+	"time"
 
 	"github.com/v3io/frames"
 	"github.com/v3io/frames/http"
@@ -61,7 +62,30 @@ func NewFramulate(ctx context.Context, loggerInstance logger.Logger, config *Con
 }
 
 func (f *Framulate) Start() error {
-	return f.scenario.Start()
+	doneChan := make(chan struct{})
+
+	// log statistics periodically
+	go func() {
+		for {
+			select {
+			case <-time.After(1 * time.Second):
+				f.scenario.LogStatistics()
+			case <-doneChan:
+				return
+			}
+		}
+	}()
+
+	err := f.scenario.Start()
+	doneChan <- struct{}{}
+
+	if err == nil {
+
+		// final output
+		f.scenario.LogStatistics()
+	}
+
+	return err
 }
 
 func (f *Framulate) createScenario(config *Config) (scenario, error) {
