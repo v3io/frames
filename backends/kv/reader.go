@@ -34,6 +34,7 @@ import (
 const (
 	indexColKey = "__name"
 )
+
 var systemAttrs = []string{"__gid", "__mode", "__mtime_nsecs", "__mtime_secs", "__size", "__uid", "__ctime_nsecs", "__ctime_secs"}
 
 // Read does a read request
@@ -201,7 +202,7 @@ func (ki *Iterator) Next() bool {
 
 		for name, field := range row {
 			colName := name
-			if colName == indexColKey && !indexKeyRequested{ // convert `__name` attribute name to the key column
+			if colName == indexColKey && !indexKeyRequested { // convert `__name` attribute name to the key column
 				if hasKeyColumnAttribute {
 					continue
 				} else {
@@ -265,7 +266,7 @@ func (ki *Iterator) Next() bool {
 			ki.handleIndices(ki.schema.Key, byName, ki.shouldDuplicateIndex, &indices, &columns)
 			delete(byName, ki.schema.Key)
 		}
-		if  ki.schema.SortingKey != "" && (len(columns) > 1 || columns[0].Name() != ki.schema.SortingKey) {
+		if ki.schema.SortingKey != "" && (len(columns) > 1 || columns[0].Name() != ki.schema.SortingKey) {
 			ki.handleIndices(ki.schema.SortingKey, byName, ki.shouldDuplicateSorting, &indices, &columns)
 			delete(byName, ki.schema.SortingKey)
 		}
