@@ -52,7 +52,22 @@ def connection_error(error_cls):
 
 
 class Client(ClientBase):
-    """Client is a nuclio stream HTTP client"""
+    """Client is a frames stream HTTP client"""
+
+    def __init__(self, *args, **kwargs):
+        super(Client, self).__init__(*args, **kwargs)
+
+        self._session = None
+
+        # create the session object, persist it between requests
+        self._establish_session()
+
+    def __del__(self):
+        self._session.close()
+
+    def _establish_session(self):
+        self._session = requests.sessions.Session()
+        self._session.verify = False
 
     def _fix_address(self, address):
         if '://' not in address:
@@ -68,7 +83,6 @@ class Client(ClientBase):
             'backend': backend,
             'table': table,
             'query': query,
-            'table': table,
             'columns': columns,
             'filter': filter,
             'group_by': group_by,
@@ -83,9 +97,10 @@ class Client(ClientBase):
         request.update(kw)
 
         url = self._url_for('read')
-        resp = requests.post(
-            url, verify=False, json=request, headers=self._headers(json=True),
-            stream=True)
+        resp = self._session.post(url,
+                                  json=request,
+                                  headers=self._get_headers(json=True),
+                                  stream=True)
         if not resp.ok:
             raise Error('cannot call API - {}'.format(resp.text))
 
@@ -99,7 +114,7 @@ class Client(ClientBase):
     @connection_error(WriteError)
     def _write(self, request, dfs, labels, index_cols):
         url = self._url_for('write')
-        headers = self._headers()
+        headers = self._get_headers()
         headers['Content-Encoding'] = 'chunked'
 
         request = self._encode_msg(request)
@@ -107,7 +122,7 @@ class Client(ClientBase):
         frames = (enc(df2msg(df, labels, index_cols)) for df in dfs)
         data = chain([request], frames)
 
-        resp = requests.post(url, verify=False, headers=headers, data=data)
+        resp = self._session.post(url, headers=headers, data=data)
 
         if not resp.ok:
             raise Error('cannot call API - {}'.format(resp.text))
@@ -126,8 +141,8 @@ class Client(ClientBase):
         }
 
         url = self._url_for('create')
-        headers = self._headers()
-        resp = requests.post(url, verify=False, headers=headers, json=request)
+        headers = self._get_headers()
+        resp = self._session.post(url, headers=headers, json=request)
         if not resp.ok:
             raise CreateError(resp.text)
 
@@ -147,9 +162,9 @@ class Client(ClientBase):
         convert_go_times(request, ('start', 'end'))
 
         url = self._url_for('delete')
-        headers = self._headers()
+        headers = self._get_headers()
         # TODO: Make it DELETE ?
-        resp = requests.post(url, verify=False, headers=headers, json=request)
+        resp = self._session.post(url, headers=headers, json=request)
         if not resp.ok:
             raise CreateError(resp.text)
 
@@ -165,8 +180,8 @@ class Client(ClientBase):
         }
 
         url = self._url_for('exec')
-        headers = self._headers()
-        resp = requests.post(url, verify=False, headers=headers, json=request)
+        headers = self._get_headers()
+        resp = self._session.post(url, headers=headers, json=request)
         if not resp.ok:
             raise ExecuteError(resp.text)
 
@@ -185,8 +200,16 @@ class Client(ClientBase):
     def _url_for(self, action):
         return self.address + '/' + action
 
-    def _headers(self, json=False):
+    def _get_headers(self, json=False):
         headers = {'Accept-Encoding': ''}
+
+        # we disable keep alive on the session to cover cases of rapid
+        # and tight instantiations and usages of the client, in which
+        # case request's tcp connection is harmful and will result in
+        # NewConnectionError under stress
+        if not self._persist_connection:
+            headers['Connection'] = 'close'
+
         if json:
             headers['Content-Type'] = 'application/json'
 
