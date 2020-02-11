@@ -20,9 +20,9 @@ type tsdbSeries struct {
 
 type writeVerifyScenario struct {
 	*abstractScenario
-	numSeriesCreated      uint64
+	numSeriesWritten      uint64
 	numSeriesVerified     uint64
-	lastNumSeriesCreated  int
+	lastNumSeriesWritten  int
 	lastNumSeriesVerified int
 }
 
@@ -81,19 +81,19 @@ func (s *writeVerifyScenario) Start() error {
 }
 
 func (s *writeVerifyScenario) LogStatistics() {
-	currentNumSeriesCreated := int(s.numSeriesCreated)
+	currentNumSeriesWritten := int(s.numSeriesWritten)
 	currentNumSeriesVerified := int(s.numSeriesVerified)
 
 	s.logger.DebugWith("Statistics",
-		"created", currentNumSeriesCreated,
-		"% created", currentNumSeriesCreated*100.0/(s.config.Scenario.WriteVerify.NumTables*s.config.Scenario.WriteVerify.NumSeriesPerTable),
-		"c/s", currentNumSeriesCreated-s.lastNumSeriesCreated,
+		"wrote", currentNumSeriesWritten,
+		"% written", currentNumSeriesWritten*100.0/(s.config.Scenario.WriteVerify.NumTables*s.config.Scenario.WriteVerify.NumSeriesPerTable),
+		"w/s", currentNumSeriesWritten-s.lastNumSeriesWritten,
 		"verified", currentNumSeriesVerified,
 		"% verified", currentNumSeriesVerified*100.0/(s.config.Scenario.WriteVerify.NumTables*s.config.Scenario.WriteVerify.NumSeriesPerTable),
 		"v/s", currentNumSeriesVerified-s.lastNumSeriesVerified,
 	)
 
-	s.lastNumSeriesCreated = currentNumSeriesCreated
+	s.lastNumSeriesWritten = currentNumSeriesWritten
 	s.lastNumSeriesVerified = currentNumSeriesVerified
 }
 
@@ -194,7 +194,7 @@ func (s *writeVerifyScenario) createTSDBWriteTask(taskGroup *repeatingtask.TaskG
 				}
 
 				// stats stuff
-				atomic.AddUint64(&s.numSeriesCreated, 1)
+				atomic.AddUint64(&s.numSeriesWritten, 1)
 
 				return nil
 			},
