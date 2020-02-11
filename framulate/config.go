@@ -1,10 +1,11 @@
 package framulate
 
 import (
-	"github.com/ghodss/yaml"
-	"github.com/nuclio/errors"
 	"io/ioutil"
 	"time"
+
+	"github.com/ghodss/yaml"
+	"github.com/nuclio/errors"
 )
 
 type scenarioKind string
@@ -35,8 +36,8 @@ type ScenarioConfig struct {
 }
 
 type Transport struct {
-	URL                 string        `json:"url,omitempty"`
-	MaxInflightRequests int           `json:"max_inflight_requests,omitempty"`
+	URL                 string `json:"url,omitempty"`
+	MaxInflightRequests int    `json:"max_inflight_requests,omitempty"`
 }
 
 type Config struct {

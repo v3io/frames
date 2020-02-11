@@ -2,8 +2,9 @@ package repeatingtask
 
 import (
 	"fmt"
-	"github.com/nuclio/errors"
 	"sync"
+
+	"github.com/nuclio/errors"
 )
 
 type TaskGroupErrors struct {

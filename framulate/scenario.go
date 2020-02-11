@@ -2,12 +2,13 @@ package framulate
 
 import (
 	"fmt"
+	"math/rand"
+	"time"
+
 	"github.com/nuclio/errors"
 	"github.com/nuclio/logger"
 	"github.com/v3io/frames"
 	"github.com/v3io/frames/pb"
-	"math/rand"
-	"time"
 )
 
 type scenario interface {

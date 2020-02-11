@@ -2,12 +2,12 @@ package repeatingtask
 
 import (
 	"context"
-	"github.com/pkg/errors"
 	"testing"
 	"time"
 
 	"github.com/nuclio/logger"
 	nucliozap "github.com/nuclio/zap"
+	"github.com/pkg/errors"
 	"github.com/stretchr/testify/suite"
 )
 

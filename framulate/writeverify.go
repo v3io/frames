@@ -4,8 +4,8 @@ import (
 	"sync/atomic"
 	"time"
 
+	"github.com/nuclio/errors"
 	"github.com/nuclio/logger"
-	"github.com/pkg/errors"
 	"github.com/v3io/frames/pb"
 	"github.com/v3io/frames/repeatingtask"
 )

@@ -2,16 +2,16 @@ package framulate
 
 import (
 	"context"
-	"github.com/nuclio/errors"
-	"github.com/v3io/frames/grpc"
 	"strings"
 	"time"
 
 	"github.com/v3io/frames"
+	"github.com/v3io/frames/grpc"
 	"github.com/v3io/frames/http"
 	"github.com/v3io/frames/pb"
 	"github.com/v3io/frames/repeatingtask"
 
+	"github.com/nuclio/errors"
 	"github.com/nuclio/logger"
 )
 
