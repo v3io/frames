@@ -34,15 +34,19 @@ type ScenarioConfig struct {
 	WriteVerify WriteVerifyConfig
 }
 
+type Transport struct {
+	URL                 string        `json:"url,omitempty"`
+	MaxInflightRequests int           `json:"max_inflight_requests,omitempty"`
+}
+
 type Config struct {
-	FramesURL           string         `json:"frames_url,omitempty"`
-	ContainerName       string         `json:"container_name,omitempty"`
-	UserName            string         `json:"username,omitempty"`
-	AccessKey           string         `json:"access_key,omitempty"`
-	MaxInflightRequests int            `json:"max_inflight_requests,omitempty"`
-	Cleanup             bool           `json:"cleanup,omitempty"`
-	MaxTasks            int            `json:"max_tasks,omitempty"`
-	Scenario            ScenarioConfig `json:"scenario,omitempty"`
+	ContainerName string         `json:"container_name,omitempty"`
+	UserName      string         `json:"username,omitempty"`
+	AccessKey     string         `json:"access_key,omitempty"`
+	Cleanup       bool           `json:"cleanup,omitempty"`
+	MaxTasks      int            `json:"max_tasks,omitempty"`
+	Scenario      ScenarioConfig `json:"scenario,omitempty"`
+	Transport     Transport      `json:"transport,omitempty"`
 }
 
 func NewConfigFromContentsOrPath(configContents []byte, configPath string) (*Config, error) {
@@ -75,8 +79,12 @@ func NewConfigFromContentsOrPath(configContents []byte, configPath string) (*Con
 func (c *Config) validateAndPopulateDefaults() error {
 	var err error
 
-	if c.FramesURL == "" {
-		c.FramesURL = "http://framesd:8080"
+	if c.Transport.URL == "" {
+		c.Transport.URL = "grpc://framesd:8081"
+	}
+
+	if c.Transport.MaxInflightRequests == 0 {
+		c.Transport.MaxInflightRequests = 512
 	}
 
 	if c.MaxTasks == 0 {

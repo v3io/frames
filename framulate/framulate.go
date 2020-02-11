@@ -3,6 +3,8 @@ package framulate
 import (
 	"context"
 	"github.com/nuclio/errors"
+	"github.com/v3io/frames/grpc"
+	"strings"
 	"time"
 
 	"github.com/v3io/frames"
@@ -32,7 +34,7 @@ func NewFramulate(ctx context.Context, loggerInstance logger.Logger, config *Con
 
 	newFramulate.taskPool, err = repeatingtask.NewPool(ctx,
 		config.MaxTasks,
-		config.MaxInflightRequests)
+		config.Transport.MaxInflightRequests)
 
 	if err != nil {
 		return nil, errors.Wrap(err, "Failed to create pool")
@@ -43,17 +45,9 @@ func NewFramulate(ctx context.Context, loggerInstance logger.Logger, config *Con
 		return nil, errors.Wrap(err, "Failed to create scenario")
 	}
 
-	session := pb.Session{
-		Container: newFramulate.config.ContainerName,
-		User:      newFramulate.config.UserName,
-		Token:     newFramulate.config.AccessKey,
-	}
-
-	newFramulate.framesClient, err = http.NewClient(newFramulate.config.FramesURL,
-		&session,
-		newFramulate.logger)
+	newFramulate.framesClient, err = newFramulate.createFramesClient(config)
 	if err != nil {
-		return nil, errors.Wrap(err, "Failed to create client")
+		return nil, errors.Wrap(err, "Failed to create frames client")
 	}
 
 	newFramulate.logger.DebugWith("Framulate created", "config", config)
@@ -86,6 +80,28 @@ func (f *Framulate) Start() error {
 	}
 
 	return err
+}
+
+func (f *Framulate) createFramesClient(config *Config) (frames.Client, error) {
+	session := pb.Session{
+		Container: config.ContainerName,
+		User:      config.UserName,
+		Token:     config.AccessKey,
+	}
+
+	if strings.HasPrefix(config.Transport.URL, "http") {
+		f.logger.DebugWith("Creating HTTP client", "url", config.Transport.URL)
+
+		return http.NewClient(config.Transport.URL,
+			&session,
+			f.logger)
+	}
+
+	f.logger.DebugWith("Creating gRPC client", "url", config.Transport.URL)
+
+	return grpc.NewClient(config.Transport.URL,
+		&session,
+		f.logger)
 }
 
 func (f *Framulate) createScenario(config *Config) (scenario, error) {
