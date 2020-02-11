@@ -127,16 +127,22 @@ func (s *abstractScenario) verifyTSDBSeries(tableName string,
 	// read the series
 	tsdbSeriesInstance, err := s.readSeries(tableName, seriesName)
 	if err != nil {
-		return errors.Wrap(err, "Failed to read series")
+		return errors.Wrapf(err, "Failed to read series %s:%s", tableName, seriesName)
 	}
 
 	if len(tsdbSeriesInstance.values) != len(expectedValues) {
-		return errors.Errorf("Invalid number of values. Expected %d, got %d", len(expectedValues), len(tsdbSeriesInstance.values))
+		return errors.Errorf("Invalid number of values for %s:%s. Expected %d, got %d",
+			tableName,
+			seriesName,
+			len(expectedValues),
+			len(tsdbSeriesInstance.values))
 	}
 
 	for valueIdx := 0; valueIdx < len(tsdbSeriesInstance.values); valueIdx++ {
 		if tsdbSeriesInstance.values[valueIdx] != expectedValues[valueIdx] {
-			return errors.Errorf("Invalid value at index %d. Expected %f got %f",
+			return errors.Errorf("Invalid value for %s:%s at index %d. Expected %f got %f",
+				tableName,
+				seriesName,
 				valueIdx,
 				expectedValues[valueIdx],
 				tsdbSeriesInstance.values[valueIdx])
@@ -149,7 +155,9 @@ func (s *abstractScenario) verifyTSDBSeries(tableName string,
 
 	for timestampIdx := 0; timestampIdx < len(tsdbSeriesInstance.timestamps); timestampIdx++ {
 		if tsdbSeriesInstance.timestamps[timestampIdx].Round(10*time.Millisecond) != expectedTimestamps[timestampIdx].Round(10*time.Millisecond) {
-			return errors.Errorf("Invalid timestamp at index %d. Expected %f got %f",
+			return errors.Errorf("Invalid timestamp for %s:%s at index %d. Expected %f got %f",
+				tableName,
+				seriesName,
 				timestampIdx,
 				expectedTimestamps[timestampIdx],
 				tsdbSeriesInstance.timestamps[timestampIdx])

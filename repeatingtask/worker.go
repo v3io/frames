@@ -60,8 +60,11 @@ func (w *worker) handleTask(task *Task) error {
 		}
 	}
 
+	// increment # of times we completed
+	currentNumCompletions := atomic.AddUint64(&task.numCompletions, 1)
+
 	// signal that we're done if there were more failures than allowed or that w're simply done
-	if int(task.repititionIndex) >= task.NumReptitions ||
+	if int(currentNumCompletions) >= task.NumReptitions ||
 		len(task.ErrorsChan) > task.MaxNumErrors {
 		w.signalTaskComplete(task)
 	}
