@@ -4,6 +4,7 @@ import (
 	"github.com/ghodss/yaml"
 	"github.com/nuclio/errors"
 	"io/ioutil"
+	"time"
 )
 
 type scenarioKind string
@@ -16,11 +17,16 @@ type WriteVerifyConfig struct {
 	NumTables               int    `json:"num_tables,omitempty"`
 	NumSeriesPerTable       int    `json:"num_series_per_table,omitempty"`
 	MaxParallelTablesCreate int    `json:"max_parallel_tables_create,omitempty"`
-	MaxParallelSeriesCreate int    `json:"max_parallel_series_create,omitempty"`
+	MaxParallelSeriesWrite  int    `json:"max_parallel_series_write,omitempty"`
+	MaxParallelSeriesVerify int    `json:"max_parallel_series_verify,omitempty"`
 	WriteDummySeries        bool   `json:"write_dummy_series,omitempty"`
 	NumDatapointsPerSeries  int    `json:"num_datapoints_per_series,omitempty"`
+	WriteDelay              string `json:"write_delay,omitempty"`
 	VerificationDelay       string `json:"verification_delay,omitempty"`
 	Verify                  bool   `json:"verify,omitempty"`
+
+	verificationDelay time.Duration
+	writeDelay        time.Duration
 }
 
 type ScenarioConfig struct {
@@ -67,12 +73,28 @@ func NewConfigFromContentsOrPath(configContents []byte, configPath string) (*Con
 }
 
 func (c *Config) validateAndPopulateDefaults() error {
+	var err error
+
 	if c.FramesURL == "" {
 		c.FramesURL = "http://framesd:8080"
 	}
 
 	if c.MaxTasks == 0 {
 		c.MaxTasks = 1024 * 1024
+	}
+
+	if c.Scenario.WriteVerify.VerificationDelay != "" {
+		c.Scenario.WriteVerify.verificationDelay, err = time.ParseDuration(c.Scenario.WriteVerify.VerificationDelay)
+		if err != nil {
+			return errors.Wrap(err, "Failed to parse verification delay")
+		}
+	}
+
+	if c.Scenario.WriteVerify.WriteDelay != "" {
+		c.Scenario.WriteVerify.writeDelay, err = time.ParseDuration(c.Scenario.WriteVerify.WriteDelay)
+		if err != nil {
+			return errors.Wrap(err, "Failed to parse write delay")
+		}
 	}
 
 	return nil

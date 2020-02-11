@@ -10,10 +10,20 @@ import (
 	"github.com/v3io/frames/repeatingtask"
 )
 
+type tsdbSeries struct {
+	tableName  string
+	tableIdx   int
+	name       string
+	timestamps []time.Time
+	values     []float64
+}
+
 type writeVerifyScenario struct {
 	*abstractScenario
-	numSeriesCreated uint64
-	lastNumSeriesCreated int
+	numSeriesCreated      uint64
+	numSeriesVerified     uint64
+	lastNumSeriesCreated  int
+	lastNumSeriesVerified int
 }
 
 func newWriteVerifyScenario(parentLogger logger.Logger,
@@ -41,31 +51,50 @@ func (s *writeVerifyScenario) Start() error {
 		return errors.Wrap(err, "Failed to create TSDB tables")
 	}
 
-	s.logger.DebugWith("Waiting to create series")
-	time.Sleep(3 * time.Second)
-
-	if err := s.createTSDBSeries(s.config.Scenario.WriteVerify.NumTables,
-		s.config.Scenario.WriteVerify.NumSeriesPerTable); err != nil {
-		return errors.Wrap(err, "Failed to create TSDB series")
+	if s.config.Scenario.WriteVerify.writeDelay != 0 {
+		s.logger.DebugWith("Waiting before writing series")
+		time.Sleep(s.config.Scenario.WriteVerify.writeDelay)
 	}
 
-	// doesn't actually flush properly. wait a bit for logs
-	s.logger.Flush()
+	// create a task group for write/verify
+	taskGroup, err := repeatingtask.NewTaskGroup()
+	if err != nil {
+		return errors.Wrap(err, "Failed to create task group")
+	}
+
+	// execute writes to the series
+	err = s.createTSDBWriteTask(taskGroup,
+		s.config.Scenario.WriteVerify.NumTables,
+		s.config.Scenario.WriteVerify.NumSeriesPerTable)
+
+	if err != nil {
+		return errors.Wrap(err, "Failed to start write task")
+	}
+
+	// wait for series
+	taskGroupErrors := taskGroup.Wait()
+
+	// wait a bit for logs, since flush don't actually flush
 	time.Sleep(3 * time.Second)
 
-	return nil
+	return taskGroupErrors.Error()
 }
 
 func (s *writeVerifyScenario) LogStatistics() {
 	currentNumSeriesCreated := int(s.numSeriesCreated)
+	currentNumSeriesVerified := int(s.numSeriesVerified)
 
-	s.logger.DebugWith("Series created",
-		"total", currentNumSeriesCreated,
-		"%", currentNumSeriesCreated*100.0/(s.config.Scenario.WriteVerify.NumTables*s.config.Scenario.WriteVerify.NumSeriesPerTable),
-		"s/s", currentNumSeriesCreated-s.lastNumSeriesCreated,
+	s.logger.DebugWith("Statistics",
+		"created", currentNumSeriesCreated,
+		"% created", currentNumSeriesCreated*100.0/(s.config.Scenario.WriteVerify.NumTables*s.config.Scenario.WriteVerify.NumSeriesPerTable),
+		"c/s", currentNumSeriesCreated-s.lastNumSeriesCreated,
+		"verified", currentNumSeriesVerified,
+		"% verified", currentNumSeriesVerified*100.0/(s.config.Scenario.WriteVerify.NumTables*s.config.Scenario.WriteVerify.NumSeriesPerTable),
+		"v/s", currentNumSeriesVerified-s.lastNumSeriesVerified,
 	)
 
 	s.lastNumSeriesCreated = currentNumSeriesCreated
+	s.lastNumSeriesVerified = currentNumSeriesVerified
 }
 
 func (s *writeVerifyScenario) createTSDBTables(numTables int) error {
@@ -81,6 +110,7 @@ func (s *writeVerifyScenario) createTSDBTables(numTables int) error {
 		MaxParallel:   s.config.Scenario.WriteVerify.MaxParallelTablesCreate,
 		Handler: func(cookie interface{}, repetitionIndex int) error {
 			tableName := s.getTableName(repetitionIndex)
+			s.logger.DebugWith("Deleting table", "tableName", tableName)
 
 			if s.config.Cleanup {
 				// try to delete first and ignore error
@@ -109,16 +139,15 @@ func (s *writeVerifyScenario) createTSDBTables(numTables int) error {
 			}
 
 			if s.config.Scenario.WriteVerify.WriteDummySeries {
-				columns := map[string]interface{}{
-					"dummy": s.getRandomSeriesValues(1, 0, 1),
-				}
-
-				indices := map[string]interface{}{
-					"timestamp": s.getIncrementingSeriesTimestamps(1, 1*time.Second),
-				}
 
 				// write a dummy series to write the schema not in parallel (workaround)
-				return s.writeSeriesToTable(tableName, columns, indices)
+				return s.writeTSDBSeries(&tsdbSeries{
+					name:       "dummy",
+					tableName:  tableName,
+					values:     []float64{0},
+					timestamps: []time.Time{time.Now()},
+				})
+
 			} else {
 				s.logger.DebugWith("Not writing dummy series", "tableName", tableName)
 			}
@@ -128,16 +157,15 @@ func (s *writeVerifyScenario) createTSDBTables(numTables int) error {
 	}
 
 	taskErrors := s.framulate.taskPool.SubmitTaskAndWait(&tableCreationTask)
+
+	s.logger.DebugWith("Done creating tables", "err", taskErrors.Error())
+
 	return taskErrors.Error()
 }
 
-func (s *writeVerifyScenario) createTSDBSeries(numTables int, numSeriesPerTable int) error {
-	seriesCreationTaskGroup := repeatingtask.TaskGroup{}
-
-	type seriesCookie struct {
-		tableName string
-		tableIdx  int
-	}
+func (s *writeVerifyScenario) createTSDBWriteTask(taskGroup *repeatingtask.TaskGroup,
+	numTables int,
+	numSeriesPerTable int) error {
 
 	// create a task per table and wait on these
 	for tableIdx := 0; tableIdx < numTables; tableIdx++ {
@@ -145,31 +173,30 @@ func (s *writeVerifyScenario) createTSDBSeries(numTables int, numSeriesPerTable 
 		// create a series creation task
 		seriesCreationTask := repeatingtask.Task{
 			NumReptitions: numSeriesPerTable,
-			MaxParallel:   s.config.Scenario.WriteVerify.MaxParallelSeriesCreate,
-			Cookie: &seriesCookie{
+			MaxParallel:   s.config.Scenario.WriteVerify.MaxParallelSeriesWrite,
+			Cookie: &tsdbSeries{
 				tableName: s.getTableName(tableIdx),
 				tableIdx:  tableIdx,
 			},
 			Handler: func(cookie interface{}, repetitionIndex int) error {
-				seriesCookie := cookie.(*seriesCookie)
+				tsdbSeriesInstance := *cookie.(*tsdbSeries)
+				tsdbSeriesInstance.name = s.getSeriesName(repetitionIndex)
+				tsdbSeriesInstance.timestamps = s.getIncrementingSeriesTimestamps(s.config.Scenario.WriteVerify.NumDatapointsPerSeries, 1*time.Second)
+				tsdbSeriesInstance.values = s.getRandomSeriesValues(s.config.Scenario.WriteVerify.NumDatapointsPerSeries, 0, 200)
 
-				columns := map[string]interface{}{
-					s.getSeriesName(repetitionIndex): s.getRandomSeriesValues(s.config.Scenario.WriteVerify.NumDatapointsPerSeries,
-						0,
-						200),
+				err := s.writeTSDBSeries(&tsdbSeriesInstance)
+				if err == nil && s.config.Scenario.WriteVerify.Verify {
+
+					// schedule a task to verify this series
+					if err = s.createTSDBVerifyTask(taskGroup, &tsdbSeriesInstance); err != nil {
+						return errors.Wrap(err, "Failed to create verify task")
+					}
 				}
-
-				indices := map[string]interface{}{
-					"timestamp": s.getIncrementingSeriesTimestamps(s.config.Scenario.WriteVerify.NumDatapointsPerSeries,
-						1*time.Second),
-				}
-
-				err := s.writeSeriesToTable(seriesCookie.tableName, columns, indices)
 
 				// stats stuff
 				atomic.AddUint64(&s.numSeriesCreated, 1)
 
-				return err
+				return nil
 			},
 		}
 
@@ -179,13 +206,42 @@ func (s *writeVerifyScenario) createTSDBSeries(numTables int, numSeriesPerTable 
 		}
 
 		// add the task
-		if err := seriesCreationTaskGroup.AddTask(&seriesCreationTask); err != nil {
+		if err := taskGroup.AddTask(&seriesCreationTask); err != nil {
 			return errors.Wrap(err, "Failed to add task")
 		}
 	}
 
-	// wait for series
-	taskGroupErrors := seriesCreationTaskGroup.Wait()
+	return nil
+}
 
-	return taskGroupErrors.Error()
+func (s *writeVerifyScenario) createTSDBVerifyTask(taskGroup *repeatingtask.TaskGroup,
+	tsdbSeriesInstance *tsdbSeries) error {
+
+	// create a series creation task
+	seriesCreationTask := repeatingtask.Task{
+		NumReptitions: 1,
+		MaxParallel:   1,
+		Cookie:        tsdbSeriesInstance,
+		Handler: func(cookie interface{}, repetitionIndex int) error {
+			tsdbSeriesInstance := cookie.(*tsdbSeries)
+
+			err := s.verifyTSDBSeries(tsdbSeriesInstance.tableName,
+				tsdbSeriesInstance.name,
+				tsdbSeriesInstance.timestamps,
+				tsdbSeriesInstance.values)
+
+			// stats stuff
+			atomic.AddUint64(&s.numSeriesVerified, 1)
+
+			return err
+		},
+	}
+
+	// submit the task
+	if err := s.framulate.taskPool.SubmitTask(&seriesCreationTask); err != nil {
+		return errors.Wrap(err, "Failed to submit task")
+	}
+
+	// add the task
+	return taskGroup.AddTask(&seriesCreationTask)
 }
