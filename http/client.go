@@ -304,7 +304,11 @@ func (c *Client) jsonCall(path string, request interface{}, returnResponse bool)
 	}
 
 	if httpResponse.StatusCode() != http.StatusOK {
-		return httpResponse, fmt.Errorf("error calling server - %q", httpResponse.StatusCode())
+		errMessage := fmt.Sprintf("error calling server (%d): %s",
+			httpResponse.StatusCode(),
+			string(httpResponse.Body()))
+		fasthttp.ReleaseResponse(httpResponse)
+		return nil, fmt.Errorf("error calling server - %s", errMessage)
 	}
 
 	if !returnResponse {

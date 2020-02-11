@@ -2,6 +2,7 @@ package repeatingtask
 
 import (
 	"context"
+
 	"github.com/nuclio/errors"
 )
 
@@ -52,7 +53,6 @@ func (p *Pool) SubmitTask(task *Task) error {
 		default:
 			return errors.New("Failed to submit task - enlarge the pool max # of tasks")
 		}
-
 	}
 
 	return nil
