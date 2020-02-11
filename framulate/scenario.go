@@ -156,7 +156,7 @@ func (s *abstractScenario) verifyTSDBSeries(tableName string,
 
 	for timestampIdx := 0; timestampIdx < len(tsdbSeriesInstance.timestamps); timestampIdx++ {
 		if tsdbSeriesInstance.timestamps[timestampIdx].Round(10*time.Millisecond) != expectedTimestamps[timestampIdx].Round(10*time.Millisecond) {
-			return errors.Errorf("Invalid timestamp for %s:%s at index %d. Expected %f got %f",
+			return errors.Errorf("Invalid timestamp for %s:%s at index %d. Expected %s got %s",
 				tableName,
 				seriesName,
 				timestampIdx,
