@@ -32,9 +32,9 @@ SESSION_ENV_KEY = 'V3IO_SESSION'
 _known_protocols = {'grpc', 'http', 'https'}
 
 
-def Client(address='',  container='', data_url='', path='', user='',
+def Client(address='', data_url='', container='', path='', user='',
            password='', token='', session_id='', frame_factory=pd.DataFrame,
-           concat=pd.concat):
+           concat=pd.concat, persist_connection=False):
     """Creates a new Frames client object
     NOTE: User authentication must be done using any of the following methods:
     setting the `token` parameter or the V3IO_ACCESS_KEY environment variable
@@ -72,6 +72,13 @@ def Client(address='',  container='', data_url='', path='', user='',
         DataFrame factory; currently, pandas DataFrame (default)
     concat (Optional): function
         Function for concatenating DataFrames; default: pandas concat
+    persist_connection: bool
+        Whether the underlying connection should persist between requests.
+        This only effect http client today. grpc client persists channels.
+        Use True where the same client is rarely instantiated but requests
+        are made often. When True is used, due to the nature of the
+        underlying clients, rapid instantiation of the client
+        may cause failures (e.g. HTTP NewConnectionError)
 
     Return Value
     ----------
@@ -102,7 +109,8 @@ def Client(address='',  container='', data_url='', path='', user='',
                         environ.get('V3IO_ACCESS_KEY') or ''
 
     cls = gRPCClient if protocol == 'grpc' else HTTPClient
-    return cls(address, session, frame_factory=frame_factory, concat=concat)
+    return cls(address, session, persist_connection,
+               frame_factory=frame_factory, concat=concat)
 
 
 def session_from_env():

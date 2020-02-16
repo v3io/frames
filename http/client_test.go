@@ -21,7 +21,6 @@ such restriction.
 package http
 
 import (
-	"fmt"
 	"testing"
 )
 
@@ -32,11 +31,6 @@ func TestNewClient(t *testing.T) {
 	client, err := NewClient(hostname, nil, nil)
 	if err != nil {
 		t.Fatal(err)
-	}
-
-	if client.URL != fmt.Sprintf("http://%s", hostname) {
-		t.Fatalf("URL mismatch: %q != %q", client.URL, hostname)
-
 	}
 
 	if client.logger == nil {
