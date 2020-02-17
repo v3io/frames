@@ -304,7 +304,7 @@ def normalize_df(df, schema):
     nulls_exist = False
     for col_pos, col_name in enumerate(df.columns):
         col = df[col_name]
-        row_index=0
+        row_index = 0
         for index, value in col.items():
             if col_pos == 0:
                 null_values.append(fpb.NullValuesMap(nullColumns={}))
@@ -312,7 +312,7 @@ def normalize_df(df, schema):
                 nulls_exist = True
                 df.at[index, col_name] = get_empty_value_by_type(schema[col_name])
                 null_values[row_index].nullColumns[col_name] = True
-            row_index=row_index+1
+            row_index = row_index + 1
 
     if not nulls_exist:
         null_values = []
