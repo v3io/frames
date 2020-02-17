@@ -160,9 +160,9 @@ class RawFrame:
 
 
 class ClientBase:
-    def __init__(self, address, session, frame_factory=pd.DataFrame,
-                 concat=pd.concat):
-        """Creates a new Frames base client object (for internal use)
+    def __init__(self, address, session, persist_connection=False,
+                 frame_factory=pd.DataFrame, concat=pd.concat):
+        """Creates a new Frames client object
 
         Parameters
         ----------
@@ -173,6 +173,11 @@ class ClientBase:
         frame_factory (Optional) : class
             DataFrame factory; currently, pandas (default) or cuDF
         concat (Optional) : function
+        persist_connection:
+            Boolean, whether to persist underlying client connection
+        frame_factory : class
+            DataFrame factory; currently, pandas and cuDF are supported
+        concat : function
             Function for concatenating DataFrames; default: pandas concat
 
         Return Value
@@ -184,6 +189,7 @@ class ClientBase:
             raise ValueError('empty address')
         self.address = self._fix_address(address)
         self.session = session
+        self._persist_connection = persist_connection
         self.frame_factory = frame_factory
         self.concat = concat
 
@@ -245,9 +251,6 @@ class ClientBase:
         if not (table or query):
             raise ReadError('missing data')
 
-        if max_rows_in_msg > 0:
-            iterator = True
-
         return self._read(
             self._alias_backends(backend), table, query, columns, filter,
             group_by, limit, data_format, row_layout,
@@ -255,7 +258,7 @@ class ClientBase:
 
     def write(self, backend, table, dfs, expression='', condition='',
               labels=None,  max_rows_in_msg=0, index_cols=None,
-              save_mode='errorIfTableExists', partition_keys=None):
+              save_mode='createNewItemsOnly', partition_keys=None):
         """Writes data to a table or stream
 
         Parameters
@@ -289,8 +292,8 @@ class ClientBase:
             operation; by default, the DataFrame's index columns are used
         save_mode : str
             Save mode.
-            Optional values: errorIfTableExists (default), overwriteTable,
-             updateItem, overwriteItem, createNewItemsOnly
+            Optional values: createNewItemsOnly(default), overwriteTable,
+             updateItem, overwriteItem, errorIfTableExists
         partition_keys : []str
             Partition keys
             [Not supported in this version]

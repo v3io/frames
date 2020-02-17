@@ -110,6 +110,27 @@ func (suite *InferSchemaTestSuite) TestInferSchemaWhenTypesDontMatch() {
 	suite.Equal("Type string of 2 did not match type int of 3 for column age.", err.Error())
 }
 
+func (suite *InferSchemaTestSuite) TestInferSchemaWhenColumnIsIntAndFloat() {
+	keyField := ""
+	rowSet := []map[string]interface{}{
+		{"__name": "topper", "name": "topper", "animal": "pig", "age": 1},
+		{"__name": "rocky", "name": "rocky", "animal": "dog", "age": 5.3},
+		{"__name": "mocha", "name": "mocha", "animal": "dog", "age": 3},
+		{"__name": "scratchy", "name": "scratchy", "animal": "cat", "age": 6.2},
+	}
+	schema, err := schemaFromKeys(keyField, rowSet)
+	suite.Require().NoError(err)
+
+	expectedFields := []v3ioutils.OldSchemaField{
+		{Name: "name", Type: "string", Nullable: false},
+		{Name: "animal", Type: "string", Nullable: true},
+		{Name: "age", Type: "double", Nullable: true},
+	}
+	concreteSchema := schema.(*v3ioutils.OldV3ioSchema)
+	suite.Equal("name", concreteSchema.Key)
+	suite.ElementsMatch(expectedFields, concreteSchema.Fields)
+}
+
 func (suite *InferSchemaTestSuite) TestInferSchemaWithSortingKey() {
 	expectedFields := []v3ioutils.OldSchemaField{
 		{Name: "name", Type: "string", Nullable: false},

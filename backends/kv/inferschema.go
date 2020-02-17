@@ -32,6 +32,11 @@ import (
 	"github.com/v3io/v3io-go/pkg/dataplane"
 )
 
+var (
+	intType   = reflect.TypeOf(1)
+	floatType = reflect.TypeOf(1.0)
+)
+
 func (b *Backend) inferSchema(request *frames.ExecRequest) error {
 
 	container, table, err := b.newConnection(request.Proto.Session, request.Password.Get(), request.Token.Get(), request.Proto.Table, true)
@@ -97,7 +102,14 @@ func schemaFromKeys(keyField string, rowSet []map[string]interface{}) (v3ioutils
 				previousType := reflect.TypeOf(previousValue)
 				currentType := reflect.TypeOf(attrValue)
 				if previousType != currentType {
-					return nil, errors.Errorf("Type %v of %v did not match type %v of %v for column %s.", previousType, previousValue, currentType, attrValue, attrName)
+					// if one value is float and the other is int, convert the value to float to infer this field as float
+					if previousType == floatType && currentType == intType {
+						attrValue = float64(attrValue.(int))
+					} else if previousType == intType && currentType == floatType {
+						// continue to set the `columnNameToValue` to float
+					} else {
+						return nil, errors.Errorf("Type %v of %v did not match type %v of %v for column %s.", previousType, previousValue, currentType, attrValue, attrName)
+					}
 				}
 			}
 			columnNameToValue[attrName] = attrValue

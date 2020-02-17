@@ -144,6 +144,7 @@ type FrameIterator interface {
 type FrameAppender interface {
 	Add(frame Frame) error
 	WaitForComplete(timeout time.Duration) error
+	Close()
 }
 
 // ReadRequest is a read/query request
