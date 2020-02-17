@@ -29,21 +29,13 @@ from v3io_frames.pbutils import df2msg
 here = dirname(abspath(__file__))
 
 
-class patch_requests:
-    orig_requests = v3f.http.requests
+class RequestSessionMock(object):
 
     def __init__(self, data=None):
         self.requests = []
         self.data = [] if data is None else data
         self.write_request = None
         self.write_frames = []
-
-    def __enter__(self):
-        v3f.http.requests = self
-        return self
-
-    def __exit__(self, exc_type=None, exc_val=None, tb=None):
-        v3f.http.requests = self.orig_requests
 
     def post(self, *args, **kw):
         self.requests.append((args, kw))
@@ -104,21 +96,22 @@ def test_read():
     ]
 
     client = new_test_client(address=address)
-    with patch_requests(data) as patch:
-        dfs = client.read(
-            backend='backend', table='table', query=query, iterator=True)
 
-    assert len(patch.requests) == 1
+    # mock the session
+    client._session = RequestSessionMock(data)
+    dfs = client.read(
+        backend='backend', table='table', query=query, iterator=True)
 
-    args, kw = patch.requests[0]
+    assert len(client._session.requests) == 1
+
+    args, kw = client._session.requests[0]
     assert args == (address + '/read',)
 
     df = pd.concat(dfs)
     assert len(df) == 6
     assert list(df.columns) == ['x', 'y']
 
-    with patch_requests(data) as patch:
-        df = client.read(backend='backend', query=query, iterator=False)
+    df = client.read(backend='backend', query=query, iterator=False)
     assert isinstance(df, pd.DataFrame), 'iterator=False return'
 
 

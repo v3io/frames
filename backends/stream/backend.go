@@ -31,7 +31,6 @@ import (
 	"github.com/v3io/frames/backends"
 	"github.com/v3io/frames/v3ioutils"
 	v3io "github.com/v3io/v3io-go/pkg/dataplane"
-	"github.com/valyala/fasthttp"
 )
 
 // Backend is a tsdb backend
@@ -39,18 +38,17 @@ type Backend struct {
 	backendConfig *frames.BackendConfig
 	framesConfig  *frames.Config
 	logger        logger.Logger
-	httpClient    *fasthttp.Client
+	v3ioContext   v3io.Context
 }
 
 // NewBackend return a new v3io stream backend
-func NewBackend(logger logger.Logger, httpClient *fasthttp.Client, cfg *frames.BackendConfig, framesConfig *frames.Config) (frames.DataBackend, error) {
+func NewBackend(logger logger.Logger, v3ioContext v3io.Context, cfg *frames.BackendConfig, framesConfig *frames.Config) (frames.DataBackend, error) {
 
-	frames.InitBackendDefaults(cfg, framesConfig)
 	newBackend := Backend{
 		logger:        logger.GetChild("stream"),
 		backendConfig: cfg,
 		framesConfig:  framesConfig,
-		httpClient:    httpClient,
+		v3ioContext:   v3ioContext,
 	}
 
 	return &newBackend, nil
@@ -163,13 +161,11 @@ func (b *Backend) newConnection(session *frames.Session, password string, token 
 
 	session.Container = containerName
 	container, err := v3ioutils.NewContainer(
-		b.httpClient,
+		b.v3ioContext,
 		session,
 		password,
 		token,
-		b.logger,
-		b.backendConfig.Workers,
-	)
+		b.logger)
 
 	return container, newPath, err
 }

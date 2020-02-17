@@ -6,6 +6,7 @@ require (
 	github.com/ghodss/yaml v1.0.0
 	github.com/golang/groupcache v0.0.0-20191027212112-611e8accdfc9
 	github.com/golang/protobuf v1.2.0
+	github.com/nuclio/errors v0.0.1
 	github.com/nuclio/logger v0.0.1
 	github.com/nuclio/zap v0.0.2
 	github.com/pkg/errors v0.8.1
