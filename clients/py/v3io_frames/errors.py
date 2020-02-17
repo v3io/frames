@@ -14,7 +14,7 @@
 
 __all__ = [
     'Error', 'BadRequest', 'MessageError', 'ReadError', 'CreateError',
-    'DeleteError',
+    'DeleteError', 'ExecuteError', 'WriteError'
 ]
 
 

@@ -24,7 +24,7 @@ upload:
 clean_pyc:
 	find . -name '*.pyc' -exec rm {} \;
 
-.PHONY: flask8
+.PHONY: flake8
 flake8:
 	# --ignore=E121,E123,E126,E226,E24,E704 is the default.
 	# Additionally, E501 ignores long lines.

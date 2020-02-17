@@ -20,13 +20,12 @@ import numpy as np
 import pandas as pd
 import pytz
 from google.protobuf.message import Message
-from pandas.core.dtypes.dtypes import CategoricalDtype
 from pandas.api.types import is_datetime64_any_dtype as is_datetime
+from pandas.core.dtypes.dtypes import CategoricalDtype
 
 from . import frames_pb2 as fpb
 from .dtypes import dtype_of
 from .errors import MessageError, WriteError
-
 
 pb_list_types = (
     message.RepeatedCompositeContainer,
@@ -133,16 +132,22 @@ def msg2df(frame, frame_factory, columns=None, do_reorder=True):
 
 
 def col2series(col, index):
+    current_dtype = ""
     if col.dtype == fpb.BOOLEAN:
         data = col.bools
+        current_dtype = "bool"
     elif col.dtype == fpb.FLOAT:
         data = col.floats
+        current_dtype = "float"
     elif col.dtype == fpb.INTEGER:
         data = col.ints
+        current_dtype = "int"
     elif col.dtype == fpb.STRING:
         data = col.strings
+        current_dtype = "object"
     elif col.dtype == fpb.TIME:
         data = [pd.Timestamp(t, unit='ns') for t in col.times]
+        current_dtype = "datetime64[ns, UTC]"
     else:
         raise MessageError('unknown dtype - {}'.format(col.dtype))
 
@@ -153,7 +158,7 @@ def col2series(col, index):
                              index=index,
                              name=col.name)
     else:
-        data = pd.Series(data, index=index, name=col.name)
+        data = pd.Series(data, index=index, name=col.name, dtype=current_dtype)
 
     return data
 
