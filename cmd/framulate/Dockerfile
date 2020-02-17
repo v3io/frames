@@ -24,8 +24,8 @@ FROM golang:1.12-stretch as build
 WORKDIR /frames
 COPY . .
 ARG FRAMES_VERSION=unknown
-RUN go build -ldflags="-X main.Version=${FRAMES_VERSION}" ./cmd/framulate
-RUN cp framulate /usr/local/bin
+RUN go build -ldflags="-X main.Version=${FRAMES_VERSION}" -o framulate-bin ./cmd/framulate
+RUN cp framulate-bin /usr/local/bin/framulate
 
 FROM debian:jessie-slim
 COPY --from=build /usr/local/bin/framulate /usr/local/bin

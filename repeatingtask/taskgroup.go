@@ -2,6 +2,8 @@ package repeatingtask
 
 import (
 	"fmt"
+	"sync"
+
 	"github.com/nuclio/errors"
 )
 
@@ -37,11 +39,20 @@ func (tge *TaskGroupErrors) Error() error {
 }
 
 type TaskGroup struct {
-	tasks []*Task
+	tasks     []*Task
+	tasksLock sync.Locker
+}
+
+func NewTaskGroup() (*TaskGroup, error) {
+	return &TaskGroup{
+		tasksLock: &sync.Mutex{},
+	}, nil
 }
 
 func (t *TaskGroup) AddTask(task *Task) error {
+	t.tasksLock.Lock()
 	t.tasks = append(t.tasks, task)
+	t.tasksLock.Unlock()
 
 	return nil
 }

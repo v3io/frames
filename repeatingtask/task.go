@@ -59,6 +59,7 @@ type Task struct {
 	Cookie         interface{}
 
 	repititionIndex        uint64
+	numCompletions         uint64
 	numInstancesInTaskChan uint64
 	lock                   sync.Locker
 }
