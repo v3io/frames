@@ -58,17 +58,12 @@ func (kv *Backend) Read(request *frames.ReadRequest) (frames.FrameIterator, erro
 		return nil, err
 	}
 
-	numberOfWorkers := kv.numWorkers
-	if len(request.Proto.ShardingKeys) > 0 {
-		numberOfWorkers = len(request.Proto.ShardingKeys)
-	}
 	// Create a new platform (v3io) connection with specific RequestChannel length
-	container, tablePath, err = kv.newConnectionWithRequestChannelLength(request.Proto.Session,
+	container, tablePath, err = kv.newConnection(request.Proto.Session,
 		request.Password.Get(),
 		request.Token.Get(),
 		request.Proto.Table,
-		true,
-		len(partitions)*numberOfWorkers)
+		true)
 
 	input := v3io.GetItemsInput{Filter: request.Proto.Filter, AttributeNames: columns, SortKeyRangeStart: request.Proto.SortKeyRangeStart, SortKeyRangeEnd: request.Proto.SortKeyRangeEnd}
 	kv.logger.DebugWith("read input", "input", input, "request", request)
