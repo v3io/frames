@@ -22,6 +22,7 @@ package kv
 
 import (
 	"fmt"
+	"github.com/pkg/errors"
 	"net/http"
 	"strings"
 	"time"
@@ -210,6 +211,15 @@ func (a *Appender) Add(frame frames.Frame) error {
 
 		if err != nil {
 			return err
+		}
+
+		if indexName != "" && keyVal == "" {
+			a.logger.Error("invalid key. %q should not be empty", indexName)
+			return errors.Errorf("invalid key. %q should not be empty", indexName)
+		}
+		if sortingKeyName != "" && sortingKeyVal == "" {
+			a.logger.Error("invalid sorting key. %q should not be empty", sortingKeyName)
+			return errors.Errorf("invalid sorting key. %q should not be empty", sortingKeyName)
 		}
 
 		var condition string
