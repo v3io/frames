@@ -33,7 +33,7 @@ import (
 	v3io "github.com/v3io/v3io-go/pkg/dataplane"
 )
 
-// Backend is a tsdb backend
+// Backend is a streaming backend
 type Backend struct {
 	backendConfig *frames.BackendConfig
 	framesConfig  *frames.Config
@@ -41,7 +41,7 @@ type Backend struct {
 	v3ioContext   v3io.Context
 }
 
-// NewBackend return a new v3io stream backend
+// NewBackend returns a new platform ("v3io") streaming backend
 func NewBackend(logger logger.Logger, v3ioContext v3io.Context, cfg *frames.BackendConfig, framesConfig *frames.Config) (frames.DataBackend, error) {
 
 	newBackend := Backend{
@@ -54,17 +54,17 @@ func NewBackend(logger logger.Logger, v3ioContext v3io.Context, cfg *frames.Back
 	return &newBackend, nil
 }
 
-// Create creates a table
+// Create creates a stream
 func (b *Backend) Create(request *frames.CreateRequest) error {
 
-	// TODO: check if Stream exist, if it already has the desired params can silently ignore, may need a -silent flag
+	// TODO: Check whether Stream exists; if it already has the desired params can silently ignore, may need a -silent flag
 
 	shards := int64(1)
 
 	if request.Proto.Shards != 0 {
 		shards = request.Proto.Shards
 		if shards < 1 {
-			return errors.Errorf("Shards attribute must be a positive integer (got %v)", shards)
+			return errors.Errorf("'shards' must be a positive integer (got %v)", shards)
 		}
 	}
 
@@ -72,7 +72,7 @@ func (b *Backend) Create(request *frames.CreateRequest) error {
 	if request.Proto.RetentionHours != 0 {
 		retention = request.Proto.RetentionHours
 		if retention < 1 {
-			return errors.Errorf("retention_hours attribute must be a positive integer (got %v)", retention)
+			return errors.Errorf("'retention_hours' must be a positive integer (got %v)", retention)
 		}
 	}
 
@@ -113,14 +113,14 @@ func (b *Backend) Exec(request *frames.ExecRequest) (frames.Frame, error) {
 	case "put":
 		return nil, b.put(request)
 	}
-	return nil, fmt.Errorf("Stream backend does not support commend - %s", cmd)
+	return nil, fmt.Errorf("streaming backend doesn't support execute command '%s'", cmd)
 }
 
 func (b *Backend) put(request *frames.ExecRequest) error {
 
 	varData, hasData := request.Proto.Args["data"]
 	if !hasData || request.Proto.Table == "" {
-		return fmt.Errorf("table name and data parameter must be specified")
+		return fmt.Errorf("missing a required parameter - 'table' (stream name) and/or 'data' argument (record data)")
 	}
 	data := varData.GetSval()
 
