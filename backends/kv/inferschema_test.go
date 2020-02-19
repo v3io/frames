@@ -173,6 +173,48 @@ func (suite *InferSchemaTestSuite) TestInferSchemaWithPrimaryKeyWithDot() {
 	suite.ElementsMatch(expectedFields, concreteSchema.Fields)
 }
 
+func (suite *InferSchemaTestSuite) TestInferSchemaWithNumericColumns() {
+	expectedFields := []v3ioutils.OldSchemaField{
+		{Name: "idx", Type: "long", Nullable: false},
+		{Name: "col1", Type: "long", Nullable: true},
+		{Name: "col2", Type: "long", Nullable: true},
+	}
+
+	keyField := ""
+	rowSet := []map[string]interface{}{
+		{"__name": "0", "idx": 0, "col1": 1, "col2": 3},
+		{"__name": "1", "idx": 1, "col1": 2, "col2": 4},
+		{"__name": "2", "idx": 2, "col1": 3, "col2": 6},
+	}
+	schema, err := schemaFromKeys(keyField, rowSet)
+	suite.NoError(err)
+	concreteSchema := schema.(*v3ioutils.OldV3ioSchema)
+	suite.Equal("idx", concreteSchema.Key)
+	suite.Equal("", concreteSchema.SortingKey)
+	suite.ElementsMatch(expectedFields, concreteSchema.Fields)
+}
+
+func (suite *InferSchemaTestSuite) TestInferSchemaWithSortingKeyAndNumericColumns() {
+	expectedFields := []v3ioutils.OldSchemaField{
+		{Name: "id", Type: "long", Nullable: false},
+		{Name: "animal", Type: "string", Nullable: false},
+		{Name: "age", Type: "long", Nullable: true},
+	}
+
+	keyField := ""
+	rowSet := []map[string]interface{}{
+		{"__name": "1.dog", "id": 1, "animal": "dog", "age": 2},
+		{"__name": "2.dog", "id": 2, "animal": "dog", "age": 3},
+		{"__name": "3.cat", "id": 3, "animal": "cat", "age": 9},
+	}
+	schema, err := schemaFromKeys(keyField, rowSet)
+	suite.NoError(err)
+	concreteSchema := schema.(*v3ioutils.OldV3ioSchema)
+	suite.Equal("id", concreteSchema.Key)
+	suite.Equal("animal", concreteSchema.SortingKey)
+	suite.ElementsMatch(expectedFields, concreteSchema.Fields)
+}
+
 func TestInferSchemaTestSuite(t *testing.T) {
 	suite.Run(t, new(InferSchemaTestSuite))
 }

@@ -37,7 +37,7 @@ func (streamSuite *StreamTestSuite) generateSampleFrame(t testing.TB) frames.Fra
 	times := make([]time.Time, size)
 	end := time.Now().Truncate(time.Hour)
 	for i := range times {
-		times[i] = end.Add(-time.Duration(size - i) * time.Second * 300)
+		times[i] = end.Add(-time.Duration(size-i) * time.Second * 300)
 	}
 
 	index, err := frames.NewSliceColumn("idx", times)
@@ -70,10 +70,10 @@ func (streamSuite *StreamTestSuite) TestAll() {
 
 	streamSuite.T().Log("create")
 	req := &pb.CreateRequest{
-		Backend: streamSuite.backendName,
-		Table:   table,
+		Backend:        streamSuite.backendName,
+		Table:          table,
 		RetentionHours: 48,
-		Shards: 1,
+		Shards:         1,
 	}
 
 	if err := streamSuite.client.Create(req); err != nil {

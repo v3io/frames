@@ -116,18 +116,20 @@ func schemaFromKeys(keyField string, rowSet []map[string]interface{}) (v3ioutils
 			if _, ok = columnCanBeFullKey[attrName]; !ok {
 				columnCanBeFullKey[attrName] = true
 			}
-			columnCanBeFullKey[attrName] = columnCanBeFullKey[attrName] && attrValue == keyValue
+
+			attrValueAsString := fmt.Sprintf("%v", attrValue)
+			columnCanBeFullKey[attrName] = columnCanBeFullKey[attrName] && attrValueAsString == keyValue
 			if primaryKeyValue != "" {
 				if _, ok = columnCanBePrimaryKey[attrName]; !ok {
 					columnCanBePrimaryKey[attrName] = true
 				}
-				columnCanBePrimaryKey[attrName] = columnCanBePrimaryKey[attrName] && attrValue == primaryKeyValue
+				columnCanBePrimaryKey[attrName] = columnCanBePrimaryKey[attrName] && attrValueAsString == primaryKeyValue
 			}
 			if sortingKeyValue != "" {
 				if _, ok = columnCanBeSortingKey[attrName]; !ok {
 					columnCanBeSortingKey[attrName] = true
 				}
-				columnCanBeSortingKey[attrName] = columnCanBeSortingKey[attrName] && attrValue == sortingKeyValue
+				columnCanBeSortingKey[attrName] = columnCanBeSortingKey[attrName] && attrValueAsString == sortingKeyValue
 			}
 		}
 	}

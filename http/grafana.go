@@ -378,7 +378,7 @@ func prepareKVColumns(frame frames.Frame, headers []string) ([]tableColumn, erro
 	return retVal, nil
 }
 
-func findColumnOrIndices(frame frames.Frame, col string)(frames.Column, error) {
+func findColumnOrIndices(frame frames.Frame, col string) (frames.Column, error) {
 	if column, err := frame.Column(col); err != nil {
 		if len(frame.Indices()) > 0 && frame.Indices()[0].Name() == col {
 			return frame.Indices()[0], nil

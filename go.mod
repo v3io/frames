@@ -10,6 +10,7 @@ require (
 	github.com/nuclio/logger v0.0.1
 	github.com/nuclio/zap v0.0.2
 	github.com/pkg/errors v0.8.1
+	github.com/russross/blackfriday v1.5.2+incompatible // indirect
 	github.com/stretchr/testify v1.4.0
 	github.com/v3io/v3io-go v0.0.5-0.20191205125653-9003ae83f0b6
 	github.com/v3io/v3io-tsdb v0.9.14
