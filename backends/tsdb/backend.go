@@ -29,12 +29,11 @@ import (
 	"time"
 	"unsafe"
 
-	"github.com/v3io/frames"
-	"github.com/v3io/frames/backends"
-
 	"github.com/golang/groupcache/lru"
 	"github.com/nuclio/logger"
 	"github.com/pkg/errors"
+	"github.com/v3io/frames"
+	"github.com/v3io/frames/backends"
 	"github.com/v3io/frames/v3ioutils"
 	v3io "github.com/v3io/v3io-go/pkg/dataplane"
 	"github.com/v3io/v3io-tsdb/pkg/config"
@@ -264,11 +263,12 @@ func (b *Backend) Delete(request *frames.DeleteRequest) error {
 		}
 	}
 
-	err = adapter.DeleteDB(delAll, false, start, end)
-	if err == nil {
-		return err
-	}
-
+	params := tsdb.DeleteParams{DeleteAll: delAll,
+		From:    start,
+		To:      end,
+		Filter:  request.Proto.Filter,
+		Metrics: request.Proto.Metrics}
+	err = adapter.DeleteDB(params)
 	return err
 
 }

@@ -104,7 +104,8 @@ func (b *Backend) updateItem(request *frames.ExecRequest) error {
 	}
 
 	b.logger.DebugWith("update item", "path", path, "key", key, "expr", expr, "condition", condition)
-	return container.UpdateItemSync(&v3io.UpdateItemInput{Path: path + key, Expression: &expr, Condition: condition})
+	_, err = container.UpdateItemSync(&v3io.UpdateItemInput{Path: path + key, Expression: &expr, Condition: condition})
+	return err
 }
 
 /*func (b *Backend) newContainer(session *frames.Session) (v3io.Container, error) {
