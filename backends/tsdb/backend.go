@@ -78,7 +78,7 @@ func NewBackend(logger logger.Logger, v3ioContext v3io.Context, cfg *frames.Back
 func (b *Backend) newConfig(session *frames.Session) *config.V3ioConfig {
 
 	cfg := &config.V3ioConfig{
-		WebApiEndpoint:               session.Url,
+		WebAPIEndpoint:               session.Url,
 		Container:                    session.Container,
 		Username:                     session.User,
 		Password:                     session.Password,
