@@ -41,7 +41,7 @@ func (suite *InferSchemaTestSuite) TestInferSchemaWhenNoColumnMatches() {
 	}
 	_, err := schemaFromKeys(keyField, rowSet)
 	suite.Error(err)
-	suite.Equal("Could not determine which column is the table key because no column matched key attribute.", err.Error())
+	suite.Equal("could not determine which column is the table's primary-key attribute, because no column matches the primary-key attribute", err.Error())
 }
 
 func (suite *InferSchemaTestSuite) TestInferSchemaWhenTwoColumnsMatch() {
@@ -53,7 +53,7 @@ func (suite *InferSchemaTestSuite) TestInferSchemaWhenTwoColumnsMatch() {
 	}
 	_, err := schemaFromKeys(keyField, rowSet)
 	suite.Error(err)
-	suite.Equal("Could not determine which column is the table key because 2 columns (name, second_name) matched key attribute.", err.Error())
+	suite.Equal("could not determine which column is the table's primary-key attribute, because 2 columns (name, second_name) match the primary-key attribute", err.Error())
 }
 
 func (suite *InferSchemaTestSuite) TestInferSchemaWhenTwoColumnsMatchButKeyIsProvided() {
@@ -107,7 +107,7 @@ func (suite *InferSchemaTestSuite) TestInferSchemaWhenTypesDontMatch() {
 	}
 	_, err := schemaFromKeys(keyField, rowSet)
 	suite.Error(err)
-	suite.Equal("Type string of 2 did not match type int of 3 for column age.", err.Error())
+	suite.Equal("type 'string' of value '2' doesn't match type 'int' of value '3' for column 'age'.", err.Error())
 }
 
 func (suite *InferSchemaTestSuite) TestInferSchemaWhenColumnIsIntAndFloat() {

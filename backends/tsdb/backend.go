@@ -36,39 +36,40 @@ import (
 	"github.com/nuclio/logger"
 	"github.com/pkg/errors"
 	"github.com/v3io/frames/v3ioutils"
+	v3io "github.com/v3io/v3io-go/pkg/dataplane"
 	"github.com/v3io/v3io-tsdb/pkg/config"
 	"github.com/v3io/v3io-tsdb/pkg/pquerier"
 	"github.com/v3io/v3io-tsdb/pkg/tsdb"
 	"github.com/v3io/v3io-tsdb/pkg/tsdb/schema"
 	tsdbutils "github.com/v3io/v3io-tsdb/pkg/utils"
-	"github.com/valyala/fasthttp"
 )
 
-// Backend is a tsdb backend
+// Backend is a TSDB backend
 type Backend struct {
-	queriers      *lru.Cache
-	queriersLock  sync.Mutex
-	backendConfig *frames.BackendConfig
-	framesConfig  *frames.Config
-	logger        logger.Logger
-	httpClient    *fasthttp.Client
+	queriers          *lru.Cache
+	queriersLock      sync.Mutex
+	backendConfig     *frames.BackendConfig
+	framesConfig      *frames.Config
+	logger            logger.Logger
+	v3ioContext       v3io.Context
+	inactivityTimeout time.Duration
 }
 
-// NewBackend return a new tsdb backend
-func NewBackend(logger logger.Logger, httpClient *fasthttp.Client, cfg *frames.BackendConfig, framesConfig *frames.Config) (frames.DataBackend, error) {
+// NewBackend returns a new TSDB backend
+func NewBackend(logger logger.Logger, v3ioContext v3io.Context, cfg *frames.BackendConfig, framesConfig *frames.Config) (frames.DataBackend, error) {
 
-	frames.InitBackendDefaults(cfg, framesConfig)
 	querierCacheSize := framesConfig.QuerierCacheSize
 	if querierCacheSize == 0 {
 		querierCacheSize = 64
 	}
 
 	newBackend := Backend{
-		queriers:      lru.New(querierCacheSize),
-		logger:        logger.GetChild("tsdb"),
-		backendConfig: cfg,
-		framesConfig:  framesConfig,
-		httpClient:    httpClient,
+		queriers:          lru.New(querierCacheSize),
+		logger:            logger.GetChild("tsdb"),
+		backendConfig:     cfg,
+		framesConfig:      framesConfig,
+		v3ioContext:       v3ioContext,
+		inactivityTimeout: 0,
 	}
 
 	return &newBackend, nil
@@ -77,13 +78,14 @@ func NewBackend(logger logger.Logger, httpClient *fasthttp.Client, cfg *frames.B
 func (b *Backend) newConfig(session *frames.Session) *config.V3ioConfig {
 
 	cfg := &config.V3ioConfig{
-		WebApiEndpoint: session.Url,
-		Container:      session.Container,
-		Username:       session.User,
-		Password:       session.Password,
-		AccessKey:      session.Token,
-		Workers:        b.backendConfig.Workers,
-		LogLevel:       b.framesConfig.Log.Level,
+		WebApiEndpoint:               session.Url,
+		Container:                    session.Container,
+		Username:                     session.User,
+		Password:                     session.Password,
+		AccessKey:                    session.Token,
+		Workers:                      b.backendConfig.Workers,
+		LogLevel:                     b.framesConfig.Log.Level,
+		LoadPartitionsFromSchemaAttr: b.framesConfig.TsdbLoadPartitionsFromSchemaAttr,
 	}
 	return config.WithDefaults(cfg)
 }
@@ -100,20 +102,18 @@ func (b *Backend) newAdapter(session *frames.Session, password string, token str
 	cfg := b.newConfig(session)
 
 	container, err := v3ioutils.NewContainer(
-		b.httpClient,
+		b.v3ioContext,
 		session,
 		password,
 		token,
-		b.logger,
-		b.backendConfig.V3ioGoWorkers,
-	)
+		b.logger)
 
 	if err != nil {
 		return nil, err
 	}
 
 	cfg.TablePath = newPath
-	b.logger.DebugWith("tsdb config", "config", cfg)
+	b.logger.DebugWith("TSDB configuration", "config", cfg)
 	adapter, err := tsdb.NewV3ioAdapter(cfg, container, b.logger)
 	if err != nil {
 		return nil, err
@@ -157,7 +157,7 @@ func (b *Backend) GetQuerier(session *frames.Session, password string, token str
 	if !found {
 		b.queriersLock.Lock()
 		defer b.queriersLock.Unlock()
-		qry, found = b.queriers.Get(key) // Double-checked locking
+		qry, found = b.queriers.Get(key) // Double-check locking
 		if !found {
 			var err error
 			adapter, err := b.newAdapter(session, password, token, path)
@@ -175,7 +175,7 @@ func (b *Backend) GetQuerier(session *frames.Session, password string, token str
 	return qry.(*pquerier.V3ioQuerier), nil
 }
 
-// Create creates a table
+// Create creates a TSDB table
 func (b *Backend) Create(request *frames.CreateRequest) error {
 
 	rate := request.Proto.Rate
@@ -202,10 +202,10 @@ func (b *Backend) Create(request *frames.CreateRequest) error {
 	cfg.AccessKey = request.Token.Get()
 
 	cfg.TablePath = path
-	dbSchema, err := schema.NewSchema(cfg, rate, aggregationGranularity, defaultRollups, "") // todo: support create table with cross label aggregates
+	dbSchema, err := schema.NewSchema(cfg, rate, aggregationGranularity, defaultRollups, "") // TODO: support create table with cross-label aggregates
 
 	if err != nil {
-		return errors.Wrap(err, "Failed to create a TSDB schema.")
+		return errors.Wrap(err, "failed to create a TSDB schema")
 	}
 
 	err = tsdb.CreateTSDB(cfg, dbSchema)
@@ -257,7 +257,7 @@ func (b *Backend) Delete(request *frames.DeleteRequest) error {
 
 // Exec executes a command
 func (b *Backend) Exec(request *frames.ExecRequest) (frames.Frame, error) {
-	return nil, fmt.Errorf("TSDB backend does not support Exec")
+	return nil, fmt.Errorf("TSDB backend doesn't support the 'execute' command")
 }
 
 func (b *Backend) ignoreCreateExists(request *frames.CreateRequest, err error) bool {
@@ -265,12 +265,12 @@ func (b *Backend) ignoreCreateExists(request *frames.CreateRequest, err error) b
 		return false
 	}
 
-	// TODO: Ask tsdb to return specific error value, this is brittle
-	return err == nil || strings.Contains(err.Error(), "A TSDB table already exists")
+	// TODO: Ask TSDB to return  specific error value; this is brittle
+	return err == nil || strings.Contains(err.Error(), "TSDB table already exists")
 }
 
 func (b *Backend) isSchemaNotFoundError(err error) bool {
-	return strings.Contains(err.Error(), "No TSDB schema file found")
+	return strings.Contains(err.Error(), "no TSDB schema file found")
 }
 
 func init() {

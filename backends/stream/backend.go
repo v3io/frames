@@ -31,42 +31,40 @@ import (
 	"github.com/v3io/frames/backends"
 	"github.com/v3io/frames/v3ioutils"
 	v3io "github.com/v3io/v3io-go/pkg/dataplane"
-	"github.com/valyala/fasthttp"
 )
 
-// Backend is a tsdb backend
+// Backend is a streaming backend
 type Backend struct {
 	backendConfig *frames.BackendConfig
 	framesConfig  *frames.Config
 	logger        logger.Logger
-	httpClient    *fasthttp.Client
+	v3ioContext   v3io.Context
 }
 
-// NewBackend return a new v3io stream backend
-func NewBackend(logger logger.Logger, httpClient *fasthttp.Client, cfg *frames.BackendConfig, framesConfig *frames.Config) (frames.DataBackend, error) {
+// NewBackend returns a new platform ("v3io") streaming backend
+func NewBackend(logger logger.Logger, v3ioContext v3io.Context, cfg *frames.BackendConfig, framesConfig *frames.Config) (frames.DataBackend, error) {
 
-	frames.InitBackendDefaults(cfg, framesConfig)
 	newBackend := Backend{
 		logger:        logger.GetChild("stream"),
 		backendConfig: cfg,
 		framesConfig:  framesConfig,
-		httpClient:    httpClient,
+		v3ioContext:   v3ioContext,
 	}
 
 	return &newBackend, nil
 }
 
-// Create creates a table
+// Create creates a stream
 func (b *Backend) Create(request *frames.CreateRequest) error {
 
-	// TODO: check if Stream exist, if it already has the desired params can silently ignore, may need a -silent flag
+	// TODO: Check whether Stream exists; if it already has the desired params can silently ignore, may need a -silent flag
 
 	shards := int64(1)
 
 	if request.Proto.Shards != 0 {
 		shards = request.Proto.Shards
 		if shards < 1 {
-			return errors.Errorf("Shards attribute must be a positive integer (got %v)", shards)
+			return errors.Errorf("'shards' must be a positive integer (got %v)", shards)
 		}
 	}
 
@@ -74,7 +72,7 @@ func (b *Backend) Create(request *frames.CreateRequest) error {
 	if request.Proto.RetentionHours != 0 {
 		retention = request.Proto.RetentionHours
 		if retention < 1 {
-			return errors.Errorf("retention_hours attribute must be a positive integer (got %v)", retention)
+			return errors.Errorf("'retention_hours' must be a positive integer (got %v)", retention)
 		}
 	}
 
@@ -115,14 +113,14 @@ func (b *Backend) Exec(request *frames.ExecRequest) (frames.Frame, error) {
 	case "put":
 		return nil, b.put(request)
 	}
-	return nil, fmt.Errorf("Stream backend does not support commend - %s", cmd)
+	return nil, fmt.Errorf("streaming backend doesn't support execute command '%s'", cmd)
 }
 
 func (b *Backend) put(request *frames.ExecRequest) error {
 
 	varData, hasData := request.Proto.Args["data"]
 	if !hasData || request.Proto.Table == "" {
-		return fmt.Errorf("table name and data parameter must be specified")
+		return fmt.Errorf("missing a required parameter - 'table' (stream name) and/or 'data' argument (record data)")
 	}
 	data := varData.GetSval()
 
@@ -163,13 +161,11 @@ func (b *Backend) newConnection(session *frames.Session, password string, token 
 
 	session.Container = containerName
 	container, err := v3ioutils.NewContainer(
-		b.httpClient,
+		b.v3ioContext,
 		session,
 		password,
 		token,
-		b.logger,
-		b.backendConfig.Workers,
-	)
+		b.logger)
 
 	return container, newPath, err
 }

@@ -67,7 +67,7 @@ with open('README.md') as fp:
 setup(
     name='v3io_frames',
     version=version(),
-    description='Client for v3io streaming data',
+    description='Unified multi-module DataFrames client for the Iguazio Data Science Platform',
     long_description=long_desc,
     long_description_content_type='text/markdown',
     author='Miki Tebeka',

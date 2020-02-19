@@ -32,9 +32,9 @@ SESSION_ENV_KEY = 'V3IO_SESSION'
 _known_protocols = {'grpc', 'http', 'https'}
 
 
-def Client(address='',  container='', data_url='', path='', user='',
+def Client(address='', data_url='', container='', path='', user='',
            password='', token='', session_id='', frame_factory=pd.DataFrame,
-           concat=pd.concat):
+           concat=pd.concat, persist_connection=False):
     """Creates a new Frames client object
     NOTE: User authentication must be done using any of the following methods:
     setting the `token` parameter or the V3IO_ACCESS_KEY environment variable
@@ -46,25 +46,25 @@ def Client(address='',  container='', data_url='', path='', user='',
     ----------
     address (Required) : str
         Address of the Frames service (framesd). Use the grpc:// prefix for
-        gRPC (default; recommended) or the http:// prefix for HTTP.
-        Use `framesd:8081` (gRPC; recommended) or `framesd:8080` for local
-        execution on an Iguazio Data Science Platform ("the platform").
+        gRPC (default; recommended) or the http:// prefix for HTTP; for local
+        execution on an Iguazio Data Science Platform ("the platform"), use
+        `framesd:8081` (gRPC; recommended) or `framesd:8080` (HTTP)
     data_url (Optional): str
         Web-API base URL for accessing the backend data; default: the base URL
-        configured for the Frames service, which is typically the HTTPS URL of
-        the web-APIs service of the parent platform tenant
+        configured for the Frames service; for the platform backends, this is
+        typically the HTTPS URL of the web-APIs service of the parent tenant
     container : str
         Container name (session info)
     path : str
         DEPRECATED
     user (Optional): str
-        Username of a platform user with permissions to access the backend
-        data; cannot be used with `token`
+        Username of a user with permissions to access the backend data; cannot
+        be used with `token`
     password (Required when `user` is set): str
         Password for the user configured in the `user` parameter; cannot be
         used with `token`
     token (Optional): str
-        Platform access key that allows access to the backend data; cannot be
+        Token (access key) that allows access to the backend data; cannot be
         used with `user` or `password`
     session_id : str
         Session ID; currently, unused
@@ -72,6 +72,13 @@ def Client(address='',  container='', data_url='', path='', user='',
         DataFrame factory; currently, pandas DataFrame (default)
     concat (Optional): function
         Function for concatenating DataFrames; default: pandas concat
+    persist_connection: bool
+        Whether the underlying connection should persist between requests.
+        This only effect http client today. grpc client persists channels.
+        Use True where the same client is rarely instantiated but requests
+        are made often. When True is used, due to the nature of the
+        underlying clients, rapid instantiation of the client
+        may cause failures (e.g. HTTP NewConnectionError)
 
     Return Value
     ----------
@@ -102,7 +109,8 @@ def Client(address='',  container='', data_url='', path='', user='',
                         environ.get('V3IO_ACCESS_KEY') or ''
 
     cls = gRPCClient if protocol == 'grpc' else HTTPClient
-    return cls(address, session, frame_factory=frame_factory, concat=concat)
+    return cls(address, session, persist_connection,
+               frame_factory=frame_factory, concat=concat)
 
 
 def session_from_env():
