@@ -22,5 +22,4 @@ require (
 
 replace (
 	github.com/xwb1989/sqlparser => github.com/v3io/sqlparser v0.0.0-20190306105200-4d7273501871
-	github.com/v3io/v3io-tsdb => github.com/imakhlin/v3io-tsdb v0.0.0-20200216212042-62ad830a966d
 )
