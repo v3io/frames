@@ -52,7 +52,8 @@ def concat_dfs(dfs, backend, frame_factory=pd.DataFrame, concat=pd.concat):
             names = list(dfs[0].index.names)
         else:
             names = [dfs[0].index.name]
-            had_index = 'index' in dfs[0].columns
+
+        had_index = 'index' in dfs[0].columns
 
     wdf = concat(
         [df.reset_index() for df in dfs],
