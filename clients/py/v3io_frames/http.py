@@ -107,7 +107,7 @@ class Client(ClientBase):
         dfs = self._iter_dfs(resp.raw, columns, get_raw, do_reorder=do_reorder)
 
         if not iterator and not get_raw:
-            return concat_dfs(dfs, self.frame_factory, self.concat)
+            return concat_dfs(dfs, backend, self.frame_factory, self.concat)
         return dfs
 
     @connection_error(WriteError)
