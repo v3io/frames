@@ -12,8 +12,9 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-import pandas as pd
 import warnings
+
+import pandas as pd
 
 from .pbutils import is_categorical_dtype
 
@@ -44,11 +45,11 @@ def concat_dfs(dfs, backend, frame_factory=pd.DataFrame, concat=pd.concat):
             else:
                 unique_names_set.update([df.index.name])
 
-        timeColumn = 'time'
-        unique_names_set.discard(timeColumn)
-        names = [timeColumn]
-        names.extend(sorted(unique_names_set))
-        had_index = had_index and 'index' in df.columns
+    time_column = 'time'
+    unique_names_set.discard(time_column)
+    names = [time_column]
+    names.extend(sorted(unique_names_set))
+    had_index = had_index and 'index' in df.columns
 
     wdf = concat(
         [df.reset_index() for df in dfs],
