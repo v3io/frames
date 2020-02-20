@@ -30,13 +30,7 @@ def concat_dfs(dfs, backend, frame_factory=pd.DataFrame, concat=pd.concat):
     align_categories(dfs)
 
     had_index = True
-    if backend != 'tsdb':
-        if hasattr(dfs[0].index, 'names'):
-            names = list(dfs[0].index.names)
-        else:
-            names = [dfs[0].index.name]
-            had_index = 'index' in dfs[0].columns
-    else:
+    if backend == 'tsdb':
         unique_names_set = set()
         for df in dfs:
             if hasattr(df.index, 'names'):
@@ -45,11 +39,20 @@ def concat_dfs(dfs, backend, frame_factory=pd.DataFrame, concat=pd.concat):
             else:
                 unique_names_set.update([df.index.name])
 
-    time_column = 'time'
-    unique_names_set.discard(time_column)
-    names = [time_column]
-    names.extend(sorted(unique_names_set))
-    had_index = had_index and 'index' in df.columns
+        time_column = 'time'
+        names = []
+        if time_column in unique_names_set:
+            unique_names_set.discard(time_column)
+            names.append(time_column)
+
+        names.extend(sorted(unique_names_set))
+        had_index = had_index and 'index' in df.columns
+    else:
+        if hasattr(dfs[0].index, 'names'):
+            names = list(dfs[0].index.names)
+        else:
+            names = [dfs[0].index.name]
+            had_index = 'index' in dfs[0].columns
 
     wdf = concat(
         [df.reset_index() for df in dfs],
