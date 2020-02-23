@@ -43,9 +43,9 @@ server_timeout = 30  # seconds
 
 extra_backends = [
     {'type': 'kv'},
+    {'type': 'nosql'},
     {'type': 'stream'},
     {'type': 'tsdb', 'workers': 16},
-    # {'type': 'nosql'},
 ]
 
 test_backends = ['csv']
