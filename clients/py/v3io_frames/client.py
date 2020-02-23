@@ -235,6 +235,8 @@ class ClientBase:
             True - return a DataFrames iterator;
             False (default except for get_raw=True) - return a single DataFrame
         get_raw (Optional) : bool
+            True to return the data in raw format instead as pandas DataFrames
+            [For internal use]
             False (default) - return the data in pandas DataFrames.
             True - return the data in raw-data frames using Cap'n Proto, which
                    boosts performance at the expense of pandas convenience.
