@@ -20,7 +20,6 @@ from .pbutils import is_categorical_dtype
 
 
 def concat_dfs(dfs, backend, frame_factory=pd.DataFrame, concat=pd.concat, multi_index=False):
-def concat_dfs(dfs, backend, frame_factory=pd.DataFrame, concat=pd.concat, multi_index=False):
     """Concat sequence of DataFrames, can handle MultiIndex frames."""
     dfs = list(dfs)
     if not dfs:
