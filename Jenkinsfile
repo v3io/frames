@@ -24,8 +24,8 @@ podTemplate(label: "${git_project}-${label}", inheritFrom: "jnlp-docker-golang-p
                                 container('python37') {
                                     dir("${github.BUILD_FOLDER}/src/github.com/${git_project_upstream_user}/${git_project}") {
                                         common.shellc("pip install pipenv")
-                                        sh "make python-deps"
-                                        sh "make test-py"
+                                        common.shell("make python-deps")
+                                        common.shell("make test-py")
                                     }
                                 }
                             },
@@ -45,8 +45,8 @@ podTemplate(label: "${git_project}-${label}", inheritFrom: "jnlp-docker-golang-p
                                 container('python37') {
                                     dir("${github.BUILD_FOLDER}/src/github.com/${git_project_upstream_user}/${git_project}") {
                                         common.shellc("pip install pipenv")
-                                        sh "make python-deps"
-                                        sh "make test-py"
+                                        common.shell("make python-deps")
+                                        common.shell("make test-py")
                                     }
                                 }
                             },
