@@ -13,12 +13,13 @@
 # limitations under the License.
 
 import json
-import requests
 import struct
 from base64 import b64decode
 from datetime import datetime
 from functools import partial, wraps
 from itertools import chain
+
+import requests
 from requests.exceptions import RequestException
 from urllib3.exceptions import HTTPError
 
@@ -107,7 +108,8 @@ class Client(ClientBase):
         dfs = self._iter_dfs(resp.raw, columns, get_raw, do_reorder=do_reorder)
 
         if not iterator and not get_raw:
-            return concat_dfs(dfs, backend, self.frame_factory, self.concat)
+            multi_index = kw.get('multi_index', False)
+            return concat_dfs(dfs, backend, self.frame_factory, self.concat, multi_index)
         return dfs
 
     @connection_error(WriteError)

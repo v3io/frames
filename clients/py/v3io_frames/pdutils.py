@@ -19,7 +19,8 @@ import pandas as pd
 from .pbutils import is_categorical_dtype
 
 
-def concat_dfs(dfs, backend, frame_factory=pd.DataFrame, concat=pd.concat):
+def concat_dfs(dfs, backend, frame_factory=pd.DataFrame, concat=pd.concat, multi_index=False):
+    print("--->> backend={}; multi_index={}".format(backend, multi_index))
     """Concat sequence of DataFrames, can handle MultiIndex frames."""
     dfs = list(dfs)
     if not dfs:
@@ -30,7 +31,7 @@ def concat_dfs(dfs, backend, frame_factory=pd.DataFrame, concat=pd.concat):
     align_categories(dfs)
 
     had_index = True
-    if backend == 'tsdb':
+    if multi_index and backend == 'tsdb':
         # with TSDB backend each dataframe might have different set of indices
         # therefore we should build a distinct set of indices in this case
         unique_names_set = set()
