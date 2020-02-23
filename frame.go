@@ -40,6 +40,10 @@ type frameImpl struct {
 	names   []string // Created on 1st call to Names
 }
 
+func (fr *frameImpl) NullValuesMap() []*pb.NullValuesMap {
+	return fr.msg.NullValues
+}
+
 // NewFrame returns a new Frame
 func NewFrame(columns []Column, indices []Column, labels map[string]interface{}) (Frame, error) {
 	return NewFrameWithNullValues(columns, indices, labels, nil)
