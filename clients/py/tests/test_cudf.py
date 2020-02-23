@@ -19,6 +19,7 @@ import pytest
 
 import v3io_frames as v3f
 from conftest import has_go
+from conftest import test_backends
 
 try:
     import cudf
@@ -56,8 +57,7 @@ def test_concat_categorical():
     df2 = cudf.DataFrame({'a': range(20, 23), 'b': range(60, 63)})
     df2['c'] = pd.Series(['b']*3, dtype='category')
 
-    backends = ['tsdb', 'csv', 'kv', 'http', 'grpc']
-    for backend in backends:
+    for backend in test_backends:
         df = v3f.pdutils.concat_dfs([df1, df2], backend, cudf.DataFrame, cudf.concat)
         assert len(df) == len(df1) + len(df2), 'bad concat size'
         dtype = df['c'].dtype

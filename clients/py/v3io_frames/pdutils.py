@@ -31,6 +31,8 @@ def concat_dfs(dfs, backend, frame_factory=pd.DataFrame, concat=pd.concat):
 
     had_index = True
     if backend == 'tsdb':
+        # with TSDB backend each dataframe might have different set of indices
+        # therefore we should build a distinct set of indices in this case
         unique_names_set = set()
         for df in dfs:
             if hasattr(df.index, 'names'):
@@ -42,6 +44,7 @@ def concat_dfs(dfs, backend, frame_factory=pd.DataFrame, concat=pd.concat):
         time_column = 'time'
         names = []
         if time_column in unique_names_set:
+            # move 'time' column to the first position
             unique_names_set.discard(time_column)
             names.append(time_column)
 

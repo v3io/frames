@@ -16,6 +16,7 @@ import numpy as np
 import pandas as pd
 
 from v3io_frames import pdutils, pbutils
+from conftest import test_backends
 
 
 def gen_dfs():
@@ -29,8 +30,7 @@ def gen_dfs():
 
 def test_concat_dfs():
     dfs = list(gen_dfs())
-    backends = ['tsdb', 'csv', 'kv', 'http', 'grpc']
-    for backend in backends:
+    for backend in test_backends:
         df = pdutils.concat_dfs(dfs, backend)
 
         assert len(df) == sum(len(d) for d in dfs), 'bad number of rows'
@@ -39,8 +39,7 @@ def test_concat_dfs():
 
 
 def test_empty_result():
-    backends = ['tsdb', 'csv', 'kv', 'http', 'grpc']
-    for backend in backends:
+    for backend in test_backends:
         df = pdutils.concat_dfs([], backend)
         assert df.empty, 'non-empty df'
 
@@ -63,8 +62,7 @@ def test_concat_dfs_categorical():
         'v': range(size, 2*size),
     })
 
-    backends = ['tsdb', 'csv', 'kv', 'http', 'grpc']
-    for backend in backends:
+    for backend in test_backends:
         df = pdutils.concat_dfs([df1, df2], backend)
         assert len(df) == len(df1) + len(df2), 'bad length'
         assert set(df.columns) == set(df1.columns), 'bad columns'
