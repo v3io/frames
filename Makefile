@@ -27,7 +27,7 @@ test-go:
 
 .PHONY: test-py
 test-py:
-	cd clients/py && $(MAKE) test
+	cd clients/py && make test
 
 .PHONY: wheel
 wheel:
@@ -72,7 +72,7 @@ update-go-deps:
 
 .PHONY: update-py-deps
 update-py-deps:
-	cd clients/py && $(MAKE) update-deps
+	cd clients/py && make update-deps
 	git add clients/py/Pipfile*
 	@echo "Don't forget to test & commit"
 
@@ -83,14 +83,14 @@ update-tsdb-deps:
 
 .PHONY: python-deps
 python-deps:
-	cd clients/py && $(MAKE) sync-deps
+	cd clients/py && make sync-deps
 
 .PHONY: bench
 bench:
 	@echo Go
-	$(MAKE) bench-go
+	make bench-go
 	@echo Python
-	$(MAKE) bench-py
+	make bench-py
 
 .PHONY: bench-go
 bench-go:
