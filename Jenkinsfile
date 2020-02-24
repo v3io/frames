@@ -23,9 +23,9 @@ podTemplate(label: "${git_project}-${label}", inheritFrom: "jnlp-docker-golang-p
                             'test-py': {
                                 container('python37') {
                                     dir("${github.BUILD_FOLDER}/src/github.com/${git_project_upstream_user}/${git_project}") {
-                                        common.shellc("pip install pipenv")
-                                        common.shellc("make python-deps")
-                                        common.shellc("make test-py")
+                                        sh "pip install pipenv"
+                                        sh "make python-deps"
+                                        sh "make test-py"
                                     }
                                 }
                             },
@@ -34,6 +34,13 @@ podTemplate(label: "${git_project}-${label}", inheritFrom: "jnlp-docker-golang-p
                                     dir("${github.BUILD_FOLDER}/src/github.com/${git_project_upstream_user}/${git_project}") {
                                         session = '{"url":"' + FRAMES_CI_URL + '","user":"' + FRAMES_CI_USERNAME + '","password":"' + FRAMES_CI_PASSWORD + '","container":"bigdata"}'
                                         common.shellc("V3IO_SESSION='${session}' make test-go")
+                                    }
+                                }
+                            },
+                            'make lint': {
+                                container('golang') {
+                                    dir("${github.BUILD_FOLDER}/src/github.com/${git_project_upstream_user}/${git_project}") {
+                                        sh "make lint"
                                     }
                                 }
                             }
@@ -45,8 +52,8 @@ podTemplate(label: "${git_project}-${label}", inheritFrom: "jnlp-docker-golang-p
                                 container('python37') {
                                     dir("${github.BUILD_FOLDER}/src/github.com/${git_project_upstream_user}/${git_project}") {
                                         common.shellc("pip install pipenv")
-                                        common.shellc("make python-deps")
-                                        common.shellc("make test-py")
+                                        sh "make python-deps"
+                                        sh "make test-py"
                                     }
                                 }
                             },
@@ -58,13 +65,13 @@ podTemplate(label: "${git_project}-${label}", inheritFrom: "jnlp-docker-golang-p
                                     }
                                 }
                             },
-//                            'make lint': {
-//                                container('golang') {
-//                                    dir("${github.BUILD_FOLDER}/src/github.com/${git_project_upstream_user}/${git_project}") {
-//                                        common.shellc("make lint")
-//                                    }
-//                                }
-//                            }
+                           'make lint': {
+                               container('golang') {
+                                   dir("${github.BUILD_FOLDER}/src/github.com/${git_project_upstream_user}/${git_project}") {
+                                       sh "make lint"
+                                   }
+                               }
+                           }
                     )
                 }
                 github.release(git_deploy_user, git_project, git_project_user, git_project_upstream_user, true, GIT_TOKEN) {
@@ -138,9 +145,9 @@ podTemplate(label: "${git_project}-${label}", inheritFrom: "jnlp-docker-golang-p
                                                         script: "echo ${github.DOCKER_TAG_VERSION} | awk -F - '{print \$1}'",
                                                         returnStdout: true
                                                 ).trim()
-                                                common.shellc("pip install pipenv")
-                                                common.shellc("make python-deps")
-                                                common.shellc("make test-py")
+                                                sh "pip install pipenv"
+                                                sh "make python-deps"
+                                                sh "make test-py"
                                                 try {
                                                     common.shellc("TRAVIS_REPO_SLUG=v3io/frames V3IO_PYPI_USER=${V3IO_PYPI_USER} V3IO_PYPI_PASSWORD=${V3IO_PYPI_PASSWORD} TRAVIS_TAG=${FRAMES_PYPI_VERSION} make pypi")
                                                 } catch (err) {
