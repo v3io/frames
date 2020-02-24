@@ -101,7 +101,7 @@ func (s *writeVerifyScenario) createTSDBTables(numTables int) error {
 	s.logger.DebugWith("Creating tables")
 
 	rateValue := pb.Value{}
-	rateValue.SetValue("1/h")
+	_ = rateValue.SetValue("1/h")
 
 	s.logger.DebugWith("Preparing tables", "numTables", numTables)
 
@@ -146,9 +146,8 @@ func (s *writeVerifyScenario) createTSDBTables(numTables int) error {
 					timestamps: []time.Time{time.Now()},
 				})
 
-			} else {
-				s.logger.DebugWith("Not writing dummy series", "tableName", tableName)
 			}
+			s.logger.DebugWith("Not writing dummy series", "tableName", tableName)
 
 			return nil
 		},

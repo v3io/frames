@@ -143,8 +143,8 @@ func TestNewSchema(t *testing.T) {
 // Regression test for IG-13261
 func TestMerge(t *testing.T) {
 	schema1 := OldV3ioSchema{Fields: []OldSchemaField{
-		OldSchemaField{Name: "a", Type: "long"},
-		OldSchemaField{Name: "b", Type: "long"},
+		{Name: "a", Type: "long"},
+		{Name: "b", Type: "long"},
 	}}
 	schema2 := schema1
 	res, err := schema1.merge(&schema2)

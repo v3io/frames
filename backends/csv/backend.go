@@ -31,11 +31,10 @@ import (
 
 	"github.com/nuclio/logger"
 	"github.com/pkg/errors"
-	v3io "github.com/v3io/v3io-go/pkg/dataplane"
-
 	"github.com/v3io/frames"
 	"github.com/v3io/frames/backends"
 	"github.com/v3io/frames/backends/utils"
+	v3io "github.com/v3io/v3io-go/pkg/dataplane"
 )
 
 // Backend is CSV backend

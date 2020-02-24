@@ -26,7 +26,6 @@ import (
 
 	"github.com/nuclio/logger"
 	"github.com/pkg/errors"
-
 	"github.com/v3io/frames"
 	"github.com/v3io/frames/backends"
 	"github.com/v3io/frames/v3ioutils"

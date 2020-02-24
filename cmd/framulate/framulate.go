@@ -5,10 +5,9 @@ import (
 	"flag"
 	"os"
 
-	"github.com/v3io/frames/framulate"
-
 	"github.com/nuclio/errors"
 	nucliozap "github.com/nuclio/zap"
+	"github.com/v3io/frames/framulate"
 )
 
 func run(configContents string, configPath string) error {

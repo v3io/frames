@@ -3,6 +3,8 @@ FRAMES_REPOSITORY ?= iguazio/
 FRAMES_PATH ?= src/github.com/v3io/frames
 FRAMES_BUILD_COMMAND ?= GO111MODULE=on go build -o framesd-$(FRAMES_TAG)-$(GOOS)-$(GOARCH) -ldflags "-X main.Version=$(FRAMES_TAG)" ./cmd/framesd
 
+GOPATH ?= ~/go
+
 .PHONY: build
 build:
 	docker build \
@@ -115,3 +117,39 @@ frames:
 		--env FRAMES_TAG=$(FRAMES_TAG) \
 		golang:1.12 \
 		make frames-bin
+
+PHONY: gofmt
+gofmt:
+ifeq ($(shell gofmt -l .),)
+	# gofmt OK
+else
+	$(error Please run `go fmt ./...` to format the code)
+endif
+
+.PHONY: impi
+impi:
+	@echo Installing impi...
+	go get -u github.com/pavius/impi/cmd/impi
+	@echo Verifying imports...
+	$(GOPATH)/bin/impi \
+		--local github.com/iguazio/provazio \
+		--skip pkg/controller/apis \
+		--skip pkg/controller/client \
+		--ignore-generated \
+		--scheme stdLocalThirdParty \
+		./...
+
+$(GOPATH)/bin/golangci-lint:
+	@echo Installing golangci-lint...
+	curl -sfL https://install.goreleaser.com/github.com/golangci/golangci-lint.sh | sh -s v1.10.2
+	cp ./bin/golangci-lint $(GOPATH)/bin/
+
+.PHONY: lint
+lint: gofmt impi $(GOPATH)/bin/golangci-lint
+	@echo Linting...
+	@$(GOPATH)/bin/golangci-lint run \
+     --disable-all --enable=deadcode --enable=goconst --enable=golint --enable=ineffassign \
+     --enable=interfacer --enable=unconvert --enable=varcheck --enable=errcheck --enable=gofmt --enable=misspell \
+     --enable=staticcheck --enable=gosimple --enable=govet --enable=goconst \
+    api/... backends/... cmd/... framulate/... grpc/... http/... repeatingtask/... v3ioutils/...
+	@echo done linting

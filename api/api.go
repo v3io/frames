@@ -27,17 +27,15 @@ import (
 	"strings"
 	"time"
 
+	"github.com/nuclio/logger"
+	"github.com/pkg/errors"
 	"github.com/v3io/frames"
 	"github.com/v3io/frames/backends"
-
 	// Load backends (make sure they register)
 	_ "github.com/v3io/frames/backends/csv"
 	_ "github.com/v3io/frames/backends/kv"
 	_ "github.com/v3io/frames/backends/stream"
 	_ "github.com/v3io/frames/backends/tsdb"
-
-	"github.com/nuclio/logger"
-	"github.com/pkg/errors"
 	v3io "github.com/v3io/v3io-go/pkg/dataplane"
 	v3iohttp "github.com/v3io/v3io-go/pkg/dataplane/http"
 )

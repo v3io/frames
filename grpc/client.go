@@ -27,11 +27,10 @@ import (
 	"os"
 	"time"
 
-	"github.com/v3io/frames"
-	"github.com/v3io/frames/pb"
-
 	"github.com/nuclio/logger"
 	"github.com/pkg/errors"
+	"github.com/v3io/frames"
+	"github.com/v3io/frames/pb"
 	"google.golang.org/grpc"
 )
 
