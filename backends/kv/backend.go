@@ -26,10 +26,9 @@ import (
 	"time"
 
 	"github.com/nuclio/logger"
-	"github.com/v3io/v3io-go/pkg/dataplane"
-
 	"github.com/v3io/frames"
 	"github.com/v3io/frames/v3ioutils"
+	"github.com/v3io/v3io-go/pkg/dataplane"
 )
 
 // Backend is NoSQL (key/value) backend
