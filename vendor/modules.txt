@@ -51,11 +51,11 @@ github.com/stretchr/testify/suite
 github.com/stretchr/testify/assert
 github.com/stretchr/testify/require
 # github.com/v3io/v3io-go v0.0.5-0.20191205125653-9003ae83f0b6
-github.com/v3io/v3io-go/pkg/dataplane/http
 github.com/v3io/v3io-go/pkg/dataplane
+github.com/v3io/v3io-go/pkg/dataplane/http
 github.com/v3io/v3io-go/pkg/errors
 github.com/v3io/v3io-go/pkg/dataplane/schemas/node/common
-# github.com/v3io/v3io-tsdb v0.9.14
+# github.com/v3io/v3io-tsdb v0.9.12-5 => github.com/v3io/v3io-tsdb v0.8.12-0.20200219094038-482603692c50
 github.com/v3io/v3io-tsdb/pkg/utils
 github.com/v3io/v3io-tsdb/pkg/config
 github.com/v3io/v3io-tsdb/pkg/pquerier

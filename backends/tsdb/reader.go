@@ -215,7 +215,7 @@ func (i *tsdbIterator) Next() bool {
 		}
 	}
 
-	i.currFrame, err = frames.NewFrame(columns, indices, labels)
+	i.currFrame, err = frames.NewFrameWithNullValues(columns, indices, labels, frame.NullValuesMap())
 	if err != nil {
 		i.err = err
 		return false

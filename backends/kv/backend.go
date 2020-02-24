@@ -32,7 +32,7 @@ import (
 	"github.com/v3io/frames/v3ioutils"
 )
 
-// Backend is key/value backend
+// Backend is NoSQL (key/value) backend
 type Backend struct {
 	logger            logger.Logger
 	numWorkers        int
@@ -41,7 +41,7 @@ type Backend struct {
 	v3ioContext       v3io.Context
 }
 
-// NewBackend return a new key/value backend
+// NewBackend returns a new NoSQL (key/value) backend
 func NewBackend(logger logger.Logger, v3ioContext v3io.Context, config *frames.BackendConfig, framesConfig *frames.Config) (frames.DataBackend, error) {
 	newBackend := Backend{
 		logger:            logger.GetChild("kv"),
@@ -54,9 +54,9 @@ func NewBackend(logger logger.Logger, v3ioContext v3io.Context, config *frames.B
 	return &newBackend, nil
 }
 
-// Create creates a table
+// Create creates a table - not required for the NoSQL backend
 func (b *Backend) Create(request *frames.CreateRequest) error {
-	return fmt.Errorf("not requiered, table is created on first write")
+	return fmt.Errorf("'create' isn't required for the NoSQL backend; the table is created on first write")
 }
 
 // Delete deletes a table (or part of it)
@@ -80,14 +80,14 @@ func (b *Backend) Exec(request *frames.ExecRequest) (frames.Frame, error) {
 	case "update":
 		return nil, b.updateItem(request)
 	}
-	return nil, fmt.Errorf("KV backend does not support commend - %s", cmd)
+	return nil, fmt.Errorf("NoSQL backend doesn't support execute command '%s'", cmd)
 }
 
 func (b *Backend) updateItem(request *frames.ExecRequest) error {
 	varKey, hasKey := request.Proto.Args["key"]
 	varExpr, hasExpr := request.Proto.Args["expression"]
 	if !hasExpr || !hasKey || request.Proto.Table == "" {
-		return fmt.Errorf("table, key and expression parameters must be specified")
+		return fmt.Errorf("missing a required parameter - 'table', 'expression', and/or 'key' argument")
 	}
 
 	key := varKey.GetSval()
