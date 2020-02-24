@@ -107,6 +107,7 @@ github.com/v3io/v3io-go-http v0.0.0-20190415143924-cc2fbcde6663/go.mod h1:GXYcR9
 github.com/v3io/v3io-tsdb v0.0.0-20190328071546-4e85f3df2d205fc7368d54184bb2ceff949ab4bd/go.mod h1:A+5yKC16QxLf+Fy5v7VvIxSw+jwsKHLhUS7dCYFDLAA=
 github.com/v3io/v3io-tsdb v0.8.12-0.20200219094038-482603692c50 h1:ljx3jLci88jkEOM4g8sbApUh+bJVz+GZOTYROGhVr+w=
 github.com/v3io/v3io-tsdb v0.8.12-0.20200219094038-482603692c50/go.mod h1:di0NiGDqNZAZXzbVQGDYPl7u29KpoaNBe2g0a9q+2F8=
+github.com/v3io/v3io-tsdb v0.8.12-0.20200219175544-fed825a16118 h1:se/ASbGFs6YA9tOyWlZ3fkdPAyoPItxFn6Sldxi1OXo=
 github.com/v3io/v3io-tsdb v0.8.12-0.20200219175544-fed825a16118/go.mod h1:hdeE2K5HLZsp2NL8VRK9vmMp7cZ2F8x3VoQB2Gr34MI=
 github.com/v3io/v3io-tsdb v0.9.11 h1:Offcqj7OzAezIYMqo+2l9ewvMS3gi3yb2bN5wcelago=
 github.com/v3io/v3io-tsdb v0.9.11/go.mod h1:K5jxlyxnb/HGyFlPrJQtIbMWQBY6USFBsHYI/vzMKVo=
