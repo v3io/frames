@@ -51,7 +51,7 @@ podTemplate(label: "${git_project}-${label}", inheritFrom: "jnlp-docker-golang-p
                             'test-py': {
                                 container('python37') {
                                     dir("${github.BUILD_FOLDER}/src/github.com/${git_project_upstream_user}/${git_project}") {
-                                        common.shellc("pip install pipenv")
+                                        sh "pip install pipenv"
                                         sh "make python-deps"
                                         sh "make test-py"
                                     }

@@ -121,19 +121,21 @@ def test_integration(framesd, session, protocol, backend):
     cfg = test_config.get(backend, {})
     df = cfg['df_fn'](size)
 
-    labels = {
-        'li': 17,
-        'lf': 3.22,
-        'ls': 'hi',
-    }
-
     create_kw = cfg.get('create', {})
     if create_kw is not None:
         client.create(backend, table, **create_kw)
 
     write_kw = cfg.get('write', {})
-    client.write(backend, table, [df], **write_kw, labels=labels)
 
+    labels = {}
+    if backend == 'tsdb':
+        labels = {
+            'li': 17,
+            'lf': 3.22,
+            'ls': 'hi',
+        }
+
+    client.write(backend, table, [df], **write_kw, labels=labels)
     sleep(1)  # Let db flush
 
     read_kw = cfg.get('read', {})
