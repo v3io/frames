@@ -30,12 +30,11 @@ import (
 	"net/http"
 	"path"
 
+	"github.com/nuclio/logger"
+	"github.com/pkg/errors"
 	"github.com/v3io/frames"
 	"github.com/v3io/frames/api"
 	"github.com/v3io/frames/pb"
-
-	"github.com/nuclio/logger"
-	"github.com/pkg/errors"
 	"github.com/valyala/fasthttp"
 )
 

@@ -26,15 +26,13 @@ import (
 	"io"
 	"net"
 
-	"github.com/v3io/frames"
-	"github.com/v3io/frames/api"
-
 	"github.com/nuclio/logger"
 	"github.com/pkg/errors"
+	"github.com/v3io/frames"
+	"github.com/v3io/frames/api"
+	"github.com/v3io/frames/pb"
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/reflection"
-
-	"github.com/v3io/frames/pb"
 )
 
 const (

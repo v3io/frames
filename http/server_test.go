@@ -25,9 +25,8 @@ import (
 	"net/http"
 	"testing"
 
-	"github.com/valyala/fasthttp"
-
 	"github.com/v3io/frames"
+	"github.com/valyala/fasthttp"
 )
 
 const (

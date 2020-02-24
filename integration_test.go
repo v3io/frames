@@ -33,9 +33,8 @@ import (
 	"time"
 
 	"github.com/ghodss/yaml"
-	"github.com/v3io/frames/pb"
-
 	"github.com/v3io/frames"
+	"github.com/v3io/frames/pb"
 )
 
 const (
