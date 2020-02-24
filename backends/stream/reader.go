@@ -26,10 +26,9 @@ import (
 	"strings"
 	"time"
 
+	"github.com/v3io/frames"
 	v3io "github.com/v3io/v3io-go/pkg/dataplane"
 	"github.com/v3io/v3io-tsdb/pkg/utils"
-
-	"github.com/v3io/frames"
 )
 
 type streamIterator struct {

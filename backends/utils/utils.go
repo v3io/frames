@@ -137,7 +137,7 @@ func AppendNil(col frames.Column) error {
 }
 
 // ColAt return value at index i in column as interface{}
-// This is a slightly differnt use case than col.ValueAt, also we don't want to
+// This is a slightly different use case than col.ValueAt, also we don't want to
 // use defer/recover due to performance overhead
 func ColAt(col frames.Column, i int) (interface{}, error) {
 	if i < 0 || i >= col.Len() {

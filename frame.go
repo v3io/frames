@@ -26,7 +26,6 @@ import (
 	"time"
 
 	"github.com/pkg/errors"
-
 	"github.com/v3io/frames/pb"
 )
 
@@ -121,7 +120,7 @@ func NewFrameFromRows(rows []map[string]interface{}, indices []string, labels ma
 				frameCols[name] = col
 			}
 
-			extendCol(col, rowNum)
+			_ = extendCol(col, rowNum)
 			if err := colAppend(col, value); err != nil {
 				return nil, err
 			}
@@ -130,7 +129,7 @@ func NewFrameFromRows(rows []map[string]interface{}, indices []string, labels ma
 		// Extend columns not in row
 		for name, col := range frameCols {
 			if _, ok := row[name]; !ok {
-				extendCol(col, rowNum+1)
+				_ = extendCol(col, rowNum+1)
 			}
 		}
 	}

@@ -64,7 +64,7 @@ func read(c frames.Client, b *testing.B) {
 func BenchmarkRead_gRPC(b *testing.B) {
 	b.StopTimer()
 	info := setupTest(b)
-	defer info.process.Kill()
+	defer info.killProcess()
 	c, err := grpc.NewClient(info.grpcAddr, nil, nil)
 	if err != nil {
 		b.Fatal(err)
@@ -79,7 +79,7 @@ func BenchmarkRead_gRPC(b *testing.B) {
 func BenchmarkRead_HTTP(b *testing.B) {
 	b.StopTimer()
 	info := setupTest(b)
-	defer info.process.Kill()
+	defer info.killProcess()
 	c, err := http.NewClient(info.httpAddr, nil, nil)
 	if err != nil {
 		b.Fatal(err)
@@ -109,7 +109,7 @@ func write(c frames.Client, req *frames.WriteRequest, frame frames.Frame, b *tes
 func BenchmarkWrite_gRPC(b *testing.B) {
 	b.StopTimer()
 	info := setupTest(b)
-	defer info.process.Kill()
+	defer info.killProcess()
 	c, err := grpc.NewClient(info.grpcAddr, nil, nil)
 	if err != nil {
 		b.Fatal(err)
@@ -125,7 +125,7 @@ func BenchmarkWrite_gRPC(b *testing.B) {
 func BenchmarkWrite_HTTP(b *testing.B) {
 	b.StopTimer()
 	info := setupTest(b)
-	defer info.process.Kill()
+	defer info.killProcess()
 	c, err := http.NewClient(info.httpAddr, nil, nil)
 	if err != nil {
 		b.Fatal(err)

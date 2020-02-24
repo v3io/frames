@@ -100,7 +100,7 @@ type timeSeriesOutput struct {
 	Target     string          `json:"target"`
 }
 
-func SimpleJSONRequestFactory(method string, request []byte) (simpleJSONRequestInterface, error) {
+func simpleJSONRequestFactory(method string, request []byte) (simpleJSONRequestInterface, error) {
 	var retval simpleJSONRequestInterface
 	switch method {
 	case "query":
@@ -367,27 +367,27 @@ func getMetricNames(frame frames.Frame) []string {
 }
 
 func prepareKVColumns(frame frames.Frame, headers []string) ([]tableColumn, error) {
-	retVal := []tableColumn{}
+	var retVal []tableColumn
 	for _, header := range headers {
-		if column, err := findColumnOrIndices(frame, header); err != nil {
+		column, err := findColumnOrIndices(frame, header)
+		if err != nil {
 			return nil, err
-		} else {
-			retVal = append(retVal, prepareKVColumnFormat(column, header))
 		}
+		retVal = append(retVal, prepareKVColumnFormat(column, header))
 	}
 	return retVal, nil
 }
 
 func findColumnOrIndices(frame frames.Frame, col string) (frames.Column, error) {
-	if column, err := frame.Column(col); err != nil {
+	column, err := frame.Column(col)
+	if err != nil {
 		if len(frame.Indices()) > 0 && frame.Indices()[0].Name() == col {
 			return frame.Indices()[0], nil
-		} else {
-			return nil, err
 		}
-	} else {
-		return column, nil
+		return nil, err
 	}
+
+	return column, nil
 }
 
 func prepareKVColumnFormat(column frames.Column, field string) tableColumn {
