@@ -17,10 +17,13 @@ require (
 	github.com/xwb1989/sqlparser v0.0.0-20180606152119-120387863bf2
 	golang.org/x/net v0.0.0-20181114220301-adae6a3d119a
 	golang.org/x/sync v0.0.0-20181108010431-42b317875d0f // indirect
+	google.golang.org/genproto v0.0.0-20181026194446-8b5d7a19e2d9 // indirect
 	google.golang.org/grpc v1.17.0
+	gopkg.in/check.v1 v1.0.0-20180628173108-788fd7840127 // indirect
 )
 
 replace (
-	github.com/v3io/v3io-tsdb => github.com/v3io/v3io-tsdb v0.8.12-0.20200219175544-fed825a16118
+	github.com/v3io/v3io-go => github.com/dinal/v3io-go v0.0.5-0.20200224150259-64ba7f8f3d98
+	github.com/v3io/v3io-tsdb => github.com/dinal/v3io-tsdb v0.0.3-0.20200224155715-d792923f8130
 	github.com/xwb1989/sqlparser => github.com/v3io/sqlparser v0.0.0-20190306105200-4d7273501871
 )

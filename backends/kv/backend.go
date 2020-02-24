@@ -42,6 +42,7 @@ type Backend struct {
 
 // NewBackend returns a new NoSQL (key/value) backend
 func NewBackend(logger logger.Logger, v3ioContext v3io.Context, config *frames.BackendConfig, framesConfig *frames.Config) (frames.DataBackend, error) {
+
 	newBackend := Backend{
 		logger:            logger.GetChild("kv"),
 		numWorkers:        config.Workers,
@@ -49,7 +50,6 @@ func NewBackend(logger logger.Logger, v3ioContext v3io.Context, config *frames.B
 		v3ioContext:       v3ioContext,
 		inactivityTimeout: 0,
 	}
-
 	return &newBackend, nil
 }
 
@@ -121,6 +121,16 @@ func (b *Backend) newConnection(session *frames.Session, password string, token 
 		password,
 		token,
 		b.logger)
+
+	if err == nil && b.numWorkers == 0 {
+		resp, err := container.GetClusterMDSync(&v3io.GetClusterMDInput{})
+		if err != nil {
+			return nil, "", fmt.Errorf("could not detrmine num vns in cluster")
+		}
+		getClusterMDOutput := resp.Output.(*v3io.GetClusterMDOutput)
+		b.numWorkers = getClusterMDOutput.NumberOfVNs
+		b.logger.Info("going to use ", b.numWorkers, "workers")
+	}
 
 	return container, newPath, err
 }
