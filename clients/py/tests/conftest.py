@@ -40,8 +40,7 @@ root_dir = '/tmp/test-integration-root-{}'.format(test_id)
 server_timeout = 30  # seconds
 
 extra_backends = [
-    {'type': 'kv'},
-    {'type': 'nosql'},
+    {'type': 'kv'},  # also aliased as 'nosql'
     {'type': 'stream'},
     {'type': 'tsdb', 'workers': 16},
 ]
