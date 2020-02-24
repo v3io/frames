@@ -291,6 +291,10 @@ type testInfo struct {
 	session  *frames.Session
 }
 
+func (t *testInfo) killProcess() {
+	_ = t.process.Kill()
+}
+
 func setupTest(t testing.TB) *testInfo {
 	info := &testInfo{}
 	info.root = setupRoot(t)

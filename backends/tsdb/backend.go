@@ -240,18 +240,13 @@ func (b *Backend) Delete(request *frames.DeleteRequest) error {
 	if err != nil {
 		if request.Proto.IfMissing == frames.IgnoreError && b.isSchemaNotFoundError(err) {
 			return nil
-		} else {
-			return err
 		}
-	}
-
-	err = adapter.DeleteDB(delAll, false, start, end)
-	if err == nil {
 		return err
 	}
 
-	return err
+	err = adapter.DeleteDB(delAll, false, start, end)
 
+	return err
 }
 
 // Exec executes a command

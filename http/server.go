@@ -44,7 +44,7 @@ var (
 	bearerAuthPrefix = []byte("Bearer ")
 )
 
-const ACCESS_KEY_USER = "__ACCESS_KEY"
+const AccessKeyUser = "__ACCESS_KEY"
 
 // Server is HTTP server
 type Server struct {
@@ -142,7 +142,7 @@ func (s *Server) handleStatus(ctx *fasthttp.RequestCtx) {
 		"state": s.State(),
 	}
 
-	s.replyJSON(ctx, status)
+	_ = s.replyJSON(ctx, status)
 }
 
 func (s *Server) handleRead(ctx *fasthttp.RequestCtx) {
@@ -212,7 +212,7 @@ func (s *Server) writeError(enc *frames.Encoder, err error) {
 	msg := &pb.Frame{
 		Error: err.Error(),
 	}
-	enc.Encode(msg)
+	_ = enc.Encode(msg)
 }
 
 func (s *Server) handleWrite(ctx *fasthttp.RequestCtx) {
@@ -222,8 +222,8 @@ func (s *Server) handleWrite(ctx *fasthttp.RequestCtx) {
 
 	reader, writer := io.Pipe()
 	go func() {
-		ctx.Request.BodyWriteTo(writer)
-		writer.Close()
+		_ = ctx.Request.BodyWriteTo(writer)
+		_ = writer.Close()
 	}()
 
 	dec := frames.NewDecoder(reader)
@@ -304,7 +304,7 @@ func (s *Server) handleWrite(ctx *fasthttp.RequestCtx) {
 		"num_frames": nFrames,
 		"num_rows":   nRows,
 	}
-	s.replyJSON(ctx, reply)
+	_ = s.replyJSON(ctx, reply)
 }
 
 func (s *Server) handleCreate(ctx *fasthttp.RequestCtx) {
@@ -371,7 +371,7 @@ func (s *Server) handleDelete(ctx *fasthttp.RequestCtx) {
 }
 
 func (s *Server) handleConfig(ctx *fasthttp.RequestCtx) {
-	s.replyJSON(ctx, s.config)
+	_ = s.replyJSON(ctx, s.config)
 }
 
 func (s *Server) replyJSON(ctx *fasthttp.RequestCtx, reply interface{}) error {
@@ -387,7 +387,7 @@ func (s *Server) replyJSON(ctx *fasthttp.RequestCtx, reply interface{}) error {
 
 func (s *Server) replyOK(ctx *fasthttp.RequestCtx) {
 	ctx.SetStatusCode(http.StatusOK)
-	ctx.Write(okBytes)
+	_, _ = ctx.Write(okBytes)
 }
 
 func (s *Server) handleExec(ctx *fasthttp.RequestCtx) {
@@ -430,7 +430,7 @@ func (s *Server) handleExec(ctx *fasthttp.RequestCtx) {
 	}
 
 	ctx.SetStatusCode(http.StatusOK)
-	json.NewEncoder(ctx).Encode(map[string]string{
+	_ = json.NewEncoder(ctx).Encode(map[string]string{
 		"frame": frameData,
 	})
 }
@@ -444,7 +444,7 @@ func (s *Server) handleSimpleJSONSearch(ctx *fasthttp.RequestCtx) {
 }
 
 func (s *Server) handleSimpleJSON(ctx *fasthttp.RequestCtx, method string) {
-	req, err := SimpleJSONRequestFactory(method, ctx.PostBody())
+	req, err := simpleJSONRequestFactory(method, ctx.PostBody())
 	if err != nil {
 		s.logger.ErrorWith("can't initialize simplejson request", "error", err)
 		ctx.Error(fmt.Sprintf("bad request - %s", err), http.StatusBadRequest)
@@ -474,7 +474,7 @@ func (s *Server) handleSimpleJSON(ctx *fasthttp.RequestCtx, method string) {
 	if resp, err := CreateResponse(req, ch); err != nil {
 		ctx.Error(fmt.Sprintf("Error creating response - %s", err), http.StatusInternalServerError)
 	} else {
-		s.replyJSON(ctx, resp)
+		_ = s.replyJSON(ctx, resp)
 	}
 }
 
@@ -512,7 +512,7 @@ func (s *Server) parseBasicAuth(auth []byte, session *frames.Session) {
 	}
 
 	user := string(data[:i])
-	if user == ACCESS_KEY_USER {
+	if user == AccessKeyUser {
 		session.Token = string(data[i+1:])
 	} else {
 		session.User = user

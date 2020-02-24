@@ -36,7 +36,7 @@ const (
 func createServer() (*Server, error) {
 	cfg := &frames.Config{
 		Backends: []*frames.BackendConfig{
-			&frames.BackendConfig{
+			{
 				Name: "weather",
 				Type: "csv",
 			},
