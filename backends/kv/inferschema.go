@@ -108,7 +108,7 @@ func schemaFromKeys(keyField string, rowSet []map[string]interface{}) (v3ioutils
 					} else if previousType == intType && currentType == floatType {
 						// continue to set the `columnNameToValue` to float
 					} else {
-						return nil, errors.Errorf("Type %v of %v did not match type %v of %v for column %s.", previousType, previousValue, currentType, attrValue, attrName)
+						return nil, errors.Errorf("type '%v' of value '%v' doesn't match type '%v' of value '%v' for column '%s'.", previousType, previousValue, currentType, attrValue, attrName)
 					}
 				}
 			}
@@ -116,18 +116,20 @@ func schemaFromKeys(keyField string, rowSet []map[string]interface{}) (v3ioutils
 			if _, ok = columnCanBeFullKey[attrName]; !ok {
 				columnCanBeFullKey[attrName] = true
 			}
-			columnCanBeFullKey[attrName] = columnCanBeFullKey[attrName] && attrValue == keyValue
+
+			attrValueAsString := fmt.Sprintf("%v", attrValue)
+			columnCanBeFullKey[attrName] = columnCanBeFullKey[attrName] && attrValueAsString == keyValue
 			if primaryKeyValue != "" {
 				if _, ok = columnCanBePrimaryKey[attrName]; !ok {
 					columnCanBePrimaryKey[attrName] = true
 				}
-				columnCanBePrimaryKey[attrName] = columnCanBePrimaryKey[attrName] && attrValue == primaryKeyValue
+				columnCanBePrimaryKey[attrName] = columnCanBePrimaryKey[attrName] && attrValueAsString == primaryKeyValue
 			}
 			if sortingKeyValue != "" {
 				if _, ok = columnCanBeSortingKey[attrName]; !ok {
 					columnCanBeSortingKey[attrName] = true
 				}
-				columnCanBeSortingKey[attrName] = columnCanBeSortingKey[attrName] && attrValue == sortingKeyValue
+				columnCanBeSortingKey[attrName] = columnCanBeSortingKey[attrName] && attrValueAsString == sortingKeyValue
 			}
 		}
 	}
@@ -152,12 +154,12 @@ func schemaFromKeys(keyField string, rowSet []map[string]interface{}) (v3ioutils
 		} else {
 			var reason string
 			if len(possibleFullKeys) == 0 {
-				reason = "no column matched key attribute"
+				reason = "no column matches the primary-key attribute"
 			} else {
 				sort.Strings(possibleFullKeys)
-				reason = fmt.Sprintf("%d columns (%s) matched key attribute", len(possibleFullKeys), strings.Join(possibleFullKeys, ", "))
+				reason = fmt.Sprintf("%d columns (%s) match the primary-key attribute", len(possibleFullKeys), strings.Join(possibleFullKeys, ", "))
 			}
-			return nil, errors.Errorf("Could not determine which column is the table key because %s.", reason)
+			return nil, errors.Errorf("could not determine which column is the table's primary-key attribute, because %s", reason)
 		}
 	}
 

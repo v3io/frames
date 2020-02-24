@@ -40,7 +40,7 @@ class RawFrame:
         return column_names
 
     def column(self, column_name):
-        """Get column by column name
+        """Returns a DataFrame column by column name
 
         Parameters
         ----------
@@ -58,7 +58,7 @@ class RawFrame:
         raise ReadError('no column named {}'.format(column_name))
 
     def column_data(self, column_name):
-        """Get column's data by column name
+        """Returns column data by column name
 
        Parameters
        ----------
@@ -67,7 +67,7 @@ class RawFrame:
 
        Return Value
        ----------
-           List of values which represents the requested column's data
+           List of values that represent the requested column's data
        """
         for col in self.raw_frame.columns:
             if col.name == column_name:
@@ -84,29 +84,28 @@ class RawFrame:
                 else:
                     raise ReadError('{} - unsupported type - {}'.format(column_name, col.dtype))
 
-        raise ReadError('no column named {}'.format(column_name))
+        raise ReadError('No column named "{}"'.format(column_name))
 
     def labels(self):
-        """Get frame's labels
+        """Returns a DataFrame's labels
 
        Return Value
        ----------
-           labels of the current frame. Only applicable to TSDB and Stream backends
+           ('tsdb' and 'stream' backends only) The labels of the current DF
        """
         return self.raw_frame.labels
 
     def indices(self):
-        """Get frame's indices
-
+        """Returns a DataFrame's indices
 
        Return Value
        ----------
-           List of column objects representing the indices of the frame
+           List of column objects representing the indices of the DataFrame
        """
         return self.raw_frame.indices
 
     def columns(self):
-        """Get all frame's columns
+        """Returns all DataFrame columns
 
        Return Value
        ----------
@@ -115,11 +114,11 @@ class RawFrame:
         return self.raw_frame.columns
 
     def __len__(self):
-        """Get the length of the frame
+        """Returns a DataFrame's length (number of rows)
 
        Return Value
        ----------
-           Number of rows in the frame
+           Number of rows in the DataFrame
        """
         if len(self.raw_frame.columns) > 0:
             col = self.raw_frame.columns[0]
@@ -136,19 +135,19 @@ class RawFrame:
         return 0
 
     def is_null(self, index, column_name):
-        """Indicates whether a specific cell is null or not.
+        """Indicates whether a specific DataFrame cell is null or not
 
        Parameters
        ----------
-       index : str
+       index (Required) : str
            Row index of the desired cell
-       column_name : str
+       column_name (Required) : str
            Column name of the desired cell
 
        Return Value
        ----------
-           True - the current cell is null
-           False - the current cell has a value
+           True - the cell is null
+           False - the cell has a value
        """
         if len(self.raw_frame.null_values) == 0:
             return False
@@ -196,48 +195,50 @@ class ClientBase:
     def read(self, backend='', table='', query='', columns=None, filter='',
              group_by='', limit=0, data_format='', row_layout=False,
              max_rows_in_msg=0, marker='', iterator=False, get_raw=False, **kw):
-        """Reads data from a table or stream (run a data query)
+        """Reads data from a data collection (runs a data query)
 
         Common Parameters
         ----------
-        backend : str
-            Backend name ('kv', 'tsdb', 'stream')
+        backend (Required) : str
+            Backend name - 'nosql'/'kv' | 'tsdb' | 'stream' | 'csv' (for tests)
         table : str
-            Table or stream to query; ignored when the table path is set in
-            the `query` parameter (for the 'tsdb' backend)
-        query : str
+            Path to the collection to query; ignored when the path is set in
+            the `query` parameter (currently supported for the 'tsdb' backend)
+            and required otherwise
+        query (Optional) : str
             ('tsdb' backend only) SQL query string
-        columns : []str
-            List of item attributes (columns) to return (default - all);
+        columns (Optional) : []str
+            ('nosql'/'kv' and 'tsdb' backends only) List of item attributes
+            (columns) to return (default - all);
             cannot be used with `query`
-        filter : str
-            Query filter as a platform filter expression; cannot be used with
-            `query`
-        group_by : str
+        filter (Optional) : str
+            ('nosql'/'kv' and 'tsdb' backends only) Query filter as a filter
+            expression; cannot be used with `query`
+        group_by (Optional) : str
             ('tsdb' backend only) A group-by query string; cannot be used with
             `query`
-        limit: int
+        limit (Optional): int
             Maximum number of rows to return
             [Not supported in this version]
-        data_format : str
+        data_format (Optional) : str
             Data format
             [Not supported in this version]
-        row_layout : bool
+        row_layout (Optional) : bool
             True to use a row layout; False (default) to use a column layout
             [Not supported in this version]
          max_rows_in_msg : int
             Maximum number of rows to read in each message (read chunk size)
-        marker : str
+        marker (Optional) : str
             Query marker; cannot be used with `query`
             [Not supported in this version]
-        iterator : bool
+        iterator (Optional) : bool
             True - return a DataFrames iterator;
-            False (default) - return a single DataFrame
-        get_raw : bool
-            False (default) - return Pandas Dataframe
-            True - return a raw data object rather then Pandas data frame.
-            This will boost performance at the expense of Pandas convenience.
-            Note: this mode will always return an iterator of frames.
+            False (default except for get_raw=True) - return a single DataFrame
+        get_raw (Optional) : bool
+            False (default) - return the data in pandas DataFrames.
+            True - return the data in raw-data frames using Cap'n Proto, which
+                   boosts performance at the expense of pandas convenience.
+                   Note: `read` always returns a frames iterator for this mode.
         **kw
             Variable-length list of additional keyword (named) arguments
 
@@ -259,42 +260,42 @@ class ClientBase:
     def write(self, backend, table, dfs, expression='', condition='',
               labels=None,  max_rows_in_msg=0, index_cols=None,
               save_mode='createNewItemsOnly', partition_keys=None):
-        """Writes data to a table or stream
+        """Writes data to a data collection
 
         Parameters
         ----------
-        backend : str
-            Backend name
-        table : str
-            Table to write to
-        dfs : a single DataFrame, a DataFrames list, or a DataFrames iterator
+        backend (Required) : str
+            Backend name - 'nosql'/'kv' | 'tsdb' | 'stream' | 'csv' (for tests)
+        table (Required) : str
+            Path to the collection to write
+        dfs (Required) : a single DataFrame (DF), a DF list, or a DF iterator
             One or more DataFrames containing the data to write.
-            For the 'kv' backend - the DF must contain a single index column
-            for the item's primary-key attribute (= the item name).
+            For the 'nosql'/'kv' backend - the DF must contain a single index
+            column for the item's primary-key attribute (= the item name).
             For the 'tsdb' backend - the DF must contain one or more non-index
             columns for the sample metrics and a single time index column for
             the sample time, and can optionally contain additional string index
             columns for metric labels that apply to the current DataFrame row.
-        expression : str
-            A platform update expression that determines the update logic for
-            all items in the DataFrame
+        expression (Optional) : str
+            An update expression that determines the update logic for all items
+            in the DataFrame
             [Not supported in this version]
-        condition : str
-            A platform condition expression that defines a condition for
-            performing the write operation
-        labels : dict (`{<label>: <value>[, <label>: <value>, ...]}`)
+        condition (Optional) : str
+            A condition expression that defines a condition for performing the
+            write operation
+        labels (Optional) : dict (`{<label>: <value>[, <label>: <value>,...]}`)
             ('tsdb' backend only) A dictionary of sample labels of type
             string that apply to all the DataFrame rows
-         max_rows_in_msg : int
+         max_rows_in_msg (Optional) : int
             Maximum number of rows to write in each message (write chunk size)
-        index_cols : []str
+        index_cols (Optional) : []str
             List of column names to be used as the index columns for the write
             operation; by default, the DataFrame's index columns are used
-        save_mode : str
-            Save mode.
-            Optional values: createNewItemsOnly(default), overwriteTable,
-             updateItem, overwriteItem, errorIfTableExists
-        partition_keys : []str
+        save_mode (Optional) : str
+            ('nosql'/'kv' backend only) Save mode - 'createNewItemsOnly'
+            (default) | 'overwriteTable' | 'updateItem', 'overwriteItem',
+            'errorIfTableExists'
+        partition_keys (Optional) : []str
             Partition keys
             [Not supported in this version]
 
@@ -314,19 +315,22 @@ class ClientBase:
         return self._write(request, dfs, labels, index_cols)
 
     def create(self, backend, table, schema=None, if_exists=FAIL, **kw):
-        """Creates a new TSDB table or stream
+        """Creates a new data collection
+        Note: This method isn't applicable to the 'nosql'/'kv' backend, because
+        NoSQL tables are created automatically on the first write.
 
         Parameters
         ----------
         backend (Required) : str
-            Backend name
+            Backend name - 'nosql'/'kv' | 'tsdb' | 'stream' | 'csv' (for tests)
         table (Required) : str
             Table to create
-        schema (Optional) : Schema or None
+        schema (Optional) : Backend-specific data schema or None
             Table schema; used for testing purposes with the 'csv' backend
-        if_exists : int
-            One of IGNORE or FAIL
-        **kw (Required for the 'tsdb' backend; optional otherwise
+        if_exists (Optional) : int (frames_pb2 pb.ErrorOptions)
+            Determines the behavior when the specified collection already
+            exists - `FAIL` (default) to raise an error or `IGNORE` to ignore
+        **kw (Optional; required for the 'tsdb' backend)
             Variable-length list of additional keyword (named) arguments
 
         Raises
@@ -339,18 +343,18 @@ class ClientBase:
 
     def delete(self, backend, table, filter='', start='', end='',
                if_missing=FAIL):
-        """Deletes a table or stream or specific table items
+        """Deletes a data collection or specific collection items
 
         Parameters
         ----------
-        backend : str
-            Backend name
-        table : str
-            Table or stream to delete or from which to delete specific items
-        filter : str
-            ('kv' backend only) A filter expression that identifies specific
-            items to delete; for example, 'age<18'
-        start : str
+        backend (Required) : str
+            Backend name - 'nosql'/'kv' | 'tsdb' | 'stream' | 'csv' (for tests)
+        table (Required) : str
+            Path to the collection to delete or from which to delete items
+        filter (Optional) : str
+            ('nosql'/'kv' backend only) A filter expression that identifies
+            specific items to delete; for example, 'age<18'
+        start (Optional) : str
              ('tsdb' backend only) Start (minimum) data sample time for the
              delete operation, as a string containing an RFC 3339 time, a Unix
              timestamp in milliseconds, a relative time (`'now'` or
@@ -358,7 +362,7 @@ class ClientBase:
              days), or 0 for the earliest time; the default is an empty string
              for when `end` is also not set - to delete the entire table - and
              `0` when `end` is set
-        end : str
+        end (Optional) : str
              ('tsdb' backend only) End (maximum) data sample time for the
              delete operation, as a string containing an RFC 3339 time, a Unix
              timestamp in milliseconds, a relative time (`'now'` or
@@ -366,8 +370,8 @@ class ClientBase:
              days), or 0 for the earliest time; the default is an empty string
              for when `start` is also not set - to delete the entire table -
              and `0` when `start` is set
-        if_missing : int (frames_pb2 pb.ErrorOptions)
-            Determines the behavior when the specified table or stream doesn't
+        if_missing (Optional) : int (frames_pb2 pb.ErrorOptions)
+            Determines the behavior when the specified collection doesn't
             exist - `FAIL` (default) to raise an error or `IGNORE` to ignore
 
         Raises
@@ -379,20 +383,28 @@ class ClientBase:
         return self._delete(self._alias_backends(backend), table, filter, start, end, if_missing)
 
     def execute(self, backend, table, command='', args=None, expression=''):
-        """Executes a backend-specific command on a table or stream
+        """Executes a backend-specific command on a data collection
 
         Parameters
         ----------
-        backend : str
-            Backend name
-        table : str
-            Table to create
-        command : str
-            Command to execute
+        backend (Required) : str
+            Backend name - 'nosql'/'kv' | 'tsdb' | 'stream' | 'csv' (for tests)
+        table (Required) : str
+            Path to the collection on which to execute the specified command
+        command (Required) : str
+            Command to execute (backend-specific) -
+            - For the 'nosql'/'kv' backend -
+              - 'inferSchema'/'infer' - infer the table schema
+              - 'update' - update a table item
+                [Not supported in this version]
+            - For the 'stream' backend -
+              - 'put' - add a record to a stream shard
         args : dict
             A dictionary of command-specific parameters (arguments)
-        expression : str
-            Command expression
+        expression (Optional; required for the 'update' command) : str
+            A command expression (command-specific) -
+            - For 'update' - an expression that determines the update logic
+              [Not supported in this version]
 
         Raises
         ------

@@ -29,7 +29,7 @@ type CsvTestSuite struct {
 
 func GetCsvTestsConstructorFunc() SuiteCreateFunc {
 	return func(client frames.Client, _ v3io.Container, _ logger.Logger) suite.TestingSuite {
-		return &CsvTestSuite{client: client, backendName:    "csv"}
+		return &CsvTestSuite{client: client, backendName: "csv"}
 	}
 }
 
