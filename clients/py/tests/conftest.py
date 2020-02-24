@@ -23,10 +23,8 @@ from time import sleep, time
 from uuid import uuid4
 
 import pytest
-import yaml
-
 import v3io_frames as v3f
-
+import yaml
 
 has_session = v3f.SESSION_ENV_KEY in environ
 is_travis = 'TRAVIS' in environ
@@ -43,7 +41,6 @@ server_timeout = 30  # seconds
 
 extra_backends = [
     {'type': 'kv'},
-    {'type': 'nosql'},
     {'type': 'stream'},
     {'type': 'tsdb', 'workers': 16},
 ]

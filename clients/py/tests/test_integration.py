@@ -18,10 +18,8 @@ from uuid import uuid4
 import numpy as np
 import pandas as pd
 import pytest
-
 import v3io_frames as v3f
 from conftest import has_go, test_backends, protocols
-
 
 tsdb_span = 5  # hours
 integ_params = [(p, b) for p in protocols for b in test_backends]
@@ -74,10 +72,8 @@ test_config = {
     'stream': {
         'df_fn': stream_df,
         'create': {
-            'attrs': {
-                'retention_hours': 48,
-                'shards': 1,
-            },
+            'retention_hours': 48,
+            'shards': 1,
         },
         'read': {
             'seek': 'earliest',
@@ -88,9 +84,7 @@ test_config = {
     'tsdb': {
         'df_fn': tsdb_df,
         'create': {
-            'attrs': {
-                'rate': '1/m',
-            },
+            'rate': '1/m',
         },
         'read': {
             'step': '10m',
@@ -128,9 +122,9 @@ def test_integration(framesd, session, protocol, backend):
     df = cfg['df_fn'](size)
 
     labels = {
-       'li': 17,
-       'lf': 3.22,
-       'ls': 'hi',
+        'li': 17,
+        'lf': 3.22,
+        'ls': 'hi',
     }
 
     create_kw = cfg.get('create', {})
