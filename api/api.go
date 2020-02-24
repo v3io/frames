@@ -116,7 +116,7 @@ func (api *API) Write(request *frames.WriteRequest, in chan frames.Frame) (int, 
 	api.logger.DebugWith("write request", "request", request)
 	backend, ok := api.backends[request.Backend]
 	if !ok {
-		api.logger.ErrorWith("unkown backend", "name", request.Backend)
+		api.logger.ErrorWith("unknown backend", "name", request.Backend)
 		return -1, -1, fmt.Errorf("unknown backend - %s", request.Backend)
 	}
 
@@ -174,7 +174,7 @@ func (api *API) Create(request *frames.CreateRequest) error {
 	api.logger.DebugWith("create", "request", request)
 	backend, ok := api.backends[request.Proto.Backend]
 	if !ok {
-		api.logger.ErrorWith("unkown backend", "name", request.Proto.Backend)
+		api.logger.ErrorWith("unknown backend", "name", request.Proto.Backend)
 		return fmt.Errorf("unknown backend - %s", request.Proto.Backend)
 	}
 
@@ -196,7 +196,7 @@ func (api *API) Delete(request *frames.DeleteRequest) error {
 	api.logger.DebugWith("delete", "request", request)
 	backend, ok := api.backends[request.Proto.Backend]
 	if !ok {
-		api.logger.ErrorWith("unkown backend", "name", request.Proto.Backend)
+		api.logger.ErrorWith("unknown backend", "name", request.Proto.Backend)
 		return fmt.Errorf("unknown backend - %s", request.Proto.Backend)
 	}
 
@@ -219,7 +219,7 @@ func (api *API) Exec(request *frames.ExecRequest) (frames.Frame, error) {
 	//	api.logger.DebugWith("exec", "request", request)
 	backend, ok := api.backends[request.Proto.Backend]
 	if !ok {
-		api.logger.ErrorWith("unkown backend", "name", request.Proto.Backend)
+		api.logger.ErrorWith("unknown backend", "name", request.Proto.Backend)
 		return nil, fmt.Errorf("unknown backend - %s", request.Proto.Backend)
 	}
 
