@@ -237,10 +237,6 @@ class ClientBase:
         get_raw (Optional) : bool
             True to return the data in raw format instead as pandas DataFrames
             [For internal use]
-            False (default) - return the data in pandas DataFrames.
-            True - return the data in raw-data frames using Cap'n Proto, which
-                   boosts performance at the expense of pandas convenience.
-                   Note: `read` always returns a frames iterator for this mode.
         **kw
             Variable-length list of additional keyword (named) arguments
 
