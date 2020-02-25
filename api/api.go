@@ -232,35 +232,6 @@ func (api *API) Exec(request *frames.ExecRequest) (frames.Frame, error) {
 	return frame, nil
 }
 
-func (api *API) populateQuery(request *frames.ReadRequest) error {
-	sqlQuery, err := frames.ParseSQL(request.Proto.Query)
-	if err != nil {
-		return errors.Wrap(err, "bad SQL query")
-	}
-
-	if request.Proto.Table != "" {
-		return fmt.Errorf("both query AND table provided")
-	}
-	request.Proto.Table = sqlQuery.Table
-
-	if request.Proto.Columns != nil {
-		return fmt.Errorf("both query AND columns provided")
-	}
-	request.Proto.Columns = sqlQuery.Columns
-
-	if request.Proto.Filter != "" {
-		return fmt.Errorf("both query AND filter provided")
-	}
-	request.Proto.Filter = sqlQuery.Filter
-
-	if request.Proto.GroupBy != "" {
-		return fmt.Errorf("both query AND group_by provided")
-	}
-	request.Proto.GroupBy = sqlQuery.GroupBy
-
-	return nil
-}
-
 func (api *API) createBackends(config *frames.Config) error {
 	api.backends = make(map[string]frames.DataBackend)
 
