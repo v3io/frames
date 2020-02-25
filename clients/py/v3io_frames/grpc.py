@@ -134,7 +134,8 @@ class Client(ClientBase):
             backend, table, query, columns, filter, group_by, limit,
             data_format, row_layout, max_in_message, marker, get_raw, **kw)
         if not iterator and not get_raw:
-            return concat_dfs(dfs, self.frame_factory, self.concat)
+            multi_index = kw.get('multi_index', False)
+            return concat_dfs(dfs, backend, self.frame_factory, self.concat, multi_index)
         return dfs
 
     @grpc_raise(WriteError)

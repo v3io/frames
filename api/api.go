@@ -27,18 +27,15 @@ import (
 	"strings"
 	"time"
 
+	"github.com/nuclio/logger"
+	"github.com/pkg/errors"
 	"github.com/v3io/frames"
 	"github.com/v3io/frames/backends"
-
 	// Load backends (make sure they register)
 	_ "github.com/v3io/frames/backends/csv"
 	_ "github.com/v3io/frames/backends/kv"
 	_ "github.com/v3io/frames/backends/stream"
 	_ "github.com/v3io/frames/backends/tsdb"
-
-	"github.com/nuclio/logger"
-	"github.com/pkg/errors"
-	v3io "github.com/v3io/v3io-go/pkg/dataplane"
 	v3iohttp "github.com/v3io/v3io-go/pkg/dataplane/http"
 )
 
@@ -118,7 +115,7 @@ func (api *API) Write(request *frames.WriteRequest, in chan frames.Frame) (int, 
 	api.logger.DebugWith("write request", "request", request)
 	backend, ok := api.backends[request.Backend]
 	if !ok {
-		api.logger.ErrorWith("unkown backend", "name", request.Backend)
+		api.logger.ErrorWith("unknown backend", "name", request.Backend)
 		return -1, -1, fmt.Errorf("unknown backend - %s", request.Backend)
 	}
 
@@ -176,7 +173,7 @@ func (api *API) Create(request *frames.CreateRequest) error {
 	api.logger.DebugWith("create", "request", request)
 	backend, ok := api.backends[request.Proto.Backend]
 	if !ok {
-		api.logger.ErrorWith("unkown backend", "name", request.Proto.Backend)
+		api.logger.ErrorWith("unknown backend", "name", request.Proto.Backend)
 		return fmt.Errorf("unknown backend - %s", request.Proto.Backend)
 	}
 
@@ -198,7 +195,7 @@ func (api *API) Delete(request *frames.DeleteRequest) error {
 	api.logger.DebugWith("delete", "request", request)
 	backend, ok := api.backends[request.Proto.Backend]
 	if !ok {
-		api.logger.ErrorWith("unkown backend", "name", request.Proto.Backend)
+		api.logger.ErrorWith("unknown backend", "name", request.Proto.Backend)
 		return fmt.Errorf("unknown backend - %s", request.Proto.Backend)
 	}
 
@@ -221,7 +218,7 @@ func (api *API) Exec(request *frames.ExecRequest) (frames.Frame, error) {
 	//	api.logger.DebugWith("exec", "request", request)
 	backend, ok := api.backends[request.Proto.Backend]
 	if !ok {
-		api.logger.ErrorWith("unkown backend", "name", request.Proto.Backend)
+		api.logger.ErrorWith("unknown backend", "name", request.Proto.Backend)
 		return nil, fmt.Errorf("unknown backend - %s", request.Proto.Backend)
 	}
 
@@ -267,8 +264,7 @@ func (api *API) createBackends(config *frames.Config) error {
 	api.backends = make(map[string]frames.DataBackend)
 
 	for _, backendConfig := range config.Backends {
-		httpClient := v3iohttp.NewClient(nil, 0)
-		httpClient.MaxConnsPerHost = backendConfig.MaxConnections
+		newClient := v3iohttp.NewClient(&v3iohttp.NewClientInput{DialTimeout: 0, MaxConnsPerHost: backendConfig.MaxConnections})
 
 		api.logger.InfoWith("Creating v3io context for backend",
 			"backend", backendConfig.Name,
@@ -276,11 +272,13 @@ func (api *API) createBackends(config *frames.Config) error {
 			"requestChanLength", backendConfig.V3ioGoRequestChanLength,
 			"maxConnsPerHost", backendConfig.MaxConnections)
 
-		// create a context for the backend
-		v3ioContext, err := v3iohttp.NewContext(api.logger, httpClient, &v3io.NewContextInput{
+		newContextInput := &v3iohttp.NewContextInput{
+			HTTPClient:     newClient,
 			NumWorkers:     backendConfig.V3ioGoWorkers,
 			RequestChanLen: backendConfig.V3ioGoRequestChanLength,
-		})
+		}
+		// create a context for the backend
+		v3ioContext, err := v3iohttp.NewContext(api.logger, newContextInput)
 
 		if err != nil {
 			return errors.Wrap(err, "Failed to create v3io context for backend")

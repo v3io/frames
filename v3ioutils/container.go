@@ -22,14 +22,15 @@ package v3ioutils
 
 import (
 	"encoding/binary"
+	"net/http"
+	"strings"
+
 	"github.com/nuclio/logger"
 	"github.com/pkg/errors"
 	"github.com/v3io/frames"
 	v3io "github.com/v3io/v3io-go/pkg/dataplane"
 	v3ioerrors "github.com/v3io/v3io-go/pkg/errors"
 	"github.com/v3io/v3io-tsdb/pkg/utils"
-	"net/http"
-	"strings"
 )
 
 const v3ioUsersContainer = "users"

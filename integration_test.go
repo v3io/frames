@@ -33,9 +33,8 @@ import (
 	"time"
 
 	"github.com/ghodss/yaml"
-	"github.com/v3io/frames/pb"
-
 	"github.com/v3io/frames"
+	"github.com/v3io/frames/pb"
 )
 
 const (
@@ -290,6 +289,10 @@ type testInfo struct {
 	process  *os.Process
 	root     string
 	session  *frames.Session
+}
+
+func (t *testInfo) killProcess() {
+	_ = t.process.Kill()
 }
 
 func setupTest(t testing.TB) *testInfo {

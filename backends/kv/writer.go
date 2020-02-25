@@ -72,9 +72,8 @@ func (kv *Backend) Write(request *frames.WriteRequest) (frames.FrameAppender, er
 	if err != nil {
 		if errorWithStatus, ok := err.(v3ioerrors.ErrorWithStatusCode); !ok || errorWithStatus.StatusCode() != http.StatusNotFound {
 			return nil, err
-		} else {
-			tableAlreadyExists = false
 		}
+		tableAlreadyExists = false
 	}
 
 	if tableAlreadyExists {
@@ -467,7 +466,7 @@ func (a *Appender) respWaitLoop(timeout time.Duration) {
 		case <-timer.C:
 			if !active {
 				a.logger.ErrorWith("Response loop timed out. ", "requests", requests, "response", responses)
-				a.asyncErr = fmt.Errorf("Response loop timed out.")
+				a.asyncErr = fmt.Errorf("response loop timed out")
 				a.doneChan <- true
 				return
 			}

@@ -16,12 +16,13 @@ from time import sleep, time
 
 import pandas as pd
 import pytest
-
 import v3io_frames as v3f
 from conftest import has_go
+from conftest import test_backends
 
 try:
     import cudf
+
     has_cudf = True
 except ImportError:
     has_cudf = False
@@ -51,12 +52,28 @@ def test_cudf(framesd, session):
 @pytest.mark.skipif(not has_cudf, reason='cudf not found')
 def test_concat_categorical():
     df1 = cudf.DataFrame({'a': range(10, 13), 'b': range(50, 53)})
-    df1['c'] = pd.Series(['a']*3, dtype='category')
+    df1['c'] = pd.Series(['a'] * 3, dtype='category')
 
     df2 = cudf.DataFrame({'a': range(20, 23), 'b': range(60, 63)})
-    df2['c'] = pd.Series(['b']*3, dtype='category')
+    df2['c'] = pd.Series(['b'] * 3, dtype='category')
 
-    df = v3f.pdutils.concat_dfs([df1, df2], cudf.DataFrame, cudf.concat)
-    assert len(df) == len(df1) + len(df2), 'bad concat size'
-    dtype = df['c'].dtype
-    assert v3f.pdutils.is_categorical_dtype(dtype), 'result not categorical'
+    for backend in test_backends:
+        df = v3f.pdutils.concat_dfs([df1, df2], backend, cudf.DataFrame, cudf.concat, False)
+        assert len(df) == len(df1) + len(df2), 'bad concat size'
+        dtype = df['c'].dtype
+        assert v3f.pdutils.is_categorical_dtype(dtype), 'result not categorical'
+
+
+@pytest.mark.skipif(not has_cudf, reason='cudf not found')
+def test_concat_categorical_with_multi_index():
+    df1 = cudf.DataFrame({'a': range(10, 13), 'b': range(50, 53)})
+    df1['c'] = pd.Series(['a'] * 3, dtype='category')
+
+    df2 = cudf.DataFrame({'a': range(20, 23), 'b': range(60, 63)})
+    df2['c'] = pd.Series(['b'] * 3, dtype='category')
+
+    for backend in test_backends:
+        df = v3f.pdutils.concat_dfs([df1, df2], backend, cudf.DataFrame, cudf.concat, True)
+        assert len(df) == len(df1) + len(df2), 'bad concat size'
+        dtype = df['c'].dtype
+        assert v3f.pdutils.is_categorical_dtype(dtype), 'result not categorical'
