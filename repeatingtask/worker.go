@@ -25,9 +25,7 @@ func (w *worker) handleTasks() error {
 	for {
 		select {
 		case task := <-w.pool.taskChan:
-			w.handleTask(task)
-			//case <-w.ctx.Done():
-			//	return nil
+			_ = w.handleTask(task)
 		}
 	}
 }
