@@ -12,6 +12,7 @@ github.com/davecgh/go-spew v1.1.1 h1:vj9j/u1bqnvCEfJOwUhtlOARqs3+rkHYY13jYWTU97c
 github.com/davecgh/go-spew v1.1.1/go.mod h1:J7Y8YcW2NihsgmVo/mv3lAwl/skON4iLHjSsI+c5H38=
 github.com/dinal/v3io-go v0.0.5-0.20200224140136-6a59318d387e h1:saDEtfzW/toE02mcR1LLy4FDEuLMDaMUFfHSBf8IaOU=
 github.com/dinal/v3io-go v0.0.5-0.20200224140136-6a59318d387e/go.mod h1:IFb6dJiyvJnOjXUoCoPJ5UViaYjgVYmqJb4fD1qDeLk=
+github.com/dinal/v3io-go v0.0.5-0.20200224150259-64ba7f8f3d98 h1:q7r1bOee5+lPTBIZwi2xUJFhibwadbqs7lrKXN2jTck=
 github.com/dinal/v3io-go v0.0.5-0.20200224150259-64ba7f8f3d98/go.mod h1:D0W1tjsVgcp4xk3ZI2fjKTKaOpYJLewN1BPN0x2osO4=
 github.com/dinal/v3io-tsdb v0.0.3-0.20200219152045-0a164c3e9089 h1:5g3dEl/Pczj/nLAoifETKZiixiAtyWpWSsbvX6MdFxQ=
 github.com/dinal/v3io-tsdb v0.0.3-0.20200219152045-0a164c3e9089/go.mod h1:hdeE2K5HLZsp2NL8VRK9vmMp7cZ2F8x3VoQB2Gr34MI=
@@ -19,6 +20,7 @@ github.com/dinal/v3io-tsdb v0.0.3-0.20200224141536-b567ed86e3b3 h1:AEOeHYN7C2R0v
 github.com/dinal/v3io-tsdb v0.0.3-0.20200224141536-b567ed86e3b3/go.mod h1:DGYOT/7fnyZ5TxIFK0CtWMZe9nH/U7PoUHE8bUOhoeQ=
 github.com/dinal/v3io-tsdb v0.0.3-0.20200224150447-bce5524aebb3/go.mod h1:wRBXgqK7/3D5HG6Ve75JUxZNmaRQq8vHHbOaFvaOf3g=
 github.com/dinal/v3io-tsdb v0.0.3-0.20200224155407-e35e1d707da9/go.mod h1:wRBXgqK7/3D5HG6Ve75JUxZNmaRQq8vHHbOaFvaOf3g=
+github.com/dinal/v3io-tsdb v0.0.3-0.20200224155715-d792923f8130 h1:FKOMkRRoO7OmFLoHAAOTWH/saVLsYDherI92F2bi2Xo=
 github.com/dinal/v3io-tsdb v0.0.3-0.20200224155715-d792923f8130/go.mod h1:wRBXgqK7/3D5HG6Ve75JUxZNmaRQq8vHHbOaFvaOf3g=
 github.com/dinal/v3io-tsdb v0.8.12-0.20200219094038-482603692c50/go.mod h1:di0NiGDqNZAZXzbVQGDYPl7u29KpoaNBe2g0a9q+2F8=
 github.com/ghodss/yaml v1.0.0 h1:wQHKEahhL6wmXdzwWG11gIVCkOv05bNOh+Rxn0yngAk=
@@ -85,8 +87,8 @@ github.com/prometheus/prometheus v2.5.0+incompatible/go.mod h1:oAIUtOny2rjMX0OWN
 github.com/rcrowley/go-metrics v0.0.0-20181016184325-3113b8401b8a h1:9ZKAASQSHhDYGoxY8uLVpewe1GDZ2vu2Tr/vTdVAkFQ=
 github.com/rcrowley/go-metrics v0.0.0-20181016184325-3113b8401b8a/go.mod h1:bCqnVzQkZxMG4s8nGwiZ5l3QUCyqpo9Y+/ZMZ9VjZe4=
 github.com/rs/xid v1.1.0/go.mod h1:+uKXf+4Djp6Md1KODXJxgGQPKngRmWyn10oCKFzNHOQ=
-github.com/russross/blackfriday v1.5.2+incompatible/go.mod h1:JO/DiYxRf+HjHt06OyowR9PTA263kcR/rfWxYHBV53g=
 github.com/russross/blackfriday v1.5.2/go.mod h1:JO/DiYxRf+HjHt06OyowR9PTA263kcR/rfWxYHBV53g=
+github.com/russross/blackfriday v1.5.2+incompatible/go.mod h1:JO/DiYxRf+HjHt06OyowR9PTA263kcR/rfWxYHBV53g=
 github.com/spaolacci/murmur3 v0.0.0-20180118202830-f09979ecbc72 h1:qLC7fQah7D6K1B0ujays3HV9gkFtllcxhzImRR7ArPQ=
 github.com/spaolacci/murmur3 v0.0.0-20180118202830-f09979ecbc72/go.mod h1:JwIasOWyU6f++ZhiEuf87xNszmSA2myDM2Kzu9HwQUA=
 github.com/spf13/cobra v0.0.3/go.mod h1:1l0Ry5zgKvJasoi3XT1TypsSe7PqH0Sj9dhYf7v3XqQ=

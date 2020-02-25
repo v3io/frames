@@ -80,7 +80,7 @@ func (b *Backend) Read(request *frames.ReadRequest) (frames.FrameIterator, error
 		input.Timestamp = int(seekTime / 1000)
 	case "seq", "sequence":
 		input.Type = v3io.SeekShardInputTypeSequence
-		input.StartingSequenceNumber = int(request.Proto.Sequence)
+		input.StartingSequenceNumber = uint64(request.Proto.Sequence)
 	case "latest", "late":
 		input.Type = v3io.SeekShardInputTypeLatest
 	case "earliest":
@@ -138,7 +138,7 @@ func (i *streamIterator) Next() bool {
 				recTime, "Seq:", r.SequenceNumber, "Body:", string(r.Data))
 			row = map[string]interface{}{"raw_data": string(r.Data)}
 		}
-		lastSequence = r.SequenceNumber
+		lastSequence = int(r.SequenceNumber)
 		row["stream_time"] = recTime
 		row["seq_number"] = r.SequenceNumber
 
