@@ -274,7 +274,7 @@ func (api *API) createBackends(config *frames.Config) error {
 
 		newContextInput := &v3iohttp.NewContextInput{
 			HTTPClient:     newClient,
-			NumWorkers:      backendConfig.V3ioGoWorkers,
+			NumWorkers:     backendConfig.V3ioGoWorkers,
 			RequestChanLen: backendConfig.V3ioGoRequestChanLength,
 		}
 		// create a context for the backend
