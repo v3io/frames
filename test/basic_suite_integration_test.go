@@ -296,14 +296,14 @@ func setupTest(t testing.TB, internalLogger logger.Logger) *testInfo {
 	info.grpcAddr = fmt.Sprintf("localhost:%d", grpcPort)
 	info.httpAddr = fmt.Sprintf("http://localhost:%d", httpPort)
 
-	httpClient := v3iohttp.NewClient(nil, 0)
-	httpClient.MaxConnsPerHost = 100
-
-	// create a context for the backend
-	v3ioContext, _ := v3iohttp.NewContext(internalLogger, httpClient, &v3io.NewContextInput{
+	newClient := v3iohttp.NewClient(&v3iohttp.NewClientInput{DialTimeout: 0, MaxConnsPerHost: 100})
+	newContextInput := &v3iohttp.NewContextInput{
+		HTTPClient:     newClient,
 		NumWorkers:     8,
 		RequestChanLen: 4096,
-	})
+	}
+
+	v3ioContext, _ := v3iohttp.NewContext(internalLogger, newContextInput)
 
 	container, _ := v3ioutils.NewContainer(
 		v3ioContext,
