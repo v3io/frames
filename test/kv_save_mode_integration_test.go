@@ -3,6 +3,7 @@ package test
 import (
 	"fmt"
 	"math"
+	"strings"
 	"time"
 
 	"github.com/v3io/frames"
@@ -203,6 +204,29 @@ func (kvSuite *KvTestSuite) TestSaveModeUpdateItemNewRow() {
 	}
 
 	kvSuite.NoError(iter.Err(), "error reading from kv")
+}
+
+func (kvSuite *KvTestSuite) TestSaveModeUpdateItemNoKey() {
+	table := fmt.Sprintf("TestSaveModeUpdateItemNoKey_%d", time.Now().UnixNano())
+	requireCtx := kvSuite.Require()
+
+	columnNames := []string{"n1", "n2"}
+
+	frame := kvSuite.generateRandomSampleFrameWithEmptyStringIndex(3, "idx", columnNames)
+	wreq := &frames.WriteRequest{
+		Backend: kvSuite.backendName,
+		Table:   table,
+	}
+
+	appender, err := kvSuite.client.Write(wreq)
+	requireCtx.NoError(err, "failed to create appender")
+
+	err = appender.Add(frame)
+	requireCtx.NoError(err, "failed to write frame")
+
+	err = appender.WaitForComplete(time.Second)
+	requireCtx.Error(err, "empty key error is expected")
+	requireCtx.True(strings.Contains(err.Error(), "should not be empty"))
 }
 
 func (kvSuite *KvTestSuite) TestSaveModeUpdateItemNewAttribute() {

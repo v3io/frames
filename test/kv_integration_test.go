@@ -66,6 +66,32 @@ func (kvSuite *KvTestSuite) SetupSuite() {
 	}
 }
 
+func (kvSuite *KvTestSuite) generateRandomSampleFrameWithEmptyStringIndex(size int, indexName string, columnNames []string) frames.Frame {
+	var icol frames.Column
+
+	index := make([]string, size)
+	for i := 0; i < size; i++ {
+		index[i] = ""
+	}
+
+	icol, err := frames.NewSliceColumn(indexName, index)
+	if err != nil {
+		kvSuite.T().Fatal(err)
+	}
+
+	columns := make([]frames.Column, len(columnNames))
+	for i, name := range columnNames {
+		columns[i] = FloatCol(kvSuite.T(), name, size)
+	}
+
+	frame, err := frames.NewFrame(columns, []frames.Column{icol}, nil)
+	if err != nil {
+		kvSuite.T().Fatal(err)
+	}
+
+	return frame
+}
+
 func (kvSuite *KvTestSuite) generateRandomSampleFrame(size int, indexName string, columnNames []string) frames.Frame {
 	var icol frames.Column
 
