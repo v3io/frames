@@ -47,7 +47,7 @@ func TestEnd2End(t *testing.T) {
 			Level: "debug",
 		},
 		Backends: []*frames.BackendConfig{
-			&frames.BackendConfig{
+			{
 				Name:    backendName,
 				Type:    "csv",
 				RootDir: tmpDir,
@@ -146,8 +146,8 @@ func TestEnd2End(t *testing.T) {
 
 func testGrafana(t *testing.T, baseURL string, backend string, table string) {
 	// ack
-	ackUrl := fmt.Sprintf("%s/", baseURL)
-	resp, err := nhttp.Get(ackUrl)
+	ackURL := fmt.Sprintf("%s/", baseURL)
+	resp, err := nhttp.Get(ackURL)
 	if err != nil {
 		t.Fatalf("can't call simplejson API - %s", err)
 	}
