@@ -23,6 +23,7 @@ package frames
 import (
 	"time"
 
+	"github.com/pkg/errors"
 	"github.com/v3io/frames/pb"
 )
 
@@ -36,6 +37,50 @@ var (
 	IntType    = DType(pb.DType_INTEGER)
 	StringType = DType(pb.DType_STRING)
 	TimeType   = DType(pb.DType_TIME)
+)
+
+type SaveMode int
+
+func (mode SaveMode) GetNginxModeName() string {
+	switch mode {
+	case ErrorIfTableExists:
+		return ""
+	case OverwriteTable:
+		return ""
+	case UpdateItem:
+		return "CreateOrReplaceAttributes"
+	case OverwriteItem:
+		return "OverWriteAttributes"
+	case CreateNewItemsOnly:
+		return "CreateNewItemOnly"
+	default:
+		return ""
+	}
+}
+
+func (mode SaveMode) String() string {
+	switch mode {
+	case ErrorIfTableExists:
+		return "errorIfTableExists"
+	case OverwriteTable:
+		return "overwriteTable"
+	case UpdateItem:
+		return "updateItem"
+	case OverwriteItem:
+		return "overwriteItem"
+	case CreateNewItemsOnly:
+		return "createNewItemsOnly"
+	default:
+		return ""
+	}
+}
+
+const (
+	ErrorIfTableExists SaveMode = iota
+	OverwriteTable
+	UpdateItem
+	OverwriteItem
+	CreateNewItemsOnly
 )
 
 // Column is a data column
@@ -54,6 +99,7 @@ type Column interface {
 	Bools() ([]bool, error)                   // Data as []bool
 	BoolAt(i int) (bool, error)               // bool value at index i
 	Slice(start int, end int) (Column, error) // Slice of data
+	CopyWithName(newName string) Column       // Create a copy of the current column
 }
 
 // Frame is a collection of columns
@@ -65,6 +111,8 @@ type Frame interface {
 	Column(name string) (Column, error)      // Column by name
 	Slice(start int, end int) (Frame, error) // Slice of Frame
 	IterRows(includeIndex bool) RowIterator  // Iterate over rows
+	IsNull(index int, colName string) bool
+	NullValuesMap() []*pb.NullValuesMap
 }
 
 // RowIterator is an iterator over frame rows
@@ -97,10 +145,15 @@ type FrameIterator interface {
 type FrameAppender interface {
 	Add(frame Frame) error
 	WaitForComplete(timeout time.Duration) error
+	Close()
 }
 
 // ReadRequest is a read/query request
-type ReadRequest = pb.ReadRequest
+type ReadRequest struct {
+	Proto    *pb.ReadRequest
+	Password SecretString
+	Token    SecretString
+}
 
 // JoinStruct is a join structure
 type JoinStruct = pb.JoinStruct
@@ -109,22 +162,35 @@ type JoinStruct = pb.JoinStruct
 // TODO: Unite with probouf (currenly the protobuf message combines both this
 // and a frame message)
 type WriteRequest struct {
-	Session *Session
-	Backend string // backend name
-	Table   string // Table name (path)
+	Session  *Session
+	Password SecretString
+	Token    SecretString
+	Backend  string // backend name
+	Table    string // Table name (path)
 	// Data message sent with the write request (in case of a stream multiple messages can follow)
 	ImmidiateData Frame
 	// Expression template, for update expressions generated from combining columns data with expression
 	Expression string
+	// Condition template, for update conditions generated from combining columns data with expression
+	Condition string
 	// Will we get more message chunks (in a stream), if not we can complete
 	HaveMore bool
+	SaveMode SaveMode
 }
 
 // CreateRequest is a table creation request
-type CreateRequest = pb.CreateRequest
+type CreateRequest struct {
+	Proto    *pb.CreateRequest
+	Password SecretString
+	Token    SecretString
+}
 
 // DeleteRequest is a deletion request
-type DeleteRequest = pb.DeleteRequest
+type DeleteRequest struct {
+	Proto    *pb.DeleteRequest
+	Password SecretString
+	Token    SecretString
+}
 
 // TableSchema is a table schema
 type TableSchema = pb.TableSchema
@@ -145,4 +211,38 @@ const (
 )
 
 // ExecRequest is execution request
-type ExecRequest = pb.ExecRequest
+type ExecRequest struct {
+	Proto    *pb.ExecRequest
+	Password SecretString
+	Token    SecretString
+}
+
+// Hides a string such as a password from both plain and json logs.
+type SecretString struct {
+	s *string
+}
+
+func InitSecretString(s string) SecretString {
+	return SecretString{s: &s}
+}
+
+func (s SecretString) Get() string {
+	return *s.s
+}
+
+func SaveModeFromString(mode string) (SaveMode, error) {
+	switch mode {
+	case "", "errorIfTableExists": // this is the default save mode
+		return ErrorIfTableExists, nil
+	case "overwriteTable":
+		return OverwriteTable, nil
+	case "updateItem":
+		return UpdateItem, nil
+	case "overwriteItem":
+		return OverwriteItem, nil
+	case "createNewItemsOnly":
+		return CreateNewItemsOnly, nil
+	default:
+		return -1, errors.Errorf("no save mode named '%v'", mode)
+	}
+}

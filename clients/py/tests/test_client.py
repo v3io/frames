@@ -31,7 +31,6 @@ def test_client(proto, cls):
         'path': 'the road goes there',
         'user': 'bugs',
         'password': 'duck season',
-        'token': 'a quarter',
     }
 
     client = v3f.Client(address, **session_params)
@@ -40,6 +39,25 @@ def test_client(proto, cls):
         key = 'url' if key == 'data_url' else key
         assert getattr(client.session, key) == value, \
             'bad session value for {}'.format(key)
+
+
+@pytest.mark.parametrize('proto,cls', test_client_params)
+def test_client_wrong_params(proto, cls):
+    address = '{}://localhost:8080'.format(proto)
+    session_params = {
+        'data_url': 'http://iguazio.com',
+        'container': 'large one',
+        'path': 'the road goes there',
+        'user': 'bugs',
+        'password': 'duck season',
+        'token': 'a quarter',
+    }
+
+    try:
+        v3f.Client(address, **session_params)
+        raise ValueError('expected fail but finished successfully')
+    except ValueError:
+        return
 
 
 def test_partition_keys():

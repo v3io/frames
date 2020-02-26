@@ -26,7 +26,6 @@ import (
 	"time"
 
 	"github.com/pkg/errors"
-
 	"github.com/v3io/frames/pb"
 )
 
@@ -40,8 +39,16 @@ type frameImpl struct {
 	names   []string // Created on 1st call to Names
 }
 
+func (fr *frameImpl) NullValuesMap() []*pb.NullValuesMap {
+	return fr.msg.NullValues
+}
+
 // NewFrame returns a new Frame
 func NewFrame(columns []Column, indices []Column, labels map[string]interface{}) (Frame, error) {
+	return NewFrameWithNullValues(columns, indices, labels, nil)
+}
+
+func NewFrameWithNullValues(columns []Column, indices []Column, labels map[string]interface{}, nullValues []*pb.NullValuesMap) (Frame, error) {
 	if err := checkEqualLen(columns, indices); err != nil {
 		return nil, err
 	}
@@ -63,6 +70,8 @@ func NewFrame(columns []Column, indices []Column, labels map[string]interface{})
 	if err != nil {
 		return nil, err
 	}
+
+	msg.NullValues = nullValues
 
 	byName := make(map[string]Column)
 	for _, col := range columns {
@@ -111,7 +120,7 @@ func NewFrameFromRows(rows []map[string]interface{}, indices []string, labels ma
 				frameCols[name] = col
 			}
 
-			extendCol(col, rowNum)
+			_ = extendCol(col, rowNum)
 			if err := colAppend(col, value); err != nil {
 				return nil, err
 			}
@@ -120,7 +129,7 @@ func NewFrameFromRows(rows []map[string]interface{}, indices []string, labels ma
 		// Extend columns not in row
 		for name, col := range frameCols {
 			if _, ok := row[name]; !ok {
-				extendCol(col, rowNum+1)
+				_ = extendCol(col, rowNum+1)
 			}
 		}
 	}
@@ -198,7 +207,12 @@ func (fr *frameImpl) Slice(start int, end int) (Frame, error) {
 		return nil, err
 	}
 
-	return NewFrame(colSlices, indexSlices, fr.labels)
+	var nullValuesSlice []*pb.NullValuesMap
+	if len(fr.msg.NullValues) != 0 {
+		nullValuesSlice = fr.msg.NullValues[start:end]
+	}
+
+	return NewFrameWithNullValues(colSlices, indexSlices, fr.labels, nullValuesSlice)
 }
 
 // FrameRowIterator returns iterator over rows
@@ -209,6 +223,15 @@ func (fr *frameImpl) IterRows(includeIndex bool) RowIterator {
 // Proto returns the underlying protobuf message
 func (fr *frameImpl) Proto() *pb.Frame {
 	return fr.msg
+}
+
+func (fr *frameImpl) IsNull(index int, colName string) bool {
+	if len(fr.msg.NullValues) == 0 {
+		return false
+	}
+	_, exist := fr.msg.NullValues[index].NullColumns[colName]
+
+	return exist
 }
 
 // NewFrameFromProto return a new frame from protobuf message
@@ -246,7 +269,7 @@ func validateSlice(start int, end int, size int) error {
 		return fmt.Errorf("start out of bounds")
 	}
 
-	if end >= size {
+	if end > size {
 		return fmt.Errorf("end out of bounds")
 	}
 

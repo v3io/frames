@@ -58,11 +58,16 @@ message Value {
     }
 }
 
+message NullValuesMap {
+    map<string, bool> nullColumns = 1;
+}
+
 message Frame {
     repeated Column columns = 1;
     repeated Column indices = 2;
     map<string, Value> labels = 3;
     string error = 4; // Used in errors when reading over HTTP
+    repeated NullValuesMap null_values = 5;
 }
 
 // TODO: Place these under TableSchema
@@ -122,6 +127,7 @@ message ReadRequest {
     int64 message_limit = 14;
     string marker = 15;
 
+    bool reset_index = 29;
     // NoSQL
     repeated int64 segments = 16;
     int64 total_segments = 17;
@@ -133,7 +139,8 @@ message ReadRequest {
     string start = 21;
     string end = 22;
     string step = 23;
-    string aggragators = 24;
+    string aggregators = 24;
+    string aggregation_window = 28;
 
     // Stream
     string seek = 25;
@@ -149,6 +156,8 @@ message InitialWriteRequest {
     string expression = 5;
     bool more = 6;
     repeated string partition_keys = 7;
+    string condition = 8;
+    string save_mode = 9;
 }
 
 message WriteRequest {
@@ -174,9 +183,15 @@ message CreateRequest {
     Session session = 1;
     string backend = 2; // name of the backend
     string table = 3; // Table name (path)
-    map<string, Value> attribute_map = 4; // List of attributes used for creating the table
-    TableSchema schema = 5; // Schema (for describing unstructured/schemaless data)
-    ErrorOptions if_exists = 6;
+    TableSchema schema = 4; // Schema (for describing unstructured/schemaless data)
+    ErrorOptions if_exists = 5;
+    // TSDB
+    string rate = 6; //Sample rate
+    string aggregates = 7;
+    string aggregation_granularity = 8;
+    // Stream
+    int64 shards = 9;
+    int64 retention_hours = 10;
 }
 
 message CreateResponse {}

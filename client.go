@@ -26,22 +26,21 @@ import (
 	"strings"
 
 	"github.com/pkg/errors"
-
 	"github.com/v3io/frames/pb"
 )
 
 // Client interface
 type Client interface {
 	// Read reads data from server
-	Read(request *ReadRequest) (FrameIterator, error)
+	Read(request *pb.ReadRequest) (FrameIterator, error)
 	// Write writes data to server
 	Write(request *WriteRequest) (FrameAppender, error)
 	// Create creates a table
-	Create(request *CreateRequest) error
+	Create(request *pb.CreateRequest) error
 	// Delete deletes data or table
-	Delete(request *DeleteRequest) error
+	Delete(request *pb.DeleteRequest) error
 	// Exec executes a command on the backend
-	Exec(request *ExecRequest) (Frame, error)
+	Exec(request *pb.ExecRequest) (Frame, error)
 }
 
 // SessionFromEnv return a session from V3IO_SESSION environment variable (JSON encoded)

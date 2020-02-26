@@ -24,20 +24,19 @@ package api
 
 import (
 	"fmt"
+	"strings"
 	"time"
 
+	"github.com/nuclio/logger"
+	"github.com/pkg/errors"
 	"github.com/v3io/frames"
 	"github.com/v3io/frames/backends"
-
 	// Load backends (make sure they register)
 	_ "github.com/v3io/frames/backends/csv"
 	_ "github.com/v3io/frames/backends/kv"
 	_ "github.com/v3io/frames/backends/stream"
 	_ "github.com/v3io/frames/backends/tsdb"
-
-	"github.com/nuclio/logger"
-	"github.com/pkg/errors"
-	"strings"
+	v3iohttp "github.com/v3io/v3io-go/pkg/dataplane/http"
 )
 
 const (
@@ -78,13 +77,13 @@ func New(logger logger.Logger, config *frames.Config) (*API, error) {
 
 // Read reads from database, emitting results to wf
 func (api *API) Read(request *frames.ReadRequest, out chan frames.Frame) error {
-	api.logger.InfoWith("read request", "request", request)
+	api.logger.DebugWith("read request", "request", request)
 
-	backend, ok := api.backends[request.Backend]
+	backend, ok := api.backends[request.Proto.Backend]
 
 	if !ok {
-		api.logger.ErrorWith("unknown backend", "name", request.Backend)
-		return fmt.Errorf("unknown backend - %q", request.Backend)
+		api.logger.ErrorWith("unknown backend", "name", request.Proto.Backend)
+		return fmt.Errorf("unknown backend - %q", request.Proto.Backend)
 	}
 
 	iter, err := backend.Read(request)
@@ -113,10 +112,10 @@ func (api *API) Write(request *frames.WriteRequest, in chan frames.Frame) (int, 
 		return -1, -1, fmt.Errorf(missingMsg)
 	}
 
-	api.logger.InfoWith("write request", "request", request)
+	api.logger.DebugWith("write request", "request", request)
 	backend, ok := api.backends[request.Backend]
 	if !ok {
-		api.logger.ErrorWith("unkown backend", "name", request.Backend)
+		api.logger.ErrorWith("unknown backend", "name", request.Backend)
 		return -1, -1, fmt.Errorf("unknown backend - %s", request.Backend)
 	}
 
@@ -126,7 +125,7 @@ func (api *API) Write(request *frames.WriteRequest, in chan frames.Frame) (int, 
 		api.logger.ErrorWith(msg, "error", err)
 		return -1, -1, errors.Wrap(err, msg)
 	}
-
+	defer appender.Close()
 	nFrames, nRows := 0, 0
 	if request.ImmidiateData != nil {
 		nFrames, nRows = 1, request.ImmidiateData.Len()
@@ -166,16 +165,16 @@ func (api *API) Write(request *frames.WriteRequest, in chan frames.Frame) (int, 
 
 // Create will create a new table
 func (api *API) Create(request *frames.CreateRequest) error {
-	if request.Backend == "" || request.Table == "" {
+	if request.Proto.Backend == "" || request.Proto.Table == "" {
 		api.logger.ErrorWith(missingMsg, "request", request)
 		return fmt.Errorf(missingMsg)
 	}
 
 	api.logger.DebugWith("create", "request", request)
-	backend, ok := api.backends[request.Backend]
+	backend, ok := api.backends[request.Proto.Backend]
 	if !ok {
-		api.logger.ErrorWith("unkown backend", "name", request.Backend)
-		return fmt.Errorf("unknown backend - %s", request.Backend)
+		api.logger.ErrorWith("unknown backend", "name", request.Proto.Backend)
+		return fmt.Errorf("unknown backend - %s", request.Proto.Backend)
 	}
 
 	if err := backend.Create(request); err != nil {
@@ -188,16 +187,16 @@ func (api *API) Create(request *frames.CreateRequest) error {
 
 // Delete deletes a table or part of it
 func (api *API) Delete(request *frames.DeleteRequest) error {
-	if request.Backend == "" || request.Table == "" {
+	if request.Proto.Backend == "" || request.Proto.Table == "" {
 		api.logger.ErrorWith(missingMsg, "request", request)
 		return fmt.Errorf(missingMsg)
 	}
 
 	api.logger.DebugWith("delete", "request", request)
-	backend, ok := api.backends[request.Backend]
+	backend, ok := api.backends[request.Proto.Backend]
 	if !ok {
-		api.logger.ErrorWith("unkown backend", "name", request.Backend)
-		return fmt.Errorf("unknown backend - %s", request.Backend)
+		api.logger.ErrorWith("unknown backend", "name", request.Proto.Backend)
+		return fmt.Errorf("unknown backend - %s", request.Proto.Backend)
 	}
 
 	if err := backend.Delete(request); err != nil {
@@ -210,17 +209,17 @@ func (api *API) Delete(request *frames.DeleteRequest) error {
 
 // Exec executes a command on the backend
 func (api *API) Exec(request *frames.ExecRequest) (frames.Frame, error) {
-	if request.Backend == "" || request.Table == "" {
+	if request.Proto.Backend == "" || request.Proto.Table == "" {
 		api.logger.ErrorWith(missingMsg, "request", request)
 		return nil, fmt.Errorf(missingMsg)
 	}
 
 	// TODO: This print session in clear text
 	//	api.logger.DebugWith("exec", "request", request)
-	backend, ok := api.backends[request.Backend]
+	backend, ok := api.backends[request.Proto.Backend]
 	if !ok {
-		api.logger.ErrorWith("unkown backend", "name", request.Backend)
-		return nil, fmt.Errorf("unknown backend - %s", request.Backend)
+		api.logger.ErrorWith("unknown backend", "name", request.Proto.Backend)
+		return nil, fmt.Errorf("unknown backend - %s", request.Proto.Backend)
 	}
 
 	frame, err := backend.Exec(request)
@@ -233,30 +232,30 @@ func (api *API) Exec(request *frames.ExecRequest) (frames.Frame, error) {
 }
 
 func (api *API) populateQuery(request *frames.ReadRequest) error {
-	sqlQuery, err := frames.ParseSQL(request.Query)
+	sqlQuery, err := frames.ParseSQL(request.Proto.Query)
 	if err != nil {
 		return errors.Wrap(err, "bad SQL query")
 	}
 
-	if request.Table != "" {
+	if request.Proto.Table != "" {
 		return fmt.Errorf("both query AND table provided")
 	}
-	request.Table = sqlQuery.Table
+	request.Proto.Table = sqlQuery.Table
 
-	if request.Columns != nil {
+	if request.Proto.Columns != nil {
 		return fmt.Errorf("both query AND columns provided")
 	}
-	request.Columns = sqlQuery.Columns
+	request.Proto.Columns = sqlQuery.Columns
 
-	if request.Filter != "" {
+	if request.Proto.Filter != "" {
 		return fmt.Errorf("both query AND filter provided")
 	}
-	request.Filter = sqlQuery.Filter
+	request.Proto.Filter = sqlQuery.Filter
 
-	if request.GroupBy != "" {
+	if request.Proto.GroupBy != "" {
 		return fmt.Errorf("both query AND group_by provided")
 	}
-	request.GroupBy = sqlQuery.GroupBy
+	request.Proto.GroupBy = sqlQuery.GroupBy
 
 	return nil
 }
@@ -264,18 +263,39 @@ func (api *API) populateQuery(request *frames.ReadRequest) error {
 func (api *API) createBackends(config *frames.Config) error {
 	api.backends = make(map[string]frames.DataBackend)
 
-	for _, cfg := range config.Backends {
-		factory := backends.GetFactory(cfg.Type)
-		if factory == nil {
-			return fmt.Errorf("unknown backend - %q", cfg.Type)
-		}
+	for _, backendConfig := range config.Backends {
+		newClient := v3iohttp.NewClient(&v3iohttp.NewClientInput{DialTimeout: 0, MaxConnsPerHost: backendConfig.MaxConnections})
 
-		backend, err := factory(api.logger, cfg, config)
+		api.logger.InfoWith("Creating v3io context for backend",
+			"backend", backendConfig.Name,
+			"workers", backendConfig.V3ioGoWorkers,
+			"requestChanLength", backendConfig.V3ioGoRequestChanLength,
+			"maxConnsPerHost", backendConfig.MaxConnections)
+
+		newContextInput := &v3iohttp.NewContextInput{
+			HTTPClient:     newClient,
+			NumWorkers:     backendConfig.V3ioGoWorkers,
+			RequestChanLen: backendConfig.V3ioGoRequestChanLength,
+		}
+		// create a context for the backend
+		v3ioContext, err := v3iohttp.NewContext(api.logger, newContextInput)
+
 		if err != nil {
-			return errors.Wrapf(err, "%s:%s - can't create backend", cfg.Name, cfg.Type)
+			return errors.Wrap(err, "Failed to create v3io context for backend")
 		}
 
-		api.backends[cfg.Name] = backend
+		factory := backends.GetFactory(backendConfig.Type)
+		if factory == nil {
+			return fmt.Errorf("unknown backend - %q", backendConfig.Type)
+		}
+
+		backend, err := factory(api.logger, v3ioContext, backendConfig, config)
+		if err != nil {
+			return errors.Wrapf(err, "%s:%s - can't create backend", backendConfig.Name, backendConfig.Type)
+		}
+
+		api.backends[backendConfig.Name] = backend
+
 	}
 
 	return nil

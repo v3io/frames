@@ -23,26 +23,27 @@ package v3ioutils
 import (
 	"encoding/json"
 	"fmt"
+	"strings"
 	"time"
 
 	"github.com/pkg/errors"
-	v3io "github.com/v3io/v3io-go-http"
-
 	"github.com/v3io/frames"
-	"strings"
+	v3io "github.com/v3io/v3io-go/pkg/dataplane"
 )
 
 const (
-	longType   = "long"
-	doubleType = "double"
-	stringType = "string"
-	timeType   = "time"
-	// TODO: boolType?
+	LongType   = "long"
+	DoubleType = "double"
+	StringType = "string"
+	TimeType   = "timestamp"
+	BoolType   = "boolean"
+
+	DefaultKeyColumn = "idx"
 )
 
 // NewSchema returns a new schema
-func NewSchema(key string) V3ioSchema {
-	return &OldV3ioSchema{Fields: []OldSchemaField{}, Key: key}
+func NewSchema(key string, sortingKey string) V3ioSchema {
+	return &OldV3ioSchema{Fields: []OldSchemaField{}, Key: key, SortingKey: sortingKey}
 }
 
 // SchemaFromJSON return a schema from JSON data
@@ -56,13 +57,14 @@ func SchemaFromJSON(data []byte) (V3ioSchema, error) {
 type V3ioSchema interface {
 	AddColumn(name string, col frames.Column, nullable bool) error
 	AddField(name string, val interface{}, nullable bool) error
-	UpdateSchema(container *v3io.Container, tablePath string, newSchema V3ioSchema) error
+	UpdateSchema(container v3io.Container, tablePath string, newSchema V3ioSchema) error
 }
 
 // OldV3ioSchema is old v3io schema
 type OldV3ioSchema struct {
 	Fields           []OldSchemaField `json:"fields"`
 	Key              string           `json:"key"`
+	SortingKey       string           `json:"sortingKey,omitempty"`
 	HashingBucketNum int              `json:"hashingBucketNum"`
 }
 
@@ -70,24 +72,13 @@ type OldV3ioSchema struct {
 type OldSchemaField struct {
 	Name     string `json:"name"`
 	Type     string `json:"type"`
-	Nullable bool   `json:"nullable,omitempty"`
+	Nullable bool   `json:"nullable"`
 }
 
 // AddColumn adds a column
 func (s *OldV3ioSchema) AddColumn(name string, col frames.Column, nullable bool) error {
-	var ftype string
-	switch col.DType() {
-	case frames.IntType:
-		ftype = longType
-	case frames.FloatType:
-		ftype = doubleType
-	case frames.StringType:
-		ftype = stringType
-	case frames.TimeType:
-		ftype = timeType
-	}
 
-	field := OldSchemaField{Name: name, Type: ftype, Nullable: nullable}
+	field := OldSchemaField{Name: name, Type: ConvertDTypeToString(col.DType()), Nullable: nullable}
 	s.Fields = append(s.Fields, field)
 	return nil
 }
@@ -97,18 +88,29 @@ func (s *OldV3ioSchema) AddField(name string, val interface{}, nullable bool) er
 	var ftype string
 	switch val.(type) {
 	case int, int32, int64:
-		ftype = longType
+		ftype = LongType
 	case float32, float64:
-		ftype = doubleType
+		ftype = DoubleType
 	case string:
-		ftype = stringType
+		ftype = StringType
 	case time.Time:
-		ftype = timeType
+		ftype = TimeType
+	case bool:
+		ftype = BoolType
 	}
 
 	field := OldSchemaField{Name: name, Type: ftype, Nullable: nullable}
 	s.Fields = append(s.Fields, field)
 	return nil
+}
+
+func (s *OldV3ioSchema) GetField(name string) (OldSchemaField, error) {
+	for _, f := range s.Fields {
+		if f.Name == name {
+			return f, nil
+		}
+	}
+	return OldSchemaField{}, fmt.Errorf("no field named %v ", name)
 }
 
 // toJSON retrun JSON representation of schema
@@ -117,6 +119,7 @@ func (s *OldV3ioSchema) toJSON() ([]byte, error) {
 }
 
 func (s *OldV3ioSchema) merge(new *OldV3ioSchema) (bool, error) {
+	isFirstSchema := len(s.Fields) == 0
 	changed := false
 	for _, field := range new.Fields {
 		index := -1
@@ -126,39 +129,39 @@ func (s *OldV3ioSchema) merge(new *OldV3ioSchema) (bool, error) {
 			}
 		}
 
-		if index >= 0 && field.Type != s.Fields[index].Type {
-			if field.Type == stringType {
-				s.Fields[index].Type = stringType
-				changed = true
-				continue
-			}
-
-			if field.Type == doubleType && s.Fields[index].Type == longType {
-				s.Fields[index].Type = doubleType
-				changed = true
-				continue
-			}
-
-			if field.Type == timeType || s.Fields[index].Type == timeType {
-				return changed, fmt.Errorf(
-					"Schema change from %s to %s is not allowed", s.Fields[index].Type, field.Type)
-			}
-		} else {
+		if index < 0 {
 			s.Fields = append(s.Fields, field)
 			changed = true
+		} else if field.Type != s.Fields[index].Type {
+			return changed, fmt.Errorf(
+				"schema change for column %v from type %s to %s is not allowed", field.Name, s.Fields[index].Type, field.Type)
 		}
 	}
 
+	// Do not accept key name change, unless it's the first time we are saving to this table
 	if s.Key != new.Key && new.Key != "" {
-		s.Key = new.Key
-		changed = true
+		if isFirstSchema {
+			s.Key = new.Key
+			changed = true
+		} else {
+			return changed, fmt.Errorf("changing primary key is not allowed, old: %v, new:%v", s.Key, new.Key)
+		}
+	}
+
+	if s.SortingKey != new.SortingKey && new.SortingKey != "" {
+		if isFirstSchema {
+			s.SortingKey = new.SortingKey
+			changed = true
+		} else {
+			return changed, fmt.Errorf("changing sorting key is not allowed, old: %v, new:%v", s.SortingKey, new.SortingKey)
+		}
 	}
 
 	return changed, nil
 }
 
 // UpdateSchema updates the schema
-func (s *OldV3ioSchema) UpdateSchema(container *v3io.Container, tablePath string, newSchema V3ioSchema) error {
+func (s *OldV3ioSchema) UpdateSchema(container v3io.Container, tablePath string, newSchema V3ioSchema) error {
 	changed, err := s.merge(newSchema.(*OldV3ioSchema))
 	if err != nil {
 		return errors.Wrap(err, "failed to merge schema")
@@ -169,8 +172,7 @@ func (s *OldV3ioSchema) UpdateSchema(container *v3io.Container, tablePath string
 		if err != nil {
 			return errors.Wrap(err, "failed to marshal schema")
 		}
-		err = container.Sync.PutObject(&v3io.PutObjectInput{
-			Path: tablePath + ".%23schema", Body: body})
+		err = container.PutObjectSync(&v3io.PutObjectInput{Path: tablePath + ".#schema", Body: body})
 		if err != nil {
 			if strings.Contains(err.Error(), "status 401") {
 				return errors.New("unauthorized update (401), may be caused by wrong password or credentials")
@@ -181,4 +183,43 @@ func (s *OldV3ioSchema) UpdateSchema(container *v3io.Container, tablePath string
 	}
 
 	return nil
+}
+
+func ConvertDTypeToString(dType frames.DType) string {
+	switch dType {
+	case frames.IntType:
+		return LongType
+	case frames.FloatType:
+		return DoubleType
+	case frames.StringType:
+		return StringType
+	case frames.TimeType:
+		return TimeType
+	case frames.BoolType:
+		return BoolType
+	}
+	return ""
+}
+
+func ContainsField(fields []OldSchemaField, fieldName string) (bool, OldSchemaField) {
+	for _, f := range fields {
+		if f.Name == fieldName {
+			return true, f
+		}
+	}
+
+	return false, OldSchemaField{}
+}
+
+func GetSchema(tablePath string, container v3io.Container) (V3ioSchema, error) {
+	schemaInput := &v3io.GetObjectInput{Path: tablePath + ".#schema"}
+	resp, err := container.GetObjectSync(schemaInput)
+	if err != nil {
+		return nil, err
+	}
+	schema := &OldV3ioSchema{}
+	if err := json.Unmarshal(resp.HTTPResponse.Body(), schema); err != nil {
+		return nil, err
+	}
+	return schema, nil
 }

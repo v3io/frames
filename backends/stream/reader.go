@@ -26,15 +26,14 @@ import (
 	"strings"
 	"time"
 
-	v3io "github.com/v3io/v3io-go-http"
-	"github.com/v3io/v3io-tsdb/pkg/utils"
-
 	"github.com/v3io/frames"
+	v3io "github.com/v3io/v3io-go/pkg/dataplane"
+	"github.com/v3io/v3io-tsdb/pkg/utils"
 )
 
 type streamIterator struct {
 	request      *frames.ReadRequest
-	container    *v3io.Container
+	container    v3io.Container
 	err          error
 	currFrame    frames.Frame
 	nextLocation string
@@ -45,54 +44,54 @@ type streamIterator struct {
 
 func (b *Backend) Read(request *frames.ReadRequest) (frames.FrameIterator, error) {
 
-	if request.Table == "" || request.Seek == "" || request.ShardId == "" {
+	if request.Proto.Table == "" || request.Proto.Seek == "" || request.Proto.ShardId == "" {
 		return nil, fmt.Errorf("missing essential paramaters, need: table, seek, shard parameters")
 	}
 
-	container, path, err := b.newConnection(request.Session, request.Table, true)
+	container, path, err := b.newConnection(request.Proto.Session, request.Password.Get(), request.Token.Get(), request.Proto.Table, true)
 	if err != nil {
 		return nil, err
 	}
-	request.Table = path
+	request.Proto.Table = path
 
 	iter := streamIterator{request: request, b: b, container: container}
 
-	input := v3io.SeekShardInput{Path: request.Table + request.ShardId}
+	input := v3io.SeekShardInput{Path: request.Proto.Table + request.Proto.ShardId}
 
-	if request.MessageLimit == 0 {
-		request.MessageLimit = 1024
+	if request.Proto.MessageLimit == 0 {
+		request.Proto.MessageLimit = 1024
 	}
 
-	if request.End != "" {
-		endTime, err := utils.Str2unixTime(request.End)
+	if request.Proto.End != "" {
+		endTime, err := utils.Str2unixTime(request.Proto.End)
 		if err != nil {
 			return nil, err
 		}
 		iter.endTime = int(endTime)
 	}
 
-	switch strings.ToLower(request.Seek) {
+	switch strings.ToLower(request.Proto.Seek) {
 	case "time":
 		input.Type = v3io.SeekShardInputTypeTime
-		seekTime, err := utils.Str2unixTime(request.Start)
+		seekTime, err := utils.Str2unixTime(request.Proto.Start)
 		if err != nil {
 			return nil, err
 		}
 		input.Timestamp = int(seekTime / 1000)
 	case "seq", "sequence":
 		input.Type = v3io.SeekShardInputTypeSequence
-		input.StartingSequenceNumber = int(request.Sequence)
+		input.StartingSequenceNumber = uint64(request.Proto.Sequence)
 	case "latest", "late":
 		input.Type = v3io.SeekShardInputTypeLatest
 	case "earliest":
 		input.Type = v3io.SeekShardInputTypeEarliest
 	default:
 		return nil, fmt.Errorf(
-			"Stream seek type %s is invalid, use time | seq | latest | earliest", request.Start)
+			"Stream seek type %s is invalid, use 'earliest' | 'latest' | 'seq'/'sequence' | 'time'", request.Proto.Start)
 
 	}
 
-	resp, err := iter.container.Sync.SeekShard(&input)
+	resp, err := iter.container.SeekShardSync(&input)
 	if err != nil {
 		return nil, fmt.Errorf("Error in Seek operation - %v", err)
 	}
@@ -107,10 +106,10 @@ func (i *streamIterator) Next() bool {
 		return false
 	}
 
-	resp, err := i.container.Sync.GetRecords(&v3io.GetRecordsInput{
-		Path:     i.request.Table + i.request.ShardId,
+	resp, err := i.container.GetRecordsSync(&v3io.GetRecordsInput{
+		Path:     i.request.Proto.Table + i.request.Proto.ShardId,
 		Location: i.nextLocation,
-		Limit:    int(i.request.MessageLimit),
+		Limit:    int(i.request.Proto.MessageLimit),
 	})
 
 	if err != nil {
@@ -120,7 +119,7 @@ func (i *streamIterator) Next() bool {
 
 	output := resp.Output.(*v3io.GetRecordsOutput)
 	rows := []map[string]interface{}{}
-	var lastSequence int
+	var lastSequence int64
 	for _, r := range output.Records {
 
 		if i.endTime > 0 && r.ArrivalTimeSec > i.endTime {
@@ -139,9 +138,9 @@ func (i *streamIterator) Next() bool {
 				recTime, "Seq:", r.SequenceNumber, "Body:", string(r.Data))
 			row = map[string]interface{}{"raw_data": string(r.Data)}
 		}
-		lastSequence = r.SequenceNumber
+		lastSequence = int64(r.SequenceNumber)
 		row["stream_time"] = recTime
-		row["seq_number"] = r.SequenceNumber
+		row["seq_number"] = int64(r.SequenceNumber)
 
 		rows = append(rows, row)
 	}

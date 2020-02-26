@@ -30,6 +30,7 @@ import (
 
 	"github.com/v3io/frames"
 	"github.com/v3io/frames/grpc"
+	"github.com/v3io/frames/pb"
 )
 
 func TestEnd2End(t *testing.T) {
@@ -44,7 +45,7 @@ func TestEnd2End(t *testing.T) {
 			Level: "debug",
 		},
 		Backends: []*frames.BackendConfig{
-			&frames.BackendConfig{
+			{
 				Name:    backendName,
 				Type:    "csv",
 				RootDir: tmpDir,
@@ -97,7 +98,7 @@ func TestEnd2End(t *testing.T) {
 		t.Fatal(err)
 	}
 
-	readReq := &frames.ReadRequest{
+	readReq := &pb.ReadRequest{
 		Backend:      backendName,
 		Table:        tableName,
 		MessageLimit: 100,
@@ -127,7 +128,7 @@ func TestEnd2End(t *testing.T) {
 	}
 
 	// Exec
-	execReq := &frames.ExecRequest{
+	execReq := &pb.ExecRequest{
 		Backend: backendName,
 		Table:   tableName,
 		Command: "ping",

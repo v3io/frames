@@ -21,6 +21,7 @@ such restriction.
 package v3ioutils
 
 import (
+	"reflect"
 	"testing"
 )
 
@@ -136,5 +137,24 @@ func TestNewSchema(t *testing.T) {
 
 	if nFields := len(oldSchema.Fields); nFields != 18 {
 		t.Fatalf("wrong number of fields %d != %d", nFields, 18)
+	}
+}
+
+// Regression test for IG-13261
+func TestMerge(t *testing.T) {
+	schema1 := OldV3ioSchema{Fields: []OldSchemaField{
+		{Name: "a", Type: "long"},
+		{Name: "b", Type: "long"},
+	}}
+	schema2 := schema1
+	res, err := schema1.merge(&schema2)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if res {
+		t.Fatal("merge with self should not report that schema was changed")
+	}
+	if !reflect.DeepEqual(schema1, schema2) {
+		t.Fatal("merge with self should not cause any modifications to schema")
 	}
 }

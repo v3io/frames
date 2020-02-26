@@ -5,16 +5,16 @@ name = "pypi"
 
 [packages]
 googleapis-common-protos = ">=1.5.3"
-grpcio-tools = ">=1.16.0"
-pandas = "==0.23.*"
+grpcio-tools = ">=1.26.0"
+pandas = ">=0.23.4"
 requests = ">=2.19.1"
 
 [dev-packages]
 flake8 = "*"
 ipython = "*"
 numpydoc = "*"
-pytest = "*"
+pytest = "~=4.2"
 pyyaml = "*"
 sphinx = "*"
-twine = "*"
+twine = "~=1.12"
 pytest-benchmark = "*"

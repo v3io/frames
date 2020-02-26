@@ -319,6 +319,15 @@ func (c *colImpl) Append(value interface{}) error {
 	return c.appendSlice(value)
 }
 
+func (c *colImpl) CopyWithName(newName string) Column {
+	newColImpl := *c
+	newCol := &newColImpl
+	newMsg := *c.msg
+	newColImpl.msg = &newMsg
+	newColImpl.msg.Name = newName
+	return newCol
+}
+
 // NewSliceColumn returns a new slice column
 func NewSliceColumn(name string, data interface{}) (Column, error) {
 	msg := &pb.Column{
@@ -347,8 +356,13 @@ func NewSliceColumn(name string, data interface{}) (Column, error) {
 		times := data.([]time.Time)
 		msg.Dtype = pb.DType_TIME
 		msg.Times = make([]int64, len(times))
+		nilTime := time.Time{}
 		for i, t := range times {
-			msg.Times[i] = t.UnixNano()
+			if t == nilTime {
+				msg.Times[i] = 0
+			} else {
+				msg.Times[i] = t.UnixNano()
+			}
 		}
 	default:
 		return nil, fmt.Errorf("unknown data type %T", data)

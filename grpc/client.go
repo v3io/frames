@@ -23,14 +23,14 @@ package grpc
 import (
 	"context"
 	"fmt"
-	"github.com/v3io/frames"
-	"github.com/v3io/frames/pb"
 	"io"
 	"os"
 	"time"
 
 	"github.com/nuclio/logger"
 	"github.com/pkg/errors"
+	"github.com/v3io/frames"
+	"github.com/v3io/frames/pb"
 	"google.golang.org/grpc"
 )
 
@@ -80,7 +80,7 @@ func NewClient(address string, session *frames.Session, logger logger.Logger) (*
 	return client, nil
 }
 
-func (c *Client) Read(request *frames.ReadRequest) (frames.FrameIterator, error) {
+func (c *Client) Read(request *pb.ReadRequest) (frames.FrameIterator, error) {
 	if request.Session == nil {
 		request.Session = c.session
 	}
@@ -123,6 +123,7 @@ func (c *Client) Write(request *frames.WriteRequest) (frames.FrameAppender, erro
 		InitialData: frame,
 		Expression:  request.Expression,
 		More:        request.HaveMore,
+		SaveMode:    request.SaveMode.String(),
 	}
 
 	req := &pb.WriteRequest{
@@ -132,7 +133,7 @@ func (c *Client) Write(request *frames.WriteRequest) (frames.FrameAppender, erro
 	}
 
 	if err := stream.Send(req); err != nil {
-		stream.CloseAndRecv()
+		_, _ = stream.CloseAndRecv()
 		return nil, err
 	}
 
@@ -145,7 +146,7 @@ func (c *Client) Write(request *frames.WriteRequest) (frames.FrameAppender, erro
 }
 
 // Create creates a table
-func (c *Client) Create(request *frames.CreateRequest) error {
+func (c *Client) Create(request *pb.CreateRequest) error {
 	if request.Session == nil {
 		request.Session = c.session
 	}
@@ -155,7 +156,7 @@ func (c *Client) Create(request *frames.CreateRequest) error {
 }
 
 // Delete deletes data or table
-func (c *Client) Delete(request *frames.DeleteRequest) error {
+func (c *Client) Delete(request *pb.DeleteRequest) error {
 	if request.Session == nil {
 		request.Session = c.session
 	}
@@ -165,7 +166,7 @@ func (c *Client) Delete(request *frames.DeleteRequest) error {
 }
 
 // Exec executes a command on the backend
-func (c *Client) Exec(request *frames.ExecRequest) (frames.Frame, error) {
+func (c *Client) Exec(request *pb.ExecRequest) (frames.Frame, error) {
 	if request.Session == nil {
 		request.Session = c.session
 	}
@@ -239,7 +240,7 @@ func (fa *frameAppender) Add(frame frames.Frame) error {
 	}
 
 	if err := fa.stream.Send(msg); err != nil {
-		fa.stream.CloseAndRecv()
+		_, _ = fa.stream.CloseAndRecv()
 		fa.closed = true
 		return err
 	}
@@ -255,4 +256,7 @@ func (fa *frameAppender) WaitForComplete(timeout time.Duration) error {
 	// TODO: timeout
 	_, err := fa.stream.CloseAndRecv()
 	return err
+}
+
+func (fa *frameAppender) Close() {
 }

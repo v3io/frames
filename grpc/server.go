@@ -26,15 +26,13 @@ import (
 	"io"
 	"net"
 
-	"github.com/v3io/frames"
-	"github.com/v3io/frames/api"
-
 	"github.com/nuclio/logger"
 	"github.com/pkg/errors"
+	"github.com/v3io/frames"
+	"github.com/v3io/frames/api"
+	"github.com/v3io/frames/pb"
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/reflection"
-
-	"github.com/v3io/frames/pb"
 )
 
 const (
@@ -90,6 +88,9 @@ func NewServer(config *frames.Config, addr string, logger logger.Logger) (*Serve
 
 	pb.RegisterFramesServer(server.server, server)
 	reflection.Register(server.server)
+
+	server.logger.InfoWith("GRPC server started", "address", server.address)
+
 	return server, nil
 }
 
@@ -115,10 +116,20 @@ func (s *Server) Start() error {
 func (s *Server) Read(request *pb.ReadRequest, stream pb.Frames_ReadServer) error {
 	ch := make(chan frames.Frame)
 
+	password := frames.InitSecretString(request.Session.Password)
+	token := frames.InitSecretString(request.Session.Token)
+	request.Session.Password = ""
+	request.Session.Token = ""
+	req := frames.ReadRequest{
+		Proto:    request,
+		Password: password,
+		Token:    token,
+	}
+
 	var apiError error
 	go func() {
 		defer close(ch)
-		apiError = s.api.Read(request, ch)
+		apiError = s.api.Read(&req, ch)
 		if apiError != nil {
 			s.logger.ErrorWith("API error reading", "error", apiError)
 		}
@@ -150,19 +161,31 @@ func (s *Server) Write(stream pb.Frames_WriteServer) error {
 	if pbReq == nil {
 		return fmt.Errorf("stream didn't start with write request")
 	}
+	password := frames.InitSecretString(pbReq.Session.Password)
+	token := frames.InitSecretString(pbReq.Session.Token)
+	pbReq.Session.Password = ""
+	pbReq.Session.Token = ""
 
 	var frame frames.Frame
 	if pbReq.InitialData != nil {
 		frame = frames.NewFrameFromProto(pbReq.InitialData)
 	}
 
+	saveMode, err := frames.SaveModeFromString(pbReq.SaveMode)
+	if err != nil {
+		return err
+	}
 	req := &frames.WriteRequest{
 		Session:       pbReq.Session,
+		Password:      password,
+		Token:         token,
 		Backend:       pbReq.Backend,
 		Expression:    pbReq.Expression,
+		Condition:     pbReq.Condition,
 		HaveMore:      pbReq.More,
 		ImmidiateData: frame,
 		Table:         pbReq.Table,
+		SaveMode:      saveMode,
 	}
 
 	// TODO: Unite with the code in HTTP server
@@ -217,8 +240,18 @@ func (s *Server) Write(stream pb.Frames_WriteServer) error {
 
 // Create creates a table
 func (s *Server) Create(ctx context.Context, req *pb.CreateRequest) (*pb.CreateResponse, error) {
+	password := frames.InitSecretString(req.Session.Password)
+	token := frames.InitSecretString(req.Session.Token)
+	req.Session.Password = ""
+	req.Session.Token = ""
+	request := frames.CreateRequest{
+		Proto:    req,
+		Password: password,
+		Token:    token,
+	}
+
 	// TODO: Use ctx for timeout
-	if err := s.api.Create(req); err != nil {
+	if err := s.api.Create(&request); err != nil {
 		return nil, err
 	}
 
@@ -227,7 +260,17 @@ func (s *Server) Create(ctx context.Context, req *pb.CreateRequest) (*pb.CreateR
 
 // Delete deletes a table
 func (s *Server) Delete(ctx context.Context, req *pb.DeleteRequest) (*pb.DeleteResponse, error) {
-	if err := s.api.Delete(req); err != nil {
+	password := frames.InitSecretString(req.Session.Password)
+	token := frames.InitSecretString(req.Session.Token)
+	req.Session.Password = ""
+	req.Session.Token = ""
+	request := frames.DeleteRequest{
+		Proto:    req,
+		Password: password,
+		Token:    token,
+	}
+
+	if err := s.api.Delete(&request); err != nil {
 		return nil, err
 	}
 
@@ -236,7 +279,17 @@ func (s *Server) Delete(ctx context.Context, req *pb.DeleteRequest) (*pb.DeleteR
 
 // Exec executes a command
 func (s *Server) Exec(ctx context.Context, req *pb.ExecRequest) (*pb.ExecResponse, error) {
-	frame, err := s.api.Exec(req)
+	password := frames.InitSecretString(req.Session.Password)
+	token := frames.InitSecretString(req.Session.Token)
+	req.Session.Password = ""
+	req.Session.Token = ""
+	request := frames.ExecRequest{
+		Proto:    req,
+		Password: password,
+		Token:    token,
+	}
+
+	frame, err := s.api.Exec(&request)
 	if err != nil {
 		return nil, err
 	}

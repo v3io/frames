@@ -22,59 +22,72 @@ package v3ioutils
 
 import (
 	"encoding/binary"
-	"net/url"
-	"time"
+	"net/http"
+	"strings"
 
 	"github.com/nuclio/logger"
 	"github.com/pkg/errors"
-
 	"github.com/v3io/frames"
-	v3io "github.com/v3io/v3io-go-http"
+	v3io "github.com/v3io/v3io-go/pkg/dataplane"
+	v3ioerrors "github.com/v3io/v3io-go/pkg/errors"
 	"github.com/v3io/v3io-tsdb/pkg/utils"
-	"strings"
 )
 
 const v3ioUsersContainer = "users"
 const v3ioHomeVar = "$V3IO_HOME"
 
-func NewContainer(session *frames.Session, logger logger.Logger, workers int) (*v3io.Container, error) {
+func NewContainer(v3ioContext v3io.Context,
+	session *frames.Session,
+	password string,
+	token string,
+	logger logger.Logger) (v3io.Container, error) {
 
-	config := v3io.SessionConfig{
-		Username:   session.User,
-		Password:   session.Password,
-		Label:      "v3frames",
-		SessionKey: session.Token}
+	var pass string
+	if password == "" {
+		pass = session.Password
+	} else {
+		pass = password
+	}
 
-	container, err := createContainer(
-		logger, session.Url, session.Container, &config, workers)
+	var tok string
+	if token == "" {
+		tok = session.Token
+	} else {
+		tok = token
+	}
+
+	addr := session.Url
+	// Backward compatibility for non-URL addr parameter.
+	if !strings.HasPrefix(addr, "http://") && !strings.HasPrefix(addr, "https://") {
+		addr = "http://" + addr
+	}
+
+	newSessionInput := v3io.NewSessionInput{
+		URL:       addr,
+		Username:  session.User,
+		Password:  pass,
+		AccessKey: tok,
+	}
+	container, err := createContainer(logger, v3ioContext, session.Container, &newSessionInput)
 	if err != nil {
 		return nil, errors.Wrap(err, "failed to create data container")
 	}
 
 	return container, nil
-
 }
 
 // CreateContainer creates a new container
-func createContainer(logger logger.Logger, addr, cont string, config *v3io.SessionConfig, workers int) (*v3io.Container, error) {
-	// create context
-	if workers == 0 {
-		workers = 8
-	}
+func createContainer(logger logger.Logger,
+	v3ioContext v3io.Context,
+	containerName string,
+	newSessionInput *v3io.NewSessionInput) (v3io.Container, error) {
 
-	context, err := v3io.NewContext(logger, addr, workers)
-	if err != nil {
-		return nil, errors.Wrap(err, "failed to create client")
-	}
-
-	// create session
-	session, err := context.NewSessionFromConfig(config)
+	session, err := v3ioContext.NewSession(newSessionInput)
 	if err != nil {
 		return nil, errors.Wrap(err, "failed to create session")
 	}
 
-	// create the container
-	container, err := session.NewContainer(cont)
+	container, err := session.NewContainer(&v3io.NewContainerInput{ContainerName: containerName})
 	if err != nil {
 		return nil, errors.Wrap(err, "failed to create container")
 	}
@@ -94,92 +107,112 @@ func AsInt64Array(val []byte) []uint64 {
 }
 
 // DeleteTable deletes a table
-func DeleteTable(logger logger.Logger, container *v3io.Container, path, filter string, workers int) error {
+func DeleteTable(logger logger.Logger, container v3io.Container, path, filter string, workers int, ignoreMissing bool) error {
 
-	input := v3io.GetItemsInput{Path: path, AttributeNames: []string{"__name"}, Filter: filter}
-	iter, err := NewAsyncItemsCursor(container, &input, workers, []string{}, logger, 0)
-	//iter, err := container.Sync.GetItemsCursor(&input)
-	if err != nil {
-		return err
-	}
+	fileNameChan := make(chan string, 1024)
+	getItemsTerminationChan := make(chan error, workers)
+	deleteTerminationChan := make(chan error, workers)
+	onErrorTerminationChannel := make(chan struct{}, 2*workers)
 
-	responseChan := make(chan *v3io.Response, 1000)
-	commChan := make(chan int, 2)
-	doneChan := respWaitLoop(logger, commChan, responseChan, 10*time.Second)
-	reqMap := map[uint64]bool{}
-
-	i := 0
-	for iter.Next() {
-		name := iter.GetField("__name").(string)
-		req, err := container.DeleteObject(&v3io.DeleteObjectInput{
-			Path: path + "/" + url.QueryEscape(name)}, nil, responseChan)
-		if err != nil {
-			commChan <- i
-			return errors.Wrap(err, "failed to delete object "+name)
+	for i := 0; i < workers; i++ {
+		input := &v3io.GetItemsInput{
+			Path:           path,
+			AttributeNames: []string{"__name"},
+			Filter:         filter,
+			Segment:        i,
+			TotalSegments:  workers,
 		}
-		reqMap[req.ID] = true
-		i++
+		go getItemsWorker(container, input, fileNameChan, getItemsTerminationChan, onErrorTerminationChannel)
+		go deleteObjectWorker(path, container, fileNameChan, deleteTerminationChan, onErrorTerminationChannel)
 	}
 
-	commChan <- i
-	if iter.Err() != nil {
-		return errors.Wrap(iter.Err(), "failed to delete object ")
+	var getItemsTerminated, deletesTerminated int
+	for deletesTerminated < workers {
+		select {
+		case err := <-getItemsTerminationChan:
+			if err != nil {
+				// If requested to ignore non-existing tables do not return error.
+				if errorWithStatusCode, ok := err.(v3ioerrors.ErrorWithStatusCode); !ok || !ignoreMissing || errorWithStatusCode.StatusCode() != http.StatusNotFound {
+					for i := 0; i < 2*workers; i++ {
+						onErrorTerminationChannel <- struct{}{}
+					}
+					return errors.Wrapf(err, "GetItems failed during recursive delete of '%s'.", path)
+				}
+			}
+			getItemsTerminated++
+			if getItemsTerminated == workers {
+				close(fileNameChan)
+			}
+		case err := <-deleteTerminationChan:
+			if err != nil {
+				for i := 0; i < 2*workers; i++ {
+					onErrorTerminationChannel <- struct{}{}
+				}
+				return errors.Wrapf(err, "Delete failed during recursive delete of '%s'.", path)
+			}
+			deletesTerminated++
+		}
 	}
 
-	<-doneChan
-
-	err = container.Sync.DeleteObject(&v3io.DeleteObjectInput{Path: path})
-	if err != nil {
-		if !utils.IsNotExistsError(err) {
-			return errors.Wrapf(err, "Failed to delete table object '%s'.", path)
+	if filter == "" {
+		err := container.DeleteObjectSync(&v3io.DeleteObjectInput{Path: path})
+		if err != nil {
+			if !utils.IsNotExistsError(err) {
+				return errors.Wrapf(err, "Failed to delete table object '%s'.", path)
+			}
 		}
 	}
 
 	return nil
 }
 
-func respWaitLoop(logger logger.Logger, comm chan int, responseChan chan *v3io.Response, timeout time.Duration) chan bool {
-	responses := 0
-	requests := -1
-	done := make(chan bool)
-
-	go func() {
-		active := false
-		for {
-			select {
-
-			case resp := <-responseChan:
-				responses++
-				active = true
-
-				if resp.Error != nil {
-					logger.ErrorWith("failed Delete response", "error", resp.Error)
-					// TODO: signal done and return?
-				}
-
-				if requests == responses {
-					done <- true
-					return
-				}
-
-			case requests = <-comm:
-				if requests <= responses {
-					done <- true
-					return
-				}
-
-			case <-time.After(timeout):
-				if !active {
-					logger.ErrorWith("Resp loop timed out!", "requests", requests, "response", responses)
-					done <- true
-					return
-				}
-				active = false
-			}
+func getItemsWorker(container v3io.Container, input *v3io.GetItemsInput, fileNameChan chan<- string, terminationChan chan<- error, onErrorTerminationChannel <-chan struct{}) {
+	for {
+		select {
+		case _ = <-onErrorTerminationChannel:
+			terminationChan <- nil
+			return
+		default:
 		}
-	}()
+		if input.Filter != "" {
+			input.Filter += " and __name != '.#schema'"
+		}
+		resp, err := container.GetItemsSync(input)
+		if err != nil {
+			terminationChan <- err
+			return
+		}
+		resp.Release()
+		output := resp.Output.(*v3io.GetItemsOutput)
+		for _, item := range output.Items {
+			fileNameChan <- item.GetField("__name").(string)
+		}
+		if output.Last {
+			terminationChan <- nil
+			return
+		}
+		input.Marker = output.NextMarker
+	}
+}
 
-	return done
+func deleteObjectWorker(tablePath string, container v3io.Container, fileNameChan <-chan string, terminationChan chan<- error, onErrorTerminationChannel <-chan struct{}) {
+	for {
+		select {
+		case fileName, ok := <-fileNameChan:
+			if !ok {
+				terminationChan <- nil
+				return
+			}
+			input := &v3io.DeleteObjectInput{Path: tablePath + "/" + fileName}
+			err := container.DeleteObjectSync(input)
+			if err != nil {
+				terminationChan <- err
+				return
+			}
+		case _ = <-onErrorTerminationChannel:
+			return
+		}
+	}
 }
 
 func ProcessPaths(session *frames.Session, path string, addSlash bool) (string, string, error) {

@@ -25,7 +25,8 @@ import (
 
 	"github.com/nuclio/logger"
 	"github.com/pkg/errors"
-	v3io "github.com/v3io/v3io-go-http"
+	"github.com/v3io/v3io-go/pkg/dataplane"
+	v3ioerrors "github.com/v3io/v3io-go/pkg/errors"
 )
 
 // ItemsCursor iterates over items
@@ -38,13 +39,14 @@ type ItemsCursor interface {
 
 // AsyncItemsCursor is async item cursor
 type AsyncItemsCursor struct {
-	currentItem  v3io.Item
-	currentError error
-	itemIndex    int
-	items        []v3io.Item
-	input        *v3io.GetItemsInput
-	container    *v3io.Container
-	logger       logger.Logger
+	currentItem        v3io.Item
+	currentError       error
+	itemIndex          int
+	items              []v3io.Item
+	input              *v3io.GetItemsInput
+	container          v3io.Container
+	logger             logger.Logger
+	numberOfPartitions int
 
 	responseChan  chan *v3io.Response
 	workers       int
@@ -55,9 +57,9 @@ type AsyncItemsCursor struct {
 }
 
 // NewAsyncItemsCursor return new AsyncItemsCursor
-func NewAsyncItemsCursor(
-	container *v3io.Container, input *v3io.GetItemsInput,
-	workers int, shardingKeys []string, logger logger.Logger, limit int) (*AsyncItemsCursor, error) {
+func NewAsyncItemsCursor(container v3io.Container, input *v3io.GetItemsInput, workers int, shardingKeys []string,
+	logger logger.Logger, limit int, partitions []string,
+	sortKeyRangeStart string, sortKeyRangeEnd string) (*AsyncItemsCursor, error) {
 
 	// TODO: use workers from Context.numWorkers (if no ShardingKey)
 	if workers == 0 || input.ShardingKey != "" {
@@ -65,48 +67,55 @@ func NewAsyncItemsCursor(
 	}
 
 	newAsyncItemsCursor := &AsyncItemsCursor{
-		container:    container,
-		input:        input,
-		responseChan: make(chan *v3io.Response, 1000),
-		workers:      workers,
-		logger:       logger.GetChild("AsyncItemsCursor"),
-		limit:        limit,
+		container:          container,
+		input:              input,
+		workers:            workers,
+		logger:             logger.GetChild("AsyncItemsCursor"),
+		limit:              limit,
+		numberOfPartitions: len(partitions),
 	}
 
 	if len(shardingKeys) > 0 {
 		newAsyncItemsCursor.workers = len(shardingKeys)
+		newAsyncItemsCursor.responseChan = make(chan *v3io.Response, len(partitions)*newAsyncItemsCursor.workers)
 
-		for i := 0; i < newAsyncItemsCursor.workers; i++ {
-			input := v3io.GetItemsInput{
-				Path:           input.Path,
-				AttributeNames: input.AttributeNames,
-				Filter:         input.Filter,
-				ShardingKey:    shardingKeys[i],
-			}
-			_, err := container.GetItems(&input, &input, newAsyncItemsCursor.responseChan)
+		for _, partition := range partitions {
+			for i := 0; i < newAsyncItemsCursor.workers; i++ {
+				input := v3io.GetItemsInput{
+					Path:              partition,
+					AttributeNames:    input.AttributeNames,
+					Filter:            input.Filter,
+					ShardingKey:       shardingKeys[i],
+					SortKeyRangeStart: sortKeyRangeStart,
+					SortKeyRangeEnd:   sortKeyRangeEnd,
+				}
+				_, err := container.GetItems(&input, &input, newAsyncItemsCursor.responseChan)
 
-			if err != nil {
-				return nil, err
+				if err != nil {
+					return nil, err
+				}
 			}
 		}
-
-		return newAsyncItemsCursor, nil
-	}
-
-	for i := 0; i < newAsyncItemsCursor.workers; i++ {
+	} else {
 		newAsyncItemsCursor.totalSegments = workers
-		input := v3io.GetItemsInput{
-			Path:           input.Path,
-			AttributeNames: input.AttributeNames,
-			Filter:         input.Filter,
-			TotalSegments:  newAsyncItemsCursor.totalSegments,
-			Segment:        i,
-		}
-		_, err := container.GetItems(&input, &input, newAsyncItemsCursor.responseChan)
+		newAsyncItemsCursor.responseChan = make(chan *v3io.Response, len(partitions)*newAsyncItemsCursor.workers)
 
-		if err != nil {
-			// TODO: proper exit, release requests which passed
-			return nil, err
+		for _, partition := range partitions {
+			for i := 0; i < newAsyncItemsCursor.workers; i++ {
+				input := v3io.GetItemsInput{
+					Path:           partition,
+					AttributeNames: input.AttributeNames,
+					Filter:         input.Filter,
+					TotalSegments:  newAsyncItemsCursor.totalSegments,
+					Segment:        i,
+				}
+				_, err := container.GetItems(&input, &input, newAsyncItemsCursor.responseChan)
+
+				if err != nil {
+					// TODO: proper exit, release requests which passed
+					return nil, err
+				}
+			}
 		}
 	}
 
@@ -156,17 +165,17 @@ func (ic *AsyncItemsCursor) NextItem() (v3io.Item, error) {
 	}
 
 	// are there any more items up stream? did all the shards complete ?
-	if ic.lastShards == ic.workers {
+	if ic.lastShards == ic.workers*ic.numberOfPartitions {
 		ic.currentError = nil
 		return nil, nil
 	}
 
 	// Read response from channel
 	resp := <-ic.responseChan
-	defer resp.Release()
+	resp.Release()
 
 	// Ignore 404s
-	if e, hasErrorCode := resp.Error.(v3io.ErrorWithStatusCode); hasErrorCode && e.StatusCode() == http.StatusNotFound {
+	if e, hasErrorCode := resp.Error.(v3ioerrors.ErrorWithStatusCode); hasErrorCode && e.StatusCode() == http.StatusNotFound {
 		ic.logger.Debug("Got 404 - error: %v, request: %v", resp.Error, resp.Request().Input)
 		ic.lastShards++
 		return ic.NextItem()

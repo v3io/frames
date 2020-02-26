@@ -26,14 +26,13 @@ import (
 
 	"github.com/nuclio/logger"
 	"github.com/pkg/errors"
-	"github.com/v3io/v3io-go-http"
-
 	"github.com/v3io/frames"
+	"github.com/v3io/v3io-go/pkg/dataplane"
 )
 
 func (b *Backend) Write(request *frames.WriteRequest) (frames.FrameAppender, error) {
 
-	container, tablePath, err := b.newConnection(request.Session, request.Table, true)
+	container, tablePath, err := b.newConnection(request.Session, request.Password.Get(), request.Token.Get(), request.Table, true)
 	if err != nil {
 		return nil, err
 	}
@@ -59,15 +58,21 @@ func (b *Backend) Write(request *frames.WriteRequest) (frames.FrameAppender, err
 
 type streamAppender struct {
 	request      *frames.WriteRequest
-	container    *v3io.Container
+	container    v3io.Container
 	tablePath    string
 	responseChan chan *v3io.Response
 	commChan     chan int
 	logger       logger.Logger
+	closed       bool
 }
 
 // TODO: make it async
 func (a *streamAppender) Add(frame frames.Frame) error {
+	if a.closed {
+		err := errors.New("Adding on a closed stream appender")
+		a.logger.Error(err)
+		return err
+	}
 	records := make([]*v3io.StreamRecord, 0, frame.Len())
 	iter := frame.IterRows(true)
 	for iter.Next() {
@@ -83,7 +88,7 @@ func (a *streamAppender) Add(frame frames.Frame) error {
 		return errors.Wrap(err, "row iteration error")
 	}
 
-	_, err := a.container.Sync.PutRecords(&v3io.PutRecordsInput{
+	_, err := a.container.PutRecordsSync(&v3io.PutRecordsInput{
 		Path: a.tablePath, Records: records})
 
 	return err
@@ -91,4 +96,8 @@ func (a *streamAppender) Add(frame frames.Frame) error {
 
 func (a *streamAppender) WaitForComplete(timeout time.Duration) error {
 	return nil
+}
+
+func (a *streamAppender) Close() {
+	a.closed = true
 }

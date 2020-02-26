@@ -32,6 +32,7 @@ import (
 
 	"github.com/v3io/frames"
 	"github.com/v3io/frames/http"
+	"github.com/v3io/frames/pb"
 )
 
 func TestEnd2End(t *testing.T) {
@@ -46,7 +47,7 @@ func TestEnd2End(t *testing.T) {
 			Level: "debug",
 		},
 		Backends: []*frames.BackendConfig{
-			&frames.BackendConfig{
+			{
 				Name:    backendName,
 				Type:    "csv",
 				RootDir: tmpDir,
@@ -100,7 +101,7 @@ func TestEnd2End(t *testing.T) {
 		t.Fatal(err)
 	}
 
-	readReq := &frames.ReadRequest{
+	readReq := &pb.ReadRequest{
 		Backend:      backendName,
 		Table:        tableName,
 		MessageLimit: 100,
@@ -132,7 +133,7 @@ func TestEnd2End(t *testing.T) {
 	testGrafana(t, url, backendName, tableName)
 
 	// Exec
-	execReq := &frames.ExecRequest{
+	execReq := &pb.ExecRequest{
 		Backend: backendName,
 		Table:   tableName,
 		Command: "ping",
@@ -145,8 +146,8 @@ func TestEnd2End(t *testing.T) {
 
 func testGrafana(t *testing.T, baseURL string, backend string, table string) {
 	// ack
-	ackUrl := fmt.Sprintf("%s/", baseURL)
-	resp, err := nhttp.Get(ackUrl)
+	ackURL := fmt.Sprintf("%s/", baseURL)
+	resp, err := nhttp.Get(ackURL)
 	if err != nil {
 		t.Fatalf("can't call simplejson API - %s", err)
 	}

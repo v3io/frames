@@ -103,7 +103,7 @@ func TestBuilderDelete(t *testing.T) {
 	size := 10
 	b := NewSliceColumnBuilder("a", IntType, size)
 	for i := 0; i < size; i++ {
-		b.Set(i, i)
+		_ = b.Set(i, i)
 	}
 
 	deleted := map[int]bool{
@@ -138,7 +138,7 @@ func TestBuilderDelete(t *testing.T) {
 
 func TestBuilderDeleteFirst(t *testing.T) {
 	b := NewSliceColumnBuilder("a", IntType, 1)
-	b.Set(0, 1)
+	_ = b.Set(0, 1)
 
 	if err := b.Delete(0); err != nil {
 		if err != nil {

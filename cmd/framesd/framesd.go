@@ -25,15 +25,16 @@ import (
 	"fmt"
 	"io/ioutil"
 	"log"
+	"net/http"
+	_ "net/http/pprof"
 	"os"
 	"path"
 	"time"
 
 	"github.com/ghodss/yaml"
-
 	"github.com/v3io/frames"
 	"github.com/v3io/frames/grpc"
-	"github.com/v3io/frames/http"
+	framesHttp "github.com/v3io/frames/http"
 )
 
 var (
@@ -78,7 +79,7 @@ func main() {
 
 	frames.DefaultLogLevel = cfg.Log.Level
 
-	hsrv, err := http.NewServer(cfg, config.httpAddr, nil)
+	hsrv, err := framesHttp.NewServer(cfg, config.httpAddr, nil)
 	if err != nil {
 		log.Fatalf("error: can't create HTTP server - %s", err)
 	}
@@ -97,6 +98,26 @@ func main() {
 	}
 
 	fmt.Printf("server running on http=%s, grpc=%s\n", config.httpAddr, config.grpcAddr)
+
+	// Start profiling endpoint
+	if !cfg.DisableProfiling {
+		go func() {
+			logger, _ := frames.NewLogger(cfg.Log.Level)
+			hasLog := logger != nil
+
+			if hasLog {
+				logger.Info("creating profiling endpoint at :8082. To start profiling run one of the following commands:\n" +
+					" -> profiling: curl -o cpu.pprof localhost:8082/debug/pprof/profile?seconds=30\n" +
+					" -> trace: curl -o trace.pprof localhost:8082/debug/pprof/trace?seconds=30")
+			}
+
+			err := http.ListenAndServe(":8082", nil)
+			if err != nil && hasLog {
+				logger.Warn("failed to create profiling endpoint, err: %v", err)
+			}
+		}()
+	}
+
 	for hsrv.State() == frames.RunningState && gsrv.State() == frames.RunningState {
 		time.Sleep(time.Second)
 	}

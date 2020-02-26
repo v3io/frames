@@ -21,6 +21,7 @@ such restriction.
 package tsdb
 
 import (
+	"strings"
 	"time"
 
 	"github.com/pkg/errors"
@@ -29,7 +30,6 @@ import (
 	"github.com/v3io/v3io-tsdb/pkg/pquerier"
 	"github.com/v3io/v3io-tsdb/pkg/tsdb"
 	tsdbutils "github.com/v3io/v3io-tsdb/pkg/utils"
-	"strings"
 )
 
 type tsdbIteratorOld struct {
@@ -41,62 +41,64 @@ type tsdbIteratorOld struct {
 }
 
 type tsdbIterator struct {
-	request     *frames.ReadRequest
-	set         pquerier.FrameSet
-	err         error
-	withColumns bool
-	currFrame   frames.Frame
+	request          *frames.ReadRequest
+	set              pquerier.FrameSet
+	err              error
+	withColumns      bool
+	currFrame        frames.Frame
+	currTsdbFramePos int
+	currTsdbFrame    frames.Frame
 }
 
 func (b *Backend) Read(request *frames.ReadRequest) (frames.FrameIterator, error) {
 
-	step, err := tsdbutils.Str2duration(request.Step)
+	step, err := tsdbutils.Str2duration(request.Proto.Step)
+	if err != nil {
+		return nil, err
+	}
+
+	aggregationWindow, err := tsdbutils.Str2duration(request.Proto.AggregationWindow)
 	if err != nil {
 		return nil, err
 	}
 
 	// TODO: start & end times
 	to := time.Now().Unix() * 1000
-	if request.End != "" {
-		to, err = tsdbutils.Str2unixTime(request.End)
+	if request.Proto.End != "" {
+		to, err = tsdbutils.Str2unixTime(request.Proto.End)
 		if err != nil {
 			return nil, err
 		}
 	}
 
 	from := to - 1000*3600 // default of last hour
-	if request.Start != "" {
-		from, err = tsdbutils.Str2unixTime(request.Start)
+	if request.Proto.Start != "" {
+		from, err = tsdbutils.Str2unixTime(request.Proto.Start)
 		if err != nil {
 			return nil, err
 		}
 	}
 
-	b.logger.DebugWith("Query", "from", from, "to", to, "table", request.Table,
-		"filter", request.Filter, "functions", request.Aggragators, "step", step)
+	b.logger.DebugWith("Query", "from", from, "to", to, "table", request.Proto.Table,
+		"filter", request.Proto.Filter, "functions", request.Proto.Aggregators, "step", step)
 
-	table := request.Table
+	table := request.Proto.Table
 	var selectParams *pquerier.SelectParams
-	if request.Query != "" {
-		selectParams, table, err = pquerier.ParseQuery(request.Query)
+	if request.Proto.Query != "" {
+		selectParams, table, err = pquerier.ParseQuery(request.Proto.Query)
 		if err != nil {
 			return nil, err
 		}
 	}
-	adapter, err := b.GetAdapter(request.Session, table)
+	qry, err := b.GetQuerier(request.Proto.Session, request.Password.Get(), request.Token.Get(), table)
 	if err != nil {
 		return nil, errors.Wrap(err, "failed to create adapter")
 	}
 
-	qry, err := adapter.QuerierV2()
-	if err != nil {
-		return nil, errors.Wrap(err, "Failed to initialize Querier")
-	}
-
 	iter := tsdbIterator{request: request}
 	name := ""
-	if len(request.Columns) > 0 {
-		name = strings.Join(request.Columns, ",")
+	if len(request.Proto.Columns) > 0 {
+		name = strings.Join(request.Proto.Columns, ",")
 		iter.withColumns = true
 	}
 
@@ -104,14 +106,16 @@ func (b *Backend) Read(request *frames.ReadRequest) (frames.FrameIterator, error
 		selectParams.From = from
 		selectParams.To = to
 		selectParams.Step = step
+		selectParams.AggregationWindow = aggregationWindow
 	} else {
 		selectParams = &pquerier.SelectParams{Name: name,
-			From:      from,
-			To:        to,
-			Step:      step,
-			Functions: request.Aggragators,
-			Filter:    request.Filter,
-			GroupBy:   request.GroupBy}
+			From:              from,
+			To:                to,
+			Step:              step,
+			Functions:         request.Proto.Aggregators,
+			Filter:            request.Proto.Filter,
+			GroupBy:           request.Proto.GroupBy,
+			AggregationWindow: aggregationWindow}
 	}
 
 	iter.set, err = qry.SelectDataFrame(selectParams)
@@ -130,12 +134,12 @@ func oldQuery(adapter *tsdb.V3ioAdapter, request *frames.ReadRequest, from, to, 
 
 	iter := tsdbIteratorOld{request: request}
 	name := ""
-	if len(request.Columns) > 0 {
-		name = request.Columns[0]
+	if len(request.Proto.Columns) > 0 {
+		name = request.Proto.Columns[0]
 		iter.withColumns = true
 	}
 
-	iter.set, err = qry.Select(name, request.Aggragators, step, request.Filter)
+	iter.set, err = qry.Select(name, request.Proto.Aggregators, step, request.Proto.Filter)
 	if err != nil {
 		return nil, errors.Wrap(err, "Failed on TSDB Select")
 	}
@@ -144,54 +148,80 @@ func oldQuery(adapter *tsdb.V3ioAdapter, request *frames.ReadRequest, from, to, 
 }
 
 func (i *tsdbIterator) Next() bool {
-	if i.set.NextFrame() {
-		frame, err := i.set.GetFrame()
-		if err != nil {
-			i.err = err
-			return false
-		}
-		labels := map[string]interface{}{}
+	var frame frames.Frame
+	var err error
 
-		columns := make([]frames.Column, len(frame.Names()))
-		indices := frame.Indices()
-		for i, colName := range frame.Names() {
-			columns[i], _ = frame.Column(colName) // Because we are iterating over the Names() it is safe to discard the error
-		}
+	frameSizeLimit := 256
+	if i.request.Proto.MessageLimit > 0 {
+		frameSizeLimit = int(i.request.Proto.MessageLimit)
+	}
 
-		for labelName, labelValue := range frame.Labels() {
-			name := labelName
-			if name == config.PrometheusMetricNameAttribute {
-				name = "metric_name"
-			}
-
-			labels[name] = labelValue
-			icol, err := frames.NewLabelColumn(name, labelValue, frame.Len())
+	for i.currTsdbFrame == nil || i.currTsdbFrame.Len() == 0 {
+		if i.set.NextFrame() {
+			i.currTsdbFrame, err = i.set.GetFrame()
 			if err != nil {
 				i.err = err
 				return false
 			}
-
-			if i.request.MultiIndex {
-				indices = append(indices, icol)
-			} else {
-				columns = append(columns, icol)
+		} else {
+			if i.set.Err() != nil {
+				i.err = i.set.Err()
 			}
+			return false
+		}
+	}
+
+	nextPos := i.currTsdbFramePos + frameSizeLimit
+	if nextPos > i.currTsdbFrame.Len() {
+		nextPos = i.currTsdbFrame.Len()
+	}
+	frame, err = i.currTsdbFrame.Slice(i.currTsdbFramePos, nextPos)
+	if err != nil {
+		i.err = errors.Wrap(err, "Failed to slice data frame")
+		return false
+	}
+	if nextPos == i.currTsdbFrame.Len() {
+		i.currTsdbFrame = nil
+		i.currTsdbFramePos = 0
+	} else {
+		i.currTsdbFramePos = nextPos
+	}
+
+	labels := map[string]interface{}{}
+
+	columns := make([]frames.Column, len(frame.Names()))
+	indices := frame.Indices()
+	for i, colName := range frame.Names() {
+		columns[i], _ = frame.Column(colName) // Because we are iterating over the Names() it is safe to discard the error
+	}
+
+	for labelName, labelValue := range frame.Labels() {
+		name := labelName
+		if name == config.PrometheusMetricNameAttribute {
+			name = "metric_name"
 		}
 
-		i.currFrame, err = frames.NewFrame(columns, indices, labels)
+		labels[name] = labelValue
+		icol, err := frames.NewLabelColumn(name, labelValue, frame.Len())
 		if err != nil {
 			i.err = err
 			return false
 		}
 
-		return true
+		if i.request.Proto.MultiIndex {
+			indices = append(indices, icol)
+		} else {
+			columns = append(columns, icol)
+		}
 	}
 
-	if i.set.Err() != nil {
-		i.err = i.set.Err()
+	i.currFrame, err = frames.NewFrameWithNullValues(columns, indices, labels, frame.NullValuesMap())
+	if err != nil {
+		i.err = err
+		return false
 	}
 
-	return false
+	return true
 }
 
 func (i *tsdbIterator) Err() error {
@@ -249,7 +279,7 @@ func (i *tsdbIteratorOld) Next() bool {
 				return false
 			}
 
-			if i.request.MultiIndex {
+			if i.request.Proto.MultiIndex {
 				indices = append(indices, icol)
 			} else {
 				columns = append(columns, icol)

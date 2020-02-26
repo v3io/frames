@@ -1,33 +1,27 @@
 module github.com/v3io/frames
 
+go 1.12
+
 require (
-	github.com/cespare/xxhash v1.1.0 // indirect
-	github.com/davecgh/go-spew v1.1.1 // indirect
 	github.com/ghodss/yaml v1.0.0
+	github.com/golang/groupcache v0.0.0-20191027212112-611e8accdfc9
 	github.com/golang/protobuf v1.2.0
-	github.com/imdario/mergo v0.3.6 // indirect
-	github.com/kr/pretty v0.1.0 // indirect
-	github.com/mattn/go-colorable v0.0.9 // indirect
-	github.com/mattn/go-isatty v0.0.4 // indirect
-	github.com/mgutz/ansi v0.0.0-20170206155736-9520e82c474b // indirect
-	github.com/nuclio/logger v0.0.0-20180410162335-ccc5ab971395
-	github.com/nuclio/zap v0.0.0-20180228181516-4a2bd2f9ef28
-	github.com/pavius/zap v0.0.0-20180228181622-8d52692529b8 // indirect
-	github.com/pkg/errors v0.8.0
-	github.com/pmezard/go-difflib v1.0.0 // indirect
-	github.com/prometheus/prometheus v2.5.0+incompatible // indirect
-	github.com/rcrowley/go-metrics v0.0.0-20181016184325-3113b8401b8a // indirect
-	github.com/stretchr/testify v1.2.2 // indirect
-	github.com/v3io/v3io-go-http v0.0.0-20190221115935-53e2b487c9a2
-	github.com/v3io/v3io-tsdb v0.0.0-20190328071546-4e85f3df2d205fc7368d54184bb2ceff949ab4bd
-	github.com/valyala/fasthttp v1.0.0
+	github.com/nuclio/errors v0.0.1
+	github.com/nuclio/logger v0.0.1
+	github.com/nuclio/zap v0.0.2
+	github.com/pkg/errors v0.8.1
+	github.com/stretchr/testify v1.4.0
+	github.com/v3io/v3io-go v0.0.7-0.20200216132233-3b52a325296d
+	github.com/v3io/v3io-tsdb v0.9.16
+	github.com/valyala/fasthttp v1.2.0
 	github.com/xwb1989/sqlparser v0.0.0-20180606152119-120387863bf2
-	go.uber.org/atomic v1.3.2 // indirect
-	go.uber.org/multierr v1.1.0 // indirect
-	golang.org/x/net v0.0.0-20181023162649-9b4f9f5ad519
-	golang.org/x/sys v0.0.0-20181026203630-95b1ffbd15a5 // indirect
-	google.golang.org/genproto v0.0.0-20181026194446-8b5d7a19e2d9 // indirect
-	google.golang.org/grpc v1.16.0
-	gopkg.in/check.v1 v1.0.0-20180628173108-788fd7840127 // indirect
-	gopkg.in/yaml.v2 v2.2.1 // indirect
+	golang.org/x/net v0.0.0-20181114220301-adae6a3d119a
+	golang.org/x/sync v0.0.0-20181108010431-42b317875d0f // indirect
+	google.golang.org/grpc v1.17.0
+)
+
+replace (
+	github.com/v3io/v3io-go => github.com/v3io/v3io-go v0.1.5-0.20200224125003-964a745e51aa
+	github.com/v3io/v3io-tsdb => github.com/v3io/v3io-tsdb v0.8.12-0.20200225142145-edbfe7f63fb3
+	github.com/xwb1989/sqlparser => github.com/v3io/sqlparser v0.0.0-20190306105200-4d7273501871
 )

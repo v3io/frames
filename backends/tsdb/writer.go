@@ -33,8 +33,8 @@ import (
 )
 
 func (b *Backend) Write(request *frames.WriteRequest) (frames.FrameAppender, error) {
-	b.logger.InfoWith("write request", "request", request)
-	adapter, err := b.GetAdapter(request.Session, request.Table)
+	b.logger.DebugWith("write request", "request", request)
+	adapter, err := b.GetAdapter(request.Session, request.Password.Get(), request.Token.Get(), request.Table)
 	if err != nil {
 		return nil, errors.Wrap(err, "failed to create adapter")
 	}
@@ -197,9 +197,11 @@ func (a *tsdbAppender) Add(frame frames.Frame) error {
 		indexCols := make([][]string, 0, indexLen)
 		indexNames := make([]string, 0, indexLen)
 		for i, idx := range frame.Indices() {
-			if i != timeColIndex {
+			indexLabelName := idx.Name()
+			// Use the index label only if a label with the same name was not passed specifically as a label.
+			if _, ok := frame.Labels()[indexLabelName]; i != timeColIndex && !ok {
 				indexCols = append(indexCols, idx.Strings())
-				indexNames = append(indexNames, idx.Name())
+				indexNames = append(indexNames, indexLabelName)
 			}
 		}
 
@@ -272,4 +274,8 @@ func newLset(labels map[string]interface{}, name string, singleCol bool, extraId
 func (a *tsdbAppender) WaitForComplete(timeout time.Duration) error {
 	_, err := a.appender.WaitForCompletion(timeout)
 	return err
+}
+
+func (a *tsdbAppender) Close() {
+	a.appender.Close()
 }

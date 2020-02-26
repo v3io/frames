@@ -14,7 +14,9 @@ podTemplate(label: "${git_project}-${label}", inheritFrom: "jnlp-docker-golang-p
                  remote       : "git@github.com:iguazio/pipelinex.git"])).com.iguazio.pipelinex
         common.notify_slack {
             withCredentials([
-                    string(credentialsId: git_deploy_user_token, variable: 'GIT_TOKEN')
+                    string(credentialsId: git_deploy_user_token, variable: 'GIT_TOKEN'),
+                    string(credentialsId: 'frames-ci-url', variable: 'FRAMES_CI_URL'),
+                    usernamePassword(credentialsId: 'frames-ci-user-credentials', passwordVariable: 'FRAMES_CI_PASSWORD', usernameVariable: 'FRAMES_CI_USERNAME'),
             ]) {
                 github.branch(git_deploy_user, git_project, git_project_user, git_project_upstream_user, true, GIT_TOKEN) {
                     parallel(
@@ -30,7 +32,15 @@ podTemplate(label: "${git_project}-${label}", inheritFrom: "jnlp-docker-golang-p
                             'test-go': {
                                 container('golang') {
                                     dir("${github.BUILD_FOLDER}/src/github.com/${git_project_upstream_user}/${git_project}") {
-                                        common.shellc("make test-go")
+                                        session = '{"url":"' + FRAMES_CI_URL + '","user":"' + FRAMES_CI_USERNAME + '","password":"' + FRAMES_CI_PASSWORD + '","container":"bigdata"}'
+                                        common.shellc("V3IO_SESSION='${session}' make test-go")
+                                    }
+                                }
+                            },
+                            'make lint': {
+                                container('golang') {
+                                    dir("${github.BUILD_FOLDER}/src/github.com/${git_project_upstream_user}/${git_project}") {
+                                        sh "make lint"
                                     }
                                 }
                             }
@@ -50,17 +60,18 @@ podTemplate(label: "${git_project}-${label}", inheritFrom: "jnlp-docker-golang-p
                             'test-go': {
                                 container('golang') {
                                     dir("${github.BUILD_FOLDER}/src/github.com/${git_project_upstream_user}/${git_project}") {
-                                        common.shellc("make test-go")
+                                        session = '{"url":"' + FRAMES_CI_URL + '","user":"' + FRAMES_CI_USERNAME + '","password":"' + FRAMES_CI_PASSWORD + '","container":"bigdata"}'
+                                        common.shellc("V3IO_SESSION='${session}' make test-go")
                                     }
                                 }
                             },
-//                            'make lint': {
-//                                container('golang') {
-//                                    dir("${github.BUILD_FOLDER}/src/github.com/${git_project_upstream_user}/${git_project}") {
-//                                        common.shellc("make lint")
-//                                    }
-//                                }
-//                            }
+                           'make lint': {
+                               container('golang') {
+                                   dir("${github.BUILD_FOLDER}/src/github.com/${git_project_upstream_user}/${git_project}") {
+                                       sh "make lint"
+                                   }
+                               }
+                           }
                     )
                 }
                 github.release(git_deploy_user, git_project, git_project_user, git_project_upstream_user, true, GIT_TOKEN) {
@@ -101,7 +112,7 @@ podTemplate(label: "${git_project}-${label}", inheritFrom: "jnlp-docker-golang-p
                     parallel(
                             'upload linux binaries': {
                                 container('jnlp') {
-                                    github.upload_asset(git_project, git_project_user, "framesd-${github.TAG_VERSION}-linux-amd64", RELEASE_ID, GIT_TOKEN)
+                                    github.upload_asset(git_project, git_project_user, "framesd-${github.TAG_VERSION}-linux-amd64", RELEASE_ID, GIT_TOKEN, "${github.BUILD_FOLDER}/src/github.com/${git_project_upstream_user}/${git_project}")
                                 }
                             },
                             'upload linux binaries artifactory': {
@@ -109,18 +120,18 @@ podTemplate(label: "${git_project}-${label}", inheritFrom: "jnlp-docker-golang-p
                                     withCredentials([
                                             string(credentialsId: pipelinex.PackagesRepo.ARTIFACTORY_IGUAZIO[2], variable: 'PACKAGES_ARTIFACTORY_PASSWORD')
                                     ]) {
-                                        common.upload_file_to_artifactory(pipelinex.PackagesRepo.ARTIFACTORY_IGUAZIO[0], pipelinex.PackagesRepo.ARTIFACTORY_IGUAZIO[1], PACKAGES_ARTIFACTORY_PASSWORD, "iguazio-devops/k8s", "framesd-${github.TAG_VERSION}-linux-amd64")
+                                        common.upload_file_to_artifactory(pipelinex.PackagesRepo.ARTIFACTORY_IGUAZIO[0], pipelinex.PackagesRepo.ARTIFACTORY_IGUAZIO[1], PACKAGES_ARTIFACTORY_PASSWORD, "iguazio-devops/k8s", "framesd-${github.TAG_VERSION}-linux-amd64", "${github.BUILD_FOLDER}/src/github.com/${git_project_upstream_user}/${git_project}")
                                     }
                                 }
                             },
                             'upload darwin binaries': {
                                 container('jnlp') {
-                                    github.upload_asset(git_project, git_project_user, "framesd-${github.TAG_VERSION}-darwin-amd64", RELEASE_ID, GIT_TOKEN)
+                                    github.upload_asset(git_project, git_project_user, "framesd-${github.TAG_VERSION}-darwin-amd64", RELEASE_ID, GIT_TOKEN, "${github.BUILD_FOLDER}/src/github.com/${git_project_upstream_user}/${git_project}")
                                 }
                             },
                             'upload windows binaries': {
                                 container('jnlp') {
-                                    github.upload_asset(git_project, git_project_user, "framesd-${github.TAG_VERSION}-windows-amd64", RELEASE_ID, GIT_TOKEN)
+                                    github.upload_asset(git_project, git_project_user, "framesd-${github.TAG_VERSION}-windows-amd64", RELEASE_ID, GIT_TOKEN, "${github.BUILD_FOLDER}/src/github.com/${git_project_upstream_user}/${git_project}")
                                 }
                             },
                             'upload to pypi': {
@@ -140,7 +151,13 @@ podTemplate(label: "${git_project}-${label}", inheritFrom: "jnlp-docker-golang-p
                                                 common.shellc("pip install pipenv")
                                                 common.shellc("make python-deps")
                                                 common.shellc("make test-py")
-                                                common.shellc("TRAVIS_REPO_SLUG=v3io/frames V3IO_PYPI_USER=${V3IO_PYPI_USER} V3IO_PYPI_PASSWORD=${V3IO_PYPI_PASSWORD} TRAVIS_TAG=${FRAMES_PYPI_VERSION} make pypi")
+                                                try {
+                                                    common.shellc("TRAVIS_REPO_SLUG=v3io/frames V3IO_PYPI_USER=${V3IO_PYPI_USER} V3IO_PYPI_PASSWORD=${V3IO_PYPI_PASSWORD} TRAVIS_TAG=${FRAMES_PYPI_VERSION} make pypi")
+                                                } catch (err) {
+                                                    unstable("Failed uploading to pypi")
+                                                    // Do not continue stages
+                                                    throw err
+                                                }
                                             }
                                         }
                                     } else {

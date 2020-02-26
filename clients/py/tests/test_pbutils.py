@@ -71,7 +71,7 @@ def test_multi_index():
 
 def test_categorical():
     s = pd.Series(['a', 'b', 'c'] * 7, name='cat').astype('category')
-    col = pbutils.series2col(s)
+    col = pbutils.series2col(s, s.name)
     assert col.name == s.name, 'bad name'
     assert list(col.strings) == list(s), 'bad data'
 

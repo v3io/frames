@@ -22,71 +22,65 @@ package stream
 
 import (
 	"fmt"
-	"reflect"
 	"strings"
 
 	"github.com/nuclio/logger"
 	"github.com/pkg/errors"
-
 	"github.com/v3io/frames"
 	"github.com/v3io/frames/backends"
 	"github.com/v3io/frames/v3ioutils"
-	v3io "github.com/v3io/v3io-go-http"
+	v3io "github.com/v3io/v3io-go/pkg/dataplane"
 )
 
-// Backend is a tsdb backend
+// Backend is a streaming backend
 type Backend struct {
 	backendConfig *frames.BackendConfig
 	framesConfig  *frames.Config
 	logger        logger.Logger
+	v3ioContext   v3io.Context
 }
 
-// NewBackend return a new v3io stream backend
-func NewBackend(logger logger.Logger, cfg *frames.BackendConfig, framesConfig *frames.Config) (frames.DataBackend, error) {
+// NewBackend returns a new platform ("v3io") streaming backend
+func NewBackend(logger logger.Logger, v3ioContext v3io.Context, cfg *frames.BackendConfig, framesConfig *frames.Config) (frames.DataBackend, error) {
 
-	frames.InitBackendDefaults(cfg, framesConfig)
 	newBackend := Backend{
 		logger:        logger.GetChild("stream"),
 		backendConfig: cfg,
 		framesConfig:  framesConfig,
+		v3ioContext:   v3ioContext,
 	}
 
 	return &newBackend, nil
 }
 
-// Create creates a table
+// Create creates a stream
 func (b *Backend) Create(request *frames.CreateRequest) error {
 
-	// TODO: check if Stream exist, if it already has the desired params can silently ignore, may need a -silent flag
+	// TODO: Check whether Stream exists; if it already has the desired params can silently ignore, may need a -silent flag
 
-	var isInt bool
-	attrs := request.Attributes()
 	shards := int64(1)
 
-	shardsVar, ok := attrs["shards"]
-	if ok {
-		shards, isInt = shardsVar.(int64)
-		fmt.Println(reflect.TypeOf(shardsVar))
-		if !isInt || shards < 1 {
-			return errors.Errorf("Shards attribute must be a positive integer (got %v)", shardsVar)
+	if request.Proto.Shards != 0 {
+		shards = request.Proto.Shards
+		if shards < 1 {
+			return errors.Errorf("'shards' must be a positive integer (got %v)", shards)
 		}
 	}
 
 	retention := int64(24)
-	retentionVar, ok := attrs["retention_hours"]
-	if ok {
-		retention, isInt = retentionVar.(int64)
-		if !isInt || retention < 1 {
-			return errors.Errorf("retention_hours attribute must be a positive integer (got %v)", retentionVar)
+	if request.Proto.RetentionHours != 0 {
+		retention = request.Proto.RetentionHours
+		if retention < 1 {
+			return errors.Errorf("'retention_hours' must be a positive integer (got %v)", retention)
 		}
 	}
 
-	container, path, err := b.newConnection(request.Session, request.Table, true)
+	container, path, err := b.newConnection(request.Proto.Session, request.Password.Get(), request.Token.Get(), request.Proto.Table, true)
 	if err != nil {
 		return err
 	}
 
-	err = container.Sync.CreateStream(&v3io.CreateStreamInput{
+	err = container.CreateStreamSync(&v3io.CreateStreamInput{
 		Path: path, ShardCount: int(shards), RetentionPeriodHours: int(retention)})
 	if err != nil {
 		b.logger.ErrorWith("CreateStream failed", "path", path, "err", err)
@@ -98,12 +92,12 @@ func (b *Backend) Create(request *frames.CreateRequest) error {
 // Delete deletes a table or part of it
 func (b *Backend) Delete(request *frames.DeleteRequest) error {
 
-	container, path, err := b.newConnection(request.Session, request.Table, true)
+	container, path, err := b.newConnection(request.Proto.Session, request.Password.Get(), request.Token.Get(), request.Proto.Table, true)
 	if err != nil {
 		return err
 	}
 
-	err = container.Sync.DeleteStream(&v3io.DeleteStreamInput{Path: path})
+	err = container.DeleteStreamSync(&v3io.DeleteStreamInput{Path: path})
 	if err != nil {
 		b.logger.ErrorWith("DeleteStream failed", "path", path, "err", err)
 	}
@@ -113,33 +107,33 @@ func (b *Backend) Delete(request *frames.DeleteRequest) error {
 
 // Exec executes a command
 func (b *Backend) Exec(request *frames.ExecRequest) (frames.Frame, error) {
-	cmd := strings.TrimSpace(strings.ToLower(request.Command))
+	cmd := strings.TrimSpace(strings.ToLower(request.Proto.Command))
 	switch cmd {
 	case "put":
 		return nil, b.put(request)
 	}
-	return nil, fmt.Errorf("Stream backend does not support commend - %s", cmd)
+	return nil, fmt.Errorf("streaming backend doesn't support execute command '%s'", cmd)
 }
 
 func (b *Backend) put(request *frames.ExecRequest) error {
 
-	varData, hasData := request.Args["data"]
-	if !hasData || request.Table == "" {
-		return fmt.Errorf("table name and data parameter must be specified")
+	varData, hasData := request.Proto.Args["data"]
+	if !hasData || request.Proto.Table == "" {
+		return fmt.Errorf("missing a required parameter - 'table' (stream name) and/or 'data' argument (record data)")
 	}
 	data := varData.GetSval()
 
 	clientInfo := ""
-	if val, ok := request.Args["clientinfo"]; ok {
+	if val, ok := request.Proto.Args["client_info"]; ok {
 		clientInfo = val.GetSval()
 	}
 
 	partitionKey := ""
-	if val, ok := request.Args["partition"]; ok {
+	if val, ok := request.Proto.Args["partition"]; ok {
 		partitionKey = val.GetSval()
 	}
 
-	container, path, err := b.newConnection(request.Session, request.Table, true)
+	container, path, err := b.newConnection(request.Proto.Session, request.Password.Get(), request.Token.Get(), request.Proto.Table, true)
 	if err != nil {
 		return err
 	}
@@ -148,7 +142,7 @@ func (b *Backend) put(request *frames.ExecRequest) error {
 	records := []*v3io.StreamRecord{{
 		Data: []byte(data), ClientInfo: []byte(clientInfo), PartitionKey: partitionKey,
 	}}
-	_, err = container.Sync.PutRecords(&v3io.PutRecordsInput{
+	_, err = container.PutRecordsSync(&v3io.PutRecordsInput{
 		Path:    path,
 		Records: records,
 	})
@@ -156,7 +150,7 @@ func (b *Backend) put(request *frames.ExecRequest) error {
 	return err
 }
 
-func (b *Backend) newConnection(session *frames.Session, path string, addSlash bool) (*v3io.Container, string, error) {
+func (b *Backend) newConnection(session *frames.Session, password string, token string, path string, addSlash bool) (v3io.Container, string, error) {
 
 	session = frames.InitSessionDefaults(session, b.framesConfig)
 	containerName, newPath, err := v3ioutils.ProcessPaths(session, path, addSlash)
@@ -166,10 +160,11 @@ func (b *Backend) newConnection(session *frames.Session, path string, addSlash b
 
 	session.Container = containerName
 	container, err := v3ioutils.NewContainer(
+		b.v3ioContext,
 		session,
-		b.logger,
-		b.backendConfig.Workers,
-	)
+		password,
+		token,
+		b.logger)
 
 	return container, newPath, err
 }

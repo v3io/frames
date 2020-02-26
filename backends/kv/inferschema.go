@@ -22,69 +22,165 @@ package kv
 
 import (
 	"fmt"
+	"reflect"
+	"sort"
+	"strings"
+
+	"github.com/pkg/errors"
 	"github.com/v3io/frames"
 	"github.com/v3io/frames/v3ioutils"
-	"github.com/v3io/v3io-go-http"
+	"github.com/v3io/v3io-go/pkg/dataplane"
+)
+
+var (
+	intType   = reflect.TypeOf(1)
+	floatType = reflect.TypeOf(1.0)
 )
 
 func (b *Backend) inferSchema(request *frames.ExecRequest) error {
 
-	container, table, err := b.newConnection(request.Session, request.Table, true)
+	container, table, err := b.newConnection(request.Proto.Session, request.Password.Get(), request.Token.Get(), request.Proto.Table, true)
 	if err != nil {
 		return err
 	}
 
-	keyField := "__name"
-	if val, ok := request.Args["key"]; ok {
+	var keyField string
+	if val, ok := request.Proto.Args["key"]; ok {
 		keyField = val.GetSval()
 	}
-	maxrec := 50
+	maxrec := 10
 
-	input := v3io.GetItemsInput{
-		Path: table, Filter: "", AttributeNames: []string{"*"}}
+	input := v3io.GetItemsInput{Path: table, Filter: "", AttributeNames: []string{"*"}}
 	b.logger.DebugWith("GetItems for schema", "input", input)
-	iter, err := v3ioutils.NewAsyncItemsCursor(
-		container, &input, b.numWorkers, []string{}, b.logger, 0)
+	iter, err := v3ioutils.NewAsyncItemsCursor(container, &input, b.numWorkers, []string{}, b.logger, 0, []string{table}, "", "")
 	if err != nil {
 		return err
 	}
 
-	rowSet := []map[string]interface{}{}
-	indicies := []string{}
+	var rowSet []map[string]interface{}
 
 	for rowNum := 0; rowNum < maxrec && iter.Next(); rowNum++ {
 		row := iter.GetFields()
 		rowSet = append(rowSet, row)
-		index, ok := row["__name"]
-		if !ok {
-			return fmt.Errorf("key (__name) was not found in row")
-		}
-		indicies = append(indicies, index.(string))
 	}
 
 	if iter.Err() != nil {
 		return iter.Err()
 	}
 
-	labels := map[string]interface{}{}
-	frame, err := frames.NewFrameFromRows(rowSet, indicies, labels)
+	newSchema, err := schemaFromKeys(keyField, rowSet)
 	if err != nil {
-		return fmt.Errorf("Failed to create frame - %v", err)
+		return err
 	}
 
-	nullSchema := v3ioutils.NewSchema(keyField)
-	newSchema := v3ioutils.NewSchema(keyField)
-
-	for _, name := range frame.Names() {
-		col, err := frame.Column(name)
-		if err != nil {
-			return err
-		}
-		err = newSchema.AddColumn(name, col, true)
-		if err != nil {
-			return err
-		}
-	}
+	nullSchema := v3ioutils.NewSchema(keyField, "")
 
 	return nullSchema.UpdateSchema(container, table, newSchema)
+}
+
+func schemaFromKeys(keyField string, rowSet []map[string]interface{}) (v3ioutils.V3ioSchema, error) {
+	columnNameToValue := make(map[string]interface{})
+	columnCanBeFullKey := make(map[string]bool)
+	columnCanBePrimaryKey := make(map[string]bool)
+	columnCanBeSortingKey := make(map[string]bool)
+
+	for _, row := range rowSet {
+		keyValue := row["__name"].(string)
+		var primaryKeyValue string
+		var sortingKeyValue string
+		indexOfDot := strings.Index(keyValue, ".")
+		if indexOfDot >= 0 && indexOfDot < len(keyValue)-1 {
+			sortingKeyValue = keyValue[indexOfDot+1:]
+			primaryKeyValue = keyValue[:indexOfDot]
+		}
+		for attrName, attrValue := range row {
+			if attrName == "__name" {
+				continue
+			}
+			previousValue, ok := columnNameToValue[attrName]
+			if ok {
+				previousType := reflect.TypeOf(previousValue)
+				currentType := reflect.TypeOf(attrValue)
+				if previousType != currentType {
+					// if one value is float and the other is int, convert the value to float to infer this field as float
+					if previousType == floatType && currentType == intType {
+						attrValue = float64(attrValue.(int))
+					} else if previousType == intType && currentType == floatType {
+						// continue to set the `columnNameToValue` to float
+					} else {
+						return nil, errors.Errorf("type '%v' of value '%v' doesn't match type '%v' of value '%v' for column '%s'.", previousType, previousValue, currentType, attrValue, attrName)
+					}
+				}
+			}
+			columnNameToValue[attrName] = attrValue
+			if _, ok = columnCanBeFullKey[attrName]; !ok {
+				columnCanBeFullKey[attrName] = true
+			}
+
+			attrValueAsString := fmt.Sprintf("%v", attrValue)
+			columnCanBeFullKey[attrName] = columnCanBeFullKey[attrName] && attrValueAsString == keyValue
+			if primaryKeyValue != "" {
+				if _, ok = columnCanBePrimaryKey[attrName]; !ok {
+					columnCanBePrimaryKey[attrName] = true
+				}
+				columnCanBePrimaryKey[attrName] = columnCanBePrimaryKey[attrName] && attrValueAsString == primaryKeyValue
+			}
+			if sortingKeyValue != "" {
+				if _, ok = columnCanBeSortingKey[attrName]; !ok {
+					columnCanBeSortingKey[attrName] = true
+				}
+				columnCanBeSortingKey[attrName] = columnCanBeSortingKey[attrName] && attrValueAsString == sortingKeyValue
+			}
+		}
+	}
+
+	var primaryKeyField string
+	var sortingKeyField string
+	if keyField == "" {
+		possibleFullKeys := filterOutFalse(columnCanBeFullKey)
+		possiblePrimaryKeys := filterOutFalse(columnCanBePrimaryKey)
+		possibleSortingKeys := filterOutFalse(columnCanBeSortingKey)
+		if len(possiblePrimaryKeys) == 1 {
+			primaryKeyField = possiblePrimaryKeys[0]
+			if len(possibleSortingKeys) == 1 {
+				sortingKeyField = possibleSortingKeys[0]
+			}
+		}
+		if primaryKeyField != "" && sortingKeyField != "" {
+			keyField = primaryKeyField
+		} else if len(possibleFullKeys) == 1 {
+			keyField = possibleFullKeys[0]
+			sortingKeyField = ""
+		} else {
+			var reason string
+			if len(possibleFullKeys) == 0 {
+				reason = "no column matches the primary-key attribute"
+			} else {
+				sort.Strings(possibleFullKeys)
+				reason = fmt.Sprintf("%d columns (%s) match the primary-key attribute", len(possibleFullKeys), strings.Join(possibleFullKeys, ", "))
+			}
+			return nil, errors.Errorf("could not determine which column is the table's primary-key attribute, because %s", reason)
+		}
+	}
+
+	newSchema := v3ioutils.NewSchema(keyField, sortingKeyField)
+
+	for name, value := range columnNameToValue {
+		err := newSchema.AddField(name, value, name != keyField && name != sortingKeyField)
+		if err != nil {
+			return nil, err
+		}
+	}
+
+	return newSchema, nil
+}
+
+func filterOutFalse(m map[string]bool) []string {
+	var res []string
+	for key, val := range m {
+		if val {
+			res = append(res, key)
+		}
+	}
+	return res
 }

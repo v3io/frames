@@ -26,6 +26,7 @@ import (
 	"testing"
 
 	"github.com/v3io/frames"
+	"github.com/v3io/frames/pb"
 )
 
 var (
@@ -43,7 +44,6 @@ GHCND:USW00094728,2000-01-11,0,-9999,0,111,44,49,300,310,112,174,1203,1203.7
 GHCND:USW00094728,2000-01-12,0,-9999,0,83,39,39,330,330,94,161,536,610.7
 GHCND:USW00094728,2000-01-13,13,-9999,0,39,-78,51,90,10,103,143,1539,843.7
 `)
-	csvPath    string
 	numCSVRows = 12
 	numCSVCols = 14
 	colTypes   = map[string]frames.DType{
@@ -56,7 +56,7 @@ GHCND:USW00094728,2000-01-13,13,-9999,0,39,-78,51,90,10,103,143,1539,843.7
 )
 
 func TestCSV(t *testing.T) {
-	req := &frames.ReadRequest{}
+	req := &frames.ReadRequest{Proto: &pb.ReadRequest{}}
 	result := loadTempCSV(t, req)
 
 	nRows := totalRows(result)
@@ -86,8 +86,8 @@ func TestCSV(t *testing.T) {
 func TestLimit(t *testing.T) {
 	limit := numCSVRows - 3
 
-	req := &frames.ReadRequest{}
-	req.Limit = int64(limit)
+	req := &frames.ReadRequest{Proto: &pb.ReadRequest{}}
+	req.Proto.Limit = int64(limit)
 
 	result := loadTempCSV(t, req)
 	if nRows := totalRows(result); nRows != limit {
@@ -98,8 +98,8 @@ func TestLimit(t *testing.T) {
 func TestMaxInMessage(t *testing.T) {
 	frameLimit := numCSVRows / 3
 
-	req := &frames.ReadRequest{}
-	req.MessageLimit = int64(frameLimit)
+	req := &frames.ReadRequest{Proto: &pb.ReadRequest{}}
+	req.Proto.MessageLimit = int64(frameLimit)
 
 	result := loadTempCSV(t, req)
 	if nRows := totalRows(result); nRows != numCSVRows {
@@ -139,12 +139,12 @@ func loadTempCSV(t *testing.T, req *frames.ReadRequest) []frames.Frame {
 		RootDir: path.Dir(csvPath),
 	}
 
-	backend, err := NewBackend(logger, cfg, nil)
+	backend, err := NewBackend(logger, nil, cfg, nil)
 	if err != nil {
 		t.Fatal(err)
 	}
 
-	req.Table = path.Base(csvPath)
+	req.Proto.Table = path.Base(csvPath)
 	it, err := backend.Read(req)
 	if err != nil {
 		t.Fatal(err)

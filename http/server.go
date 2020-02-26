@@ -28,13 +28,13 @@ import (
 	"fmt"
 	"io"
 	"net/http"
-
-	"github.com/v3io/frames"
-	"github.com/v3io/frames/api"
-	"github.com/v3io/frames/pb"
+	"path"
 
 	"github.com/nuclio/logger"
 	"github.com/pkg/errors"
+	"github.com/v3io/frames"
+	"github.com/v3io/frames/api"
+	"github.com/v3io/frames/pb"
 	"github.com/valyala/fasthttp"
 )
 
@@ -44,7 +44,7 @@ var (
 	bearerAuthPrefix = []byte("Bearer ")
 )
 
-const ACCESS_KEY_USER = "__ACCESS_KEY"
+const AccessKeyUser = "__ACCESS_KEY"
 
 // Server is HTTP server
 type Server struct {
@@ -119,12 +119,16 @@ func (s *Server) Start() error {
 	}()
 
 	s.SetState(frames.RunningState)
-	s.logger.InfoWith("server started", "address", s.address)
+	s.logger.InfoWith("HTTP server started", "address", s.address)
 	return nil
 }
 
 func (s *Server) handler(ctx *fasthttp.RequestCtx) {
-	fn, ok := s.routes[string(ctx.Path())]
+	// Avoid something like a double slash causing a misroute to status due to the fact that ctx.URI() and ctx.Path()
+	// translate a path like //read to /, which in turn causes the plaintext status being returned to a client that is
+	// expecteing a binary response (which currently results in a Python MemoryError on the client side).
+	canonicalPath := path.Clean(string(ctx.Request.Header.RequestURI()))
+	fn, ok := s.routes[canonicalPath]
 	if !ok {
 		ctx.Error(fmt.Sprintf("unknown path - %q", string(ctx.Path())), http.StatusNotFound)
 		return
@@ -138,7 +142,7 @@ func (s *Server) handleStatus(ctx *fasthttp.RequestCtx) {
 		"state": s.State(),
 	}
 
-	s.replyJSON(ctx, status)
+	_ = s.replyJSON(ctx, status)
 }
 
 func (s *Server) handleRead(ctx *fasthttp.RequestCtx) {
@@ -146,16 +150,27 @@ func (s *Server) handleRead(ctx *fasthttp.RequestCtx) {
 		ctx.Error("unsupported method", http.StatusMethodNotAllowed)
 	}
 
-	request := &frames.ReadRequest{}
-	if err := json.Unmarshal(ctx.PostBody(), request); err != nil {
+	requestInner := &pb.ReadRequest{}
+	if err := json.Unmarshal(ctx.PostBody(), requestInner); err != nil {
 		s.logger.ErrorWith("can't decode request", "error", err)
 		ctx.Error(fmt.Sprintf("bad request - %s", err), http.StatusBadRequest)
 		return
 	}
+	request := &frames.ReadRequest{
+		Proto: requestInner,
+	}
 
 	// TODO: Validate request
-	s.logger.InfoWith("read request", "request", request)
-	s.httpAuth(ctx, request.Session)
+
+	if requestInner.Session != nil {
+		s.httpAuth(ctx, requestInner.Session)
+		request.Password = frames.InitSecretString(requestInner.Session.Password)
+		request.Token = frames.InitSecretString(requestInner.Session.Token)
+		requestInner.Session.Password = ""
+		requestInner.Session.Token = ""
+	}
+
+	s.logger.DebugWith("read request", "request", request)
 
 	ch := make(chan frames.Frame)
 	var apiError error
@@ -197,7 +212,7 @@ func (s *Server) writeError(enc *frames.Encoder, err error) {
 	msg := &pb.Frame{
 		Error: err.Error(),
 	}
-	enc.Encode(msg)
+	_ = enc.Encode(msg)
 }
 
 func (s *Server) handleWrite(ctx *fasthttp.RequestCtx) {
@@ -207,8 +222,8 @@ func (s *Server) handleWrite(ctx *fasthttp.RequestCtx) {
 
 	reader, writer := io.Pipe()
 	go func() {
-		ctx.Request.BodyWriteTo(writer)
-		writer.Close()
+		_ = ctx.Request.BodyWriteTo(writer)
+		_ = writer.Close()
 	}()
 
 	dec := frames.NewDecoder(reader)
@@ -226,15 +241,30 @@ func (s *Server) handleWrite(ctx *fasthttp.RequestCtx) {
 	if req.InitialData != nil {
 		frame = frames.NewFrameFromProto(req.InitialData)
 	}
+
+	saveMode, err := frames.SaveModeFromString(req.SaveMode)
+	if err != nil {
+		s.logger.ErrorWith("bad write request", "error", err)
+		ctx.Error(err.Error(), http.StatusBadRequest)
+		return
+	}
+
 	request := &frames.WriteRequest{
 		Session:       req.Session,
 		Backend:       req.Backend,
 		Table:         req.Table,
 		ImmidiateData: frame,
+		Condition:     req.Condition,
 		Expression:    req.Expression,
 		HaveMore:      req.More,
+		SaveMode:      saveMode,
 	}
+
 	s.httpAuth(ctx, request.Session)
+	request.Password = frames.InitSecretString(req.Session.Password)
+	request.Token = frames.InitSecretString(req.Session.Token)
+	req.Session.Password = ""
+	req.Session.Token = ""
 
 	var nFrames, nRows int
 	var writeError error
@@ -274,7 +304,7 @@ func (s *Server) handleWrite(ctx *fasthttp.RequestCtx) {
 		"num_frames": nFrames,
 		"num_rows":   nRows,
 	}
-	s.replyJSON(ctx, reply)
+	_ = s.replyJSON(ctx, reply)
 }
 
 func (s *Server) handleCreate(ctx *fasthttp.RequestCtx) {
@@ -282,13 +312,23 @@ func (s *Server) handleCreate(ctx *fasthttp.RequestCtx) {
 		ctx.Error("unsupported method", http.StatusMethodNotAllowed)
 	}
 
-	request := &frames.CreateRequest{}
-	if err := json.Unmarshal(ctx.PostBody(), request); err != nil {
+	requestInner := &pb.CreateRequest{}
+	if err := json.Unmarshal(ctx.PostBody(), requestInner); err != nil {
 		s.logger.ErrorWith("can't decode request", "error", err)
 		ctx.Error(fmt.Sprintf("bad request - %s", err), http.StatusBadRequest)
 		return
 	}
-	s.httpAuth(ctx, request.Session)
+	request := &frames.CreateRequest{
+		Proto: requestInner,
+	}
+
+	if requestInner.Session != nil {
+		s.httpAuth(ctx, requestInner.Session)
+		request.Password = frames.InitSecretString(requestInner.Session.Password)
+		request.Token = frames.InitSecretString(requestInner.Session.Token)
+		requestInner.Session.Password = ""
+		requestInner.Session.Token = ""
+	}
 
 	s.logger.InfoWith("create", "request", request)
 	if err := s.api.Create(request); err != nil {
@@ -304,13 +344,23 @@ func (s *Server) handleDelete(ctx *fasthttp.RequestCtx) {
 		ctx.Error("unsupported method", http.StatusMethodNotAllowed)
 	}
 
-	request := &frames.DeleteRequest{}
-	if err := json.Unmarshal(ctx.PostBody(), request); err != nil {
+	requestInner := &pb.DeleteRequest{}
+	if err := json.Unmarshal(ctx.PostBody(), requestInner); err != nil {
 		s.logger.ErrorWith("can't decode request", "error", err)
 		ctx.Error(fmt.Sprintf("bad request - %s", err), http.StatusBadRequest)
 		return
 	}
-	s.httpAuth(ctx, request.Session)
+	request := &frames.DeleteRequest{
+		Proto: requestInner,
+	}
+
+	if requestInner.Session != nil {
+		s.httpAuth(ctx, requestInner.Session)
+		request.Password = frames.InitSecretString(requestInner.Session.Password)
+		request.Token = frames.InitSecretString(requestInner.Session.Token)
+		requestInner.Session.Password = ""
+		requestInner.Session.Token = ""
+	}
 
 	if err := s.api.Delete(request); err != nil {
 		ctx.Error("can't delete", http.StatusInternalServerError)
@@ -321,7 +371,7 @@ func (s *Server) handleDelete(ctx *fasthttp.RequestCtx) {
 }
 
 func (s *Server) handleConfig(ctx *fasthttp.RequestCtx) {
-	s.replyJSON(ctx, s.config)
+	_ = s.replyJSON(ctx, s.config)
 }
 
 func (s *Server) replyJSON(ctx *fasthttp.RequestCtx, reply interface{}) error {
@@ -337,7 +387,7 @@ func (s *Server) replyJSON(ctx *fasthttp.RequestCtx, reply interface{}) error {
 
 func (s *Server) replyOK(ctx *fasthttp.RequestCtx) {
 	ctx.SetStatusCode(http.StatusOK)
-	ctx.Write(okBytes)
+	_, _ = ctx.Write(okBytes)
 }
 
 func (s *Server) handleExec(ctx *fasthttp.RequestCtx) {
@@ -345,13 +395,21 @@ func (s *Server) handleExec(ctx *fasthttp.RequestCtx) {
 		ctx.Error("unsupported method", http.StatusMethodNotAllowed)
 	}
 
-	request := &frames.ExecRequest{}
-	if err := json.Unmarshal(ctx.PostBody(), request); err != nil {
+	requestInner := &pb.ExecRequest{}
+	if err := json.Unmarshal(ctx.PostBody(), requestInner); err != nil {
 		s.logger.ErrorWith("can't decode request", "error", err)
 		ctx.Error(fmt.Sprintf("bad request - %s", err), http.StatusBadRequest)
 		return
 	}
-	s.httpAuth(ctx, request.Session)
+	request := &frames.ExecRequest{
+		Proto: requestInner,
+	}
+
+	s.httpAuth(ctx, request.Proto.Session)
+	request.Password = frames.InitSecretString(request.Proto.Session.Password)
+	request.Token = frames.InitSecretString(request.Proto.Session.Token)
+	request.Proto.Session.Password = ""
+	request.Proto.Session.Token = ""
 
 	frame, err := s.api.Exec(request)
 	if err != nil {
@@ -372,7 +430,7 @@ func (s *Server) handleExec(ctx *fasthttp.RequestCtx) {
 	}
 
 	ctx.SetStatusCode(http.StatusOK)
-	json.NewEncoder(ctx).Encode(map[string]string{
+	_ = json.NewEncoder(ctx).Encode(map[string]string{
 		"frame": frameData,
 	})
 }
@@ -386,20 +444,26 @@ func (s *Server) handleSimpleJSONSearch(ctx *fasthttp.RequestCtx) {
 }
 
 func (s *Server) handleSimpleJSON(ctx *fasthttp.RequestCtx, method string) {
-	req, err := SimpleJSONRequestFactory(method, ctx.PostBody())
+	req, err := simpleJSONRequestFactory(method, ctx.PostBody())
 	if err != nil {
 		s.logger.ErrorWith("can't initialize simplejson request", "error", err)
 		ctx.Error(fmt.Sprintf("bad request - %s", err), http.StatusBadRequest)
 		return
 	}
 	// passing session in order to easily pass token, when implemented
-	readRequest := req.GetReadRequest(nil)
-	s.httpAuth(ctx, readRequest.Session)
+	request := req.GetReadRequest(nil)
+
+	s.httpAuth(ctx, request.Proto.Session)
+	request.Password = frames.InitSecretString(request.Proto.Session.Password)
+	request.Token = frames.InitSecretString(request.Proto.Session.Token)
+	request.Proto.Session.Password = ""
+	request.Proto.Session.Token = ""
+
 	ch := make(chan frames.Frame)
 	var apiError error
 	go func() {
 		defer close(ch)
-		apiError = s.api.Read(readRequest, ch)
+		apiError = s.api.Read(request, ch)
 		if apiError != nil {
 			s.logger.ErrorWith("error reading", "error", apiError)
 		}
@@ -410,7 +474,7 @@ func (s *Server) handleSimpleJSON(ctx *fasthttp.RequestCtx, method string) {
 	if resp, err := CreateResponse(req, ch); err != nil {
 		ctx.Error(fmt.Sprintf("Error creating response - %s", err), http.StatusInternalServerError)
 	} else {
-		s.replyJSON(ctx, resp)
+		_ = s.replyJSON(ctx, resp)
 	}
 }
 
@@ -448,7 +512,7 @@ func (s *Server) parseBasicAuth(auth []byte, session *frames.Session) {
 	}
 
 	user := string(data[:i])
-	if user == ACCESS_KEY_USER {
+	if user == AccessKeyUser {
 		session.Token = string(data[i+1:])
 	} else {
 		session.User = user

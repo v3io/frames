@@ -24,12 +24,12 @@ from requests.exceptions import RequestException
 from urllib3.exceptions import HTTPError
 
 from . import frames_pb2 as fpb
-from .client import ClientBase
+from .client import ClientBase, RawFrame
 from .errors import (CreateError, DeleteError, Error, ExecuteError, ReadError,
                      WriteError)
-from .pbutils import df2msg, msg2df, pb2py
-from .pdutils import concat_dfs
 from .frames_pb2 import Frame
+from .pbutils import df2msg, msg2df, pb2py
+from .pdutils import concat_dfs, should_reorder_columns
 
 header_fmt = '<q'
 header_fmt_size = struct.calcsize(header_fmt)
@@ -37,6 +37,7 @@ header_fmt_size = struct.calcsize(header_fmt)
 
 def connection_error(error_cls):
     """Re-raise v3f Exceptions from connection errors"""
+
     def decorator(fn):
         @wraps(fn)
         def wrapper(*args, **kw):
@@ -44,12 +45,30 @@ def connection_error(error_cls):
                 return fn(*args, **kw)
             except (RequestException, HTTPError) as err:
                 raise error_cls(str(err))
+
         return wrapper
+
     return decorator
 
 
 class Client(ClientBase):
-    """Client is a nuclio stream HTTP client"""
+    """Client is a frames stream HTTP client"""
+
+    def __init__(self, *args, **kwargs):
+        super(Client, self).__init__(*args, **kwargs)
+
+        self._session = None
+
+        # create the session object, persist it between requests
+        self._establish_session()
+
+    def __del__(self):
+        self._session.close()
+
+    def _establish_session(self):
+        self._session = requests.sessions.Session()
+        self._session.verify = False
+
     def _fix_address(self, address):
         if '://' not in address:
             return 'http://{}'.format(address)
@@ -58,20 +77,19 @@ class Client(ClientBase):
 
     @connection_error(ReadError)
     def _read(self, backend, table, query, columns, filter, group_by, limit,
-              data_format, row_layout, max_in_message, marker, iterator, **kw):
+              data_format, row_layout, max_in_message, marker, iterator, get_raw, **kw):
         request = {
             'session': pb2py(self.session),
             'backend': backend,
             'table': table,
             'query': query,
-            'table': table,
             'columns': columns,
             'filter': filter,
             'group_by': group_by,
             'limit': limit,
             'data_format': data_format,
             'row_layout': row_layout,
-            'max_in_message': max_in_message,
+            'message_limit': max_in_message,
             'marker': marker,
         }
 
@@ -79,21 +97,25 @@ class Client(ClientBase):
         request.update(kw)
 
         url = self._url_for('read')
-        resp = requests.post(
-            url, json=request, headers=self._headers(json=True), stream=True)
+        resp = self._session.post(url,
+                                  json=request,
+                                  headers=self._get_headers(json=True),
+                                  stream=True)
         if not resp.ok:
             raise Error('cannot call API - {}'.format(resp.text))
 
-        dfs = self._iter_dfs(resp.raw)
+        do_reorder = should_reorder_columns(backend, query, columns)
+        dfs = self._iter_dfs(resp.raw, columns, get_raw, do_reorder=do_reorder)
 
-        if not iterator:
-            return concat_dfs(dfs, self.frame_factory, self.concat)
+        if not iterator and not get_raw:
+            multi_index = kw.get('multi_index', False)
+            return concat_dfs(dfs, backend, self.frame_factory, self.concat, multi_index)
         return dfs
 
     @connection_error(WriteError)
     def _write(self, request, dfs, labels, index_cols):
         url = self._url_for('write')
-        headers = self._headers()
+        headers = self._get_headers()
         headers['Content-Encoding'] = 'chunked'
 
         request = self._encode_msg(request)
@@ -101,7 +123,7 @@ class Client(ClientBase):
         frames = (enc(df2msg(df, labels, index_cols)) for df in dfs)
         data = chain([request], frames)
 
-        resp = requests.post(url, headers=headers, data=data)
+        resp = self._session.post(url, headers=headers, data=data)
 
         if not resp.ok:
             raise Error('cannot call API - {}'.format(resp.text))
@@ -109,19 +131,18 @@ class Client(ClientBase):
         return resp.json()
 
     @connection_error(CreateError)
-    def _create(self, backend, table, attrs, schema, if_exists):
+    def _create(self, backend, table, schema, if_exists, **kw):
         request = {
             'session': pb2py(self.session),
             'backend': backend,
             'table': table,
-            'attribute_map': attrs,
             'schema': pb2py(schema),
             'if_exists': if_exists,
         }
-
+        request.update(kw)
         url = self._url_for('create')
-        headers = self._headers()
-        resp = requests.post(url, headers=headers, json=request)
+        headers = self._get_headers()
+        resp = self._session.post(url, headers=headers, json=request)
         if not resp.ok:
             raise CreateError(resp.text)
 
@@ -140,9 +161,9 @@ class Client(ClientBase):
         convert_go_times(request, ('start', 'end'))
 
         url = self._url_for('delete')
-        headers = self._headers()
+        headers = self._get_headers()
         # TODO: Make it DELETE ?
-        resp = requests.post(url, headers=headers, json=request)
+        resp = self._session.post(url, headers=headers, json=request)
         if not resp.ok:
             raise CreateError(resp.text)
 
@@ -158,8 +179,8 @@ class Client(ClientBase):
         }
 
         url = self._url_for('exec')
-        headers = self._headers()
-        resp = requests.post(url, headers=headers, json=request)
+        headers = self._get_headers()
+        resp = self._session.post(url, headers=headers, json=request)
         if not resp.ok:
             raise ExecuteError(resp.text)
 
@@ -178,18 +199,29 @@ class Client(ClientBase):
     def _url_for(self, action):
         return self.address + '/' + action
 
-    def _headers(self, json=False):
-        headers = {}
+    def _get_headers(self, json=False):
+        headers = {'Accept-Encoding': ''}
+
+        # we disable keep alive on the session to cover cases of rapid
+        # and tight instantiations and usages of the client, in which
+        # case request's tcp connection is harmful and will result in
+        # NewConnectionError under stress
+        if not self._persist_connection:
+            headers['Connection'] = 'close'
+
         if json:
             headers['Content-Type'] = 'application/json'
 
         return headers
 
-    def _iter_dfs(self, resp):
+    def _iter_dfs(self, resp, columns, get_raw, do_reorder=True):
         for msg in iter(partial(self._read_msg, resp), None):
             if msg.error:
                 raise ReadError(msg.error)
-            yield msg2df(msg, self.frame_factory)
+            if get_raw:
+                yield RawFrame(msg)
+            else:
+                yield msg2df(msg, self.frame_factory, columns, do_reorder)
 
     def _read_msg(self, resp):
         data = resp.read(header_fmt_size)
