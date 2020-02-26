@@ -125,7 +125,10 @@ podTemplate(label: "${git_project}-${label}", inheritFrom: "jnlp-docker-golang-p
                             },
                             'upload to pypi': {
                                 container('python37') {
-                                    if( "${github.TAG_VERSION}" != "unstable" ) {
+                                    release_body = github.get_release_body("frames", git_project_user, github.TAG_VERSION, GIT_TOKEN)
+                                    if (release_body.startsWith("Autorelease")) {
+                                        echo "Autorelease is not uploading frames py to pypi."
+                                    } else if( "${github.TAG_VERSION}" != "unstable" ) {
                                         withCredentials([
                                                 usernamePassword(credentialsId: "iguazio-prod-pypi-credentials", passwordVariable: 'V3IO_PYPI_PASSWORD', usernameVariable: 'V3IO_PYPI_USER')
                                         ]) {
