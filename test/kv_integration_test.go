@@ -23,6 +23,7 @@ package test
 import (
 	"encoding/json"
 	"fmt"
+	"strings"
 	"time"
 
 	"github.com/nuclio/logger"
@@ -66,17 +67,29 @@ func (kvSuite *KvTestSuite) SetupSuite() {
 	}
 }
 
-func (kvSuite *KvTestSuite) generateRandomSampleFrameWithEmptyStringIndex(size int, indexName string, columnNames []string) frames.Frame {
-	var icol frames.Column
+func (kvSuite *KvTestSuite) generateRandomSampleFrameWithEmptyIndices(size int, indexNames []string, emptyIndices map[string]bool, columnNames []string) frames.Frame {
+	kvSuite.Require().True(len(indexNames) <= 2, "KV API supports no more than two indices")
+	var indexColumns []frames.Column
 
-	index := make([]string, size)
+	emptyIndexValues := make([]string, size)
+	uniqueIndexValues := make([]string, size)
 	for i := 0; i < size; i++ {
-		index[i] = ""
+		emptyIndexValues[i] = fmt.Sprintf("%d", i)
 	}
 
-	icol, err := frames.NewSliceColumn(indexName, index)
-	if err != nil {
-		kvSuite.T().Fatal(err)
+	for _, indexName := range indexNames {
+		var indexColumn frames.Column
+		var err error
+		if ok := emptyIndices[indexName]; ok {
+			indexColumn, err = frames.NewSliceColumn(indexName, emptyIndexValues)
+		} else {
+			indexColumn, err = frames.NewSliceColumn(indexName, uniqueIndexValues)
+		}
+		if err != nil {
+			kvSuite.T().Fatal(err)
+		}
+
+		indexColumns = append(indexColumns, indexColumn)
 	}
 
 	columns := make([]frames.Column, len(columnNames))
@@ -84,7 +97,7 @@ func (kvSuite *KvTestSuite) generateRandomSampleFrameWithEmptyStringIndex(size i
 		columns[i] = FloatCol(kvSuite.T(), name, size)
 	}
 
-	frame, err := frames.NewFrame(columns, []frames.Column{icol}, nil)
+	frame, err := frames.NewFrame(columns, indexColumns, nil)
 	if err != nil {
 		kvSuite.T().Fatal(err)
 	}
@@ -743,4 +756,120 @@ func (kvSuite *KvTestSuite) TestNonExistingColumns() {
 	it, _ := kvSuite.client.Read(rreq)
 	it.Next()
 	kvSuite.Error(it.Err(), "error was expected when reading a non existing column")
+}
+
+func (kvSuite *KvTestSuite) TestUpdateItemNoSortingKey() {
+	table := fmt.Sprintf("TestUpdateItemNoSortingKey_%d", time.Now().UnixNano())
+	requireCtx := kvSuite.Require()
+
+	columnNames := []string{"n1", "n2"}
+
+	frame := kvSuite.generateRandomSampleFrameWithEmptyIndices(
+		3,
+		[]string{"sortingKey", "shardingKey"},
+		map[string]bool{"sortingKey": true},
+		columnNames)
+
+	writeRequest := &frames.WriteRequest{
+		Backend:  kvSuite.backendName,
+		Table:    table,
+		SaveMode: frames.UpdateItem,
+	}
+
+	appender, err := kvSuite.client.Write(writeRequest)
+	requireCtx.NoError(err, "failed to create appender")
+
+	err = appender.Add(frame)
+	requireCtx.NoError(err, "failed to write frame")
+
+	err = appender.WaitForComplete(time.Second)
+	requireCtx.Error(err, "empty key error is expected")
+	requireCtx.True(strings.Contains(err.Error(), "should not be empty"))
+}
+
+func (kvSuite *KvTestSuite) TestOverwriteItemNoSortingKey() {
+	table := fmt.Sprintf("TestOverwriteItemNoSortingKey_%d", time.Now().UnixNano())
+	requireCtx := kvSuite.Require()
+
+	columnNames := []string{"n1", "n2"}
+
+	frame := kvSuite.generateRandomSampleFrameWithEmptyIndices(
+		3,
+		[]string{"sortingKey", "shardingKey"},
+		map[string]bool{"sortingKey": true},
+		columnNames)
+
+	writeRequest := &frames.WriteRequest{
+		Backend:  kvSuite.backendName,
+		Table:    table,
+		SaveMode: frames.OverwriteItem,
+	}
+
+	appender, err := kvSuite.client.Write(writeRequest)
+	requireCtx.NoError(err, "failed to create appender")
+
+	err = appender.Add(frame)
+	requireCtx.NoError(err, "failed to write frame")
+
+	err = appender.WaitForComplete(time.Second)
+	requireCtx.Error(err, "empty key error is expected")
+	requireCtx.True(strings.Contains(err.Error(), "should not be empty"))
+}
+
+func (kvSuite *KvTestSuite) TestUpdateItemNoShardingKey() {
+	table := fmt.Sprintf("TestUpdateItemNoShardingKey_%d", time.Now().UnixNano())
+	requireCtx := kvSuite.Require()
+
+	columnNames := []string{"n1", "n2"}
+
+	frame := kvSuite.generateRandomSampleFrameWithEmptyIndices(
+		3,
+		[]string{"sortingKey", "shardingKey"},
+		map[string]bool{"shardingKey": true},
+		columnNames)
+
+	writeRequest := &frames.WriteRequest{
+		Backend:  kvSuite.backendName,
+		Table:    table,
+		SaveMode: frames.UpdateItem,
+	}
+
+	appender, err := kvSuite.client.Write(writeRequest)
+	requireCtx.NoError(err, "failed to create appender")
+
+	err = appender.Add(frame)
+	requireCtx.NoError(err, "failed to write frame")
+
+	err = appender.WaitForComplete(time.Second)
+	requireCtx.Error(err, "empty key error is expected")
+	requireCtx.True(strings.Contains(err.Error(), "should not be empty"))
+}
+
+func (kvSuite *KvTestSuite) TestOverwriteItemNoShardingKey() {
+	table := fmt.Sprintf("TestOverwriteItemNoShardingKey_%d", time.Now().UnixNano())
+	requireCtx := kvSuite.Require()
+
+	columnNames := []string{"n1", "n2"}
+
+	frame := kvSuite.generateRandomSampleFrameWithEmptyIndices(
+		3,
+		[]string{"sortingKey", "shardingKey"},
+		map[string]bool{"shardingKey": true},
+		columnNames)
+
+	writeRequest := &frames.WriteRequest{
+		Backend:  kvSuite.backendName,
+		Table:    table,
+		SaveMode: frames.OverwriteItem,
+	}
+
+	appender, err := kvSuite.client.Write(writeRequest)
+	requireCtx.NoError(err, "failed to create appender")
+
+	err = appender.Add(frame)
+	requireCtx.NoError(err, "failed to write frame")
+
+	err = appender.WaitForComplete(time.Second)
+	requireCtx.Error(err, "empty key error is expected")
+	requireCtx.True(strings.Contains(err.Error(), "should not be empty"))
 }

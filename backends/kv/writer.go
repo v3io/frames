@@ -221,7 +221,7 @@ func (a *Appender) Add(frame frames.Frame) error {
 			return err
 		}
 
-		if indexName != "" && keyVal == "" {
+		if keyVal == "" {
 			return errors.Errorf("invalid input. key %q should not be empty", indexName)
 		}
 		if sortingKeyName != "" && sortingKeyVal == "" {
