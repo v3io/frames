@@ -6,12 +6,6 @@ git_deploy_user = "iguazio-prod-git-user"
 git_deploy_user_token = "iguazio-prod-git-user-token"
 git_deploy_user_private_key = "iguazio-prod-git-user-private-key"
 
-properties([
-    parameters([
-        booleanParam(name: 'deploy_to_pypi', defaultValue: true, description: 'Deploy frames py to pypi'),
-        ]),
-    ])
-
 podTemplate(label: "${git_project}-${label}", inheritFrom: "jnlp-docker-golang-python37") {
     node("${git_project}-${label}") {
         pipelinex = library(identifier: 'pipelinex@development', retriever: modernSCM(
@@ -130,29 +124,25 @@ podTemplate(label: "${git_project}-${label}", inheritFrom: "jnlp-docker-golang-p
                                 }
                             },
                             'upload to pypi': {
-                                if (params.deploy_to_pypi) {
-                                    container('python37') {
-                                        if( "${github.TAG_VERSION}" != "unstable" ) {
-                                            withCredentials([
-                                                    usernamePassword(credentialsId: "iguazio-prod-pypi-credentials", passwordVariable: 'V3IO_PYPI_PASSWORD', usernameVariable: 'V3IO_PYPI_USER')
-                                            ]) {
-                                                dir("${github.BUILD_FOLDER}/src/github.com/${git_project_upstream_user}/${git_project}") {
-                                                    FRAMES_PYPI_VERSION = sh(
-                                                            script: "echo ${github.DOCKER_TAG_VERSION} | awk -F - '{print \$1}'",
-                                                            returnStdout: true
-                                                    ).trim()
-                                                    common.shellc("pip install pipenv")
-                                                    common.shellc("make python-deps")
-                                                    common.shellc("make test-py")
-                                                    common.shellc("TRAVIS_REPO_SLUG=v3io/frames V3IO_PYPI_USER=${V3IO_PYPI_USER} V3IO_PYPI_PASSWORD=${V3IO_PYPI_PASSWORD} TRAVIS_TAG=${FRAMES_PYPI_VERSION} make pypi")
-                                                }
+                                container('python37') {
+                                    if( "${github.TAG_VERSION}" != "unstable" ) {
+                                        withCredentials([
+                                                usernamePassword(credentialsId: "iguazio-prod-pypi-credentials", passwordVariable: 'V3IO_PYPI_PASSWORD', usernameVariable: 'V3IO_PYPI_USER')
+                                        ]) {
+                                            dir("${github.BUILD_FOLDER}/src/github.com/${git_project_upstream_user}/${git_project}") {
+                                                FRAMES_PYPI_VERSION = sh(
+                                                        script: "echo ${github.DOCKER_TAG_VERSION} | awk -F - '{print \$1}'",
+                                                        returnStdout: true
+                                                ).trim()
+                                                common.shellc("pip install pipenv")
+                                                common.shellc("make python-deps")
+                                                common.shellc("make test-py")
+                                                common.shellc("TRAVIS_REPO_SLUG=v3io/frames V3IO_PYPI_USER=${V3IO_PYPI_USER} V3IO_PYPI_PASSWORD=${V3IO_PYPI_PASSWORD} TRAVIS_TAG=${FRAMES_PYPI_VERSION} make pypi")
                                             }
-                                        } else {
-                                            echo "Uploading to pypi only stable version"
                                         }
+                                    } else {
+                                        echo "Uploading to pypi only stable version"
                                     }
-                                } else {
-                                    echo "When triggered by v3io-tsdb, I'm not uploading to pypi. Cos frames py already exists in pypi."
                                 }
                             },
                     )
