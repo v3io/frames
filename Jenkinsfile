@@ -8,7 +8,7 @@ git_deploy_user_private_key = "iguazio-prod-git-user-private-key"
 
 podTemplate(label: "${git_project}-${label}", inheritFrom: "jnlp-docker-golang-python37") {
     node("${git_project}-${label}") {
-        pipelinex = library(identifier: 'pipelinex@refs', retriever: modernSCM(
+        pipelinex = library(identifier: 'pipelinex@development', retriever: modernSCM(
                 [$class       : 'GitSCMSource',
                  credentialsId: git_deploy_user_private_key,
                  remote       : "git@github.com:iguazio/pipelinex.git"])).com.iguazio.pipelinex
@@ -23,9 +23,9 @@ podTemplate(label: "${git_project}-${label}", inheritFrom: "jnlp-docker-golang-p
                             'test-py': {
                                 container('python37') {
                                     dir("${github.BUILD_FOLDER}/src/github.com/${git_project_upstream_user}/${git_project}") {
-                                        sh "pip install pipenv"
-                                        sh "make python-deps"
-                                        sh "make test-py"
+                                        common.shellc("pip install pipenv")
+                                        common.shellc("make python-deps")
+                                        common.shellc("make test-py")
                                     }
                                 }
                             },
@@ -51,9 +51,9 @@ podTemplate(label: "${git_project}-${label}", inheritFrom: "jnlp-docker-golang-p
                             'test-py': {
                                 container('python37') {
                                     dir("${github.BUILD_FOLDER}/src/github.com/${git_project_upstream_user}/${git_project}") {
-                                        sh "pip install pipenv"
-                                        sh "make python-deps"
-                                        sh "make test-py"
+                                        common.shellc("pip install pipenv")
+                                        common.shellc("make python-deps")
+                                        common.shellc("make test-py")
                                     }
                                 }
                             },
@@ -136,7 +136,10 @@ podTemplate(label: "${git_project}-${label}", inheritFrom: "jnlp-docker-golang-p
                             },
                             'upload to pypi': {
                                 container('python37') {
-                                    if( "${github.TAG_VERSION}" != "unstable" ) {
+                                    release_body = github.get_release_body("frames", git_project_user, github.TAG_VERSION, GIT_TOKEN)
+                                    if (release_body.startsWith("Autorelease")) {
+                                        echo "Autorelease is not uploading frames py to pypi."
+                                    } else if( "${github.TAG_VERSION}" != "unstable" ) {
                                         withCredentials([
                                                 usernamePassword(credentialsId: "iguazio-prod-pypi-credentials", passwordVariable: 'V3IO_PYPI_PASSWORD', usernameVariable: 'V3IO_PYPI_USER')
                                         ]) {
@@ -145,9 +148,9 @@ podTemplate(label: "${git_project}-${label}", inheritFrom: "jnlp-docker-golang-p
                                                         script: "echo ${github.DOCKER_TAG_VERSION} | awk -F - '{print \$1}'",
                                                         returnStdout: true
                                                 ).trim()
-                                                sh "pip install pipenv"
-                                                sh "make python-deps"
-                                                sh "make test-py"
+                                                common.shellc("pip install pipenv")
+                                                common.shellc("make python-deps")
+                                                common.shellc("make test-py")
                                                 try {
                                                     common.shellc("TRAVIS_REPO_SLUG=v3io/frames V3IO_PYPI_USER=${V3IO_PYPI_USER} V3IO_PYPI_PASSWORD=${V3IO_PYPI_PASSWORD} TRAVIS_TAG=${FRAMES_PYPI_VERSION} make pypi")
                                                 } catch (err) {
