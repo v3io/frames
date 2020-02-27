@@ -74,7 +74,8 @@ func (kvSuite *KvTestSuite) generateRandomSampleFrameWithEmptyIndices(size int, 
 	emptyIndexValues := make([]string, size)
 	uniqueIndexValues := make([]string, size)
 	for i := 0; i < size; i++ {
-		emptyIndexValues[i] = fmt.Sprintf("%d", i)
+		emptyIndexValues[i] = ""
+		uniqueIndexValues[i] = fmt.Sprintf("%d", i)
 	}
 
 	for _, indexName := range indexNames {
@@ -758,16 +759,17 @@ func (kvSuite *KvTestSuite) TestNonExistingColumns() {
 	kvSuite.Error(it.Err(), "error was expected when reading a non existing column")
 }
 
-func (kvSuite *KvTestSuite) TestUpdateItemNoSortingKey() {
-	table := fmt.Sprintf("TestUpdateItemNoSortingKey_%d", time.Now().UnixNano())
+func (kvSuite *KvTestSuite) TestUpdateItemNoKey() {
+	table := fmt.Sprintf("TestUpdateItemNoKey_%d", time.Now().UnixNano())
 	requireCtx := kvSuite.Require()
 
-	columnNames := []string{"n1", "n2"}
+	columnNames := []string{"col_1", "col_2"}
+	indexNames := []string{"key", "sorting_key"}
 
 	frame := kvSuite.generateRandomSampleFrameWithEmptyIndices(
 		3,
-		[]string{"sortingKey", "shardingKey"},
-		map[string]bool{"sortingKey": true},
+		indexNames,
+		map[string]bool{indexNames[0]: true},
 		columnNames)
 
 	writeRequest := &frames.WriteRequest{
@@ -784,19 +786,80 @@ func (kvSuite *KvTestSuite) TestUpdateItemNoSortingKey() {
 
 	err = appender.WaitForComplete(time.Second)
 	requireCtx.Error(err, "empty key error is expected")
-	requireCtx.True(strings.Contains(err.Error(), "should not be empty"))
+	requireCtx.True(strings.HasSuffix(err.Error(), fmt.Sprintf("invalid input. key %q should not be empty", indexNames[0])))
+}
+
+func (kvSuite *KvTestSuite) TestOverwriteItemNoKey() {
+	table := fmt.Sprintf("TestOverwriteItemNoKey_%d", time.Now().UnixNano())
+	requireCtx := kvSuite.Require()
+
+	columnNames := []string{"col1", "col_2"}
+	indexNames := []string{"key", "sorting_key"}
+
+	frame := kvSuite.generateRandomSampleFrameWithEmptyIndices(
+		3,
+		indexNames,
+		map[string]bool{indexNames[0]: true},
+		columnNames)
+
+	writeRequest := &frames.WriteRequest{
+		Backend:  kvSuite.backendName,
+		Table:    table,
+		SaveMode: frames.OverwriteItem,
+	}
+
+	appender, err := kvSuite.client.Write(writeRequest)
+	requireCtx.NoError(err, "failed to create appender")
+
+	err = appender.Add(frame)
+	requireCtx.NoError(err, "failed to write frame")
+
+	err = appender.WaitForComplete(time.Second)
+	requireCtx.Error(err, "empty key error is expected")
+	requireCtx.True(strings.HasSuffix(err.Error(), fmt.Sprintf("invalid input. key %q should not be empty", indexNames[0])))
+}
+
+func (kvSuite *KvTestSuite) TestUpdateItemNoSortingKey() {
+	table := fmt.Sprintf("TestUpdateItemNoSortingKey_%d", time.Now().UnixNano())
+	requireCtx := kvSuite.Require()
+
+	columnNames := []string{"col_1", "col_2"}
+	indexNames := []string{"key", "sorting_key"}
+
+	frame := kvSuite.generateRandomSampleFrameWithEmptyIndices(
+		3,
+		indexNames,
+		map[string]bool{indexNames[1]: true},
+		columnNames)
+
+	writeRequest := &frames.WriteRequest{
+		Backend:  kvSuite.backendName,
+		Table:    table,
+		SaveMode: frames.UpdateItem,
+	}
+
+	appender, err := kvSuite.client.Write(writeRequest)
+	requireCtx.NoError(err, "failed to create appender")
+
+	err = appender.Add(frame)
+	requireCtx.NoError(err, "failed to write frame")
+
+	err = appender.WaitForComplete(time.Second)
+	requireCtx.Error(err, "empty key error is expected")
+	requireCtx.True(strings.HasSuffix(err.Error(), fmt.Sprintf("invalid input. sorting key %q should not be empty", indexNames[1])))
 }
 
 func (kvSuite *KvTestSuite) TestOverwriteItemNoSortingKey() {
 	table := fmt.Sprintf("TestOverwriteItemNoSortingKey_%d", time.Now().UnixNano())
 	requireCtx := kvSuite.Require()
 
-	columnNames := []string{"n1", "n2"}
+	columnNames := []string{"col1", "col_2"}
+	indexNames := []string{"key", "sorting_key"}
 
 	frame := kvSuite.generateRandomSampleFrameWithEmptyIndices(
 		3,
-		[]string{"sortingKey", "shardingKey"},
-		map[string]bool{"sortingKey": true},
+		indexNames,
+		map[string]bool{indexNames[1]: true},
 		columnNames)
 
 	writeRequest := &frames.WriteRequest{
@@ -813,63 +876,5 @@ func (kvSuite *KvTestSuite) TestOverwriteItemNoSortingKey() {
 
 	err = appender.WaitForComplete(time.Second)
 	requireCtx.Error(err, "empty key error is expected")
-	requireCtx.True(strings.Contains(err.Error(), "should not be empty"))
-}
-
-func (kvSuite *KvTestSuite) TestUpdateItemNoShardingKey() {
-	table := fmt.Sprintf("TestUpdateItemNoShardingKey_%d", time.Now().UnixNano())
-	requireCtx := kvSuite.Require()
-
-	columnNames := []string{"n1", "n2"}
-
-	frame := kvSuite.generateRandomSampleFrameWithEmptyIndices(
-		3,
-		[]string{"sortingKey", "shardingKey"},
-		map[string]bool{"shardingKey": true},
-		columnNames)
-
-	writeRequest := &frames.WriteRequest{
-		Backend:  kvSuite.backendName,
-		Table:    table,
-		SaveMode: frames.UpdateItem,
-	}
-
-	appender, err := kvSuite.client.Write(writeRequest)
-	requireCtx.NoError(err, "failed to create appender")
-
-	err = appender.Add(frame)
-	requireCtx.NoError(err, "failed to write frame")
-
-	err = appender.WaitForComplete(time.Second)
-	requireCtx.Error(err, "empty key error is expected")
-	requireCtx.True(strings.Contains(err.Error(), "should not be empty"))
-}
-
-func (kvSuite *KvTestSuite) TestOverwriteItemNoShardingKey() {
-	table := fmt.Sprintf("TestOverwriteItemNoShardingKey_%d", time.Now().UnixNano())
-	requireCtx := kvSuite.Require()
-
-	columnNames := []string{"n1", "n2"}
-
-	frame := kvSuite.generateRandomSampleFrameWithEmptyIndices(
-		3,
-		[]string{"sortingKey", "shardingKey"},
-		map[string]bool{"shardingKey": true},
-		columnNames)
-
-	writeRequest := &frames.WriteRequest{
-		Backend:  kvSuite.backendName,
-		Table:    table,
-		SaveMode: frames.OverwriteItem,
-	}
-
-	appender, err := kvSuite.client.Write(writeRequest)
-	requireCtx.NoError(err, "failed to create appender")
-
-	err = appender.Add(frame)
-	requireCtx.NoError(err, "failed to write frame")
-
-	err = appender.WaitForComplete(time.Second)
-	requireCtx.Error(err, "empty key error is expected")
-	requireCtx.True(strings.Contains(err.Error(), "should not be empty"))
+	requireCtx.True(strings.HasSuffix(err.Error(), fmt.Sprintf("invalid input. sorting key %q should not be empty", indexNames[1])))
 }
