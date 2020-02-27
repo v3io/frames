@@ -480,7 +480,7 @@ read(backend='', table='', query='', columns=None, filter='', group_by='',
     iterator=False, get_raw=False, **kw)
 ```
 
-> **Note:** The `limit`, `data_format`, `row_layout`, and `marker` parameters aren't supported in the current release.
+> **Note:** The `limit`, `data_format`, `row_layout`, and `marker` parameters aren't supported in the current release, and `get_raw` is for internal use only.
 
 <a id="method-read-common-params"></a>
 #### Common `read` Parameters
@@ -491,7 +491,7 @@ All Frames backends that support the `read` method support the following common 
 
   - **Type:** `bool`
   - **Requirement:** Optional
-  - **Default Value:** `False` except when [`get_raw`](#method-read-param-get_raw) is `True`
+  - **Default Value:** `False`
 
 - <a id="method-read-param-filter"></a>**filter** &mdash; A query filter.
   For example, `filter="col1=='my_value'"`.
@@ -507,12 +507,6 @@ All Frames backends that support the `read` method support the following common 
 
   - **Type:** `[]str`
   - **Requirement:** Optional
-
-- <a id="method-read-param-get_raw"></a>**get_raw** **[Tech Preview]** &mdash; Set to `True` to return the data in raw-data frames using Cap'n Proto, which boosts performance at the expense of the convenience of using pandas DataFrames; `False` (default) returns the data in pandas DataFrames.
-
-  - **Type:** `bool`
-  - **Requirement:** Optional
-  - **Default Value:** `False`
 
 - <a id="method-read-param-kw"></a>**kw** &mdash; This parameter is used for passing a variable-length list of additional keyword (named) arguments.
   For more information, see the backend-specific method parameters.
@@ -649,10 +643,8 @@ The following `read` parameters are specific to the `stream` backend and are pas
 <a id="method-read-return-value"></a>
 #### Return Value
 
-- When the value of the [`iterator`](#method-read-param-iterator) parameter is `False` (default) &mdash; returns a single DataFrame; not applicable when [`get_raw`](#method-read-param-get_raw) is `True`.
-- When the value of the `iterator` or `get_raw` parameter is `True` &mdash; returns a DataFrames iterator.
-
-> **Note:** The method returns pandas DataFrames except when the `get_raw` parameter is set to `True` to return raw-data frames.
+- When the value of the [`iterator`](#method-read-param-iterator) parameter is `False` (default) &mdash; returns a single DataFrame.
+- When the value of the `iterator` parameter is `True` &mdash; returns a DataFrames iterator.
 
 <!-- [IntInfo] See IG-14065. -->
 <!-- 
