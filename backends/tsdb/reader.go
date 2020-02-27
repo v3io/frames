@@ -28,7 +28,6 @@ import (
 	"github.com/v3io/frames"
 	"github.com/v3io/v3io-tsdb/pkg/config"
 	"github.com/v3io/v3io-tsdb/pkg/pquerier"
-	"github.com/v3io/v3io-tsdb/pkg/tsdb"
 	tsdbutils "github.com/v3io/v3io-tsdb/pkg/utils"
 )
 
@@ -119,27 +118,6 @@ func (b *Backend) Read(request *frames.ReadRequest) (frames.FrameIterator, error
 	}
 
 	iter.set, err = qry.SelectDataFrame(selectParams)
-	if err != nil {
-		return nil, errors.Wrap(err, "Failed on TSDB Select")
-	}
-
-	return &iter, nil
-}
-
-func oldQuery(adapter *tsdb.V3ioAdapter, request *frames.ReadRequest, from, to, step int64) (frames.FrameIterator, error) {
-	qry, err := adapter.Querier(nil, from, to)
-	if err != nil {
-		return nil, errors.Wrap(err, "Failed to initialize Querier")
-	}
-
-	iter := tsdbIteratorOld{request: request}
-	name := ""
-	if len(request.Proto.Columns) > 0 {
-		name = request.Proto.Columns[0]
-		iter.withColumns = true
-	}
-
-	iter.set, err = qry.Select(name, request.Proto.Aggregators, step, request.Proto.Filter)
 	if err != nil {
 		return nil, errors.Wrap(err, "Failed on TSDB Select")
 	}

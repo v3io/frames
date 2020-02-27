@@ -62,6 +62,7 @@ github.com/nuclio/zap v0.0.0-20180228181516-4a2bd2f9ef28/go.mod h1:SUxPsgePvlyjx
 github.com/nuclio/zap v0.0.2 h1:rY5PkMOl8CTkqRqIPuxziBiKK6Mq/8oEurfgRnNtqf0=
 github.com/nuclio/zap v0.0.2/go.mod h1:SUxPsgePvlyjx6c5MtGdB50pf0IQThtlyLwISLboeuc=
 github.com/pavius/impi v0.0.0-20180302134524-c1cbdcb8df2b/go.mod h1:x/hU0bfdWIhuOT1SKwiJg++yvkk6EuOtJk8WtDZqgr8=
+github.com/pavius/impi v0.0.0-20200212064320-5db7efa5f87b h1:Te2cVBQZncOwLG4qR4Jex2EFd6i8lSqC9GzUFNBwS/0=
 github.com/pavius/impi v0.0.0-20200212064320-5db7efa5f87b/go.mod h1:x/hU0bfdWIhuOT1SKwiJg++yvkk6EuOtJk8WtDZqgr8=
 github.com/pavius/zap v0.0.0-20180228181622-8d52692529b8/go.mod h1:6FWOCx06uh50GClv8S2cfk3asqTJs3qq3ZNRtLZE77I=
 github.com/pavius/zap v1.4.2-0.20180228181622-8d52692529b8 h1:WqLgmr/wj9TO5Sc6oYPQRAJBxuHE0NTeuVeFnT+FZVo=
