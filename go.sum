@@ -22,6 +22,8 @@ github.com/dinal/v3io-tsdb v0.0.3-0.20200224150447-bce5524aebb3/go.mod h1:wRBXgq
 github.com/dinal/v3io-tsdb v0.0.3-0.20200224155407-e35e1d707da9/go.mod h1:wRBXgqK7/3D5HG6Ve75JUxZNmaRQq8vHHbOaFvaOf3g=
 github.com/dinal/v3io-tsdb v0.0.3-0.20200224155715-d792923f8130 h1:FKOMkRRoO7OmFLoHAAOTWH/saVLsYDherI92F2bi2Xo=
 github.com/dinal/v3io-tsdb v0.0.3-0.20200224155715-d792923f8130/go.mod h1:wRBXgqK7/3D5HG6Ve75JUxZNmaRQq8vHHbOaFvaOf3g=
+github.com/dinal/v3io-tsdb v0.0.3-0.20200227080155-e405a04dfa51 h1:bBJ4vBDyteDdjv2PijLrV+asFyUju61h6QgYR7WQsvg=
+github.com/dinal/v3io-tsdb v0.0.3-0.20200227080155-e405a04dfa51/go.mod h1:wRBXgqK7/3D5HG6Ve75JUxZNmaRQq8vHHbOaFvaOf3g=
 github.com/dinal/v3io-tsdb v0.8.12-0.20200219094038-482603692c50/go.mod h1:di0NiGDqNZAZXzbVQGDYPl7u29KpoaNBe2g0a9q+2F8=
 github.com/ghodss/yaml v1.0.0 h1:wQHKEahhL6wmXdzwWG11gIVCkOv05bNOh+Rxn0yngAk=
 github.com/ghodss/yaml v1.0.0/go.mod h1:4dBDuWmgqj2HViK6kFavaiC9ZROes6MMH2rRYeMEF04=
@@ -87,8 +89,8 @@ github.com/prometheus/prometheus v2.5.0+incompatible/go.mod h1:oAIUtOny2rjMX0OWN
 github.com/rcrowley/go-metrics v0.0.0-20181016184325-3113b8401b8a h1:9ZKAASQSHhDYGoxY8uLVpewe1GDZ2vu2Tr/vTdVAkFQ=
 github.com/rcrowley/go-metrics v0.0.0-20181016184325-3113b8401b8a/go.mod h1:bCqnVzQkZxMG4s8nGwiZ5l3QUCyqpo9Y+/ZMZ9VjZe4=
 github.com/rs/xid v1.1.0/go.mod h1:+uKXf+4Djp6Md1KODXJxgGQPKngRmWyn10oCKFzNHOQ=
-github.com/russross/blackfriday v1.5.2/go.mod h1:JO/DiYxRf+HjHt06OyowR9PTA263kcR/rfWxYHBV53g=
 github.com/russross/blackfriday v1.5.2+incompatible/go.mod h1:JO/DiYxRf+HjHt06OyowR9PTA263kcR/rfWxYHBV53g=
+github.com/russross/blackfriday v1.5.2/go.mod h1:JO/DiYxRf+HjHt06OyowR9PTA263kcR/rfWxYHBV53g=
 github.com/spaolacci/murmur3 v0.0.0-20180118202830-f09979ecbc72 h1:qLC7fQah7D6K1B0ujays3HV9gkFtllcxhzImRR7ArPQ=
 github.com/spaolacci/murmur3 v0.0.0-20180118202830-f09979ecbc72/go.mod h1:JwIasOWyU6f++ZhiEuf87xNszmSA2myDM2Kzu9HwQUA=
 github.com/spf13/cobra v0.0.3/go.mod h1:1l0Ry5zgKvJasoi3XT1TypsSe7PqH0Sj9dhYf7v3XqQ=
