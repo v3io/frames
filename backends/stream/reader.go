@@ -119,7 +119,7 @@ func (i *streamIterator) Next() bool {
 
 	output := resp.Output.(*v3io.GetRecordsOutput)
 	rows := []map[string]interface{}{}
-	var lastSequence uint64
+	var lastSequence int64
 	for _, r := range output.Records {
 
 		if i.endTime > 0 && r.ArrivalTimeSec > i.endTime {
@@ -138,14 +138,14 @@ func (i *streamIterator) Next() bool {
 				recTime, "Seq:", r.SequenceNumber, "Body:", string(r.Data))
 			row = map[string]interface{}{"raw_data": string(r.Data)}
 		}
-		lastSequence = r.SequenceNumber
+		lastSequence = int64(r.SequenceNumber)
 		row["stream_time"] = recTime
-		row["seq_number"] = int(r.SequenceNumber)
+		row["seq_number"] = int64(r.SequenceNumber)
 
 		rows = append(rows, row)
 	}
 
-	labels := map[string]interface{}{"last_seq": int(lastSequence)}
+	labels := map[string]interface{}{"last_seq": lastSequence}
 	frame, err := frames.NewFrameFromRows(rows, []string{"seq_number"}, labels)
 	if err != nil {
 		i.err = fmt.Errorf("Failed to create frame - %v", err)

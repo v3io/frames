@@ -277,8 +277,9 @@ func (api *API) createBackends(config *frames.Config) error {
 			NumWorkers:     backendConfig.V3ioGoWorkers,
 			RequestChanLen: backendConfig.V3ioGoRequestChanLength,
 		}
-
+		// create a context for the backend
 		v3ioContext, err := v3iohttp.NewContext(api.logger, newContextInput)
+
 		if err != nil {
 			return errors.Wrap(err, "Failed to create v3io context for backend")
 		}
