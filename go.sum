@@ -24,6 +24,7 @@ github.com/dinal/v3io-tsdb v0.0.3-0.20200224155715-d792923f8130 h1:FKOMkRRoO7OmF
 github.com/dinal/v3io-tsdb v0.0.3-0.20200224155715-d792923f8130/go.mod h1:wRBXgqK7/3D5HG6Ve75JUxZNmaRQq8vHHbOaFvaOf3g=
 github.com/dinal/v3io-tsdb v0.0.3-0.20200227080155-e405a04dfa51 h1:bBJ4vBDyteDdjv2PijLrV+asFyUju61h6QgYR7WQsvg=
 github.com/dinal/v3io-tsdb v0.0.3-0.20200227080155-e405a04dfa51/go.mod h1:wRBXgqK7/3D5HG6Ve75JUxZNmaRQq8vHHbOaFvaOf3g=
+github.com/dinal/v3io-tsdb v0.0.3-0.20200227082957-77e8907930c8/go.mod h1:wRBXgqK7/3D5HG6Ve75JUxZNmaRQq8vHHbOaFvaOf3g=
 github.com/dinal/v3io-tsdb v0.8.12-0.20200219094038-482603692c50/go.mod h1:di0NiGDqNZAZXzbVQGDYPl7u29KpoaNBe2g0a9q+2F8=
 github.com/ghodss/yaml v1.0.0 h1:wQHKEahhL6wmXdzwWG11gIVCkOv05bNOh+Rxn0yngAk=
 github.com/ghodss/yaml v1.0.0/go.mod h1:4dBDuWmgqj2HViK6kFavaiC9ZROes6MMH2rRYeMEF04=
