@@ -66,6 +66,10 @@ func (kv *Backend) Read(request *frames.ReadRequest) (frames.FrameIterator, erro
 		request.Proto.Table,
 		true)
 
+	if err != nil {
+		return nil, err
+	}
+
 	input := v3io.GetItemsInput{Filter: request.Proto.Filter, AttributeNames: columns, SortKeyRangeStart: request.Proto.SortKeyRangeStart, SortKeyRangeEnd: request.Proto.SortKeyRangeEnd}
 	kv.logger.DebugWith("read input", "input", input, "request", request)
 

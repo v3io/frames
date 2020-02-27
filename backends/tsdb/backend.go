@@ -29,12 +29,11 @@ import (
 	"time"
 	"unsafe"
 
-	"github.com/v3io/frames"
-	"github.com/v3io/frames/backends"
-
 	"github.com/golang/groupcache/lru"
 	"github.com/nuclio/logger"
 	"github.com/pkg/errors"
+	"github.com/v3io/frames"
+	"github.com/v3io/frames/backends"
 	"github.com/v3io/frames/v3ioutils"
 	v3io "github.com/v3io/v3io-go/pkg/dataplane"
 	"github.com/v3io/v3io-tsdb/pkg/config"
@@ -241,18 +240,13 @@ func (b *Backend) Delete(request *frames.DeleteRequest) error {
 	if err != nil {
 		if request.Proto.IfMissing == frames.IgnoreError && b.isSchemaNotFoundError(err) {
 			return nil
-		} else {
-			return err
 		}
-	}
-
-	err = adapter.DeleteDB(delAll, false, start, end)
-	if err == nil {
 		return err
 	}
 
-	return err
+	err = adapter.DeleteDB(delAll, false, start, end)
 
+	return err
 }
 
 // Exec executes a command

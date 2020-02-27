@@ -25,9 +25,8 @@ import (
 	"net/http"
 	"testing"
 
-	"github.com/valyala/fasthttp"
-
 	"github.com/v3io/frames"
+	"github.com/valyala/fasthttp"
 )
 
 const (
@@ -37,7 +36,7 @@ const (
 func createServer() (*Server, error) {
 	cfg := &frames.Config{
 		Backends: []*frames.BackendConfig{
-			&frames.BackendConfig{
+			{
 				Name: "weather",
 				Type: "csv",
 			},

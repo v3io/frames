@@ -27,6 +27,7 @@ import (
 	"time"
 
 	"github.com/nuclio/logger"
+	"github.com/pkg/errors"
 	"github.com/v3io/frames"
 	"github.com/v3io/frames/backends/utils"
 	"github.com/v3io/frames/v3ioutils"
@@ -72,9 +73,8 @@ func (kv *Backend) Write(request *frames.WriteRequest) (frames.FrameAppender, er
 	if err != nil {
 		if errorWithStatus, ok := err.(v3ioerrors.ErrorWithStatusCode); !ok || errorWithStatus.StatusCode() != http.StatusNotFound {
 			return nil, err
-		} else {
-			tableAlreadyExists = false
 		}
+		tableAlreadyExists = false
 	}
 
 	if tableAlreadyExists {
@@ -151,14 +151,23 @@ func (a *Appender) Add(frame frames.Frame) error {
 			}
 		}
 		newSchema = v3ioutils.NewSchema(indexName, sortingKeyName)
-		newSchema.AddColumn(indexName, indices[0], false)
+		err = newSchema.AddColumn(indexName, indices[0], false)
+		if err != nil {
+			return err
+		}
 		if len(indices) > 1 {
-			newSchema.AddColumn(indices[1].Name(), indices[1], false)
+			err = newSchema.AddColumn(indices[1].Name(), indices[1], false)
+			if err != nil {
+				return err
+			}
 		}
 	} else {
 		indexName = a.schema.(*v3ioutils.OldV3ioSchema).Key
 		newSchema = v3ioutils.NewSchema(indexName, "")
-		newSchema.AddField(indexName, 0, false)
+		err = newSchema.AddField(indexName, 0, false)
+		if err != nil {
+			return err
+		}
 	}
 
 	for _, name := range frame.Names() {
@@ -210,6 +219,13 @@ func (a *Appender) Add(frame frames.Frame) error {
 
 		if err != nil {
 			return err
+		}
+
+		if keyVal == "" {
+			return errors.Errorf("invalid input. key %q should not be empty", indexName)
+		}
+		if sortingKeyName != "" && sortingKeyVal == "" {
+			return errors.Errorf("invalid input. sorting key %q should not be empty", sortingKeyName)
 		}
 
 		var condition string
@@ -467,7 +483,7 @@ func (a *Appender) respWaitLoop(timeout time.Duration) {
 		case <-timer.C:
 			if !active {
 				a.logger.ErrorWith("Response loop timed out. ", "requests", requests, "response", responses)
-				a.asyncErr = fmt.Errorf("Response loop timed out.")
+				a.asyncErr = fmt.Errorf("response loop timed out")
 				a.doneChan <- true
 				return
 			}

@@ -27,11 +27,10 @@ import (
 	"os"
 	"time"
 
-	"github.com/v3io/frames"
-	"github.com/v3io/frames/pb"
-
 	"github.com/nuclio/logger"
 	"github.com/pkg/errors"
+	"github.com/v3io/frames"
+	"github.com/v3io/frames/pb"
 	"google.golang.org/grpc"
 )
 
@@ -134,7 +133,7 @@ func (c *Client) Write(request *frames.WriteRequest) (frames.FrameAppender, erro
 	}
 
 	if err := stream.Send(req); err != nil {
-		stream.CloseAndRecv()
+		_, _ = stream.CloseAndRecv()
 		return nil, err
 	}
 
@@ -241,7 +240,7 @@ func (fa *frameAppender) Add(frame frames.Frame) error {
 	}
 
 	if err := fa.stream.Send(msg); err != nil {
-		fa.stream.CloseAndRecv()
+		_, _ = fa.stream.CloseAndRecv()
 		fa.closed = true
 		return err
 	}
