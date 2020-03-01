@@ -380,7 +380,7 @@ class ClientBase:
         self._validate_request(backend, table, DeleteError)
         return self._delete(self._alias_backends(backend), table, filter, start, end, if_missing)
 
-    def execute(self, backend, table, command='', args=None, expression=''):
+    def execute(self, backend, table, command='', args=None):
         """Executes a backend-specific command on a data collection
 
         Parameters
@@ -399,10 +399,6 @@ class ClientBase:
               - 'put' - add a record to a stream shard
         args : dict
             A dictionary of command-specific parameters (arguments)
-        expression (Optional; required for the 'update' command) : str
-            A command expression (command-specific) -
-            - For 'update' - an expression that determines the update logic
-              [Not supported in this version]
 
         Raises
         ------
@@ -410,7 +406,7 @@ class ClientBase:
             On request error or backend error
         """
         self._validate_request(backend, table, ExecuteError)
-        return self._execute(self._alias_backends(backend), table, command, args, expression)
+        return self._execute(self._alias_backends(backend), table, command, args)
 
     def _fix_address(self, address):
         return address
