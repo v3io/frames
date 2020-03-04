@@ -94,6 +94,10 @@ def msg2df(frame, frame_factory, columns=None, do_reorder=True):
 
     df = frame_factory(data, new_index)
 
+    # IG-14809 - return an empty dataframe (without columns metadata) in case of empty dataset
+    if df.empty:
+        return frame_factory({}, new_index)
+
     with warnings.catch_warnings():
         warnings.simplefilter('ignore')
         df.labels = pb2py(frame.labels)
