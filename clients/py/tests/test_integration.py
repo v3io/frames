@@ -18,7 +18,6 @@ from uuid import uuid4
 import numpy as np
 import pandas as pd
 import pytest
-
 import v3io_frames as v3f
 from conftest import has_go, test_backends, protocols
 
