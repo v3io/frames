@@ -147,7 +147,7 @@ class Client(ClientBase):
             raise CreateError(resp.text)
 
     @connection_error(DeleteError)
-    def _delete(self, backend, table, filter, start, end, if_missing):
+    def _delete(self, backend, table, filter, start, end, if_missing, metrics):
         request = {
             'session': pb2py(self.session),
             'backend': backend,
@@ -156,6 +156,7 @@ class Client(ClientBase):
             'start': start,
             'end': end,
             'if_missing': if_missing,
+            'metrics': metrics,
         }
 
         convert_go_times(request, ('start', 'end'))
