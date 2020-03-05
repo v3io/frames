@@ -195,3 +195,24 @@ def test_integration_http_error(framesd):
     with pytest.raises(v3f.ReadError):
         for df in c.read('no-such-backend', table='no such table'):
             pass
+
+
+@pytest.mark.skipif(not has_go, reason='Go SDK not found')
+@pytest.mark.parametrize('protocol', protocols)
+def test_kv_read_empty_df(framesd, session, protocol):
+    test_id = uuid4().hex
+    tableName = 'integtest{}'.format(test_id)
+
+    addr = getattr(framesd, '{}_addr'.format(protocol))
+    client = v3f.Client(addr, **session)
+
+    index = [str(i) for i in range(1, 4)]
+    key_name = 'row'
+    df = pd.DataFrame(data={'col1': [i for i in range(1, 4)], 'col2': ['aaa', 'bad', 'cffd']}, index=index)
+    client.write(backend='kv', table=tableName, dfs=df, condition="starts({col2}, 'aaa') AND {col1} == 3")
+
+    df = client.read(backend='kv', table=tableName)
+    assert df.to_json() == '{}'
+    assert isinstance(df, pd.DataFrame), 'iterator=False returned generator'
+
+    client.delete('kv', tableName)
