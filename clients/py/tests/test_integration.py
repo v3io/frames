@@ -19,7 +19,7 @@ import numpy as np
 import pandas as pd
 import pytest
 import v3io_frames as v3f
-from conftest import has_go, test_backends, protocols
+from conftest import has_go, test_backends, protocols, has_session
 
 tsdb_span = 5  # hours
 integ_params = [(p, b) for p in protocols for b in test_backends]
@@ -197,9 +197,11 @@ def test_integration_http_error(framesd):
             pass
 
 
+@pytest.mark.skipif(not has_session, reason='No session found')
 @pytest.mark.skipif(not has_go, reason='Go SDK not found')
 @pytest.mark.parametrize('protocol', protocols)
 def test_kv_read_empty_df(framesd, session, protocol):
+    backend = 'kv'
     test_id = uuid4().hex
     tableName = 'integtest{}'.format(test_id)
 
@@ -207,12 +209,11 @@ def test_kv_read_empty_df(framesd, session, protocol):
     client = v3f.Client(addr, **session)
 
     index = [str(i) for i in range(1, 4)]
-    key_name = 'row'
     df = pd.DataFrame(data={'col1': [i for i in range(1, 4)], 'col2': ['aaa', 'bad', 'cffd']}, index=index)
-    client.write(backend='kv', table=tableName, dfs=df, condition="starts({col2}, 'aaa') AND {col1} == 3")
+    client.write(backend, table=tableName, dfs=df, condition="starts({col2}, 'aaa') AND {col1} == 3")
 
-    df = client.read(backend='kv', table=tableName)
+    df = client.read(backend, table=tableName)
     assert df.to_json() == '{}'
     assert isinstance(df, pd.DataFrame), 'iterator=False returned generator'
 
-    client.delete('kv', tableName)
+    client.delete(backend, tableName)
