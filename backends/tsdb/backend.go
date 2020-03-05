@@ -244,9 +244,14 @@ func (b *Backend) Delete(request *frames.DeleteRequest) error {
 		return err
 	}
 
-	err = adapter.DeleteDB(delAll, false, start, end)
-
+	params := tsdb.DeleteParams{DeleteAll: delAll,
+		From:    start,
+		To:      end,
+		Filter:  request.Proto.Filter,
+		Metrics: request.Proto.Metrics}
+	err = adapter.DeleteDB(params)
 	return err
+
 }
 
 // Exec executes a command
