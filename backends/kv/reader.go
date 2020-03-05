@@ -22,13 +22,16 @@ package kv
 
 import (
 	"fmt"
+	"net/http"
 
+	"github.com/pkg/errors"
 	"github.com/v3io/frames"
 	"github.com/v3io/frames/backends"
 	"github.com/v3io/frames/backends/utils"
 	"github.com/v3io/frames/pb"
 	"github.com/v3io/frames/v3ioutils"
 	"github.com/v3io/v3io-go/pkg/dataplane"
+	v3ioerrors "github.com/v3io/v3io-go/pkg/errors"
 )
 
 const (
@@ -82,6 +85,15 @@ func (kv *Backend) Read(request *frames.ReadRequest) (frames.FrameIterator, erro
 
 	schemaInterface, err := v3ioutils.GetSchema(tablePath, container)
 	if err != nil {
+		switch typedError := err.(type) {
+		case v3ioerrors.ErrorWithStatusCode:
+			if typedError.StatusCode() == http.StatusNotFound {
+				return nil, errors.New(
+					fmt.Sprintf("Failed to find a schema for table \"/%s/%s\"; "+
+						"use the `execute` 'infer' command to infer the schema and generate a schema file.",
+						request.Proto.Session.Container, request.Proto.Table))
+			}
+		}
 		return nil, err
 	}
 	schemaObj := schemaInterface.(*v3ioutils.OldV3ioSchema)

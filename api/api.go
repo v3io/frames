@@ -24,9 +24,6 @@ package api
 
 import (
 	"fmt"
-	"net/http"
-	"net/url"
-	"regexp"
 	"strings"
 	"time"
 
@@ -40,7 +37,6 @@ import (
 	_ "github.com/v3io/frames/backends/stream"
 	_ "github.com/v3io/frames/backends/tsdb"
 	v3iohttp "github.com/v3io/v3io-go/pkg/dataplane/http"
-	v3ioerrors "github.com/v3io/v3io-go/pkg/errors"
 )
 
 const (
@@ -91,23 +87,9 @@ func (api *API) Read(request *frames.ReadRequest, out chan frames.Frame) error {
 	}
 
 	iter, err := backend.Read(request)
-	// Make sure that schema exists
 	if err != nil {
-		switch typedError := err.(type) {
-		case v3ioerrors.ErrorWithStatusCode:
-			if typedError.StatusCode() == http.StatusNotFound {
-				realPathPattern := regexp.MustCompile(".*GET\\s(.*)\\sHTTP.*")
-				tokens := realPathPattern.FindStringSubmatch(typedError.Error())
-				path := tokens[1]
-				if decodedPath, decodeErr := url.QueryUnescape(path); decodeErr == nil {
-					path = decodedPath
-				}
-				return errors.New(fmt.Sprintf("No such file or directory. Path: %s", path))
-			}
-		default:
-			api.logger.ErrorWith("can't query", "error", err)
-			return errors.Wrap(err, "can't query")
-		}
+		api.logger.ErrorWith("can't query", "error", err)
+		return errors.Wrap(err, "can't query")
 	}
 
 	for iter.Next() {
