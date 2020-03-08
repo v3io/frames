@@ -42,7 +42,6 @@ type Backend struct {
 
 // NewBackend returns a new NoSQL (key/value) backend
 func NewBackend(logger logger.Logger, v3ioContext v3io.Context, config *frames.BackendConfig, framesConfig *frames.Config) (frames.DataBackend, error) {
-
 	newBackend := Backend{
 		logger:            logger.GetChild("kv"),
 		numWorkers:        config.Workers,
@@ -130,7 +129,7 @@ func (b *Backend) newConnection(session *frames.Session, password string, token 
 		}
 		getClusterMDOutput := resp.Output.(*v3io.GetClusterMDOutput)
 		b.numWorkers = getClusterMDOutput.NumberOfVNs
-		b.logger.Info("going to use ", b.numWorkers, "workers")
+		b.logger.Debug("going to use ", b.numWorkers, "workers")
 	}
 
 	return container, newPath, err

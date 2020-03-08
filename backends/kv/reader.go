@@ -39,7 +39,7 @@ var systemAttrs = []string{"__gid", "__mode", "__mtime_nsecs", "__mtime_secs", "
 
 // Read sends a read request
 func (kv *Backend) Read(request *frames.ReadRequest) (frames.FrameIterator, error) {
-	kv.logger.Info("USING ", kv.numWorkers, "WORKERS!!!")
+
 	if request.Proto.MessageLimit == 0 {
 		request.Proto.MessageLimit = 256 // TODO: More?
 	}

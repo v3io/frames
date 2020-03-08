@@ -302,9 +302,7 @@ func setupTest(t testing.TB, internalLogger logger.Logger) *testInfo {
 		NumWorkers:     8,
 		RequestChanLen: 4096,
 	}
-
 	v3ioContext, _ := v3iohttp.NewContext(internalLogger, newContextInput)
-
 	container, _ := v3ioutils.NewContainer(
 		v3ioContext,
 		info.session,
