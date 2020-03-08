@@ -895,7 +895,6 @@ func (kvSuite *KvTestSuite) TestUpdateExpressionWithNullValues() {
 		TimeCol(kvSuite.T(), "n4", len(index)),
 	}
 
-
 	frame, err := frames.NewFrame(columns, []frames.Column{icol}, nil)
 	if err != nil {
 		kvSuite.T().Fatal(err)
@@ -903,8 +902,8 @@ func (kvSuite *KvTestSuite) TestUpdateExpressionWithNullValues() {
 
 	kvSuite.T().Log("write")
 	wreq := &frames.WriteRequest{
-		Backend: kvSuite.backendName,
-		Table:   table,
+		Backend:  kvSuite.backendName,
+		Table:    table,
 		SaveMode: frames.UpdateItem,
 	}
 
