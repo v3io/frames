@@ -707,7 +707,7 @@ func (kvSuite *KvTestSuite) TestRequestSystemAttrs() {
 
 	time.Sleep(3 * time.Second) // Let DB sync
 
-	requestedColumns := []string{"idx", "n1", "__name", "__gid", "__mode", "__mtime_nsecs", "__mtime_secs", "__size", "__uid", "__ctime_nsecs", "__ctime_secs"}
+	requestedColumns := []string{"idx", "n1", "__name", "__gid", "__mode", "__mtime_nsecs", "__mtime_secs", "__size", "__uid", "__ctime_nsecs", "__ctime_secs", "__atime_secs", "__atime_nsecs", "__obj_type", "__collection_id"}
 	rreq := &pb.ReadRequest{
 		Backend: kvSuite.backendName,
 		Table:   table,
