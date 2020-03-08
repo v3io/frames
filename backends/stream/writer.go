@@ -49,7 +49,8 @@ func (b *Backend) Write(request *frames.WriteRequest) (frames.FrameAppender, err
 	if request.ImmidiateData != nil {
 		err := appender.Add(request.ImmidiateData)
 		if err != nil {
-			return &appender, err
+			appender.Close()
+			return nil, err
 		}
 	}
 
