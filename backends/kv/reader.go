@@ -38,7 +38,7 @@ const (
 	indexColKey = "__name"
 )
 
-var systemAttrs = []string{"__gid", "__mode", "__mtime_nsecs", "__mtime_secs", "__size", "__uid", "__ctime_nsecs", "__ctime_secs"}
+var systemAttrs = []string{"__gid", "__mode", "__mtime_nsecs", "__mtime_secs", "__size", "__uid", "__ctime_nsecs", "__ctime_secs", "__atime_secs", "__atime_nsecs", "__obj_type", "__collection_id"}
 
 // Read sends a read request
 func (kv *Backend) Read(request *frames.ReadRequest) (frames.FrameIterator, error) {
