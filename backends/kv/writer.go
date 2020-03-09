@@ -567,7 +567,9 @@ func getUpdateExpressionFromRow(columns map[string]frames.Column,
 			expression.WriteString("delete(")
 			expression.WriteString(name)
 			expression.WriteString(");")
+			continue
 		}
+
 		val, err := utils.ColAt(col, index)
 		if err != nil {
 			return "", nil, nil, err
