@@ -27,6 +27,7 @@ import (
 	"time"
 
 	"github.com/nuclio/logger"
+	"github.com/pkg/errors"
 	"github.com/v3io/frames"
 	"github.com/v3io/frames/backends/utils"
 	"github.com/v3io/frames/v3ioutils"
@@ -108,7 +109,8 @@ func (kv *Backend) Write(request *frames.WriteRequest) (frames.FrameAppender, er
 	if request.ImmidiateData != nil {
 		err := appender.Add(request.ImmidiateData)
 		if err != nil {
-			return &appender, err
+			appender.Close()
+			return nil, err
 		}
 	}
 
@@ -150,14 +152,23 @@ func (a *Appender) Add(frame frames.Frame) error {
 			}
 		}
 		newSchema = v3ioutils.NewSchema(indexName, sortingKeyName)
-		newSchema.AddColumn(indexName, indices[0], false)
+		err = newSchema.AddColumn(indexName, indices[0], false)
+		if err != nil {
+			return err
+		}
 		if len(indices) > 1 {
-			newSchema.AddColumn(indices[1].Name(), indices[1], false)
+			err = newSchema.AddColumn(indices[1].Name(), indices[1], false)
+			if err != nil {
+				return err
+			}
 		}
 	} else {
 		indexName = a.schema.(*v3ioutils.OldV3ioSchema).Key
 		newSchema = v3ioutils.NewSchema(indexName, "")
-		newSchema.AddField(indexName, 0, false)
+		err = newSchema.AddField(indexName, 0, false)
+		if err != nil {
+			return err
+		}
 	}
 
 	for _, name := range frame.Names() {
@@ -209,6 +220,13 @@ func (a *Appender) Add(frame frames.Frame) error {
 
 		if err != nil {
 			return err
+		}
+
+		if keyVal == "" {
+			return errors.Errorf("invalid input. key %q should not be empty", indexName)
+		}
+		if sortingKeyName != "" && sortingKeyVal == "" {
+			return errors.Errorf("invalid input. sorting key %q should not be empty", sortingKeyName)
 		}
 
 		var condition string
@@ -550,7 +568,9 @@ func getUpdateExpressionFromRow(columns map[string]frames.Column,
 			expression.WriteString("delete(")
 			expression.WriteString(name)
 			expression.WriteString(");")
+			continue
 		}
+
 		val, err := utils.ColAt(col, index)
 		if err != nil {
 			return "", nil, nil, err

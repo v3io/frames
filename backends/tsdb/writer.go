@@ -53,7 +53,8 @@ func (b *Backend) Write(request *frames.WriteRequest) (frames.FrameAppender, err
 	if request.ImmidiateData != nil {
 		err := newTsdbAppender.Add(request.ImmidiateData)
 		if err != nil {
-			return &newTsdbAppender, err
+			newTsdbAppender.Close()
+			return nil, err
 		}
 	}
 

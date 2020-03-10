@@ -98,4 +98,4 @@ def align_categories(dfs):
 def should_reorder_columns(backend, query, columns):
     # Currently TSDB sorts the columns by itself,
     # unless no columns were provided (either via columns or query).
-    return backend != 'tsdb' or (not query and not columns)
+    return backend != 'tsdb' or (not columns and (not query or '*' in query))

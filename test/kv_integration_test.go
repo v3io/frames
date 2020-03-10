@@ -23,6 +23,7 @@ package test
 import (
 	"encoding/json"
 	"fmt"
+	"strings"
 	"time"
 
 	"github.com/nuclio/logger"
@@ -64,6 +65,45 @@ func (kvSuite *KvTestSuite) SetupSuite() {
 	if kvSuite.client == nil {
 		kvSuite.FailNow("client not set")
 	}
+}
+
+func (kvSuite *KvTestSuite) generateRandomSampleFrameWithEmptyIndices(size int, indexNames []string, emptyIndices map[string]bool, columnNames []string) frames.Frame {
+	kvSuite.Require().True(len(indexNames) <= 2, "KV API supports no more than two indices")
+	var indexColumns []frames.Column
+
+	emptyIndexValues := make([]string, size)
+	uniqueIndexValues := make([]string, size)
+	for i := 0; i < size; i++ {
+		emptyIndexValues[i] = ""
+		uniqueIndexValues[i] = fmt.Sprintf("%d", i)
+	}
+
+	for _, indexName := range indexNames {
+		var indexColumn frames.Column
+		var err error
+		if ok := emptyIndices[indexName]; ok {
+			indexColumn, err = frames.NewSliceColumn(indexName, emptyIndexValues)
+		} else {
+			indexColumn, err = frames.NewSliceColumn(indexName, uniqueIndexValues)
+		}
+		if err != nil {
+			kvSuite.T().Fatal(err)
+		}
+
+		indexColumns = append(indexColumns, indexColumn)
+	}
+
+	columns := make([]frames.Column, len(columnNames))
+	for i, name := range columnNames {
+		columns[i] = FloatCol(kvSuite.T(), name, size)
+	}
+
+	frame, err := frames.NewFrame(columns, indexColumns, nil)
+	if err != nil {
+		kvSuite.T().Fatal(err)
+	}
+
+	return frame
 }
 
 func (kvSuite *KvTestSuite) generateRandomSampleFrame(size int, indexName string, columnNames []string) frames.Frame {
@@ -667,7 +707,7 @@ func (kvSuite *KvTestSuite) TestRequestSystemAttrs() {
 
 	time.Sleep(3 * time.Second) // Let DB sync
 
-	requestedColumns := []string{"idx", "n1", "__name", "__gid", "__mode", "__mtime_nsecs", "__mtime_secs", "__size", "__uid", "__ctime_nsecs", "__ctime_secs"}
+	requestedColumns := []string{"idx", "n1", "__name", "__gid", "__mode", "__mtime_nsecs", "__mtime_secs", "__size", "__uid", "__ctime_nsecs", "__ctime_secs", "__atime_secs", "__atime_nsecs", "__obj_type", "__collection_id"}
 	rreq := &pb.ReadRequest{
 		Backend: kvSuite.backendName,
 		Table:   table,
@@ -717,4 +757,236 @@ func (kvSuite *KvTestSuite) TestNonExistingColumns() {
 	it, _ := kvSuite.client.Read(rreq)
 	it.Next()
 	kvSuite.Error(it.Err(), "error was expected when reading a non existing column")
+}
+
+func (kvSuite *KvTestSuite) TestUpdateItemNoKey() {
+	table := fmt.Sprintf("TestUpdateItemNoKey_%d", time.Now().UnixNano())
+	requireCtx := kvSuite.Require()
+
+	columnNames := []string{"col_1", "col_2"}
+	indexNames := []string{"key", "sorting_key"}
+
+	frame := kvSuite.generateRandomSampleFrameWithEmptyIndices(
+		3,
+		indexNames,
+		map[string]bool{indexNames[0]: true},
+		columnNames)
+
+	writeRequest := &frames.WriteRequest{
+		Backend:  kvSuite.backendName,
+		Table:    table,
+		SaveMode: frames.UpdateItem,
+	}
+
+	appender, err := kvSuite.client.Write(writeRequest)
+	requireCtx.NoError(err, "failed to create appender")
+
+	err = appender.Add(frame)
+	requireCtx.NoError(err, "failed to write frame")
+
+	err = appender.WaitForComplete(time.Second)
+	requireCtx.Error(err, "empty key error is expected")
+	requireCtx.True(strings.HasSuffix(err.Error(), fmt.Sprintf("invalid input. key %q should not be empty", indexNames[0])))
+}
+
+func (kvSuite *KvTestSuite) TestOverwriteItemNoKey() {
+	table := fmt.Sprintf("TestOverwriteItemNoKey_%d", time.Now().UnixNano())
+	requireCtx := kvSuite.Require()
+
+	columnNames := []string{"col1", "col_2"}
+	indexNames := []string{"key", "sorting_key"}
+
+	frame := kvSuite.generateRandomSampleFrameWithEmptyIndices(
+		3,
+		indexNames,
+		map[string]bool{indexNames[0]: true},
+		columnNames)
+
+	writeRequest := &frames.WriteRequest{
+		Backend:  kvSuite.backendName,
+		Table:    table,
+		SaveMode: frames.OverwriteItem,
+	}
+
+	appender, err := kvSuite.client.Write(writeRequest)
+	requireCtx.NoError(err, "failed to create appender")
+
+	err = appender.Add(frame)
+	requireCtx.NoError(err, "failed to write frame")
+
+	err = appender.WaitForComplete(time.Second)
+	requireCtx.Error(err, "empty key error is expected")
+	requireCtx.True(strings.HasSuffix(err.Error(), fmt.Sprintf("invalid input. key %q should not be empty", indexNames[0])))
+}
+
+func (kvSuite *KvTestSuite) TestUpdateItemNoSortingKey() {
+	table := fmt.Sprintf("TestUpdateItemNoSortingKey_%d", time.Now().UnixNano())
+	requireCtx := kvSuite.Require()
+
+	columnNames := []string{"col_1", "col_2"}
+	indexNames := []string{"key", "sorting_key"}
+
+	frame := kvSuite.generateRandomSampleFrameWithEmptyIndices(
+		3,
+		indexNames,
+		map[string]bool{indexNames[1]: true},
+		columnNames)
+
+	writeRequest := &frames.WriteRequest{
+		Backend:  kvSuite.backendName,
+		Table:    table,
+		SaveMode: frames.UpdateItem,
+	}
+
+	appender, err := kvSuite.client.Write(writeRequest)
+	requireCtx.NoError(err, "failed to create appender")
+
+	err = appender.Add(frame)
+	requireCtx.NoError(err, "failed to write frame")
+
+	err = appender.WaitForComplete(time.Second)
+	requireCtx.Error(err, "empty key error is expected")
+	requireCtx.True(strings.HasSuffix(err.Error(), fmt.Sprintf("invalid input. sorting key %q should not be empty", indexNames[1])))
+}
+
+func (kvSuite *KvTestSuite) TestOverwriteItemNoSortingKey() {
+	table := fmt.Sprintf("TestOverwriteItemNoSortingKey_%d", time.Now().UnixNano())
+	requireCtx := kvSuite.Require()
+
+	columnNames := []string{"col1", "col_2"}
+	indexNames := []string{"key", "sorting_key"}
+
+	frame := kvSuite.generateRandomSampleFrameWithEmptyIndices(
+		3,
+		indexNames,
+		map[string]bool{indexNames[1]: true},
+		columnNames)
+
+	writeRequest := &frames.WriteRequest{
+		Backend:  kvSuite.backendName,
+		Table:    table,
+		SaveMode: frames.OverwriteItem,
+	}
+
+	appender, err := kvSuite.client.Write(writeRequest)
+	requireCtx.NoError(err, "failed to create appender")
+
+	err = appender.Add(frame)
+	requireCtx.NoError(err, "failed to write frame")
+
+	err = appender.WaitForComplete(time.Second)
+	requireCtx.Error(err, "empty key error is expected")
+	requireCtx.True(strings.HasSuffix(err.Error(), fmt.Sprintf("invalid input. sorting key %q should not be empty", indexNames[1])))
+}
+
+func (kvSuite *KvTestSuite) TestUpdateExpressionWithNullValues() {
+	table := fmt.Sprintf("kv_test_update_with_nulls%d", time.Now().UnixNano())
+
+	index := []string{"mike", "joe", "jim"}
+	icol, err := frames.NewSliceColumn("idx", index)
+	if err != nil {
+		kvSuite.T().Fatal(err)
+	}
+
+	columns := []frames.Column{
+		FloatCol(kvSuite.T(), "n1", len(index)),
+		StringCol(kvSuite.T(), "n2", len(index)),
+		BoolCol(kvSuite.T(), "n3", len(index)),
+		TimeCol(kvSuite.T(), "n4", len(index)),
+	}
+
+	frame, err := frames.NewFrame(columns, []frames.Column{icol}, nil)
+	if err != nil {
+		kvSuite.T().Fatal(err)
+	}
+
+	kvSuite.T().Log("write")
+	wreq := &frames.WriteRequest{
+		Backend:  kvSuite.backendName,
+		Table:    table,
+		SaveMode: frames.UpdateItem,
+	}
+
+	appender, err := kvSuite.client.Write(wreq)
+	if err != nil {
+		kvSuite.T().Fatal(err)
+	}
+
+	if err := appender.Add(frame); err != nil {
+		kvSuite.T().Fatal(err)
+	}
+
+	// Update with Null values
+	nullValues := initializeNullColumns(len(index))
+	nullValues[0].NullColumns["n1"] = true
+
+	nullValues[1].NullColumns["n2"] = true
+	nullValues[1].NullColumns["n3"] = true
+	nullValues[1].NullColumns["n4"] = true
+
+	frame, err = frames.NewFrameWithNullValues(columns, []frames.Column{icol}, nil, nullValues)
+	if err != nil {
+		kvSuite.T().Fatal(err)
+	}
+
+	if err := appender.Add(frame); err != nil {
+		kvSuite.T().Fatal(err)
+	}
+
+	if err := appender.WaitForComplete(3 * time.Second); err != nil {
+		kvSuite.T().Fatal(err)
+	}
+
+	input := v3io.GetItemsInput{AttributeNames: []string{"__name", "n1", "n2", "n3", "n4"}}
+
+	iter, err := v3ioutils.NewAsyncItemsCursor(
+		kvSuite.v3ioContainer, &input, 1,
+		nil, kvSuite.internalLogger,
+		0, []string{table + "/"},
+		"", "")
+
+	for iter.Next() {
+		currentRow := iter.GetItem()
+
+		key, _ := currentRow.GetFieldString("__name")
+		switch key {
+		case ".#schema":
+			continue
+		case "mike":
+			kvSuite.Require().Nil(currentRow.GetField("n1"),
+				"item %v - key n1 supposed to be null but got %v", key, currentRow.GetField("n1"))
+
+			kvSuite.Require().NotNil(currentRow.GetField("n2"),
+				"item %v - key n2 supposed to be null but got %v", key, currentRow.GetField("n2"))
+			kvSuite.Require().NotNil(currentRow.GetField("n3"),
+				"item %v - key n3 supposed to be null but got %v", key, currentRow.GetField("n3"))
+			kvSuite.Require().NotNil(currentRow.GetField("n4"),
+				"item %v - key n4 supposed to be null but got %v", key, currentRow.GetField("n4"))
+		case "joe":
+			kvSuite.Require().NotNil(currentRow.GetField("n1"),
+				"item %v - key n1 supposed to be null but got %v", key, currentRow.GetField("n1"))
+
+			kvSuite.Require().Nil(currentRow.GetField("n2"),
+				"item %v - key n2 supposed to be null but got %v", key, currentRow.GetField("n2"))
+			kvSuite.Require().Nil(currentRow.GetField("n3"),
+				"item %v - key n3 supposed to be null but got %v", key, currentRow.GetField("n3"))
+			kvSuite.Require().Nil(currentRow.GetField("n4"),
+				"item %v - key n4 supposed to be null but got %v", key, currentRow.GetField("n4"))
+		case "jim":
+			kvSuite.Require().NotNil(currentRow.GetField("n1"),
+				"item %v - key n1 supposed to be null but got %v", key, currentRow.GetField("n1"))
+			kvSuite.Require().NotNil(currentRow.GetField("n2"),
+				"item %v - key n2 supposed to be null but got %v", key, currentRow.GetField("n2"))
+			kvSuite.Require().NotNil(currentRow.GetField("n3"),
+				"item %v - key n3 supposed to be null but got %v", key, currentRow.GetField("n3"))
+			kvSuite.Require().NotNil(currentRow.GetField("n4"),
+				"item %v - key n4 supposed to be null but got %v", key, currentRow.GetField("n4"))
+		default:
+			kvSuite.T().Fatalf("got an unexpected key '%v'", key)
+		}
+	}
+
+	if iter.Err() != nil {
+		kvSuite.T().Fatalf("error querying items got: %v", iter.Err())
+	}
 }
