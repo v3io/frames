@@ -37,6 +37,7 @@ var (
 	IntType    = DType(pb.DType_INTEGER)
 	StringType = DType(pb.DType_STRING)
 	TimeType   = DType(pb.DType_TIME)
+	NullType   = DType(pb.DType_NULL)
 )
 
 type SaveMode int

@@ -77,9 +77,10 @@ type OldSchemaField struct {
 
 // AddColumn adds a column
 func (s *OldV3ioSchema) AddColumn(name string, col frames.Column, nullable bool) error {
-
-	field := OldSchemaField{Name: name, Type: ConvertDTypeToString(col.DType()), Nullable: nullable}
-	s.Fields = append(s.Fields, field)
+	if col.DType() != frames.NullType {
+		field := OldSchemaField{Name: name, Type: ConvertDTypeToString(col.DType()), Nullable: nullable}
+		s.Fields = append(s.Fields, field)
+	}
 	return nil
 }
 
