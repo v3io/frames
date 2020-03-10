@@ -207,7 +207,18 @@ func (b *Backend) Create(request *frames.CreateRequest) error {
 		return errors.Wrap(err, "failed to create a TSDB schema")
 	}
 
-	err = tsdb.CreateTSDB(cfg, dbSchema)
+	container, err := v3ioutils.NewContainer(
+		b.v3ioContext,
+		session,
+		cfg.Password,
+		cfg.AccessKey,
+		b.logger)
+
+	if err != nil {
+		return errors.Wrap(err, "failed to create container")
+	}
+
+	err = tsdb.CreateTSDB(cfg, dbSchema, container)
 	if b.ignoreCreateExists(request, err) {
 		return nil
 	}
