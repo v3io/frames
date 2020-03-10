@@ -214,6 +214,10 @@ func (b *Backend) Create(request *frames.CreateRequest) error {
 		cfg.AccessKey,
 		b.logger)
 
+	if err != nil {
+		return errors.Wrap(err, "failed to create container")
+	}
+
 	err = tsdb.CreateTSDB(cfg, dbSchema, container)
 	if b.ignoreCreateExists(request, err) {
 		return nil
