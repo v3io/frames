@@ -113,6 +113,7 @@ func (b *Backend) newAdapter(session *frames.Session, password string, token str
 
 	cfg.TablePath = newPath
 	b.logger.DebugWith("TSDB configuration", "config", cfg)
+	b.logger.Info("creating NewV3ioAdapter with container ", container)
 	adapter, err := tsdb.NewV3ioAdapter(cfg, container, b.logger)
 	if err != nil {
 		return nil, err
@@ -207,7 +208,14 @@ func (b *Backend) Create(request *frames.CreateRequest) error {
 		return errors.Wrap(err, "failed to create a TSDB schema")
 	}
 
-	err = tsdb.CreateTSDB(cfg, dbSchema)
+	container, err := v3ioutils.NewContainer(
+		b.v3ioContext,
+		session,
+		cfg.Password,
+		cfg.AccessKey,
+		b.logger)
+
+	err = tsdb.CreateTSDB(cfg, dbSchema, container)
 	if b.ignoreCreateExists(request, err) {
 		return nil
 	}

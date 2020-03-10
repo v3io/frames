@@ -12,6 +12,12 @@ github.com/davecgh/go-spew v1.1.1 h1:vj9j/u1bqnvCEfJOwUhtlOARqs3+rkHYY13jYWTU97c
 github.com/davecgh/go-spew v1.1.1/go.mod h1:J7Y8YcW2NihsgmVo/mv3lAwl/skON4iLHjSsI+c5H38=
 github.com/dinal/v3io-tsdb v0.0.3-0.20200219152045-0a164c3e9089 h1:5g3dEl/Pczj/nLAoifETKZiixiAtyWpWSsbvX6MdFxQ=
 github.com/dinal/v3io-tsdb v0.0.3-0.20200219152045-0a164c3e9089/go.mod h1:hdeE2K5HLZsp2NL8VRK9vmMp7cZ2F8x3VoQB2Gr34MI=
+github.com/dinal/v3io-tsdb v0.0.3-0.20200310095450-9aae98637eb4 h1:ePHOQr5zNsft8Vxuub01YuxpPBGYCmxaGvoiuQEPQM8=
+github.com/dinal/v3io-tsdb v0.0.3-0.20200310095450-9aae98637eb4/go.mod h1:+PgKSXpwx1DR7LDerlB1NPbvDxpAeQr7oZV+k4GIDI4=
+github.com/dinal/v3io-tsdb v0.0.3-0.20200310105643-60e3b8574224 h1:R1i1Q6Uk0jLSLPxP31INr9e4IRvcFx8x7FA/K10ffQ4=
+github.com/dinal/v3io-tsdb v0.0.3-0.20200310105643-60e3b8574224/go.mod h1:+PgKSXpwx1DR7LDerlB1NPbvDxpAeQr7oZV+k4GIDI4=
+github.com/dinal/v3io-tsdb v0.0.3-0.20200310133457-7ca3aeded6e5/go.mod h1:+PgKSXpwx1DR7LDerlB1NPbvDxpAeQr7oZV+k4GIDI4=
+github.com/dinal/v3io-tsdb v0.0.3-0.20200310135443-f2804bc03b15/go.mod h1:AZIMHrE5q+ies9f0Yw3krKr67JwMucoqj4F6YeVp0bQ=
 github.com/dinal/v3io-tsdb v0.8.12-0.20200219094038-482603692c50/go.mod h1:di0NiGDqNZAZXzbVQGDYPl7u29KpoaNBe2g0a9q+2F8=
 github.com/ghodss/yaml v1.0.0 h1:wQHKEahhL6wmXdzwWG11gIVCkOv05bNOh+Rxn0yngAk=
 github.com/ghodss/yaml v1.0.0/go.mod h1:4dBDuWmgqj2HViK6kFavaiC9ZROes6MMH2rRYeMEF04=
