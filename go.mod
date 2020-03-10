@@ -21,6 +21,6 @@ require (
 )
 
 replace (
-	github.com/v3io/v3io-tsdb => github.com/v3io/v3io-tsdb v0.8.12-0.20200310142835-7d5a79b19adb
+	github.com/v3io/v3io-tsdb => github.com/v3io/v3io-tsdb v0.8.12-0.20200310145050-03dddda6f8b1
 	github.com/xwb1989/sqlparser => github.com/v3io/sqlparser v0.0.0-20190306105200-4d7273501871
 )
