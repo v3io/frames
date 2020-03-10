@@ -128,6 +128,7 @@ github.com/v3io/v3io-tsdb v0.8.12-0.20200304154734-a0a7eb2728e4 h1:Fa5C/6vyPKJRF
 github.com/v3io/v3io-tsdb v0.8.12-0.20200304154734-a0a7eb2728e4/go.mod h1:+PgKSXpwx1DR7LDerlB1NPbvDxpAeQr7oZV+k4GIDI4=
 github.com/v3io/v3io-tsdb v0.8.12-0.20200310142835-7d5a79b19adb h1:thcyuxjHnjuAWaPSOKsGVAksB04jNUK4J6hpfi3cWWk=
 github.com/v3io/v3io-tsdb v0.8.12-0.20200310142835-7d5a79b19adb/go.mod h1:AZIMHrE5q+ies9f0Yw3krKr67JwMucoqj4F6YeVp0bQ=
+github.com/v3io/v3io-tsdb v0.8.12-0.20200310145050-03dddda6f8b1 h1:XPRHzsp/eGigi3VdYeV5T3rjIvfzRp7TmjAH1ktQEGY=
 github.com/v3io/v3io-tsdb v0.8.12-0.20200310145050-03dddda6f8b1/go.mod h1:niG39x0WSqZNbRoy+WUZ1jb0t3ClV/tCU3Bsi1yUamc=
 github.com/v3io/v3io-tsdb v0.9.11 h1:Offcqj7OzAezIYMqo+2l9ewvMS3gi3yb2bN5wcelago=
 github.com/v3io/v3io-tsdb v0.9.11/go.mod h1:K5jxlyxnb/HGyFlPrJQtIbMWQBY6USFBsHYI/vzMKVo=
@@ -138,6 +139,7 @@ github.com/v3io/v3io-tsdb v0.9.13 h1:beckhXVWGqgt0x4suvdsFrUKvT0Ius68bi8pF/U9CSk
 github.com/v3io/v3io-tsdb v0.9.13/go.mod h1:EC7brhr8tNKJvMpQiYeVdRoKS5VndGHBt5L+/LElsko=
 github.com/v3io/v3io-tsdb v0.9.14 h1:H+e1VW/Lx2qAdkkX1iivDEywNK3PUtdFQi7xzrvW3zA=
 github.com/v3io/v3io-tsdb v0.9.14/go.mod h1:Oqvn2Y3EDvz4eX5LW+YfHhv4ho30E2pg+4vebjqEJYE=
+github.com/v3io/v3io-tsdb v0.9.17/go.mod h1:niG39x0WSqZNbRoy+WUZ1jb0t3ClV/tCU3Bsi1yUamc=
 github.com/valyala/bytebufferpool v1.0.0 h1:GqA5TC/0021Y/b9FG4Oi9Mr3q7XYx6KllzawFIhcdPw=
 github.com/valyala/bytebufferpool v1.0.0/go.mod h1:6bBcMArwyJ5K/AmCkWv1jt77kVWyCJ6HpOuEn7z0Csc=
 github.com/valyala/fasthttp v1.0.0 h1:BwIoZQbBsTo3v2F5lz5Oy3TlTq4wLKTLV260EVTEWco=
