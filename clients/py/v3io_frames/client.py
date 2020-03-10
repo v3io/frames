@@ -235,10 +235,8 @@ class ClientBase:
             True - return a DataFrames iterator;
             False (default except for get_raw=True) - return a single DataFrame
         get_raw (Optional) : bool
-            False (default) - return the data in pandas DataFrames.
-            True - return the data in raw-data frames using Cap'n Proto, which
-                   boosts performance at the expense of pandas convenience.
-                   Note: `read` always returns a frames iterator for this mode.
+            True to return the data in raw format instead as pandas DataFrames
+            [For internal use]
         **kw
             Variable-length list of additional keyword (named) arguments
 
@@ -342,8 +340,8 @@ class ClientBase:
         return self._create(self._alias_backends(backend), table, schema, if_exists, **kw)
 
     def delete(self, backend, table, filter='', start='', end='',
-               if_missing=FAIL):
-        """Deletes a data collection or specific collection items
+               if_missing=FAIL, metrics=[]):
+        """Deletes a table or stream or specific table items
 
         Parameters
         ----------
@@ -373,6 +371,8 @@ class ClientBase:
         if_missing (Optional) : int (frames_pb2 pb.ErrorOptions)
             Determines the behavior when the specified collection doesn't
             exist - `FAIL` (default) to raise an error or `IGNORE` to ignore
+        metrics : string
+             (`tsdb` backend only) List of specific metric names to delete.
 
         Raises
         ------
@@ -380,9 +380,10 @@ class ClientBase:
             On request error or backend error
         """
         self._validate_request(backend, table, DeleteError)
-        return self._delete(self._alias_backends(backend), table, filter, start, end, if_missing)
+        return self._delete(backend, table, filter, start, end,
+                            if_missing, metrics)
 
-    def execute(self, backend, table, command='', args=None, expression=''):
+    def execute(self, backend, table, command='', args=None):
         """Executes a backend-specific command on a data collection
 
         Parameters
@@ -401,10 +402,6 @@ class ClientBase:
               - 'put' - add a record to a stream shard
         args : dict
             A dictionary of command-specific parameters (arguments)
-        expression (Optional; required for the 'update' command) : str
-            A command expression (command-specific) -
-            - For 'update' - an expression that determines the update logic
-              [Not supported in this version]
 
         Raises
         ------
@@ -412,7 +409,7 @@ class ClientBase:
             On request error or backend error
         """
         self._validate_request(backend, table, ExecuteError)
-        return self._execute(self._alias_backends(backend), table, command, args, expression)
+        return self._execute(self._alias_backends(backend), table, command, args, expression=None)
 
     def _fix_address(self, address):
         return address

@@ -182,7 +182,7 @@ func (ic *AsyncItemsCursor) NextItem() (v3io.Item, error) {
 	}
 	if resp.Error != nil {
 		ic.logger.Warn("error reading from response channel: %v, error: %v, request: %v", resp, resp.Error, resp.Request().Input)
-		return nil, errors.Wrap(resp.Error, "Failed to get next items")
+		return nil, resp.Error
 	}
 
 	getItemsResp := resp.Output.(*v3io.GetItemsOutput)
