@@ -113,7 +113,6 @@ func (b *Backend) newAdapter(session *frames.Session, password string, token str
 
 	cfg.TablePath = newPath
 	b.logger.DebugWith("TSDB configuration", "config", cfg)
-	b.logger.Info("creating NewV3ioAdapter with container ", container)
 	adapter, err := tsdb.NewV3ioAdapter(cfg, container, b.logger)
 	if err != nil {
 		return nil, err
