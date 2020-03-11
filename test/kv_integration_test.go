@@ -902,8 +902,8 @@ func (kvSuite *KvTestSuite) TestUpdateExpressionWithNullValues() {
 
 	kvSuite.T().Log("write: prepare")
 	wreq := &frames.WriteRequest{
-		Backend:  kvSuite.backendName,
-		Table:    table,
+		Backend: kvSuite.backendName,
+		Table:   table,
 	}
 
 	appender, err := kvSuite.client.Write(wreq)
