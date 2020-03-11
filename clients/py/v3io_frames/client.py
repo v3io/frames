@@ -409,7 +409,7 @@ class ClientBase:
             On request error or backend error
         """
         self._validate_request(backend, table, ExecuteError)
-        return self._execute(self._alias_backends(backend), table, command, args)
+        return self._execute(self._alias_backends(backend), table, command, args, expression=None)
 
     def _fix_address(self, address):
         return address

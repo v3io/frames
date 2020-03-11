@@ -109,7 +109,8 @@ func (kv *Backend) Write(request *frames.WriteRequest) (frames.FrameAppender, er
 	if request.ImmidiateData != nil {
 		err := appender.Add(request.ImmidiateData)
 		if err != nil {
-			return &appender, err
+			appender.Close()
+			return nil, err
 		}
 	}
 
@@ -567,7 +568,9 @@ func getUpdateExpressionFromRow(columns map[string]frames.Column,
 			expression.WriteString("delete(")
 			expression.WriteString(name)
 			expression.WriteString(");")
+			continue
 		}
+
 		val, err := utils.ColAt(col, index)
 		if err != nil {
 			return "", nil, nil, err

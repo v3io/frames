@@ -185,8 +185,8 @@ func (req *simpleJSONQueryRequest) formatTable(ch chan frames.Frame) (interface{
 }
 
 func (req *simpleJSONQueryRequest) formatTSDB(ch chan frames.Frame) (interface{}, error) {
-	retval := []timeSeriesOutput{}
 	data := map[string][][]interface{}{}
+	fieldToTargets := map[string]map[string]bool{}
 	for frame := range ch {
 		frameTarget := getBaseTargetTSDB(frame)
 		fields := req.getFieldNames(frame)
@@ -200,6 +200,12 @@ func (req *simpleJSONQueryRequest) formatTSDB(ch chan frames.Frame) (interface{}
 					data[target] = [][]interface{}{}
 				}
 				if isValidData(rowData[field]) {
+					targets, ok := fieldToTargets[field]
+					if !ok {
+						targets = make(map[string]bool)
+						fieldToTargets[field] = targets
+					}
+					targets[target] = true
 					data[target] = append(data[target], []interface{}{rowData[field], timestamp})
 				}
 			}
@@ -207,10 +213,29 @@ func (req *simpleJSONQueryRequest) formatTSDB(ch chan frames.Frame) (interface{}
 		if err := iter.Err(); err != nil {
 			return nil, err
 		}
-
 	}
-	for target, datapoints := range data {
-		retval = append(retval, timeSeriesOutput{datapoints, target})
+
+	retval := []timeSeriesOutput{}
+
+	if len(req.Fields) == 0 || req.Fields[0] == "*" { // return all fields, sorted
+		for target, datapoints := range data {
+			retval = append(retval, timeSeriesOutput{datapoints, target})
+		}
+		sort.Slice(retval, func(i int, j int) bool {
+			return retval[i].Target < retval[j].Target
+		})
+	} else { // return requested fields, in the order requested, sorted internally by label
+		for _, field := range req.Fields {
+			targetsAsMap := fieldToTargets[field]
+			targets := make([]string, 0, len(targetsAsMap))
+			for target := range targetsAsMap {
+				targets = append(targets, target)
+			}
+			sort.Strings(targets)
+			for _, target := range targets {
+				retval = append(retval, timeSeriesOutput{data[target], target})
+			}
+		}
 	}
 
 	return retval, nil
