@@ -28,7 +28,6 @@ def test_client(proto, cls):
     session_params = {
         'data_url': 'http://iguazio.com',
         'container': 'large one',
-        'path': 'the road goes there',
         'user': 'bugs',
         'password': 'duck season',
     }
@@ -47,7 +46,6 @@ def test_client_wrong_params(proto, cls):
     session_params = {
         'data_url': 'http://iguazio.com',
         'container': 'large one',
-        'path': 'the road goes there',
         'user': 'bugs',
         'password': 'duck season',
         'token': 'a quarter',
