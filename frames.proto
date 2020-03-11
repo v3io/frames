@@ -27,6 +27,7 @@ enum DType {
     STRING = 2;
     TIME = 3;
     BOOLEAN = 4;
+    NULL = 5;
 }
 
 message Column {

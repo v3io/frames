@@ -143,8 +143,24 @@ class Client(ClientBase):
         stub = fgrpc.FramesStub(self._channel)
         frames = []
         for df in dfs:
-            frames.append(df2msg(df, labels, index_cols))
+            sub_dfs = self._split_df(df)
+            for sub_df in sub_dfs:
+                frames.append(df2msg(sub_df, labels, index_cols))
         stub.Write(write_stream(request, frames))
+
+    def _split_df(self, df):
+        memory_usage = df.memory_usage(deep=True).sum()
+        # protobuf will take up more space - take a large margin
+        memory_usage = memory_usage * 2
+        num_dfs = 1 + int(memory_usage / 128 / 1024 / 1024)
+        if num_dfs == 1:
+            return [df]
+        dfs = []
+        sub_df_length = int(len(df)/num_dfs)
+        for i in range(num_dfs):
+            sub_df = df[i*sub_df_length:(i+1)*sub_df_length]
+            dfs.append(sub_df)
+        return dfs
 
     @grpc_raise(CreateError)
     def _create(self, backend, table, schema, if_exists, **kw):

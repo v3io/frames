@@ -11,7 +11,7 @@ require (
 	github.com/nuclio/zap v0.0.2
 	github.com/pkg/errors v0.8.1
 	github.com/stretchr/testify v1.4.0
-	github.com/v3io/v3io-go v0.1.5-0.20200301152134-6880d30985de
+	github.com/v3io/v3io-go v0.1.5-0.20200308131040-79c5a91d3daf
 	github.com/v3io/v3io-tsdb v0.9.17
 	github.com/valyala/fasthttp v1.2.0
 	github.com/xwb1989/sqlparser v0.0.0-20180606152119-120387863bf2
