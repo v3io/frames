@@ -879,8 +879,8 @@ func (kvSuite *KvTestSuite) TestOverwriteItemNoSortingKey() {
 	requireCtx.True(strings.HasSuffix(err.Error(), fmt.Sprintf("invalid input. sorting key %q should not be empty", indexNames[1])))
 }
 
-/*func (kvSuite *KvTestSuite) TestUpdateExpressionWithNullValues() {
-	table := fmt.Sprintf("kv_test_update_with_nulls%d", time.Now().UnixNano())
+func (kvSuite *KvTestSuite) TestUpdateExpressionWithNullValues() {
+	table := fmt.Sprintf("kv_test_update_with_nulls_%d", time.Now().UnixNano())
 
 	index := []string{"mike", "joe", "jim"}
 	icol, err := frames.NewSliceColumn("idx", index)
@@ -900,11 +900,10 @@ func (kvSuite *KvTestSuite) TestOverwriteItemNoSortingKey() {
 		kvSuite.T().Fatal(err)
 	}
 
-	kvSuite.T().Log("write")
+	kvSuite.T().Log("write: prepare")
 	wreq := &frames.WriteRequest{
 		Backend:  kvSuite.backendName,
 		Table:    table,
-		SaveMode: frames.UpdateItem,
 	}
 
 	appender, err := kvSuite.client.Write(wreq)
@@ -913,6 +912,23 @@ func (kvSuite *KvTestSuite) TestOverwriteItemNoSortingKey() {
 	}
 
 	if err := appender.Add(frame); err != nil {
+		kvSuite.T().Fatal(err)
+	}
+
+	if err := appender.WaitForComplete(3 * time.Second); err != nil {
+		kvSuite.T().Fatal(err)
+	}
+
+	// Second Phase: Update existing rows with null values
+	kvSuite.T().Log("write: update with null values")
+	wreq = &frames.WriteRequest{
+		Backend:  kvSuite.backendName,
+		Table:    table,
+		SaveMode: frames.UpdateItem,
+	}
+
+	appender, err = kvSuite.client.Write(wreq)
+	if err != nil {
 		kvSuite.T().Fatal(err)
 	}
 
@@ -989,4 +1005,4 @@ func (kvSuite *KvTestSuite) TestOverwriteItemNoSortingKey() {
 	if iter.Err() != nil {
 		kvSuite.T().Fatalf("error querying items got: %v", iter.Err())
 	}
-}*/
+}
