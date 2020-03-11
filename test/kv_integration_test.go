@@ -879,7 +879,6 @@ func (kvSuite *KvTestSuite) TestOverwriteItemNoSortingKey() {
 	requireCtx.True(strings.HasSuffix(err.Error(), fmt.Sprintf("invalid input. sorting key %q should not be empty", indexNames[1])))
 }
 
-
 /*func (kvSuite *KvTestSuite) TestUpdateExpressionWithNullValues() {
 	table := fmt.Sprintf("kv_test_update_with_nulls%d", time.Now().UnixNano())
 
