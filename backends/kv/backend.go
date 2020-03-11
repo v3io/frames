@@ -129,7 +129,7 @@ func (b *Backend) newConnection(session *frames.Session, password string, token 
 		}
 		getClusterMDOutput := resp.Output.(*v3io.GetClusterMDOutput)
 		b.numWorkers = getClusterMDOutput.NumberOfVNs
-		b.logger.Debug("going to use ", b.numWorkers, "workers")
+		b.logger.DebugWith("setting number of workers", "workers", b.numWorkers)
 	}
 
 	return container, newPath, err
