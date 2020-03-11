@@ -32,7 +32,7 @@ SESSION_ENV_KEY = 'V3IO_SESSION'
 _known_protocols = {'grpc', 'http', 'https'}
 
 
-def Client(address='', data_url='', container='', path='', user='',
+def Client(address='', data_url='', container='', user='',
            password='', token='', session_id='', frame_factory=pd.DataFrame,
            concat=pd.concat, persist_connection=False):
     """Creates a new Frames client object
@@ -55,8 +55,6 @@ def Client(address='', data_url='', container='', path='', user='',
         typically the HTTPS URL of the web-APIs service of the parent tenant
     container : str
         Container name (session info)
-    path : str
-        DEPRECATED
     user (Optional): str
         Username of a user with permissions to access the backend data; cannot
         be used with `token`
@@ -98,7 +96,7 @@ def Client(address='', data_url='', container='', path='', user='',
     session = Session(
         url=data_url or env.url,
         container=container or env.container,
-        path=path or env.path,
+        path=env.path,
         user=user or env.user or environ.get('V3IO_USERNAME'),
         password=password or env.password or environ.get('V3IO_PASSWORD'),
         id=session_id or env.id,
