@@ -96,7 +96,6 @@ def Client(address='', data_url='', container='', user='',
     session = Session(
         url=data_url or env.url,
         container=container or env.container,
-        path=env.path,
         user=user or env.user or environ.get('V3IO_USERNAME'),
         password=password or env.password or environ.get('V3IO_PASSWORD'),
         id=session_id or env.id,
