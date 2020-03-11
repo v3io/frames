@@ -49,7 +49,6 @@ func NewBackend(logger logger.Logger, v3ioContext v3io.Context, config *frames.B
 		v3ioContext:       v3ioContext,
 		inactivityTimeout: 0,
 	}
-
 	return &newBackend, nil
 }
 
@@ -122,6 +121,16 @@ func (b *Backend) newConnection(session *frames.Session, password string, token 
 		password,
 		token,
 		b.logger)
+
+	if err == nil && b.numWorkers == 0 {
+		resp, err := container.GetClusterMDSync(&v3io.GetClusterMDInput{})
+		if err != nil {
+			return nil, "", fmt.Errorf("could not detrmine num vns in cluster")
+		}
+		getClusterMDOutput := resp.Output.(*v3io.GetClusterMDOutput)
+		b.numWorkers = getClusterMDOutput.NumberOfVNs
+		b.logger.DebugWith("setting number of workers", "workers", b.numWorkers)
+	}
 
 	return container, newPath, err
 }
