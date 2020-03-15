@@ -174,7 +174,9 @@ def idx2series(idx):
 def df2msg(df, labels=None, index_cols=None):
     indices = None
     if index_cols is not None:
-        df.reset_index(inplace=True)  # if there is already an index set, we want to preserve it.
+        # if there is already an index set, we want to preserve it.
+        if not (type(df.index) == pd.RangeIndex and df.index.name is None):
+            df.reset_index(inplace=True)
         indices = [series2col(df[name], name) for name in index_cols]
         cols = [col for col in df.columns if col not in index_cols]
         df = df[cols]
