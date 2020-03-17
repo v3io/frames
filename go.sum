@@ -84,8 +84,8 @@ github.com/prometheus/prometheus v2.5.0+incompatible/go.mod h1:oAIUtOny2rjMX0OWN
 github.com/rcrowley/go-metrics v0.0.0-20181016184325-3113b8401b8a h1:9ZKAASQSHhDYGoxY8uLVpewe1GDZ2vu2Tr/vTdVAkFQ=
 github.com/rcrowley/go-metrics v0.0.0-20181016184325-3113b8401b8a/go.mod h1:bCqnVzQkZxMG4s8nGwiZ5l3QUCyqpo9Y+/ZMZ9VjZe4=
 github.com/rs/xid v1.1.0/go.mod h1:+uKXf+4Djp6Md1KODXJxgGQPKngRmWyn10oCKFzNHOQ=
-github.com/russross/blackfriday v1.5.2/go.mod h1:JO/DiYxRf+HjHt06OyowR9PTA263kcR/rfWxYHBV53g=
 github.com/russross/blackfriday v1.5.2+incompatible/go.mod h1:JO/DiYxRf+HjHt06OyowR9PTA263kcR/rfWxYHBV53g=
+github.com/russross/blackfriday v1.5.2/go.mod h1:JO/DiYxRf+HjHt06OyowR9PTA263kcR/rfWxYHBV53g=
 github.com/spaolacci/murmur3 v0.0.0-20180118202830-f09979ecbc72 h1:qLC7fQah7D6K1B0ujays3HV9gkFtllcxhzImRR7ArPQ=
 github.com/spaolacci/murmur3 v0.0.0-20180118202830-f09979ecbc72/go.mod h1:JwIasOWyU6f++ZhiEuf87xNszmSA2myDM2Kzu9HwQUA=
 github.com/spf13/cobra v0.0.3/go.mod h1:1l0Ry5zgKvJasoi3XT1TypsSe7PqH0Sj9dhYf7v3XqQ=
@@ -103,6 +103,7 @@ github.com/tinylib/msgp v1.1.1 h1:TnCZ3FIuKeaIy+F45+Cnp+caqdXGy4z74HvwXN+570Y=
 github.com/tinylib/msgp v1.1.1/go.mod h1:+d+yLhGm8mzTaHzB+wgMYrodPfmZrzkirds8fDWklFE=
 github.com/v3io/frames v0.0.0-20190328123118-1dad1ff610509e7b087d9cd390ed1b452caecf15/go.mod h1:6aKW4Wl4A+gQhXH0JRCVOLgwvcrLyk+fqEpemuie094=
 github.com/v3io/frames v0.6.8-v0.9.11/go.mod h1:V3j8yjzhNNGXjosCBn7Qf8C8jo25Y+7Ge/SkTK9ya9Q=
+github.com/v3io/frames v0.6.14-v0.9.18/go.mod h1:O/n9q49+q225y/jrrXjAQbUI/v03nV/H52z/qPQCbNE=
 github.com/v3io/sqlparser v0.0.0-20190306105200-4d7273501871 h1:myF4tU/HdFWU1UzMdf16cHRbownzsyvL7VKIHqkrSvo=
 github.com/v3io/sqlparser v0.0.0-20190306105200-4d7273501871/go.mod h1:QD2Bo64oyTWzeV8RFehXS0hZEDFgOK99/h2a6ErRu6E=
 github.com/v3io/v3io-go v0.0.0-20191024084247-042df6b5ee40eb60996ab7f4e74ec9aa07d996c4/go.mod h1:IFb6dJiyvJnOjXUoCoPJ5UViaYjgVYmqJb4fD1qDeLk=
@@ -116,6 +117,8 @@ github.com/v3io/v3io-go v0.1.5-0.20200301152134-6880d30985de h1:UcOuqrNG4DFs50f+
 github.com/v3io/v3io-go v0.1.5-0.20200301152134-6880d30985de/go.mod h1:D0W1tjsVgcp4xk3ZI2fjKTKaOpYJLewN1BPN0x2osO4=
 github.com/v3io/v3io-go v0.1.5-0.20200308131040-79c5a91d3daf h1:GdM8m1DKlA1pF4pyAM+QC+Tt7JUgZYQKOxFYk3MYZd0=
 github.com/v3io/v3io-go v0.1.5-0.20200308131040-79c5a91d3daf/go.mod h1:D0W1tjsVgcp4xk3ZI2fjKTKaOpYJLewN1BPN0x2osO4=
+github.com/v3io/v3io-go v0.1.5-0.20200316155009-cc83de374ff2 h1:9jIOiEqhu1bUAPl6KFiKvpFhQWkcNGVp/9OC72F+9Os=
+github.com/v3io/v3io-go v0.1.5-0.20200316155009-cc83de374ff2/go.mod h1:D0W1tjsVgcp4xk3ZI2fjKTKaOpYJLewN1BPN0x2osO4=
 github.com/v3io/v3io-go-http v0.0.0-20190221115935-53e2b487c9a2 h1:NJc63wM25iS+ci5z7LVwjWD4QM0QpTQw/fovKzatss0=
 github.com/v3io/v3io-go-http v0.0.0-20190221115935-53e2b487c9a2/go.mod h1:GXYcR9MxgfbE3BJdkXki5EclvtS8Nxu2RQNLA8hMMog=
 github.com/v3io/v3io-go-http v0.0.0-20190415143924-cc2fbcde6663/go.mod h1:GXYcR9MxgfbE3BJdkXki5EclvtS8Nxu2RQNLA8hMMog=
@@ -145,6 +148,8 @@ github.com/v3io/v3io-tsdb v0.9.17 h1:c9AFs0Sy+qHFNzB+r4YOeXnM0ySMH4qZjPO5xobCnHw
 github.com/v3io/v3io-tsdb v0.9.17/go.mod h1:niG39x0WSqZNbRoy+WUZ1jb0t3ClV/tCU3Bsi1yUamc=
 github.com/v3io/v3io-tsdb v0.9.18 h1:KWH3+cesiyOw0II1rZ5XjVmqlImvotneDTL6NSRei9I=
 github.com/v3io/v3io-tsdb v0.9.18/go.mod h1:niG39x0WSqZNbRoy+WUZ1jb0t3ClV/tCU3Bsi1yUamc=
+github.com/v3io/v3io-tsdb v0.9.19 h1:re7tUbpHD7ac1OYf/Vs64we257c8XRMgbWV1mRx//TQ=
+github.com/v3io/v3io-tsdb v0.9.19/go.mod h1:PzSaxWWm4buDT8JAXqpMB5fFS/4IK7fgYI6X919RNww=
 github.com/valyala/bytebufferpool v1.0.0 h1:GqA5TC/0021Y/b9FG4Oi9Mr3q7XYx6KllzawFIhcdPw=
 github.com/valyala/bytebufferpool v1.0.0/go.mod h1:6bBcMArwyJ5K/AmCkWv1jt77kVWyCJ6HpOuEn7z0Csc=
 github.com/valyala/fasthttp v1.0.0 h1:BwIoZQbBsTo3v2F5lz5Oy3TlTq4wLKTLV260EVTEWco=
