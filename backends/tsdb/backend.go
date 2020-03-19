@@ -161,10 +161,10 @@ func (b *Backend) GetQuerier(session *frames.Session, password string, token str
 	_, _ = h.Write(getBytes(token))
 	key := h.Sum64()
 
+	b.queriersLock.Lock()
+	defer b.queriersLock.Unlock()
 	qry, found := b.queriers.Get(key)
 	if !found {
-		b.queriersLock.Lock()
-		defer b.queriersLock.Unlock()
 		qry, found = b.queriers.Get(key) // Double-check locking
 		if !found {
 			var err error
