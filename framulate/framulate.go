@@ -3,6 +3,8 @@ package framulate
 import (
 	"context"
 	nethttp "net/http"
+	//nolint: golint
+	_ "net/http/pprof"
 	"strings"
 	"time"
 
@@ -13,8 +15,6 @@ import (
 	"github.com/v3io/frames/http"
 	"github.com/v3io/frames/pb"
 	"github.com/v3io/frames/repeatingtask"
-
-	_ "net/http/pprof"
 )
 
 type Framulate struct {
