@@ -237,6 +237,8 @@ def series2col_with_dtype(s, name, dtype):
                 s = s.dt.tz_convert('UTC')
         kw['times'] = s.astype(np.int64)
         kw['dtype'] = fpb.TIME
+    elif dtype == fpb.NULL:
+        kw['dtype'] = fpb.NULL
     else:
         raise WriteError('{} - unsupported type - {}'.format(s.name, s.dtype))
 
@@ -338,6 +340,8 @@ def get_empty_value_by_type(dtype):
         return datetime.fromtimestamp(0)
     elif dtype == fpb.BOOLEAN:
         return False
+    elif dtype == fpb.NULL:
+        return False
     raise Exception('unsupported type {}'.format(dtype))
 
 
@@ -354,17 +358,24 @@ def get_actual_types(df):
             # Pandas dtype for str or "mixed" type is object
             # Go over the column values until we reach a real value
             # and determine whether it's bool or string
+            has_data = False
             for x in col:
                 if x is None:
                     continue
                 if isinstance(x, str):
                     column_types[col.name] = fpb.STRING
+                    has_data = True
                     break
                 if isinstance(x, bool):
                     column_types[col.name] = fpb.BOOLEAN
+                    has_data = True
                     break
                 raise WriteError('{} - contains an unsupported value type - {}'
                                  .format(col_name, type(x)))
+            # If all items in the column are None
+            # it does not matter what type the column will be, set the column as INTEGER
+            if not has_data:
+                column_types[col.name] = fpb.NULL
         elif col.dtype == np.bool:
             column_types[col.name] = fpb.BOOLEAN
         elif is_datetime(col.dtype):

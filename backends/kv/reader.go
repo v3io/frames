@@ -224,7 +224,7 @@ func (ki *Iterator) Next() bool {
 			col, ok := byName[colName]
 			if !ok {
 				ki.err = fmt.Errorf("column '%v' for item with key: '%v' doesn't exist in the schema file. "+
-					"Your data structure was probably changed; try re-inferring the schema for the table.",
+					"Your data structure was probably changed; try re-inferring the schema for the table",
 					colName, rowIndex)
 				return false
 			}

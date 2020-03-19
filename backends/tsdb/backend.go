@@ -111,6 +111,15 @@ func (b *Backend) newAdapter(session *frames.Session, password string, token str
 		return nil, err
 	}
 
+	if b.backendConfig.Workers == 0 {
+		resp, err := container.GetClusterMDSync(&v3io.GetClusterMDInput{})
+		if err != nil {
+			return nil, fmt.Errorf("could not detrmine num vns in cluster")
+		}
+		getClusterMDOutput := resp.Output.(*v3io.GetClusterMDOutput)
+		b.backendConfig.Workers = getClusterMDOutput.NumberOfVNs
+		cfg.Workers = getClusterMDOutput.NumberOfVNs
+	}
 	cfg.TablePath = newPath
 	b.logger.DebugWith("TSDB configuration", "config", cfg)
 	adapter, err := tsdb.NewV3ioAdapter(cfg, container, b.logger)

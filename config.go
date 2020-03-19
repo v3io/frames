@@ -187,9 +187,6 @@ func firstVal(args ...string) string {
 func initBackendDefaults(cfg *BackendConfig, framesConfig *Config) {
 	if cfg.Workers == 0 {
 		cfg.Workers = framesConfig.Workers
-		if cfg.Workers == 0 {
-			cfg.Workers = 8
-		}
 	}
 
 	if cfg.MaxConnections == 0 {

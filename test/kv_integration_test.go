@@ -880,9 +880,9 @@ func (kvSuite *KvTestSuite) TestOverwriteItemNoSortingKey() {
 }
 
 func (kvSuite *KvTestSuite) TestUpdateExpressionWithNullValues() {
-	table := fmt.Sprintf("kv_test_update_with_nulls%d", time.Now().UnixNano())
+	table := fmt.Sprintf("kv_test_update_with_nulls_%d", time.Now().UnixNano())
 
-	index := []string{"mike", "joe", "jim"}
+	index := []string{"mike", "joe", "jim", "nil"}
 	icol, err := frames.NewSliceColumn("idx", index)
 	if err != nil {
 		kvSuite.T().Fatal(err)
@@ -900,11 +900,10 @@ func (kvSuite *KvTestSuite) TestUpdateExpressionWithNullValues() {
 		kvSuite.T().Fatal(err)
 	}
 
-	kvSuite.T().Log("write")
+	kvSuite.T().Log("write: prepare")
 	wreq := &frames.WriteRequest{
-		Backend:  kvSuite.backendName,
-		Table:    table,
-		SaveMode: frames.UpdateItem,
+		Backend: kvSuite.backendName,
+		Table:   table,
 	}
 
 	appender, err := kvSuite.client.Write(wreq)
@@ -916,6 +915,23 @@ func (kvSuite *KvTestSuite) TestUpdateExpressionWithNullValues() {
 		kvSuite.T().Fatal(err)
 	}
 
+	if err := appender.WaitForComplete(3 * time.Second); err != nil {
+		kvSuite.T().Fatal(err)
+	}
+
+	// Second Phase: Update existing rows with null values
+	kvSuite.T().Log("write: update with null values")
+	wreq = &frames.WriteRequest{
+		Backend:  kvSuite.backendName,
+		Table:    table,
+		SaveMode: frames.UpdateItem,
+	}
+
+	appender, err = kvSuite.client.Write(wreq)
+	if err != nil {
+		kvSuite.T().Fatal(err)
+	}
+
 	// Update with Null values
 	nullValues := initializeNullColumns(len(index))
 	nullValues[0].NullColumns["n1"] = true
@@ -923,6 +939,11 @@ func (kvSuite *KvTestSuite) TestUpdateExpressionWithNullValues() {
 	nullValues[1].NullColumns["n2"] = true
 	nullValues[1].NullColumns["n3"] = true
 	nullValues[1].NullColumns["n4"] = true
+
+	nullValues[3].NullColumns["n1"] = true
+	nullValues[3].NullColumns["n2"] = true
+	nullValues[3].NullColumns["n3"] = true
+	nullValues[3].NullColumns["n4"] = true
 
 	frame, err = frames.NewFrameWithNullValues(columns, []frames.Column{icol}, nil, nullValues)
 	if err != nil {
@@ -955,17 +976,15 @@ func (kvSuite *KvTestSuite) TestUpdateExpressionWithNullValues() {
 		case "mike":
 			kvSuite.Require().Nil(currentRow.GetField("n1"),
 				"item %v - key n1 supposed to be null but got %v", key, currentRow.GetField("n1"))
-
 			kvSuite.Require().NotNil(currentRow.GetField("n2"),
-				"item %v - key n2 supposed to be null but got %v", key, currentRow.GetField("n2"))
+				"item %v - key n2 should not be nil. actual value: %v", key, currentRow.GetField("n2"))
 			kvSuite.Require().NotNil(currentRow.GetField("n3"),
-				"item %v - key n3 supposed to be null but got %v", key, currentRow.GetField("n3"))
+				"item %v - key n3 should not be nil. actual value: %v", key, currentRow.GetField("n3"))
 			kvSuite.Require().NotNil(currentRow.GetField("n4"),
-				"item %v - key n4 supposed to be null but got %v", key, currentRow.GetField("n4"))
+				"item %v - key n4 should not be nil. actual value: %v", key, currentRow.GetField("n4"))
 		case "joe":
 			kvSuite.Require().NotNil(currentRow.GetField("n1"),
-				"item %v - key n1 supposed to be null but got %v", key, currentRow.GetField("n1"))
-
+				"item %v - key n1 should not be nil. actual value: %v", key, currentRow.GetField("n1"))
 			kvSuite.Require().Nil(currentRow.GetField("n2"),
 				"item %v - key n2 supposed to be null but got %v", key, currentRow.GetField("n2"))
 			kvSuite.Require().Nil(currentRow.GetField("n3"),
@@ -974,12 +993,21 @@ func (kvSuite *KvTestSuite) TestUpdateExpressionWithNullValues() {
 				"item %v - key n4 supposed to be null but got %v", key, currentRow.GetField("n4"))
 		case "jim":
 			kvSuite.Require().NotNil(currentRow.GetField("n1"),
-				"item %v - key n1 supposed to be null but got %v", key, currentRow.GetField("n1"))
+				"item %v - key n1 should not be nil. actual value: %v", key, currentRow.GetField("n1"))
 			kvSuite.Require().NotNil(currentRow.GetField("n2"),
-				"item %v - key n2 supposed to be null but got %v", key, currentRow.GetField("n2"))
+				"item %v - key n2 should not be nil. actual value: %v", key, currentRow.GetField("n2"))
 			kvSuite.Require().NotNil(currentRow.GetField("n3"),
-				"item %v - key n3 supposed to be null but got %v", key, currentRow.GetField("n3"))
+				"item %v - key n3 should not be nil. actual value: %v", key, currentRow.GetField("n3"))
 			kvSuite.Require().NotNil(currentRow.GetField("n4"),
+				"item %v - key n4 should not be nil. actual value: %v", key, currentRow.GetField("n4"))
+		case "nil":
+			kvSuite.Require().Nil(currentRow.GetField("n1"),
+				"item %v - key n1 supposed to be null but got %v", key, currentRow.GetField("n1"))
+			kvSuite.Require().Nil(currentRow.GetField("n2"),
+				"item %v - key n2 supposed to be null but got %v", key, currentRow.GetField("n2"))
+			kvSuite.Require().Nil(currentRow.GetField("n3"),
+				"item %v - key n3 supposed to be null but got %v", key, currentRow.GetField("n3"))
+			kvSuite.Require().Nil(currentRow.GetField("n4"),
 				"item %v - key n4 supposed to be null but got %v", key, currentRow.GetField("n4"))
 		default:
 			kvSuite.T().Fatalf("got an unexpected key '%v'", key)
