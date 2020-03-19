@@ -2,6 +2,9 @@ package framulate
 
 import (
 	"context"
+	nethttp "net/http"
+	//nolint: golint
+	_ "net/http/pprof"
 	"strings"
 	"time"
 
@@ -48,6 +51,13 @@ func NewFramulate(ctx context.Context, loggerInstance logger.Logger, config *Con
 	if err != nil {
 		return nil, errors.Wrap(err, "Failed to create frames client")
 	}
+
+	go func() {
+		err := nethttp.ListenAndServe(":8082", nil)
+		if err != nil {
+			newFramulate.logger.WarnWith("Failed to create profiling endpoint", "err", err)
+		}
+	}()
 
 	newFramulate.logger.DebugWith("Framulate created", "config", config)
 
