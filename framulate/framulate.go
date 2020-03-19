@@ -2,9 +2,9 @@ package framulate
 
 import (
 	"context"
+	nethttp "net/http"
 	"strings"
 	"time"
-	nethttp "net/http"
 
 	"github.com/v3io/frames"
 	"github.com/v3io/frames/grpc"
@@ -12,9 +12,9 @@ import (
 	"github.com/v3io/frames/pb"
 	"github.com/v3io/frames/repeatingtask"
 
-	_ "net/http/pprof"
 	"github.com/nuclio/errors"
 	"github.com/nuclio/logger"
+	_ "net/http/pprof"
 )
 
 type Framulate struct {
