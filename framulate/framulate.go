@@ -4,6 +4,7 @@ import (
 	"context"
 	"strings"
 	"time"
+	nethttp "net/http"
 
 	"github.com/v3io/frames"
 	"github.com/v3io/frames/grpc"
@@ -11,6 +12,7 @@ import (
 	"github.com/v3io/frames/pb"
 	"github.com/v3io/frames/repeatingtask"
 
+	_ "net/http/pprof"
 	"github.com/nuclio/errors"
 	"github.com/nuclio/logger"
 )
@@ -49,6 +51,13 @@ func NewFramulate(ctx context.Context, loggerInstance logger.Logger, config *Con
 	if err != nil {
 		return nil, errors.Wrap(err, "Failed to create frames client")
 	}
+
+	go func() {
+		err := nethttp.ListenAndServe(":8082", nil)
+		if err != nil {
+			newFramulate.logger.WarnWith("Failed to create profiling endpoint", "err", err)
+		}
+	}()
 
 	newFramulate.logger.DebugWith("Framulate created", "config", config)
 
