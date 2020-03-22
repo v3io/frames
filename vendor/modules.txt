@@ -55,7 +55,7 @@ github.com/v3io/v3io-go/pkg/dataplane/http
 github.com/v3io/v3io-go/pkg/dataplane
 github.com/v3io/v3io-go/pkg/errors
 github.com/v3io/v3io-go/pkg/dataplane/schemas/node/common
-# github.com/v3io/v3io-tsdb v0.9.19
+# github.com/v3io/v3io-tsdb v0.9.20
 github.com/v3io/v3io-tsdb/pkg/utils
 github.com/v3io/v3io-tsdb/pkg/config
 github.com/v3io/v3io-tsdb/pkg/pquerier
