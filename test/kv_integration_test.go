@@ -1126,3 +1126,27 @@ func (kvSuite *KvTestSuite) TestWritePartitionedTableWithMultiplePartitions() {
 
 	kvSuite.Require().NoError(it.Err())
 }
+
+func (kvSuite *KvTestSuite) TestWritePartitionedBadPartitionColumns() {
+	table := fmt.Sprintf("TestWritePartitionedTable%d", time.Now().UnixNano())
+
+	frame := kvSuite.generateRandomSampleFrame(5, "idx", []string{"n1", "n2", "n3"})
+	wreq := &frames.WriteRequest{
+		Backend:       kvSuite.backendName,
+		Table:         table,
+		PartitionKeys: []string{"idonotexist"},
+	}
+
+	appender, err := kvSuite.client.Write(wreq)
+
+	if err != nil {
+		kvSuite.T().Fatal(err)
+	}
+
+	if err := appender.Add(frame); err != nil {
+		kvSuite.T().Fatal(err)
+	}
+
+	err = appender.WaitForComplete(3 * time.Second)
+	kvSuite.Require().Error(err, "expected error for table %v, but finished successfully", table)
+}
