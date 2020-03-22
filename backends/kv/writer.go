@@ -268,7 +268,7 @@ func (a *Appender) Add(frame frames.Frame) error {
 			}
 		}
 
-		input := v3io.UpdateItemInput{Path: a.tablePath + subPathString + a.formatKeyName(keyVal, sortingKeyVal),
+		input := v3io.UpdateItemInput{Path: fmt.Sprintf("%v%v%v", a.tablePath, subPathString, a.formatKeyName(keyVal, sortingKeyVal)),
 			Attributes: rowMap,
 			Expression: expression,
 			Condition:  condition,
