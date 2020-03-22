@@ -174,6 +174,8 @@ type WriteRequest struct {
 	Expression string
 	// Condition template, for update conditions generated from combining columns data with expression
 	Condition string
+	// Columns to partition the data by
+	PartitionKeys []string
 	// Will we get more message chunks (in a stream), if not we can complete
 	HaveMore bool
 	SaveMode SaveMode

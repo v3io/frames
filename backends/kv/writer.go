@@ -117,14 +117,30 @@ func (kv *Backend) Write(request *frames.WriteRequest) (frames.FrameAppender, er
 	return &appender, nil
 }
 
-// Add adds a frame
-func (a *Appender) Add(frame frames.Frame) error {
+func validateFrameInput(frame frames.Frame, request *frames.WriteRequest) error {
 	names := frame.Names()
 	if len(names) == 0 {
 		return fmt.Errorf("empty frame")
 	}
 	if len(frame.Indices()) > 2 {
 		return fmt.Errorf("can only write up to two indices")
+	}
+	if len(request.PartitionKeys) > 0 {
+		for _, partitionColumnName := range request.PartitionKeys {
+			_, err := frame.Column(partitionColumnName)
+			if err != nil {
+				return errors.Wrap(err, fmt.Sprintf("column '%v' does not exist in the dataframe", partitionColumnName))
+			}
+		}
+	}
+	return nil
+}
+
+// Add adds a frame
+func (a *Appender) Add(frame frames.Frame) error {
+	err := validateFrameInput(frame, a.request)
+	if err != nil {
+		return err
 	}
 
 	if a.request.Expression != "" {
@@ -136,7 +152,6 @@ func (a *Appender) Add(frame frames.Frame) error {
 	var newSchema v3ioutils.V3ioSchema
 	indices := frame.Indices()
 	var sortingFunc func(int) interface{}
-	var err error
 
 	if len(indices) > 0 {
 		indexName = indices[0].Name()
@@ -217,10 +232,25 @@ func (a *Appender) Add(frame frames.Frame) error {
 				indexVal, sortingFunc,
 				indexName, sortingKeyName)
 		}
-
 		if err != nil {
 			return err
 		}
+
+		var itemSubPath strings.Builder
+		if len(a.request.PartitionKeys) > 0 {
+			for _, partitionColumnName := range a.request.PartitionKeys {
+				itemSubPath.WriteString(partitionColumnName)
+				itemSubPath.WriteString("=")
+				val, err := utils.ColAt(columns[partitionColumnName], r)
+				if err != nil {
+					return err
+				}
+				itemSubPath.WriteString(fmt.Sprintf("%v", val))
+				itemSubPath.WriteString("/")
+			}
+		}
+
+		subPathString := itemSubPath.String()
 
 		if keyVal == "" {
 			return errors.Errorf("invalid input. key %q should not be empty", indexName)
@@ -238,7 +268,7 @@ func (a *Appender) Add(frame frames.Frame) error {
 			}
 		}
 
-		input := v3io.UpdateItemInput{Path: a.tablePath + a.formatKeyName(keyVal, sortingKeyVal),
+		input := v3io.UpdateItemInput{Path: fmt.Sprintf("%v%v%v", a.tablePath, subPathString, a.formatKeyName(keyVal, sortingKeyVal)),
 			Attributes: rowMap,
 			Expression: expression,
 			Condition:  condition,
