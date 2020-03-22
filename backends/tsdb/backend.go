@@ -156,19 +156,16 @@ func (b *Backend) GetQuerier(session *frames.Session, password string, token str
 	defer b.queriersLock.Unlock()
 	qry, found := b.queriers.Get(key)
 	if !found {
-		qry, found = b.queriers.Get(key) // Double-check locking
-		if !found {
-			var err error
-			adapter, err := b.newAdapter(session, password, token, path)
-			if err != nil {
-				return nil, err
-			}
-			qry, err = adapter.QuerierV2()
-			if err != nil {
-				return nil, errors.Wrap(err, "Failed to initialize Querier")
-			}
-			b.queriers.Add(key, qry)
+		var err error
+		adapter, err := b.newAdapter(session, password, token, path)
+		if err != nil {
+			return nil, err
 		}
+		qry, err = adapter.QuerierV2()
+		if err != nil {
+			return nil, errors.Wrap(err, "Failed to initialize Querier")
+		}
+		b.queriers.Add(key, qry)
 	}
 
 	return qry.(*pquerier.V3ioQuerier), nil
