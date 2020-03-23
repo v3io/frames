@@ -117,14 +117,13 @@ func (c *Client) Write(request *frames.WriteRequest) (frames.FrameAppender, erro
 	}
 
 	ireq := &pb.InitialWriteRequest{
-		Session:       request.Session,
-		Backend:       request.Backend,
-		Table:         request.Table,
-		InitialData:   frame,
-		Expression:    request.Expression,
-		More:          request.HaveMore,
-		SaveMode:      request.SaveMode.String(),
-		PartitionKeys: request.PartitionKeys,
+		Session:     request.Session,
+		Backend:     request.Backend,
+		Table:       request.Table,
+		InitialData: frame,
+		Expression:  request.Expression,
+		More:        request.HaveMore,
+		SaveMode:    request.SaveMode.String(),
 	}
 
 	req := &pb.WriteRequest{
