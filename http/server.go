@@ -258,7 +258,6 @@ func (s *Server) handleWrite(ctx *fasthttp.RequestCtx) {
 		Expression:    req.Expression,
 		HaveMore:      req.More,
 		SaveMode:      saveMode,
-		PartitionKeys: req.PartitionKeys,
 	}
 
 	s.httpAuth(ctx, request.Session)
