@@ -100,9 +100,6 @@ func (s *writeVerifyScenario) LogStatistics() {
 func (s *writeVerifyScenario) createTSDBTables(numTables int) error {
 	s.logger.DebugWith("Creating tables")
 
-	rateValue := pb.Value{}
-	_ = rateValue.SetValue("1/h")
-
 	s.logger.DebugWith("Preparing tables", "numTables", numTables)
 
 	tableCreationTask := repeatingtask.Task{
@@ -129,7 +126,7 @@ func (s *writeVerifyScenario) createTSDBTables(numTables int) error {
 			err := s.framulate.framesClient.Create(&pb.CreateRequest{
 				Backend: "tsdb",
 				Table:   tableName,
-				Rate:    (&rateValue).String(),
+				Rate:    "1/h",
 			})
 
 			if err != nil {
