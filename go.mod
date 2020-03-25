@@ -21,6 +21,6 @@ require (
 
 replace (
 	github.com/v3io/v3io-go => github.com/v3io/v3io-go v0.0.6-0.20200228104949-c1aa65089012
-	github.com/v3io/v3io-tsdb => github.com/v3io/v3io-tsdb v0.9.12-7.0.20200228110334-49ec731c98c1
+	github.com/v3io/v3io-tsdb => github.com/v3io/v3io-tsdb v0.9.12-8.0.20200325094934-7ebfb3bbb64c
 	github.com/xwb1989/sqlparser => github.com/v3io/sqlparser v0.0.0-20190306105200-4d7273501871
 )
