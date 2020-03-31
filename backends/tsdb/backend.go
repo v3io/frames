@@ -29,12 +29,11 @@ import (
 	"time"
 	"unsafe"
 
-	"github.com/v3io/frames"
-	"github.com/v3io/frames/backends"
-
 	"github.com/golang/groupcache/lru"
 	"github.com/nuclio/logger"
 	"github.com/pkg/errors"
+	"github.com/v3io/frames"
+	"github.com/v3io/frames/backends"
 	"github.com/v3io/frames/v3ioutils"
 	v3io "github.com/v3io/v3io-go/pkg/dataplane"
 	"github.com/v3io/v3io-tsdb/pkg/config"
@@ -44,7 +43,7 @@ import (
 	tsdbutils "github.com/v3io/v3io-tsdb/pkg/utils"
 )
 
-// Backend is a tsdb backend
+// Backend is a TSDB backend
 type Backend struct {
 	queriers          *lru.Cache
 	queriersLock      sync.Mutex
@@ -55,8 +54,9 @@ type Backend struct {
 	inactivityTimeout time.Duration
 }
 
-// NewBackend return a new tsdb backend
+// NewBackend returns a new TSDB backend
 func NewBackend(logger logger.Logger, v3ioContext v3io.Context, cfg *frames.BackendConfig, framesConfig *frames.Config) (frames.DataBackend, error) {
+
 	querierCacheSize := framesConfig.QuerierCacheSize
 	if querierCacheSize == 0 {
 		querierCacheSize = 64
@@ -152,23 +152,20 @@ func (b *Backend) GetQuerier(session *frames.Session, password string, token str
 	_, _ = h.Write(getBytes(token))
 	key := h.Sum64()
 
+	b.queriersLock.Lock()
+	defer b.queriersLock.Unlock()
 	qry, found := b.queriers.Get(key)
 	if !found {
-		b.queriersLock.Lock()
-		defer b.queriersLock.Unlock()
-		qry, found = b.queriers.Get(key) // Double-checked locking
-		if !found {
-			var err error
-			adapter, err := b.newAdapter(session, password, token, path)
-			if err != nil {
-				return nil, err
-			}
-			qry, err = adapter.QuerierV2()
-			if err != nil {
-				return nil, errors.Wrap(err, "Failed to initialize Querier")
-			}
-			b.queriers.Add(key, qry)
+		var err error
+		adapter, err := b.newAdapter(session, password, token, path)
+		if err != nil {
+			return nil, err
 		}
+		qry, err = adapter.QuerierV2()
+		if err != nil {
+			return nil, errors.Wrap(err, "Failed to initialize Querier")
+		}
+		b.queriers.Add(key, qry)
 	}
 
 	return qry.(*pquerier.V3ioQuerier), nil
@@ -264,11 +261,12 @@ func (b *Backend) Delete(request *frames.DeleteRequest) error {
 		}
 	}
 
-	err = adapter.DeleteDB(delAll, false, start, end)
-	if err == nil {
-		return err
-	}
-
+	params := tsdb.DeleteParams{DeleteAll: delAll,
+		From:    start,
+		To:      end,
+		Filter:  request.Proto.Filter,
+		Metrics: request.Proto.Metrics}
+	err = adapter.DeleteDB(params)
 	return err
 
 }
