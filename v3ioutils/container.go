@@ -145,10 +145,12 @@ func DeleteTable(logger logger.Logger, container v3io.Container, path, filter st
 			}
 		case err := <-deleteTerminationChan:
 			if err != nil {
-				for i := 0; i < 2*workers; i++ {
-					onErrorTerminationChannel <- struct{}{}
+				if errorWithStatusCode, ok := err.(v3ioerrors.ErrorWithStatusCode); !ok || !ignoreMissing || (errorWithStatusCode.StatusCode() != http.StatusNotFound && errorWithStatusCode.StatusCode() != http.StatusConflict)  {
+					for i := 0; i < 2*workers; i++ {
+						onErrorTerminationChannel <- struct{}{}
+					}
+					return errors.Wrapf(err, "Delete failed during recursive delete of '%s'.", path)
 				}
-				return errors.Wrapf(err, "Delete failed during recursive delete of '%s'.", path)
 			}
 			deletesTerminated++
 		}
