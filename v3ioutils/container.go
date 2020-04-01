@@ -206,7 +206,7 @@ func deleteObjectWorker(tablePath string, container v3io.Container, fileNameChan
 			input := &v3io.DeleteObjectInput{Path: tablePath + "/" + fileName}
 			err := container.DeleteObjectSync(input)
 			if err != nil {
-				if utils.IsNotExistsOrConflictError(err) {
+				if !utils.IsNotExistsOrConflictError(err) {
 					terminationChan <- err
 					return
 				}
