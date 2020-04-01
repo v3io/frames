@@ -159,7 +159,7 @@ func DeleteTable(logger logger.Logger, container v3io.Container, path, filter st
 	if filter == "" {
 		err := container.DeleteObjectSync(&v3io.DeleteObjectInput{Path: path})
 		if err != nil {
-			if !utils.IsNotExistsOrConflictError(err) {
+			if !ignoreMissing || !utils.IsNotExistsOrConflictError(err) {
 				return errors.Wrapf(err, "Failed to delete table object '%s'.", path)
 			}
 		}
