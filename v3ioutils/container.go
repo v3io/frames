@@ -145,7 +145,7 @@ func DeleteTable(logger logger.Logger, container v3io.Container, path, filter st
 			}
 		case err := <-deleteTerminationChan:
 			if err != nil {
-				if errorWithStatusCode, ok := err.(v3ioerrors.ErrorWithStatusCode); !ok || !ignoreMissing || (errorWithStatusCode.StatusCode() != http.StatusNotFound && errorWithStatusCode.StatusCode() != http.StatusConflict) {
+				if !ignoreMissing {
 					for i := 0; i < 2*workers; i++ {
 						onErrorTerminationChannel <- struct{}{}
 					}
@@ -159,7 +159,7 @@ func DeleteTable(logger logger.Logger, container v3io.Container, path, filter st
 	if filter == "" {
 		err := container.DeleteObjectSync(&v3io.DeleteObjectInput{Path: path})
 		if err != nil {
-			if !utils.IsNotExistsError(err) {
+			if !utils.IsNotExistsOrConflictError(err) {
 				return errors.Wrapf(err, "Failed to delete table object '%s'.", path)
 			}
 		}
@@ -208,8 +208,10 @@ func deleteObjectWorker(tablePath string, container v3io.Container, fileNameChan
 			input := &v3io.DeleteObjectInput{Path: tablePath + "/" + fileName}
 			err := container.DeleteObjectSync(input)
 			if err != nil {
-				terminationChan <- err
-				return
+				if utils.IsNotExistsOrConflictError(err) {
+					terminationChan <- err
+					return
+				}
 			}
 		case _ = <-onErrorTerminationChannel:
 			return
