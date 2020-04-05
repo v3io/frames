@@ -553,7 +553,7 @@ The following `read` parameters are specific to the `tsdb` backend; for more inf
 
 - <a id="method-read-tsdb-param-query"></a>**query** **[Tech Preview]** &mdash; A query string in SQL format.
   > **Note:**
-  > - When setting the `query` parameter, you must provide the path to the TSDB table as part of the `FROM` caluse in the query string and not in the `read` method's [`table`](#client-method-param-table) parameter.
+  > - When setting the `query` parameter, you must provide the path to the TSDB table as part of the `FROM` clause in the query string and not in the `read` method's [`table`](#client-method-param-table) parameter.
   > - This parameter cannot be set concurrently with the following parameters: [`aggregators`](#method-read-tsdb-param-aggregators), [`columns`](#method-read-tsdb-param-columns), [`filter`](#method-read-tsdb-param-filter), or [`group_by`](#method-read-tsdb-param-group_by) parameters.
 
   - **Type:** `str`
