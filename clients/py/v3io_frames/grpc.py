@@ -12,13 +12,15 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 import abc
-import typing
+import math
 import time
-import pandas as pd
+import typing
 from datetime import datetime
 from functools import wraps
 
 import grpc
+import pandas as pd
+
 from . import frames_pb2 as fpb  # noqa
 from . import frames_pb2_grpc as fgrpc  # noqa
 from .client import ClientBase, RawFrame
@@ -156,9 +158,9 @@ class Client(ClientBase):
         if num_dfs == 1:
             return [df]
         dfs = []
-        sub_df_length = int(len(df)/num_dfs)
+        sub_df_length = math.ceil(len(df) / num_dfs)
         for i in range(num_dfs):
-            sub_df = df[i*sub_df_length:(i+1)*sub_df_length]
+            sub_df = df[i * sub_df_length:(i + 1) * sub_df_length]
             dfs.append(sub_df)
         return dfs
 
@@ -293,7 +295,7 @@ class RetryOnRpcErrorClientInterceptor(
                                     request)
 
     def intercept_stream_unary(
-        self, continuation, client_call_details, request_iterator
+            self, continuation, client_call_details, request_iterator
     ):
         return self._intercept_call(continuation, client_call_details,
                                     request_iterator)
