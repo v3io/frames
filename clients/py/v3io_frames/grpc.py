@@ -12,18 +12,19 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 import abc
-import typing
 import time
-import pandas as pd
+import typing
 from datetime import datetime
 from functools import wraps
+
+import pandas as pd
 
 import grpc
 from . import frames_pb2 as fpb  # noqa
 from . import frames_pb2_grpc as fgrpc  # noqa
 from .client import ClientBase, RawFrame
 from .errors import (CreateError, DeleteError, ExecuteError, ReadError,
-                     WriteError)
+                     WriteError, HistoryError)
 from .http import format_go_time
 from .pbutils import msg2df, pb_map, df2msg
 from .pdutils import concat_dfs, should_reorder_columns
@@ -156,9 +157,9 @@ class Client(ClientBase):
         if num_dfs == 1:
             return [df]
         dfs = []
-        sub_df_length = int(len(df)/num_dfs)
+        sub_df_length = int(len(df) / num_dfs)
         for i in range(num_dfs):
-            sub_df = df[i*sub_df_length:(i+1)*sub_df_length]
+            sub_df = df[i * sub_df_length:(i + 1) * sub_df_length]
             dfs.append(sub_df)
         return dfs
 
@@ -204,6 +205,22 @@ class Client(ClientBase):
             expression=expression,
         )
         resp = stub.Exec(request)
+        if resp.frame:
+            return msg2df(resp.frame, self.frame_factory)
+
+    @grpc_raise(HistoryError)
+    def _history(self, backend, table, user, action, start_time, end_time):
+        stub = fgrpc.FramesStub(self._channel)
+        request = fpb.HistoryRequest(
+            session=self.session,
+            backend=backend,
+            table=table,
+            user=user,
+            action=action,
+            start_time=start_time,
+            end_time=end_time,
+        )
+        resp = stub.History(request)
         if resp.frame:
             return msg2df(resp.frame, self.frame_factory)
 
@@ -293,7 +310,7 @@ class RetryOnRpcErrorClientInterceptor(
                                     request)
 
     def intercept_stream_unary(
-        self, continuation, client_call_details, request_iterator
+            self, continuation, client_call_details, request_iterator
     ):
         return self._intercept_call(continuation, client_call_details,
                                     request_iterator)

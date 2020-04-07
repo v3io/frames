@@ -36,6 +36,7 @@ import (
 	_ "github.com/v3io/frames/backends/kv"
 	_ "github.com/v3io/frames/backends/stream"
 	_ "github.com/v3io/frames/backends/tsdb"
+	"github.com/v3io/frames/backends/utils"
 	v3iohttp "github.com/v3io/v3io-go/pkg/dataplane/http"
 )
 
@@ -46,13 +47,14 @@ const (
 // API layer, implements common CRUD operations
 // TODO: Call it DAL? (data access layer)
 type API struct {
-	logger   logger.Logger
-	backends map[string]frames.DataBackend
-	config   *frames.Config
+	logger     logger.Logger
+	backends   map[string]frames.DataBackend
+	config     *frames.Config
+	monitoring *utils.Monitoring
 }
 
 // New returns a new API layer struct
-func New(logger logger.Logger, config *frames.Config) (*API, error) {
+func New(logger logger.Logger, config *frames.Config, monitoring *utils.Monitoring) (*API, error) {
 	if logger == nil {
 		var err error
 		logger, err = frames.NewLogger(config.Log.Level)
@@ -62,8 +64,9 @@ func New(logger logger.Logger, config *frames.Config) (*API, error) {
 	}
 
 	api := &API{
-		logger: logger,
-		config: config,
+		logger:     logger,
+		config:     config,
+		monitoring: monitoring,
 	}
 
 	if err := api.createBackends(config); err != nil {
@@ -86,6 +89,7 @@ func (api *API) Read(request *frames.ReadRequest, out chan frames.Frame) error {
 		return fmt.Errorf("unknown backend - %q", request.Proto.Backend)
 	}
 
+	queryStartTime := time.Now()
 	iter, err := backend.Read(request)
 	if err != nil {
 		api.logger.ErrorWith("can't query", "error", err)
@@ -96,12 +100,16 @@ func (api *API) Read(request *frames.ReadRequest, out chan frames.Frame) error {
 		out <- iter.At()
 	}
 
+	queryDuration := time.Now().Sub(queryStartTime)
+
 	if err := iter.Err(); err != nil {
 		msg := "error during iteration"
 		api.logger.ErrorWith(msg, "error", err)
 		return errors.Wrap(err, msg)
 	}
 
+	// write only successful queries
+	api.monitoring.AddQueryLog(request, queryDuration, queryStartTime)
 	return nil
 }
 
@@ -229,6 +237,10 @@ func (api *API) Exec(request *frames.ExecRequest) (frames.Frame, error) {
 	}
 
 	return frame, nil
+}
+
+func (api *API) History(request *frames.HistoryRequest) (frames.Frame, error) {
+	return api.monitoring.GetLogs(request)
 }
 
 func (api *API) createBackends(config *frames.Config) error {

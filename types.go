@@ -21,6 +21,8 @@ such restriction.
 package frames
 
 import (
+	"fmt"
+	"strings"
 	"time"
 
 	"github.com/pkg/errors"
@@ -156,6 +158,65 @@ type ReadRequest struct {
 	Token    SecretString
 }
 
+func (readRequest ReadRequest) ToMap() map[string]string {
+
+	reqMap := make(map[string]string, 10)
+
+	if readRequest.Proto.Query != "" {
+		reqMap["query"] = readRequest.Proto.Query
+	}
+	if len(readRequest.Proto.Columns) > 0 {
+		reqMap["columns"] = strings.Join(readRequest.Proto.Columns, ",")
+	}
+	if readRequest.Proto.Filter != "" {
+		reqMap["filter"] = readRequest.Proto.Filter
+	}
+	if readRequest.Proto.GroupBy != "" {
+		reqMap["groupBy"] = readRequest.Proto.GroupBy
+	}
+	if readRequest.Proto.Limit != 0 {
+		reqMap["limit"] = fmt.Sprintf("%v", readRequest.Proto.Limit)
+	}
+	if readRequest.Proto.MessageLimit != 0 {
+		reqMap["messageLimit"] = fmt.Sprintf("%v", readRequest.Proto.MessageLimit)
+	}
+	if len(readRequest.Proto.ShardingKeys) > 0 {
+		reqMap["shardingkeys"] = strings.Join(readRequest.Proto.ShardingKeys, ",")
+	}
+	if readRequest.Proto.SortKeyRangeStart != "" {
+		reqMap["sortKeyRangeStart"] = readRequest.Proto.SortKeyRangeStart
+	}
+	if readRequest.Proto.SortKeyRangeEnd != "" {
+		reqMap["sortKeyRangeEnd"] = readRequest.Proto.SortKeyRangeEnd
+	}
+	if readRequest.Proto.Start != "" {
+		reqMap["start"] = readRequest.Proto.Start
+	}
+	if readRequest.Proto.End != "" {
+		reqMap["end"] = readRequest.Proto.End
+	}
+	if readRequest.Proto.Step != "" {
+		reqMap["step"] = readRequest.Proto.Step
+	}
+	if readRequest.Proto.Aggregators != "" {
+		reqMap["aggregators"] = readRequest.Proto.Aggregators
+	}
+	if readRequest.Proto.AggregationWindow != "" {
+		reqMap["aggregationWindow"] = readRequest.Proto.AggregationWindow
+	}
+	if readRequest.Proto.Seek != "" {
+		reqMap["seek"] = readRequest.Proto.Seek
+	}
+	if readRequest.Proto.ShardId != "" {
+		reqMap["shardID"] = readRequest.Proto.ShardId
+	}
+	if readRequest.Proto.Sequence != 0 {
+		reqMap["sequence"] = fmt.Sprintf("%v", readRequest.Proto.Sequence)
+	}
+
+	return reqMap
+}
+
 // JoinStruct is a join structure
 type JoinStruct = pb.JoinStruct
 
@@ -189,6 +250,13 @@ type CreateRequest struct {
 // DeleteRequest is a deletion request
 type DeleteRequest struct {
 	Proto    *pb.DeleteRequest
+	Password SecretString
+	Token    SecretString
+}
+
+// HistoryRequest is a history logs request
+type HistoryRequest struct {
+	Proto    *pb.HistoryRequest
 	Password SecretString
 	Token    SecretString
 }

@@ -48,3 +48,7 @@ class DeleteError(Error):
 
 class ExecuteError(Error):
     """An error in executing command"""
+
+
+class HistoryError(Error):
+    """An error in querying history logs"""

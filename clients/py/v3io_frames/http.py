@@ -25,8 +25,8 @@ from urllib3.exceptions import HTTPError
 
 from . import frames_pb2 as fpb
 from .client import ClientBase, RawFrame
-from .errors import (CreateError, DeleteError, Error, ExecuteError, ReadError,
-                     WriteError)
+from .errors import (CreateError, DeleteError, ExecuteError, ReadError,
+                     WriteError, HistoryError)
 from .frames_pb2 import Frame
 from .pbutils import df2msg, msg2df, pb2py
 from .pdutils import concat_dfs, should_reorder_columns
@@ -189,6 +189,36 @@ class Client(ClientBase):
             out = resp.json()
         except json.JSONDecodeError as err:
             raise ExecuteError(str(err))
+
+        frame = out.get('frame')
+        if not frame:
+            return
+
+        msg = Frame.FromString(b64decode(frame))
+        return msg2df(msg, self.frame_factory)
+
+    @connection_error(HistoryError)
+    def _history(self, backend, table, user, action, start_time, end_time):
+        request = {
+            'session': pb2py(self.session),
+            'backend': backend,
+            'table': table,
+            'user': user,
+            'action': action,
+            'start_time': start_time,
+            'end_time': end_time,
+        }
+
+        url = self._url_for('history')
+        headers = self._get_headers()
+        resp = self._session.post(url, headers=headers, json=request)
+        if not resp.ok:
+            raise HistoryError(resp.text)
+
+        try:
+            out = resp.json()
+        except json.JSONDecodeError as err:
+            raise HistoryError(str(err))
 
         frame = out.get('frame')
         if not frame:

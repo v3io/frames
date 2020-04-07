@@ -34,6 +34,7 @@ import (
 	"github.com/pkg/errors"
 	"github.com/v3io/frames"
 	"github.com/v3io/frames/api"
+	"github.com/v3io/frames/backends/utils"
 	"github.com/v3io/frames/pb"
 	"github.com/valyala/fasthttp"
 )
@@ -60,7 +61,7 @@ type Server struct {
 }
 
 // NewServer creates a new server
-func NewServer(config *frames.Config, addr string, logger logger.Logger) (*Server, error) {
+func NewServer(config *frames.Config, addr string, logger logger.Logger, monitoring *utils.Monitoring) (*Server, error) {
 	var err error
 
 	if err := config.Validate(); err != nil {
@@ -78,7 +79,7 @@ func NewServer(config *frames.Config, addr string, logger logger.Logger) (*Serve
 		}
 	}
 
-	api, err := api.New(logger, config)
+	api, err := api.New(logger, config, monitoring)
 	if err != nil {
 		return nil, errors.Wrap(err, "can't create API")
 	}
@@ -478,6 +479,51 @@ func (s *Server) handleSimpleJSON(ctx *fasthttp.RequestCtx, method string) {
 	}
 }
 
+func (s *Server) handleHistory(ctx *fasthttp.RequestCtx) {
+	if !ctx.IsPost() { // ctx.PostBody() blocks on GET
+		ctx.Error("unsupported method", http.StatusMethodNotAllowed)
+	}
+
+	requestInner := &pb.HistoryRequest{}
+	if err := json.Unmarshal(ctx.PostBody(), requestInner); err != nil {
+		s.logger.ErrorWith("can't decode request", "error", err)
+		ctx.Error(fmt.Sprintf("bad request - %s", err), http.StatusBadRequest)
+		return
+	}
+	request := &frames.HistoryRequest{
+		Proto: requestInner,
+	}
+
+	s.httpAuth(ctx, request.Proto.Session)
+	request.Password = frames.InitSecretString(request.Proto.Session.Password)
+	request.Token = frames.InitSecretString(request.Proto.Session.Token)
+	request.Proto.Session.Password = ""
+	request.Proto.Session.Token = ""
+
+	frame, err := s.api.History(request)
+	if err != nil {
+		ctx.Error(fmt.Sprintf("failed to get usage history log, err: %v", err), http.StatusInternalServerError)
+		return
+	}
+
+	enc := frames.NewEncoder(ctx)
+	var frameData string
+	if frame != nil {
+		data, err := frames.MarshalFrame(frame)
+		if err != nil {
+			s.logger.ErrorWith("can't marshal frame", "error", err)
+			s.writeError(enc, fmt.Errorf("can't marsha frame - %s", err))
+		}
+
+		frameData = base64.StdEncoding.EncodeToString(data)
+	}
+
+	ctx.SetStatusCode(http.StatusOK)
+	_ = json.NewEncoder(ctx).Encode(map[string]string{
+		"frame": frameData,
+	})
+}
+
 // based on https://github.com/buaazp/fasthttprouter/tree/master/examples/auth
 func (s *Server) httpAuth(ctx *fasthttp.RequestCtx, session *frames.Session) {
 	auth := ctx.Request.Header.Peek("Authorization")
@@ -533,6 +579,7 @@ func (s *Server) initRoutes() {
 		"/read":     s.handleRead,
 		"/write":    s.handleWrite,
 		"/exec":     s.handleExec,
+		"/history":  s.handleHistory,
 		"/":         s.handleStatus,
 		"/query":    s.handleSimpleJSONQuery,
 		"/search":   s.handleSimpleJSONSearch,

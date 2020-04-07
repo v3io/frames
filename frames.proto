@@ -225,10 +225,26 @@ message ExecResponse {
     Frame frame = 1;
 }
 
+message HistoryRequest {
+    Session session = 1;
+    string backend = 2; // Filter by backend type
+    string table = 3; // Filter by Table name
+    string user = 4; // Filter by the user executed the command
+    string action = 5; // Filter by Action type
+    string start_time = 6; // Filter time range
+    string end_time = 7; // Filter time range
+}
+
+message HistoryResponse {
+    Frame frame = 1;
+}
+
+
 service Frames {
     rpc Read(ReadRequest) returns (stream Frame) {}
     rpc Write(stream WriteRequest) returns (WriteRespose) {}
     rpc Create(CreateRequest) returns (CreateResponse) {}
     rpc Delete(DeleteRequest) returns (DeleteResponse) {}
     rpc Exec(ExecRequest) returns (ExecResponse) {}
+    rpc History(HistoryRequest) returns (HistoryResponse) {}
 }
