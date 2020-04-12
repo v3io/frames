@@ -1,6 +1,7 @@
 package test
 
 import (
+	"encoding/json"
 	"fmt"
 	"math"
 	"time"
@@ -368,6 +369,66 @@ func (kvSuite *KvTestSuite) TestSaveModeUpdateItemChangeColumnType() {
 	if err := appender.WaitForComplete(time.Second); err == nil {
 		kvSuite.T().Fatalf("expected to fail, but completed succesfully")
 	}
+}
+
+func (kvSuite *KvTestSuite) TestSaveModeUpdateItemChangeNumricColumnType() {
+	table := fmt.Sprintf("TestSaveModeUpdateItemChangeColumnType%d", time.Now().UnixNano())
+
+	frame := kvSuite.generateSequentialSampleFrameWithTypes(3, "idx", map[string]string{"n1": "float", "n2": "int"})
+	wreq := &frames.WriteRequest{
+		Backend: kvSuite.backendName,
+		Table:   table,
+	}
+
+	appender, err := kvSuite.client.Write(wreq)
+	if err != nil {
+		kvSuite.T().Fatal(err)
+	}
+
+	if err := appender.Add(frame); err != nil {
+		kvSuite.T().Fatal(err)
+	}
+
+	if err := appender.WaitForComplete(time.Second); err != nil {
+		kvSuite.T().Fatal(err)
+	}
+
+	// Save a frame to the same path with different types
+	frame2 := kvSuite.generateSequentialSampleFrameWithTypes(2, "idx", map[string]string{"n1": "int", "n2": "float"})
+	wreq = &frames.WriteRequest{
+		Backend:  kvSuite.backendName,
+		Table:    table,
+		SaveMode: frames.UpdateItem,
+	}
+
+	appender, err = kvSuite.client.Write(wreq)
+	if err != nil {
+		kvSuite.T().Fatal(err)
+	}
+
+	err = appender.Add(frame2)
+	kvSuite.NoError(err, "failed to write frame")
+
+	err = appender.WaitForComplete(time.Second)
+	kvSuite.NoError(err, "failed to WaitForComplete")
+
+	schemaInput := &v3io.GetObjectInput{Path: table + "/.#schema"}
+	resp, err := kvSuite.v3ioContainer.GetObjectSync(schemaInput)
+	if err != nil {
+		kvSuite.T().Fatal(err.Error())
+	}
+	schema := &v3ioutils.OldV3ioSchema{}
+	if err := json.Unmarshal(resp.HTTPResponse.Body(), schema); err != nil {
+		kvSuite.T().Fatal(err)
+	}
+
+	for _, field := range schema.Fields {
+		if field.Name != "idx" && field.Type != "double" {
+			kvSuite.T().Fatal("expected type float, got ", field.Type)
+		}
+	}
+
+
 }
 
 func (kvSuite *KvTestSuite) TestSaveModeUpdateItemChangeIndexName() {
