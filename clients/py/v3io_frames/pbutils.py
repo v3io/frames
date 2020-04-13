@@ -357,7 +357,7 @@ def get_actual_types(df):
             # and determine whether it's bool or string
             has_data = False
             for x in col:
-                if x is None:
+                if pd.isnull(x):
                     continue
                 if isinstance(x, str):
                     column_types[col.name] = fpb.STRING

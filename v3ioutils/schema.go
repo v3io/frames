@@ -134,8 +134,15 @@ func (s *OldV3ioSchema) merge(new *OldV3ioSchema) (bool, error) {
 			s.Fields = append(s.Fields, field)
 			changed = true
 		} else if field.Type != s.Fields[index].Type {
-			return changed, fmt.Errorf(
-				"schema change for column %v from type %s to %s is not allowed", field.Name, s.Fields[index].Type, field.Type)
+			if s.Fields[index].Type == DoubleType && field.Type == LongType {
+				continue
+			} else if s.Fields[index].Type == LongType && field.Type == DoubleType {
+				s.Fields[index].Type = DoubleType
+				changed = true
+			} else {
+				return changed, fmt.Errorf(
+					"schema change for column %v from type %s to %s is not allowed", field.Name, s.Fields[index].Type, field.Type)
+			}
 		}
 	}
 
