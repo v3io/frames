@@ -428,7 +428,6 @@ func (kvSuite *KvTestSuite) TestSaveModeUpdateItemChangeNumricColumnType() {
 		}
 	}
 
-
 }
 
 func (kvSuite *KvTestSuite) TestSaveModeUpdateItemChangeIndexName() {
