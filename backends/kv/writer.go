@@ -121,7 +121,6 @@ func (kv *Backend) Write(request *frames.WriteRequest) (frames.FrameAppender, er
 	return &appender, nil
 }
 
-
 func checkPathExists(tablePath string, container v3io.Container) bool {
 	input := &v3io.CheckPathExistsInput{Path: tablePath}
 	err := container.CheckPathExistsSync(input)
