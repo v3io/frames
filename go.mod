@@ -13,7 +13,7 @@ require (
 	github.com/pavius/impi v0.0.0-20200212064320-5db7efa5f87b // indirect
 	github.com/pkg/errors v0.8.1
 	github.com/stretchr/testify v1.4.0
-	github.com/v3io/v3io-go v0.1.5-0.20200316155009-cc83de374ff2
+	github.com/v3io/v3io-go v0.1.5-0.20200413162202-5d20cf2c5c71
 	github.com/v3io/v3io-tsdb v0.9.24
 	github.com/valyala/fasthttp v1.2.0
 	github.com/xwb1989/sqlparser v0.0.0-20180606152119-120387863bf2
@@ -21,7 +21,4 @@ require (
 	google.golang.org/grpc v1.17.0
 )
 
-replace (
-	github.com/v3io/v3io-go => github.com/dinal/v3io-go v0.0.5-0.20200413110513-3adb776f958c
-	github.com/xwb1989/sqlparser => github.com/v3io/sqlparser v0.0.0-20190306105200-4d7273501871
-)
+replace github.com/xwb1989/sqlparser => github.com/v3io/sqlparser v0.0.0-20190306105200-4d7273501871
