@@ -131,9 +131,8 @@ func checkPathExists(tablePath string, container v3io.Container) (bool, error) {
 	if err != nil {
 		if errorWithStatusCode, ok := err.(v3ioerrors.ErrorWithStatusCode); !ok || errorWithStatusCode.StatusCode() != http.StatusNotFound {
 			return false, errors.Wrapf(err, "check path failed '%s'.", tablePath)
-		} else {
-			return false, nil
 		}
+		return false, nil
 	}
 
 	return true, nil
