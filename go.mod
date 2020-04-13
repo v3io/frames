@@ -21,4 +21,7 @@ require (
 	google.golang.org/grpc v1.17.0
 )
 
-replace github.com/xwb1989/sqlparser => github.com/v3io/sqlparser v0.0.0-20190306105200-4d7273501871
+replace (
+	github.com/v3io/v3io-go => github.com/dinal/v3io-go v0.0.5-0.20200413110513-3adb776f958c
+	github.com/xwb1989/sqlparser => github.com/v3io/sqlparser v0.0.0-20190306105200-4d7273501871
+)
