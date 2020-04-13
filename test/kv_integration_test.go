@@ -158,6 +158,48 @@ func (kvSuite *KvTestSuite) generateSequentialSampleFrame(size int, indexName st
 	return frame
 }
 
+func (kvSuite *KvTestSuite) TestWriteToExistingFolderWithoutSchema() {
+	table := fmt.Sprintf("TestWriteToExistingFolderWithoutSchema%d", time.Now().UnixNano())
+
+	columnNames := []string{"n1", "n2"}
+	frame := kvSuite.generateSequentialSampleFrame(3, "idx", columnNames)
+	wreq := &frames.WriteRequest{
+		Backend: kvSuite.backendName,
+		Table:   table,
+	}
+
+	appender, err := kvSuite.client.Write(wreq)
+	if err != nil {
+		kvSuite.T().Fatal(err)
+	}
+
+	if err := appender.Add(frame); err != nil {
+		kvSuite.T().Fatal(err)
+	}
+
+	if err := appender.WaitForComplete(time.Second); err != nil {
+		kvSuite.T().Fatal(err)
+	}
+
+	//delete schema
+	schemaInput := &v3io.DeleteObjectInput{Path: table + "/.#schema"}
+	err = kvSuite.v3ioContainer.DeleteObjectSync(schemaInput)
+	if err != nil {
+		kvSuite.T().Fatal(err.Error())
+	}
+
+	//write again
+	appender, err = kvSuite.client.Write(wreq)
+	kvSuite.NoError(err, "failed to write frame")
+
+	err = appender.Add(frame)
+	kvSuite.NoError(err, "failed to add frame")
+
+	err = appender.WaitForComplete(time.Second)
+	kvSuite.Error(err, "writing to an existing folder without a schema should fail")
+
+}
+
 func (kvSuite *KvTestSuite) generateSequentialSampleFrameWithTypes(size int, indexName string, columnNames map[string]string) frames.Frame {
 	var icol frames.Column
 

@@ -372,7 +372,7 @@ func (kvSuite *KvTestSuite) TestSaveModeUpdateItemChangeColumnType() {
 }
 
 func (kvSuite *KvTestSuite) TestSaveModeUpdateItemChangeNumricColumnType() {
-	table := fmt.Sprintf("TestSaveModeUpdateItemChangeColumnType%d", time.Now().UnixNano())
+	table := fmt.Sprintf("TestSaveModeUpdateItemChangeNumricColumnType%d", time.Now().UnixNano())
 
 	frame := kvSuite.generateSequentialSampleFrameWithTypes(3, "idx", map[string]string{"n1": "float", "n2": "int"})
 	wreq := &frames.WriteRequest{
