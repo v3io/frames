@@ -10,6 +10,9 @@ github.com/cpuguy83/go-md2man v1.0.10/go.mod h1:SmD6nW6nTyfqj6ABTjUi3V3JVMnlJmwc
 github.com/davecgh/go-spew v1.1.0/go.mod h1:J7Y8YcW2NihsgmVo/mv3lAwl/skON4iLHjSsI+c5H38=
 github.com/davecgh/go-spew v1.1.1 h1:vj9j/u1bqnvCEfJOwUhtlOARqs3+rkHYY13jYWTU97c=
 github.com/davecgh/go-spew v1.1.1/go.mod h1:J7Y8YcW2NihsgmVo/mv3lAwl/skON4iLHjSsI+c5H38=
+github.com/dinal/v3io-go v0.0.5-0.20200413103321-8b0a0d3bd31e/go.mod h1:D0W1tjsVgcp4xk3ZI2fjKTKaOpYJLewN1BPN0x2osO4=
+github.com/dinal/v3io-go v0.0.5-0.20200413110513-3adb776f958c h1:8KQfRbC21cX0iTvEhN36NBC/m4v3OK56Q0LDo7u5tSI=
+github.com/dinal/v3io-go v0.0.5-0.20200413110513-3adb776f958c/go.mod h1:D0W1tjsVgcp4xk3ZI2fjKTKaOpYJLewN1BPN0x2osO4=
 github.com/dinal/v3io-tsdb v0.0.3-0.20200219152045-0a164c3e9089 h1:5g3dEl/Pczj/nLAoifETKZiixiAtyWpWSsbvX6MdFxQ=
 github.com/dinal/v3io-tsdb v0.0.3-0.20200219152045-0a164c3e9089/go.mod h1:hdeE2K5HLZsp2NL8VRK9vmMp7cZ2F8x3VoQB2Gr34MI=
 github.com/dinal/v3io-tsdb v0.0.3-0.20200310095450-9aae98637eb4 h1:ePHOQr5zNsft8Vxuub01YuxpPBGYCmxaGvoiuQEPQM8=
@@ -119,6 +122,7 @@ github.com/v3io/v3io-go v0.1.5-0.20200308131040-79c5a91d3daf h1:GdM8m1DKlA1pF4py
 github.com/v3io/v3io-go v0.1.5-0.20200308131040-79c5a91d3daf/go.mod h1:D0W1tjsVgcp4xk3ZI2fjKTKaOpYJLewN1BPN0x2osO4=
 github.com/v3io/v3io-go v0.1.5-0.20200316155009-cc83de374ff2 h1:9jIOiEqhu1bUAPl6KFiKvpFhQWkcNGVp/9OC72F+9Os=
 github.com/v3io/v3io-go v0.1.5-0.20200316155009-cc83de374ff2/go.mod h1:D0W1tjsVgcp4xk3ZI2fjKTKaOpYJLewN1BPN0x2osO4=
+github.com/v3io/v3io-go v0.1.5-0.20200413162202-5d20cf2c5c71/go.mod h1:D0W1tjsVgcp4xk3ZI2fjKTKaOpYJLewN1BPN0x2osO4=
 github.com/v3io/v3io-go-http v0.0.0-20190221115935-53e2b487c9a2 h1:NJc63wM25iS+ci5z7LVwjWD4QM0QpTQw/fovKzatss0=
 github.com/v3io/v3io-go-http v0.0.0-20190221115935-53e2b487c9a2/go.mod h1:GXYcR9MxgfbE3BJdkXki5EclvtS8Nxu2RQNLA8hMMog=
 github.com/v3io/v3io-go-http v0.0.0-20190415143924-cc2fbcde6663/go.mod h1:GXYcR9MxgfbE3BJdkXki5EclvtS8Nxu2RQNLA8hMMog=

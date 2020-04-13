@@ -89,6 +89,14 @@ func (kv *Backend) Write(request *frames.WriteRequest) (frames.FrameAppender, er
 		case frames.ErrorIfTableExists:
 			return nil, fmt.Errorf("table '%v' already exists; either use a differnet save mode or save to a different table", tablePath)
 		}
+	} else {
+		exists, err := checkPathExists(tablePath, container)
+		if err != nil {
+			return nil, err
+		}
+		if exists {
+			return nil, fmt.Errorf("folder '%v' already exists; you can't write to an existing folder unless it already contains a schema file", tablePath)
+		}
 	}
 
 	if schema == nil {
@@ -115,6 +123,19 @@ func (kv *Backend) Write(request *frames.WriteRequest) (frames.FrameAppender, er
 	}
 
 	return &appender, nil
+}
+
+func checkPathExists(tablePath string, container v3io.Container) (bool, error) {
+	input := &v3io.CheckPathExistsInput{Path: tablePath}
+	err := container.CheckPathExistsSync(input)
+	if err != nil {
+		if errorWithStatusCode, ok := err.(v3ioerrors.ErrorWithStatusCode); !ok || errorWithStatusCode.StatusCode() != http.StatusNotFound {
+			return false, errors.Wrapf(err, "check path failed '%s'.", tablePath)
+		}
+		return false, nil
+	}
+
+	return true, nil
 }
 
 func validateFrameInput(frame frames.Frame, request *frames.WriteRequest) error {
