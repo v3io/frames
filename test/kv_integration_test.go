@@ -183,6 +183,8 @@ func (kvSuite *KvTestSuite) generateSequentialSampleFrameWithTypes(size int, ind
 			columns[i] = BoolCol(kvSuite.T(), columnName, size)
 		case "time":
 			columns[i] = TimeCol(kvSuite.T(), columnName, size)
+		case "int":
+			columns[i] = IntCol(kvSuite.T(), columnName, size)
 		default:
 			kvSuite.T().Fatalf("type %v not supported", columnType)
 		}
