@@ -95,7 +95,7 @@ func (kv *Backend) Write(request *frames.WriteRequest) (frames.FrameAppender, er
 			return nil, err
 		}
 		if exists {
-			return nil, fmt.Errorf("folder '%v' already exists; you can't write to an exisitng folder without a schema file", tablePath)
+			return nil, fmt.Errorf("folder '%v' already exists; you can't write to an existing folder unless it already contains a schema file", tablePath)
 		}
 	}
 
