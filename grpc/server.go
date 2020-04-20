@@ -52,7 +52,7 @@ type Server struct {
 }
 
 // NewServer returns a new gRPC server
-func NewServer(config *frames.Config, addr string, logger logger.Logger, monitoring *utils.Monitoring) (*Server, error) {
+func NewServer(config *frames.Config, addr string, logger logger.Logger, historyServer *utils.HistoryServer) (*Server, error) {
 	if err := config.Validate(); err != nil {
 		return nil, errors.Wrap(err, "bad configuration")
 	}
@@ -69,7 +69,7 @@ func NewServer(config *frames.Config, addr string, logger logger.Logger, monitor
 		}
 	}
 
-	api, err := api.New(logger, config, monitoring)
+	api, err := api.New(logger, config, historyServer)
 	if err != nil {
 		return nil, errors.Wrap(err, "can't create API")
 	}

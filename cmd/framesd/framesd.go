@@ -84,9 +84,9 @@ func main() {
 	if err != nil {
 		log.Fatalf("error: can't create logger - %s", err)
 	}
-	monitoring := utils.NewMonitoring(framesLogger, cfg)
+	historyServer := utils.NewHistoryServer(framesLogger, cfg)
 
-	hsrv, err := framesHttp.NewServer(cfg, config.httpAddr, framesLogger, monitoring)
+	hsrv, err := framesHttp.NewServer(cfg, config.httpAddr, framesLogger, historyServer)
 	if err != nil {
 		log.Fatalf("error: can't create HTTP server - %s", err)
 	}
@@ -95,7 +95,7 @@ func main() {
 		log.Fatalf("error: can't start HTTP server - %s", err)
 	}
 
-	gsrv, err := grpc.NewServer(cfg, config.grpcAddr, framesLogger, monitoring)
+	gsrv, err := grpc.NewServer(cfg, config.grpcAddr, framesLogger, historyServer)
 	if err != nil {
 		log.Fatalf("error: can't create gRPC server - %s", err)
 	}

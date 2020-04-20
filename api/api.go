@@ -47,14 +47,14 @@ const (
 // API layer, implements common CRUD operations
 // TODO: Call it DAL? (data access layer)
 type API struct {
-	logger     logger.Logger
-	backends   map[string]frames.DataBackend
-	config     *frames.Config
-	monitoring *utils.Monitoring
+	logger        logger.Logger
+	backends      map[string]frames.DataBackend
+	config        *frames.Config
+	historyServer *utils.HistoryServer
 }
 
 // New returns a new API layer struct
-func New(logger logger.Logger, config *frames.Config, monitoring *utils.Monitoring) (*API, error) {
+func New(logger logger.Logger, config *frames.Config, historyServer *utils.HistoryServer) (*API, error) {
 	if logger == nil {
 		var err error
 		logger, err = frames.NewLogger(config.Log.Level)
@@ -64,9 +64,9 @@ func New(logger logger.Logger, config *frames.Config, monitoring *utils.Monitori
 	}
 
 	api := &API{
-		logger:     logger,
-		config:     config,
-		monitoring: monitoring,
+		logger:        logger,
+		config:        config,
+		historyServer: historyServer,
 	}
 
 	if err := api.createBackends(config); err != nil {
@@ -109,7 +109,7 @@ func (api *API) Read(request *frames.ReadRequest, out chan frames.Frame) error {
 	}
 
 	// write only successful queries
-	api.monitoring.AddQueryLog(request, queryDuration, queryStartTime)
+	api.historyServer.AddQueryLog(request, queryDuration, queryStartTime)
 	return nil
 }
 
@@ -240,7 +240,7 @@ func (api *API) Exec(request *frames.ExecRequest) (frames.Frame, error) {
 }
 
 func (api *API) History(request *frames.HistoryRequest) (frames.Frame, error) {
-	return api.monitoring.GetLogs(request)
+	return api.historyServer.GetLogs(request)
 }
 
 func (api *API) createBackends(config *frames.Config) error {

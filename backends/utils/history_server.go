@@ -44,7 +44,7 @@ type HistoryEntry struct {
 	AdditionalData map[string]string
 }
 
-type Monitoring struct {
+type HistoryServer struct {
 	logFilePath string
 	logger      logger.Logger
 	logs        []HistoryEntry
@@ -54,10 +54,10 @@ type Monitoring struct {
 	isActive    bool
 }
 
-func NewMonitoring(logger logger.Logger, cfg *frames.Config) *Monitoring {
+func NewHistoryServer(logger logger.Logger, cfg *frames.Config) *HistoryServer {
 	logPath := fmt.Sprintf("%v/%v_%v.json", logsPathPrefix, uuid.New().String(), time.Now().Unix())
 
-	mon := Monitoring{logFilePath: logPath,
+	mon := HistoryServer{logFilePath: logPath,
 		logger:   logger,
 		requests: make(chan HistoryEntry, 100),
 		isActive: false,
@@ -70,7 +70,7 @@ func NewMonitoring(logger logger.Logger, cfg *frames.Config) *Monitoring {
 	return &mon
 }
 
-func (m *Monitoring) Start() {
+func (m *HistoryServer) Start() {
 	go func() {
 		var pendingLogs []HistoryEntry
 
@@ -94,7 +94,7 @@ func (m *Monitoring) Start() {
 	}()
 }
 
-func (m *Monitoring) createDefaultV3ioClient() {
+func (m *HistoryServer) createDefaultV3ioClient() {
 
 	session := &frames.Session{}
 
@@ -113,7 +113,7 @@ func (m *Monitoring) createDefaultV3ioClient() {
 	m.isActive = true
 }
 
-func (m *Monitoring) createV3ioClient(session *frames.Session, password string, token string) (v3io.Container, error) {
+func (m *HistoryServer) createV3ioClient(session *frames.Session, password string, token string) (v3io.Container, error) {
 	newContextInput := &v3iohttp.NewContextInput{
 		HTTPClient: v3iohttp.NewClient(&v3iohttp.NewClientInput{}),
 	}
@@ -138,7 +138,7 @@ func (m *Monitoring) createV3ioClient(session *frames.Session, password string, 
 	return container, nil
 }
 
-func (m *Monitoring) AddQueryLog(readRequest *frames.ReadRequest, duration time.Duration, startTime time.Time) {
+func (m *HistoryServer) AddQueryLog(readRequest *frames.ReadRequest, duration time.Duration, startTime time.Time) {
 	if !m.isActive {
 		return
 	}
@@ -157,7 +157,7 @@ func (m *Monitoring) AddQueryLog(readRequest *frames.ReadRequest, duration time.
 	}()
 }
 
-func (m *Monitoring) GetLogs(request *frames.HistoryRequest) (frames.Frame, error) {
+func (m *HistoryServer) GetLogs(request *frames.HistoryRequest) (frames.Frame, error) {
 	if request.Proto.StartTime == "" {
 		request.Proto.StartTime = "0"
 	}
@@ -306,7 +306,7 @@ func (m *Monitoring) GetLogs(request *frames.HistoryRequest) (frames.Frame, erro
 	return frames.NewFrame(allColumns, []frames.Column{indexColumn}, nil)
 }
 
-func (m *Monitoring) writeMonitoringBatch(logs []HistoryEntry) {
+func (m *HistoryServer) writeMonitoringBatch(logs []HistoryEntry) {
 	d, err := json.Marshal(logs)
 	if err != nil {
 		m.logger.Warn("Failed to marshal logs to json, err: %v. logs: %v", err, logs)
