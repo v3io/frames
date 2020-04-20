@@ -171,12 +171,10 @@ func (m *HistoryServer) GetLogs(request *frames.HistoryRequest) (frames.Frame, e
 		return nil, errors.Wrap(err, "failed to parse 'end_time' filter")
 	}
 
-	// maybe delete this part
 	container, err := m.createV3ioClient(request.Proto.Session, request.Password.Get(), request.Token.Get())
 	if err != nil {
 		return nil, err
 	}
-	// ====
 
 	filter := historyFilter{Backend: request.Proto.Backend,
 		Action:    request.Proto.Action,
