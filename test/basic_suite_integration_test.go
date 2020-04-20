@@ -322,6 +322,29 @@ func TestFrames(t *testing.T) {
 	suite.Run(t, &mainTestSuite{logger: logger})
 }
 
+func createTestContainer(t testing.TB) v3io.Container {
+	session := sessionInfo(t)
+	logger, err := frames.NewLogger("integration-test")
+	if err != nil {
+		t.Fatal(err)
+	}
+	newClient := v3iohttp.NewClient(&v3iohttp.NewClientInput{DialTimeout: 0, MaxConnsPerHost: 100})
+	newContextInput := &v3iohttp.NewContextInput{
+		HTTPClient:     newClient,
+		NumWorkers:     8,
+		RequestChanLen: 4096,
+	}
+	v3ioContext, _ := v3iohttp.NewContext(logger, newContextInput)
+	container, _ := v3ioutils.NewContainer(
+		v3ioContext,
+		session,
+		session.Password,
+		session.Token,
+		logger)
+
+	return container
+}
+
 func TestTal(t *testing.T) {
 	err := os.Mkdir("/Users/tawel/Desktop/frames-history/dir1", 0775)
 

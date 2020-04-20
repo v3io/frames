@@ -84,7 +84,7 @@ func main() {
 	if err != nil {
 		log.Fatalf("error: can't create logger - %s", err)
 	}
-	monitoring := utils.NewMonitoring(framesLogger)
+	monitoring := utils.NewMonitoring(framesLogger, cfg)
 
 	hsrv, err := framesHttp.NewServer(cfg, config.httpAddr, framesLogger, monitoring)
 	if err != nil {

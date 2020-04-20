@@ -2,9 +2,9 @@ package utils
 
 import (
 	"bufio"
+	"bytes"
 	"encoding/json"
 	"fmt"
-	"io/ioutil"
 	"os"
 	"path"
 	"time"
@@ -13,14 +13,18 @@ import (
 	"github.com/nuclio/logger"
 	"github.com/pkg/errors"
 	"github.com/v3io/frames"
+	"github.com/v3io/frames/v3ioutils"
+	v3io "github.com/v3io/v3io-go/pkg/dataplane"
+	v3iohttp "github.com/v3io/v3io-go/pkg/dataplane/http"
 	"github.com/v3io/v3io-tsdb/pkg/utils"
 )
 
 const (
 	writeMonitoringLogsTimeout = 10 * time.Second
 	pendingLogsBatchSize       = 100
-	logsPathPrefix             = "monitoring/frames"
+	logsPathPrefix             = "/monitoring/frames"
 	logsContainer              = "users"
+	maxBytesInNginxRequest     = 5 * 1024 * 1024 // 5MB
 
 	queryType = "query"
 )
@@ -45,40 +49,25 @@ type Monitoring struct {
 	logger      logger.Logger
 	logs        []HistoryEntry
 	requests    chan HistoryEntry
-
-	isActive bool
+	container   v3io.Container
+	config      *frames.Config
+	isActive    bool
 }
 
-func NewMonitoring(logger logger.Logger) *Monitoring {
-	logPath := fmt.Sprintf("%v/%v_%v.csv", historyLogsTablePathPrefix, uuid.New().String(), time.Now().Unix())
+func NewMonitoring(logger logger.Logger, cfg *frames.Config) *Monitoring {
+	logPath := fmt.Sprintf("%v/%v_%v.json", logsPathPrefix, uuid.New().String(), time.Now().Unix())
 
 	mon := Monitoring{logFilePath: logPath,
 		logger:   logger,
 		requests: make(chan HistoryEntry, 100),
-		isActive: true}
+		isActive: false,
+		config:   cfg}
 
-	mon.createLogFile()
-
+	mon.createDefaultV3ioClient()
 	if mon.isActive {
 		mon.Start()
 	}
 	return &mon
-}
-
-func (m *Monitoring) createLogFile() {
-	err := os.Mkdir(historyLogsTablePathPrefix, 0775)
-
-	if err != nil && !os.IsExist(err) {
-		m.logger.Warn("Could not create frames log folder at: %v, err: %v", historyLogsTablePathPrefix, err)
-		m.isActive = false
-	}
-
-	file, err := os.Create(m.logFilePath)
-	if err != nil {
-		m.logger.Warn("Frames history server failed to start. Can not create file %v, err: %v", m.logFilePath, err)
-		m.isActive = false
-	}
-	defer file.Close()
 }
 
 func (m *Monitoring) Start() {
@@ -105,10 +94,55 @@ func (m *Monitoring) Start() {
 	}()
 }
 
+func (m *Monitoring) createDefaultV3ioClient() {
+
+	session := &frames.Session{}
+
+	token := os.Getenv("V3IO_ACCESS_KEY") // "0938b76f-79ff-41f6-981d-864ea3291cca"
+	if token == "" {
+		m.logger.Warn("can not create v3io.client. could not find `V3IO_ACCESS_KEY` environment variable")
+		return
+	}
+
+	var err error
+	m.container, err = m.createV3ioClient(session, "", token)
+	if err != nil {
+		m.logger.Warn(err)
+		return
+	}
+	m.isActive = true
+}
+
+func (m *Monitoring) createV3ioClient(session *frames.Session, password string, token string) (v3io.Container, error) {
+	newContextInput := &v3iohttp.NewContextInput{
+		HTTPClient: v3iohttp.NewClient(&v3iohttp.NewClientInput{}),
+	}
+	// create a context for the backend
+	v3ioContext, err := v3iohttp.NewContext(m.logger, newContextInput)
+	if err != nil {
+		return nil, errors.Wrap(err, "can not create v3io-go context for Frames History server")
+	}
+
+	session = frames.InitSessionDefaults(session, m.config)
+	session.Container = logsContainer
+	container, err := v3ioutils.NewContainer(
+		v3ioContext,
+		session,
+		password,
+		token,
+		m.logger)
+
+	if err != nil {
+		return nil, errors.Wrap(err, "can not create v3io-go container for Frames History server")
+	}
+	return container, nil
+}
+
 func (m *Monitoring) AddQueryLog(readRequest *frames.ReadRequest, duration time.Duration, startTime time.Time) {
 	if !m.isActive {
 		return
 	}
+
 	// append the entry in a different goroutine so that it won't block
 	go func() {
 		entry := HistoryEntry{BackendName: readRequest.Proto.Backend,
@@ -139,6 +173,13 @@ func (m *Monitoring) GetLogs(request *frames.HistoryRequest) (frames.Frame, erro
 		return nil, errors.Wrap(err, "failed to parse 'end_time' filter")
 	}
 
+	// maybe delete this part
+	container, err := m.createV3ioClient(request.Proto.Session, request.Password.Get(), request.Token.Get())
+	if err != nil {
+		return nil, err
+	}
+	// ====
+
 	filter := historyFilter{Backend: request.Proto.Backend,
 		Action:    request.Proto.Action,
 		User:      request.Proto.User,
@@ -146,9 +187,12 @@ func (m *Monitoring) GetLogs(request *frames.HistoryRequest) (frames.Frame, erro
 		StartTime: startTime,
 		EndTime:   endTime}
 
-	files, err := ioutil.ReadDir(historyLogsTablePathPrefix)
+	iter, err := utils.NewAsyncItemsCursor(container,
+		&v3io.GetItemsInput{Path: logsPathPrefix + "/", AttributeNames: []string{"__name"}},
+		8, nil, m.logger)
+
 	if err != nil {
-		return nil, fmt.Errorf("Failed to list Frames History log folder %v for read, err: %v", historyLogsTablePathPrefix, err)
+		return nil, fmt.Errorf("Failed to list Frames History log folder %v for read, err: %v", logsPathPrefix, err)
 	}
 
 	// Create default constant columns. Other type-specific column will be added during iteration
@@ -164,23 +208,42 @@ func (m *Monitoring) GetLogs(request *frames.HistoryRequest) (frames.Frame, erro
 	i := 1
 
 	// go over all log files in the folder
-	for _, fileStatus := range files {
-		file, err := os.Open(path.Join(historyLogsTablePathPrefix, fileStatus.Name()))
+	for iter.Next() {
+		currentFilePath := path.Join(logsPathPrefix, iter.GetField("__name").(string))
+		fileIterator, err := v3ioutils.NewFileContentIterator(currentFilePath, maxBytesInNginxRequest, container)
 		if err != nil {
-			return nil, fmt.Errorf("Failed to open Frames History log file %v for read, err: %v", m.logFilePath, err)
+			return nil, errors.Wrapf(err, "Failed to get '%v'", currentFilePath)
 		}
 
-		//columnByName := make(map[string]frames.ColumnBuilder)
-		scanner := bufio.NewScanner(file)
-
-		for scanner.Scan() {
-			var currentRaw []HistoryEntry
-
-			if err := json.Unmarshal([]byte(scanner.Text()), &currentRaw); err != nil {
+		if !fileIterator.Next() {
+			if fileIterator.Error() != nil {
 				return nil, err
 			}
+			continue
+		}
 
-			for _, entry := range currentRaw {
+	ScanningFileChunk:
+		scanner := bufio.NewScanner(bytes.NewReader(fileIterator.At()))
+		for scanner.Scan() {
+			var currentRow []HistoryEntry
+
+			if err := json.Unmarshal([]byte(scanner.Text()), &currentRow); err != nil {
+				// Possibly reached end of file chunk, get next chunk and retry marshaling
+				if fileIterator.Next() {
+					scanner = bufio.NewScanner(bytes.NewReader(append(scanner.Bytes(), fileIterator.At()...)))
+					if scanner.Scan() {
+						if innerErr := json.Unmarshal([]byte(scanner.Text()), &currentRow); innerErr != nil {
+							return nil, innerErr
+						}
+					} else {
+						return nil, scanner.Err()
+					}
+				} else {
+					return nil, fmt.Errorf("error reading logs. json marshal error:%v\n iterator error: %v", err, fileIterator.Error())
+				}
+			}
+
+			for _, entry := range currentRow {
 				// filter out logs
 				if !filter.filter(entry) {
 					continue
@@ -219,11 +282,21 @@ func (m *Monitoring) GetLogs(request *frames.HistoryRequest) (frames.Frame, erro
 			}
 		}
 
-		if err := scanner.Err(); err != nil {
+		if scanner.Err() != nil {
 			return nil, err
+		}
+
+		// in case previous chunk ended exactly in the end of a row and we still got more data to process
+		if fileIterator.Next() {
+			goto ScanningFileChunk
+		} else if fileIterator.Error() != nil {
+			return nil, fileIterator.Error()
 		}
 	}
 
+	if iter.Err() != nil {
+		return nil, iter.Err()
+	}
 	allColumns := defaultColumns
 
 	for _, col := range customColumnsByName {
@@ -234,33 +307,17 @@ func (m *Monitoring) GetLogs(request *frames.HistoryRequest) (frames.Frame, erro
 }
 
 func (m *Monitoring) writeMonitoringBatch(logs []HistoryEntry) {
-	file, err := os.OpenFile(m.logFilePath, os.O_APPEND|os.O_WRONLY, 0666)
-	if err != nil {
-		m.logger.Warn("Failed to open Frames History log file %v for write, err: %v", m.logFilePath, err)
-		return
-	}
-	defer file.Close()
-
 	d, err := json.Marshal(logs)
 	if err != nil {
 		m.logger.Warn("Failed to marshal logs to json, err: %v. logs: %v", err, logs)
 		return
 	}
-	_, err = file.Write(d)
+
+	d = append(d, []byte("\n")...)
+	input := &v3io.PutObjectInput{Path: m.logFilePath, Body: d, Append: true}
+	err = m.container.PutObjectSync(input)
 	if err != nil {
 		m.logger.Warn("Failed to append Frames History logs to file, err: %v. logs: %v", err, logs)
-		return
-	}
-	_, err = file.WriteString("\n")
-	if err != nil {
-		m.logger.Warn("Failed to append new line to Frames History log, err: %v", err)
-		return
-	}
-
-	err = file.Sync()
-	if err != nil {
-		m.logger.Warn("Failed to sync Frames History log file, err: %v", err)
-		return
 	}
 }
 

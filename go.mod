@@ -7,14 +7,13 @@ require (
 	github.com/golang/groupcache v0.0.0-20191027212112-611e8accdfc9
 	github.com/golang/protobuf v1.2.0
 	github.com/google/uuid v1.1.1
+	github.com/kr/pretty v0.2.0 // indirect
 	github.com/nuclio/errors v0.0.1
 	github.com/nuclio/logger v0.0.1
-	github.com/nuclio/nuclio-test-go v0.0.0-20180704132150-0ce6587f8e37 // indirect
 	github.com/nuclio/zap v0.0.2
-	github.com/pavius/impi v0.0.1 // indirect
 	github.com/pkg/errors v0.8.1
 	github.com/stretchr/testify v1.4.0
-	github.com/v3io/v3io-go v0.1.5-0.20200316155009-cc83de374ff2
+	github.com/v3io/v3io-go v0.1.5
 	github.com/v3io/v3io-tsdb v0.9.24
 	github.com/valyala/fasthttp v1.2.0
 	github.com/xwb1989/sqlparser v0.0.0-20180606152119-120387863bf2
