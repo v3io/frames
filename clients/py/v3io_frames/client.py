@@ -294,8 +294,7 @@ class ClientBase:
             (default) | 'overwriteTable' | 'updateItem', 'overwriteItem',
             'errorIfTableExists'
         partition_keys (Optional) : []str
-            Partition keys
-            [Not supported in this version]
+            List of column names to partition the table by.
 
         Return Value
         ----------

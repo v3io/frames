@@ -31,6 +31,21 @@ func FloatCol(t testing.TB, name string, size int) frames.Column {
 	return col
 }
 
+func IntCol(t testing.TB, name string, size int) frames.Column {
+	random := rand.New(rand.NewSource(time.Now().UnixNano()))
+	floats := make([]int64, size)
+	for i := range floats {
+		floats[i] = random.Int63()
+	}
+
+	col, err := frames.NewSliceColumn(name, floats)
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	return col
+}
+
 func StringCol(t testing.TB, name string, size int) frames.Column {
 	strings := make([]string, size)
 	for i := range strings {
