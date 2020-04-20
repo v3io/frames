@@ -45,7 +45,7 @@ func ExampleServer() {
 		return
 	}
 
-	srv, err := NewServer(cfg, ":8080", nil)
+	srv, err := NewServer(cfg, ":8080", nil, nil)
 	if err != nil {
 		fmt.Printf("error: can't create server - %s", err)
 		return

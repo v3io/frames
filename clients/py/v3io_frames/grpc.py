@@ -18,8 +18,6 @@ import typing
 from datetime import datetime
 from functools import wraps
 
-import pandas as pd
-
 import grpc
 import pandas as pd
 

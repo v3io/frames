@@ -108,8 +108,9 @@ func (api *API) Read(request *frames.ReadRequest, out chan frames.Frame) error {
 		return errors.Wrap(err, msg)
 	}
 
-	// write only successful queries
-	api.historyServer.AddQueryLog(request, queryDuration, queryStartTime)
+	if api.historyServer != nil {
+		api.historyServer.AddQueryLog(request, queryDuration, queryStartTime)
+	}
 	return nil
 }
 

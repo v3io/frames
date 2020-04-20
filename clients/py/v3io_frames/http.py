@@ -25,7 +25,7 @@ from urllib3.exceptions import HTTPError
 
 from . import frames_pb2 as fpb
 from .client import ClientBase, RawFrame
-from .errors import (CreateError, DeleteError, ExecuteError, ReadError,
+from .errors import (CreateError, DeleteError, Error, ExecuteError, ReadError,
                      WriteError, HistoryError)
 from .frames_pb2 import Frame
 from .pbutils import df2msg, msg2df, pb2py
