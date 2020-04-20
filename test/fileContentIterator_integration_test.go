@@ -1,9 +1,10 @@
 package test
 
 import (
+	"testing"
+
 	"github.com/v3io/frames/v3ioutils"
 	v3io "github.com/v3io/v3io-go/pkg/dataplane"
-	"testing"
 )
 
 func deleteObj(path string, container v3io.Container) {

@@ -344,20 +344,3 @@ func createTestContainer(t testing.TB) v3io.Container {
 
 	return container
 }
-
-func TestTal(t *testing.T) {
-	err := os.Mkdir("/Users/tawel/Desktop/frames-history/dir1", 0775)
-
-	if err == nil || os.IsExist(err) {
-		fmt.Println("created/exist dir")
-	} else {
-		fmt.Println(err)
-		return
-	}
-
-	file, err := os.Create("/Users/tawel/Desktop/frames-history/dir1/myfile")
-	if err != nil {
-		fmt.Printf("Frames history server failed to start. Can not create file, err: %v", err)
-	}
-	defer file.Close()
-}

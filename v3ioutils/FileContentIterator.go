@@ -1,8 +1,9 @@
 package v3ioutils
 
 import (
-	v3io "github.com/v3io/v3io-go/pkg/dataplane"
 	"net/http"
+
+	v3io "github.com/v3io/v3io-go/pkg/dataplane"
 )
 
 type FileContentIterator struct {

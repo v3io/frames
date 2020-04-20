@@ -29,10 +29,6 @@ const (
 	queryType = "query"
 )
 
-var (
-	historyLogsTablePathPrefix = fmt.Sprintf("/v3io/%v/%v", logsContainer, logsPathPrefix)
-)
-
 type HistoryEntry struct {
 	ActionType     string
 	UserName       string
