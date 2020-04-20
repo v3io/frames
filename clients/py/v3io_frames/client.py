@@ -411,7 +411,7 @@ class ClientBase:
         self._validate_request(backend, table, ExecuteError)
         return self._execute(self._alias_backends(backend), table, command, args, expression=None)
 
-    def history(self, backend='', table='', user='', action='', start_time='', end_time=''):
+    def history(self, backend='', container='', table='', user='', action='', start_time='', end_time=''):
         """Returns usage history logs for frames service
 
         Parameters
@@ -440,7 +440,7 @@ class ClientBase:
         HistoryError
             On request error
         """
-        return self._history(self._alias_backends(backend), table, user, action, start_time, end_time)
+        return self._history(self._alias_backends(backend), container, table, user, action, start_time, end_time)
 
     def _fix_address(self, address):
         return address

@@ -233,6 +233,7 @@ message HistoryRequest {
     string action = 5; // Filter by Action type
     string start_time = 6; // Filter time range
     string end_time = 7; // Filter time range
+    string container = 8; // Filter time range
 }
 
 message HistoryResponse {

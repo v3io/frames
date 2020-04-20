@@ -38,6 +38,7 @@ type HistoryEntry struct {
 	UserName       string
 	BackendName    string
 	TableName      string
+	Container      string
 	ActionDuration time.Duration
 	StartTime      time.Time
 
@@ -151,7 +152,8 @@ func (m *HistoryServer) AddQueryLog(readRequest *frames.ReadRequest, duration ti
 			StartTime:      startTime,
 			ActionDuration: duration,
 			ActionType:     queryType,
-			AdditionalData: readRequest.ToMap()}
+			AdditionalData: readRequest.ToMap(),
+			Container:      readRequest.Proto.Session.Container}
 
 		m.requests <- entry
 	}()
@@ -184,6 +186,7 @@ func (m *HistoryServer) GetLogs(request *frames.HistoryRequest) (frames.Frame, e
 		Action:    request.Proto.Action,
 		User:      request.Proto.User,
 		Table:     request.Proto.Table,
+		Container: request.Proto.Container,
 		StartTime: startTime,
 		EndTime:   endTime}
 
@@ -196,13 +199,14 @@ func (m *HistoryServer) GetLogs(request *frames.HistoryRequest) (frames.Frame, e
 	}
 
 	// Create default constant columns. Other type-specific column will be added during iteration
-	defaultColumns := make([]frames.Column, 6)
+	defaultColumns := make([]frames.Column, 7)
 	defaultColumns[0], _ = frames.NewSliceColumn("UserName", []string{})
 	defaultColumns[1], _ = frames.NewSliceColumn("BackendName", []string{})
 	defaultColumns[2], _ = frames.NewSliceColumn("TableName", []string{})
 	defaultColumns[3], _ = frames.NewSliceColumn("ActionDuration", []int64{})
 	defaultColumns[4], _ = frames.NewSliceColumn("StartTime", []time.Time{})
 	defaultColumns[5], _ = frames.NewSliceColumn("ActionType", []string{})
+	defaultColumns[6], _ = frames.NewSliceColumn("Container", []string{})
 	customColumnsByName := make(map[string]frames.Column)
 	indexColumn, _ := frames.NewSliceColumn("id", []int{})
 	i := 1
@@ -254,6 +258,7 @@ func (m *HistoryServer) GetLogs(request *frames.HistoryRequest) (frames.Frame, e
 				_ = AppendColumn(defaultColumns[3], entry.ActionDuration.Nanoseconds()/1e6)
 				_ = AppendColumn(defaultColumns[4], entry.StartTime)
 				_ = AppendColumn(defaultColumns[5], entry.ActionType)
+				_ = AppendColumn(defaultColumns[6], entry.Container)
 
 				for k, v := range entry.AdditionalData {
 					// If this column already exists, append new data
@@ -326,6 +331,7 @@ type historyFilter struct {
 	Table     string
 	User      string
 	Action    string
+	Container string
 	StartTime int64
 	EndTime   int64
 }
@@ -344,6 +350,10 @@ func (f historyFilter) filter(entry HistoryEntry) bool {
 	}
 
 	if f.Backend != "" && f.Backend != entry.BackendName {
+		return false
+	}
+
+	if f.Container != "" && f.Container != entry.Container {
 		return false
 	}
 

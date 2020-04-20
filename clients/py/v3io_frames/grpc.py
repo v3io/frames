@@ -212,7 +212,7 @@ class Client(ClientBase):
             return msg2df(resp.frame, self.frame_factory)
 
     @grpc_raise(HistoryError)
-    def _history(self, backend, table, user, action, start_time, end_time):
+    def _history(self, backend, container, table, user, action, start_time, end_time):
         stub = fgrpc.FramesStub(self._channel)
         request = fpb.HistoryRequest(
             session=self.session,
@@ -222,6 +222,7 @@ class Client(ClientBase):
             action=action,
             start_time=start_time,
             end_time=end_time,
+            container=container,
         )
         resp = stub.History(request)
         if resp.frame:

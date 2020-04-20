@@ -198,7 +198,7 @@ class Client(ClientBase):
         return msg2df(msg, self.frame_factory)
 
     @connection_error(HistoryError)
-    def _history(self, backend, table, user, action, start_time, end_time):
+    def _history(self, backend, container, table, user, action, start_time, end_time):
         request = {
             'session': pb2py(self.session),
             'backend': backend,
@@ -207,6 +207,7 @@ class Client(ClientBase):
             'action': action,
             'start_time': start_time,
             'end_time': end_time,
+            'container': container,
         }
 
         url = self._url_for('history')
