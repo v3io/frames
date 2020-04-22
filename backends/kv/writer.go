@@ -89,7 +89,7 @@ func (kv *Backend) Write(request *frames.WriteRequest) (frames.FrameAppender, er
 		case frames.ErrorIfTableExists:
 			return nil, fmt.Errorf("table '%v' already exists; either use a differnet save mode or save to a different table", tablePath)
 		}
-	} else {
+	} else if request.SaveMode == frames.ErrorIfTableExists {
 		exists, err := checkPathExists(tablePath, container)
 		if err != nil {
 			return nil, err
