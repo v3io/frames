@@ -5,7 +5,6 @@ import (
 	"bytes"
 	"encoding/json"
 	"fmt"
-	"os"
 	"path"
 	"time"
 
@@ -16,6 +15,7 @@ import (
 	"github.com/v3io/frames/v3ioutils"
 	v3io "github.com/v3io/v3io-go/pkg/dataplane"
 	v3iohttp "github.com/v3io/v3io-go/pkg/dataplane/http"
+	v3ioerrors "github.com/v3io/v3io-go/pkg/errors"
 	"github.com/v3io/v3io-tsdb/pkg/utils"
 )
 
@@ -95,7 +95,7 @@ func (m *HistoryServer) createDefaultV3ioClient() {
 
 	session := &frames.Session{}
 
-	token := os.Getenv("V3IO_ACCESS_KEY") // "0938b76f-79ff-41f6-981d-864ea3291cca"
+	token := "b515fb74-e89c-4885-a742-820794e6f9ca" // os.Getenv("V3IO_ACCESS_KEY")
 	if token == "" {
 		m.logger.Warn("can not create v3io.client. could not find `V3IO_ACCESS_KEY` environment variable")
 		return
@@ -223,14 +223,14 @@ func (m *HistoryServer) GetLogs(request *frames.HistoryRequest) (frames.Frame, e
 	ScanningFileChunk:
 		scanner := bufio.NewScanner(bytes.NewReader(fileIterator.At()))
 		for scanner.Scan() {
-			var currentRow []HistoryEntry
+			var entry HistoryEntry
 
-			if err := json.Unmarshal([]byte(scanner.Text()), &currentRow); err != nil {
+			if err := json.Unmarshal([]byte(scanner.Text()), &entry); err != nil {
 				// Possibly reached end of file chunk, get next chunk and retry marshaling
 				if fileIterator.Next() {
 					scanner = bufio.NewScanner(bytes.NewReader(append(scanner.Bytes(), fileIterator.At()...)))
 					if scanner.Scan() {
-						if innerErr := json.Unmarshal([]byte(scanner.Text()), &currentRow); innerErr != nil {
+						if innerErr := json.Unmarshal([]byte(scanner.Text()), &entry); innerErr != nil {
 							return nil, innerErr
 						}
 					} else {
@@ -240,45 +240,42 @@ func (m *HistoryServer) GetLogs(request *frames.HistoryRequest) (frames.Frame, e
 					return nil, fmt.Errorf("error reading logs. json marshal error:%v\n iterator error: %v", err, fileIterator.Error())
 				}
 			}
-
-			for _, entry := range currentRow {
-				// filter out logs
-				if !filter.filter(entry) {
-					continue
-				}
-				_ = AppendColumn(defaultColumns[0], entry.UserName)
-				_ = AppendColumn(defaultColumns[1], entry.BackendName)
-				_ = AppendColumn(defaultColumns[2], entry.TableName)
-				_ = AppendColumn(defaultColumns[3], entry.ActionDuration.Nanoseconds()/1e6)
-				_ = AppendColumn(defaultColumns[4], entry.StartTime)
-				_ = AppendColumn(defaultColumns[5], entry.ActionType)
-				_ = AppendColumn(defaultColumns[6], entry.Container)
-
-				for k, v := range entry.AdditionalData {
-					// If this column already exists, append new data
-					if _, ok := customColumnsByName[k]; !ok {
-						// Create a new column with nil values up until this row
-						data := make([]string, i)
-						data[i-1] = v
-						customColumnsByName[k], err = frames.NewSliceColumn(k, data)
-						if err != nil {
-							return nil, err
-						}
-					} else {
-						_ = AppendColumn(customColumnsByName[k], v)
-					}
-				}
-
-				// Add null values
-				for columnName, col := range customColumnsByName {
-					if _, ok := entry.AdditionalData[columnName]; !ok {
-						_ = AppendNil(col)
-					}
-				}
-
-				_ = AppendColumn(indexColumn, i)
-				i++
+			// filter out logs
+			if !filter.filter(entry) {
+				continue
 			}
+			_ = AppendColumn(defaultColumns[0], entry.UserName)
+			_ = AppendColumn(defaultColumns[1], entry.BackendName)
+			_ = AppendColumn(defaultColumns[2], entry.TableName)
+			_ = AppendColumn(defaultColumns[3], entry.ActionDuration.Nanoseconds()/1e6)
+			_ = AppendColumn(defaultColumns[4], entry.StartTime)
+			_ = AppendColumn(defaultColumns[5], entry.ActionType)
+			_ = AppendColumn(defaultColumns[6], entry.Container)
+
+			for k, v := range entry.AdditionalData {
+				// If this column already exists, append new data
+				if _, ok := customColumnsByName[k]; !ok {
+					// Create a new column with nil values up until this row
+					data := make([]string, i)
+					data[i-1] = v
+					customColumnsByName[k], err = frames.NewSliceColumn(k, data)
+					if err != nil {
+						return nil, err
+					}
+				} else {
+					_ = AppendColumn(customColumnsByName[k], v)
+				}
+			}
+
+			// Add null values
+			for columnName, col := range customColumnsByName {
+				if _, ok := entry.AdditionalData[columnName]; !ok {
+					_ = AppendNil(col)
+				}
+			}
+
+			_ = AppendColumn(indexColumn, i)
+			i++
 		}
 
 		if scanner.Err() != nil {
@@ -306,17 +303,32 @@ func (m *HistoryServer) GetLogs(request *frames.HistoryRequest) (frames.Frame, e
 }
 
 func (m *HistoryServer) writeMonitoringBatch(logs []HistoryEntry) {
-	d, err := json.Marshal(logs)
-	if err != nil {
-		m.logger.Warn("Failed to marshal logs to json, err: %v. logs: %v", err, logs)
-		return
+	var data []byte
+
+	for _, log := range logs {
+		d, err := json.Marshal(log)
+		if err != nil {
+			m.logger.Warn("Failed to marshal logs to json, err: %v. logs: %v", err, logs)
+			return
+		}
+
+		data = append(data, d...)
+		data = append(data, []byte("\n")...)
 	}
 
-	d = append(d, []byte("\n")...)
-	input := &v3io.PutObjectInput{Path: m.logFilePath, Body: d, Append: true}
-	err = m.container.PutObjectSync(input)
+	input := &v3io.PutObjectInput{Path: m.logFilePath, Body: data, Append: true}
+	err := m.container.PutObjectSync(input)
+
 	if err != nil {
-		m.logger.Warn("Failed to append Frames History logs to file, err: %v. logs: %v", err, logs)
+		// retry on 5xx errors
+		if errWithStatusCode, ok := err.(v3ioerrors.ErrorWithStatusCode); ok && errWithStatusCode.StatusCode() > 500 {
+			input := &v3io.PutObjectInput{Path: m.logFilePath, Body: data, Append: true}
+			err = m.container.PutObjectSync(input)
+		}
+
+		if err != nil {
+			m.logger.Error("Failed to append Frames History logs to file, err: %v. logs: %v", err, logs)
+		}
 	}
 }
 
