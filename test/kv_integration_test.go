@@ -164,8 +164,9 @@ func (kvSuite *KvTestSuite) TestWriteToExistingFolderWithoutSchema() {
 	columnNames := []string{"n1", "n2"}
 	frame := kvSuite.generateSequentialSampleFrame(3, "idx", columnNames)
 	wreq := &frames.WriteRequest{
-		Backend: kvSuite.backendName,
-		Table:   table,
+		Backend:  kvSuite.backendName,
+		Table:    table,
+		SaveMode: frames.ErrorIfTableExists,
 	}
 
 	appender, err := kvSuite.client.Write(wreq)
@@ -187,7 +188,6 @@ func (kvSuite *KvTestSuite) TestWriteToExistingFolderWithoutSchema() {
 	if err != nil {
 		kvSuite.T().Fatal(err.Error())
 	}
-
 	//write again
 	appender, err = kvSuite.client.Write(wreq)
 	kvSuite.NoError(err, "failed to write frame")
