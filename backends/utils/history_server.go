@@ -1,8 +1,6 @@
 package utils
 
 import (
-	"bufio"
-	"bytes"
 	"encoding/json"
 	"fmt"
 	"github.com/v3io/frames/pb"
@@ -75,6 +73,7 @@ func NewHistoryServer(logger logger.Logger, cfg *frames.Config) *HistoryServer {
 	}
 	return &mon
 }
+
 func (m *HistoryServer) initDefaults() {
 	m.WriteMonitoringLogsTimeout = defaultWriteMonitoringLogsTimeout
 	if m.config.WriteMonitoringLogsTimeoutSeconds != 0 {
@@ -241,52 +240,18 @@ func (m *HistoryServer) GetLogs(request *frames.HistoryRequest, out chan frames.
 	// go over all log files in the folder
 	for iter.Next() {
 		currentFilePath := path.Join(m.LogsFolderPath, iter.GetField("__name").(string))
-		fileIterator, err := v3ioutils.NewFileContentIterator(currentFilePath, m.MaxBytesInNginxRequest, container, true)
+		lineIterator, err := v3ioutils.NewFileContentLineIterator(currentFilePath, m.MaxBytesInNginxRequest, container)
 		if err != nil {
 			return errors.Wrapf(err, "Failed to get '%v'", currentFilePath)
 		}
 
-		if !fileIterator.Next() {
-			if fileIterator.Error() != nil {
-				return err
-			}
-			continue
-		}
-
 		var rowsInCurrentDF int
-	ScanningFileChunk:
-		scanner := bufio.NewScanner(bytes.NewReader(fileIterator.At()))
-		for scanner.Scan() {
+		for lineIterator.Next() {
 			if rowsInCurrentDF == maxLogsInMessage {
-				var columns []frames.Column
-				col, _ := frames.NewSliceColumn("UserName", userNameColData)
-				columns = append(columns, col)
-				col, _ = frames.NewSliceColumn("BackendName", backendNameColData)
-				columns = append(columns, col)
-				col, _ = frames.NewSliceColumn("TableName", tableNameColData)
-				columns = append(columns, col)
-				col, _ = frames.NewSliceColumn("ActionDuration", actionDurationColData)
-				columns = append(columns, col)
-				col, _ = frames.NewSliceColumn("StartTime", startTimeColData)
-				columns = append(columns, col)
-				col, _ = frames.NewSliceColumn("ActionType", actionTypeColData)
-				columns = append(columns, col)
-				col, _ = frames.NewSliceColumn("Container", containerColData)
-				columns = append(columns, col)
 
-				indexColumn, _ := frames.NewSliceColumn("id", indexColData)
-
-				for colName, colData := range customColumnsByName {
-					col, _ = frames.NewSliceColumn(colName, colData)
-					columns = append(columns, col)
-				}
-
-				nullMask := nullColumns
-				if !hasNullsInCurrentDF {
-					nullMask = nil
-				}
-
-				frame, err := frames.NewFrameWithNullValues(columns, []frames.Column{indexColumn}, nil, nullMask)
+				frame, err := createDF(userNameColData, backendNameColData, tableNameColData, actionTypeColData, containerColData,
+					actionDurationColData, startTimeColData,
+					indexColData, customColumnsByName, nullColumns, hasNullsInCurrentDF)
 				if err != nil {
 					return err
 				}
@@ -309,20 +274,9 @@ func (m *HistoryServer) GetLogs(request *frames.HistoryRequest, out chan frames.
 
 			var entry HistoryEntry
 
-			if err := json.Unmarshal([]byte(scanner.Text()), &entry); err != nil {
-				// Possibly reached end of file chunk, get next chunk and retry marshaling
-				if fileIterator.Next() {
-					scanner = bufio.NewScanner(bytes.NewReader(append(scanner.Bytes(), fileIterator.At()...)))
-					if scanner.Scan() {
-						if innerErr := json.Unmarshal([]byte(scanner.Text()), &entry); innerErr != nil {
-							return innerErr
-						}
-					} else {
-						return scanner.Err()
-					}
-				} else {
-					return fmt.Errorf("error reading logs. json marshal error:%v\n iterator error: %v", err, fileIterator.Error())
-				}
+			if err := json.Unmarshal([]byte(lineIterator.At()), &entry); err != nil {
+				return fmt.Errorf("error reading logs. json marshal error:%v", err)
+
 			}
 			// filter out logs
 			if !filter.filter(entry) {
@@ -380,15 +334,8 @@ func (m *HistoryServer) GetLogs(request *frames.HistoryRequest, out chan frames.
 			nullColumns = append(nullColumns, &currentNullColumns)
 		}
 
-		if scanner.Err() != nil {
-			return err
-		}
-
-		// in case previous chunk ended exactly in the end of a row and we still got more data to process
-		if fileIterator.Next() {
-			goto ScanningFileChunk
-		} else if fileIterator.Error() != nil {
-			return fileIterator.Error()
+		if lineIterator.Error() != nil {
+			return lineIterator.Error()
 		}
 	}
 
@@ -396,6 +343,21 @@ func (m *HistoryServer) GetLogs(request *frames.HistoryRequest, out chan frames.
 		return iter.Err()
 	}
 
+	frame, err := createDF(userNameColData, backendNameColData, tableNameColData, actionTypeColData, containerColData,
+		actionDurationColData, startTimeColData,
+		indexColData, customColumnsByName, nullColumns, hasNullsInCurrentDF)
+	if err != nil {
+		return err
+	}
+
+	out <- frame
+
+	return nil
+}
+
+func createDF(userNameColData, backendNameColData, tableNameColData, actionTypeColData, containerColData []string,
+	actionDurationColData []int64, startTimeColData []time.Time,
+	indexColData []int, customColumnsByName map[string][]string, nullColumns []*pb.NullValuesMap, hasNullsInCurrentDF bool) (frames.Frame, error) {
 	var columns []frames.Column
 	col, _ := frames.NewSliceColumn("UserName", userNameColData)
 	columns = append(columns, col)
@@ -426,11 +388,10 @@ func (m *HistoryServer) GetLogs(request *frames.HistoryRequest, out chan frames.
 
 	frame, err := frames.NewFrameWithNullValues(columns, []frames.Column{indexColumn}, nil, nullMask)
 	if err != nil {
-		return err
+		return nil, err
 	}
-	out <- frame
 
-	return nil
+	return frame, nil
 }
 
 func (m *HistoryServer) writeMonitoringBatch(logs []HistoryEntry) {
