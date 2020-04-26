@@ -298,7 +298,7 @@ func (m *HistoryServer) GetLogs(request *frames.HistoryRequest, out chan frames.
 
 			var entry HistoryEntry
 
-			if err := json.Unmarshal([]byte(lineIterator.At()), &entry); err != nil {
+			if err := json.Unmarshal(lineIterator.At(), &entry); err != nil {
 				return fmt.Errorf("error reading logs. json marshal error:%v", err)
 
 			}
