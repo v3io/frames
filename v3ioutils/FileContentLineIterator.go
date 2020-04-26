@@ -29,10 +29,11 @@ func (iter *FileContentLineIterator) Next() bool {
 		if iter.fileContentIterator.Next() {
 			iter.currentLines = strings.Split(string(iter.fileContentIterator.At()), "\n")
 			return true
-		} else {
-			iter.err = iter.fileContentIterator.Error()
-			return false
 		}
+
+		iter.err = iter.fileContentIterator.Error()
+		return false
+
 	}
 
 	if iter.currentRow == len(iter.currentLines)-2 {
@@ -41,15 +42,15 @@ func (iter *FileContentLineIterator) Next() bool {
 			iter.currentLines = strings.Split(leftover+string(iter.fileContentIterator.At()), "\n")
 			iter.currentRow = 0
 			return true
-		} else {
-			if iter.fileContentIterator.Error() != nil {
-				iter.err = iter.fileContentIterator.Error()
-			} else if leftover != "" {
-				iter.err = fmt.Errorf("got partial data in last line: %v", leftover)
-			}
-
-			return false
 		}
+
+		if iter.fileContentIterator.Error() != nil {
+			iter.err = iter.fileContentIterator.Error()
+		} else if leftover != "" {
+			iter.err = fmt.Errorf("got partial data in last line: %v", leftover)
+		}
+
+		return false
 	}
 
 	iter.currentRow++

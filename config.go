@@ -56,6 +56,8 @@ type Config struct {
 	LogsFolderPath                    string `json:logsFolderPath`
 	LogsContainer                     string `json:logsContainer`
 	MaxBytesInNginxRequest            int    `json:maxBytesInNginxRequest`
+	HistoryFileDurationHourSpans      int64  `json:historyFileDurationHourSpans`
+	HistoryFileNum                    int    `json:historyFileNum`
 
 	Backends []*BackendConfig `json:"backends,omitempty"`
 

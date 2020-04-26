@@ -3,14 +3,13 @@ package utils
 import (
 	"encoding/json"
 	"fmt"
-	"github.com/v3io/frames/pb"
 	"path"
 	"time"
 
-	"github.com/google/uuid"
 	"github.com/nuclio/logger"
 	"github.com/pkg/errors"
 	"github.com/v3io/frames"
+	"github.com/v3io/frames/pb"
 	"github.com/v3io/frames/v3ioutils"
 	v3io "github.com/v3io/v3io-go/pkg/dataplane"
 	v3iohttp "github.com/v3io/v3io-go/pkg/dataplane/http"
@@ -19,12 +18,14 @@ import (
 )
 
 const (
-	defaultWriteMonitoringLogsTimeout = 10 * time.Second
-	defaultPendingLogsBatchSize       = 100
-	defaultLogsFolderPath             = "/monitoring/frames"
-	defaultLogsContainer              = "users"
-	defaultMaxBytesInNginxRequest     = 5 * 1024 * 1024 // 5MB
-	maxLogsInMessage                  = 2
+	defaultHistoryFileDurationInSeconds = 24 * 3600
+	defaultHistoryFileNum               = 7
+	defaultWriteMonitoringLogsTimeout   = 10 * time.Second
+	defaultPendingLogsBatchSize         = 100
+	defaultLogsFolderPath               = "/monitoring/frames"
+	defaultLogsContainer                = "users"
+	defaultMaxBytesInNginxRequest       = 5 * 1024 * 1024 // 5MB
+	maxLogsInMessage                    = 2
 
 	queryType = "query"
 )
@@ -42,19 +43,20 @@ type HistoryEntry struct {
 }
 
 type HistoryServer struct {
-	logFilePath string
-	logger      logger.Logger
-	logs        []HistoryEntry
-	requests    chan HistoryEntry
-	container   v3io.Container
-	config      *frames.Config
-	isActive    bool
+	logger    logger.Logger
+	logs      []HistoryEntry
+	requests  chan HistoryEntry
+	container v3io.Container
+	config    *frames.Config
+	isActive  bool
 
-	WriteMonitoringLogsTimeout time.Duration
-	PendingLogsBatchSize       int
-	LogsFolderPath             string
-	LogsContainer              string
-	MaxBytesInNginxRequest     int
+	WriteMonitoringLogsTimeout     time.Duration
+	PendingLogsBatchSize           int
+	LogsFolderPath                 string
+	LogsContainer                  string
+	MaxBytesInNginxRequest         int
+	HistoryFileDurationSecondSpans int64
+	HistoryFileNum                 int
 }
 
 func NewHistoryServer(logger logger.Logger, cfg *frames.Config) *HistoryServer {
@@ -66,10 +68,10 @@ func NewHistoryServer(logger logger.Logger, cfg *frames.Config) *HistoryServer {
 
 	mon.initDefaults()
 
-	mon.logFilePath = fmt.Sprintf("%v/%v_%v.json", mon.LogsFolderPath, uuid.New().String(), time.Now().Unix())
 	mon.createDefaultV3ioClient()
 	if mon.isActive {
 		mon.Start()
+		mon.StartEvictionTask()
 	}
 	return &mon
 }
@@ -99,6 +101,26 @@ func (m *HistoryServer) initDefaults() {
 	if m.config.MaxBytesInNginxRequest != 0 {
 		m.MaxBytesInNginxRequest = m.config.MaxBytesInNginxRequest
 	}
+
+	m.HistoryFileDurationSecondSpans = defaultHistoryFileDurationInSeconds
+	if m.config.HistoryFileDurationHourSpans != 0 {
+		m.HistoryFileDurationSecondSpans = m.config.HistoryFileDurationHourSpans * 3600
+	}
+
+	m.HistoryFileNum = defaultHistoryFileNum
+	if m.config.HistoryFileNum != 0 {
+		m.HistoryFileNum = m.config.HistoryFileNum
+	}
+}
+
+func (m *HistoryServer) getCurrentLogFileName() string {
+	currentTimeInSeconds := time.Now().Unix()
+	currentTimeBucket := m.HistoryFileDurationSecondSpans * (currentTimeInSeconds / m.HistoryFileDurationSecondSpans)
+	return fmt.Sprintf("%v/%v.json", m.LogsFolderPath, currentTimeBucket)
+}
+
+func (m *HistoryServer) getLogFileNameByTime(timeBucket int64) string {
+	return fmt.Sprintf("%v/%v.json", m.LogsFolderPath, timeBucket)
 }
 
 func (m *HistoryServer) Start() {
@@ -408,13 +430,14 @@ func (m *HistoryServer) writeMonitoringBatch(logs []HistoryEntry) {
 		data = append(data, []byte("\n")...)
 	}
 
-	input := &v3io.PutObjectInput{Path: m.logFilePath, Body: data, Append: true}
+	logFilePath := m.getCurrentLogFileName()
+	input := &v3io.PutObjectInput{Path: logFilePath, Body: data, Append: true}
 	err := m.container.PutObjectSync(input)
 
 	if err != nil {
 		// retry on 5xx errors
 		if errWithStatusCode, ok := err.(v3ioerrors.ErrorWithStatusCode); ok && errWithStatusCode.StatusCode() > 500 {
-			input := &v3io.PutObjectInput{Path: m.logFilePath, Body: data, Append: true}
+			input := &v3io.PutObjectInput{Path: logFilePath, Body: data, Append: true}
 			err = m.container.PutObjectSync(input)
 		}
 
@@ -422,6 +445,28 @@ func (m *HistoryServer) writeMonitoringBatch(logs []HistoryEntry) {
 			m.logger.Error("Failed to append Frames History logs to file, err: %v. logs: %v", err, logs)
 		}
 	}
+}
+
+func (m *HistoryServer) StartEvictionTask() {
+	go func() {
+		for {
+			// Calculate next time to tick
+			currentTimeInSeconds := time.Now().Unix()
+			nextTimeBucket := m.HistoryFileDurationSecondSpans*(currentTimeInSeconds/m.HistoryFileDurationSecondSpans) + m.HistoryFileDurationSecondSpans
+			fmt.Printf("next time to tick %v, left: %v", nextTimeBucket, nextTimeBucket-currentTimeInSeconds)
+			ticker := time.NewTicker(time.Duration(nextTimeBucket-currentTimeInSeconds) * time.Second)
+			<-ticker.C
+			ticker.Stop()
+
+			// Delete oldest file
+			fileToDelete := nextTimeBucket - m.HistoryFileDurationSecondSpans*int64(m.HistoryFileNum)
+			input := &v3io.DeleteObjectInput{Path: m.getLogFileNameByTime(fileToDelete)}
+			err := m.container.DeleteObjectSync(input)
+			if err != nil && !utils.IsNotExistsError(err) {
+				m.logger.Error("failed to delete old log file '%v', err: %v", input.Path, err)
+			}
+		}
+	}()
 }
 
 type historyFilter struct {
