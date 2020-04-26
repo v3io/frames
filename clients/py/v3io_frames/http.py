@@ -208,8 +208,8 @@ class Client(ClientBase):
             'min_start_time': min_start_time,
             'max_start_time': max_start_time,
             'container': container,
-            'min_duration':min_duration,
-            'max_duration':max_duration
+            'min_duration': min_duration,
+            'max_duration': max_duration
         }
 
         url = self._url_for('history')
