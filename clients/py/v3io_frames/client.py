@@ -439,7 +439,9 @@ class ClientBase:
         HistoryError
             On request error
         """
-        return self._history(self._alias_backends(backend), container, table, user, action, start_time, end_time)
+        df = self._history(self._alias_backends(backend), container, table, user, action, start_time, end_time)
+        df.sort_values('StartTime', inplace=True)
+        return df
 
     def _fix_address(self, address):
         return address

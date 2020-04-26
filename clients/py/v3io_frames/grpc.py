@@ -18,9 +18,9 @@ import typing
 from datetime import datetime
 from functools import wraps
 
-import grpc
 import pandas as pd
 
+import grpc
 from . import frames_pb2 as fpb  # noqa
 from . import frames_pb2_grpc as fgrpc  # noqa
 from .client import ClientBase, RawFrame
@@ -211,6 +211,11 @@ class Client(ClientBase):
 
     @grpc_raise(HistoryError)
     def _history(self, backend, container, table, user, action, start_time, end_time):
+        dfs = self.do_history(backend, container, table, user, action, start_time, end_time)
+        return concat_dfs(dfs, "")
+
+    @grpc_raise(ReadError)
+    def do_history(self, backend, container, table, user, action, start_time, end_time):
         stub = fgrpc.FramesStub(self._channel)
         request = fpb.HistoryRequest(
             session=self.session,
@@ -222,9 +227,8 @@ class Client(ClientBase):
             end_time=end_time,
             container=container,
         )
-        resp = stub.History(request)
-        if resp.frame:
-            return msg2df(resp.frame, self.frame_factory)
+        for frame in stub.History(request):
+            yield msg2df(frame, self.frame_factory)
 
 
 def write_stream(request, frames):

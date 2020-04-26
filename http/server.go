@@ -501,27 +501,39 @@ func (s *Server) handleHistory(ctx *fasthttp.RequestCtx) {
 	request.Proto.Session.Password = ""
 	request.Proto.Session.Token = ""
 
-	frame, err := s.api.History(request)
-	if err != nil {
-		ctx.Error(fmt.Sprintf("failed to get usage history log, err: %v", err), http.StatusInternalServerError)
-		return
-	}
+	ch := make(chan frames.Frame)
+	var apiError error
+	go func() {
+		defer close(ch)
+		apiError = s.api.History(request, ch)
+		if apiError != nil {
+			s.logger.ErrorWith("error reading", "error", apiError)
+		}
+	}()
 
-	enc := frames.NewEncoder(ctx)
-	var frameData string
-	if frame != nil {
-		data, err := frames.MarshalFrame(frame)
-		if err != nil {
-			s.logger.ErrorWith("can't marshal frame", "error", err)
-			s.writeError(enc, fmt.Errorf("can't marsha frame - %s", err))
+	ctx.SetBodyStreamWriter(func(w *bufio.Writer) {
+		enc := frames.NewEncoder(w)
+		for frame := range ch {
+			iface, ok := frame.(pb.Framed)
+			if !ok {
+				s.logger.Error("unknown frame type")
+				s.writeError(enc, fmt.Errorf("unknown frame type"))
+			}
+
+			if err := enc.Encode(iface.Proto()); err != nil {
+				s.logger.ErrorWith("can't encode result", "error", err)
+				s.writeError(enc, err)
+			}
+
+			if err := w.Flush(); err != nil {
+				s.logger.ErrorWith("can't flush", "error", err)
+				s.writeError(enc, err)
+			}
 		}
 
-		frameData = base64.StdEncoding.EncodeToString(data)
-	}
-
-	ctx.SetStatusCode(http.StatusOK)
-	_ = json.NewEncoder(ctx).Encode(map[string]string{
-		"frame": frameData,
+		if apiError != nil {
+			s.writeError(enc, apiError)
+		}
 	})
 }
 

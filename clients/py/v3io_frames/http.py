@@ -211,22 +211,16 @@ class Client(ClientBase):
         }
 
         url = self._url_for('history')
-        headers = self._get_headers()
-        resp = self._session.post(url, headers=headers, json=request)
+        resp = self._session.post(url,
+                                  json=request,
+                                  headers=self._get_headers(json=True),
+                                  stream=True)
         if not resp.ok:
-            raise HistoryError(resp.text)
+            raise Error('cannot call API - {}'.format(resp.text))
 
-        try:
-            out = resp.json()
-        except json.JSONDecodeError as err:
-            raise HistoryError(str(err))
+        dfs = self._iter_dfs(resp.raw, None, False)
 
-        frame = out.get('frame')
-        if not frame:
-            return
-
-        msg = Frame.FromString(b64decode(frame))
-        return msg2df(msg, self.frame_factory)
+        return concat_dfs(dfs, "", self.frame_factory, self.concat)
 
     def _url_for(self, action):
         return self.address + '/' + action

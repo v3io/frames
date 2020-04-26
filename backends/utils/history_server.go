@@ -5,6 +5,7 @@ import (
 	"bytes"
 	"encoding/json"
 	"fmt"
+	"github.com/v3io/frames/pb"
 	"path"
 	"time"
 
@@ -20,11 +21,12 @@ import (
 )
 
 const (
-	writeMonitoringLogsTimeout = 10 * time.Second
-	pendingLogsBatchSize       = 100
-	logsPathPrefix             = "/monitoring/frames"
-	logsContainer              = "users"
-	maxBytesInNginxRequest     = 5 * 1024 * 1024 // 5MB
+	defaultWriteMonitoringLogsTimeout = 10 * time.Second
+	defaultPendingLogsBatchSize       = 100
+	defaultLogsFolderPath             = "/monitoring/frames"
+	defaultLogsContainer              = "users"
+	defaultMaxBytesInNginxRequest     = 5 * 1024 * 1024 // 5MB
+	maxLogsInMessage                  = 2
 
 	queryType = "query"
 )
@@ -49,22 +51,55 @@ type HistoryServer struct {
 	container   v3io.Container
 	config      *frames.Config
 	isActive    bool
+
+	WriteMonitoringLogsTimeout time.Duration
+	PendingLogsBatchSize       int
+	LogsFolderPath             string
+	LogsContainer              string
+	MaxBytesInNginxRequest     int
 }
 
 func NewHistoryServer(logger logger.Logger, cfg *frames.Config) *HistoryServer {
-	logPath := fmt.Sprintf("%v/%v_%v.json", logsPathPrefix, uuid.New().String(), time.Now().Unix())
-
-	mon := HistoryServer{logFilePath: logPath,
+	mon := HistoryServer{
 		logger:   logger,
 		requests: make(chan HistoryEntry, 100),
 		isActive: false,
 		config:   cfg}
 
+	mon.initDefaults()
+
+	mon.logFilePath = fmt.Sprintf("%v/%v_%v.json", mon.LogsFolderPath, uuid.New().String(), time.Now().Unix())
 	mon.createDefaultV3ioClient()
 	if mon.isActive {
 		mon.Start()
 	}
 	return &mon
+}
+func (m *HistoryServer) initDefaults() {
+	m.WriteMonitoringLogsTimeout = defaultWriteMonitoringLogsTimeout
+	if m.config.WriteMonitoringLogsTimeoutSeconds != 0 {
+		m.WriteMonitoringLogsTimeout = time.Duration(m.config.WriteMonitoringLogsTimeoutSeconds) * time.Second
+	}
+
+	m.PendingLogsBatchSize = defaultPendingLogsBatchSize
+	if m.config.PendingLogsBatchSize != 0 {
+		m.PendingLogsBatchSize = m.config.PendingLogsBatchSize
+	}
+
+	m.LogsFolderPath = defaultLogsFolderPath
+	if m.config.LogsFolderPath != "" {
+		m.LogsFolderPath = m.config.LogsFolderPath
+	}
+
+	m.LogsContainer = defaultLogsContainer
+	if m.config.LogsContainer != "" {
+		m.LogsContainer = m.config.LogsContainer
+	}
+
+	m.MaxBytesInNginxRequest = defaultMaxBytesInNginxRequest
+	if m.config.MaxBytesInNginxRequest != 0 {
+		m.MaxBytesInNginxRequest = m.config.MaxBytesInNginxRequest
+	}
 }
 
 func (m *HistoryServer) Start() {
@@ -77,11 +112,11 @@ func (m *HistoryServer) Start() {
 				pendingLogs = append(pendingLogs, entry)
 				m.logs = append(m.logs, entry)
 
-				if len(pendingLogs) == pendingLogsBatchSize {
+				if len(pendingLogs) == m.PendingLogsBatchSize {
 					m.writeMonitoringBatch(pendingLogs)
 					pendingLogs = pendingLogs[:0]
 				}
-			case <-time.After(writeMonitoringLogsTimeout):
+			case <-time.After(m.WriteMonitoringLogsTimeout):
 				if len(pendingLogs) > 0 {
 					m.writeMonitoringBatch(pendingLogs)
 					pendingLogs = pendingLogs[:0]
@@ -121,7 +156,7 @@ func (m *HistoryServer) createV3ioClient(session *frames.Session, password strin
 	}
 
 	session = frames.InitSessionDefaults(session, m.config)
-	session.Container = logsContainer
+	session.Container = m.LogsContainer
 	container, err := v3ioutils.NewContainer(
 		v3ioContext,
 		session,
@@ -155,7 +190,7 @@ func (m *HistoryServer) AddQueryLog(readRequest *frames.ReadRequest, duration ti
 	}()
 }
 
-func (m *HistoryServer) GetLogs(request *frames.HistoryRequest) (frames.Frame, error) {
+func (m *HistoryServer) GetLogs(request *frames.HistoryRequest, out chan frames.Frame) error {
 	if request.Proto.StartTime == "" {
 		request.Proto.StartTime = "0"
 	}
@@ -164,16 +199,16 @@ func (m *HistoryServer) GetLogs(request *frames.HistoryRequest) (frames.Frame, e
 	}
 	startTime, err := utils.Str2unixTime(request.Proto.StartTime)
 	if err != nil {
-		return nil, errors.Wrap(err, "failed to parse 'start_time' filter")
+		return errors.Wrap(err, "failed to parse 'start_time' filter")
 	}
 	endTime, err := utils.Str2unixTime(request.Proto.EndTime)
 	if err != nil {
-		return nil, errors.Wrap(err, "failed to parse 'end_time' filter")
+		return errors.Wrap(err, "failed to parse 'end_time' filter")
 	}
 
 	container, err := m.createV3ioClient(request.Proto.Session, request.Password.Get(), request.Token.Get())
 	if err != nil {
-		return nil, err
+		return err
 	}
 
 	filter := historyFilter{Backend: request.Proto.Backend,
@@ -185,44 +220,93 @@ func (m *HistoryServer) GetLogs(request *frames.HistoryRequest) (frames.Frame, e
 		EndTime:   endTime}
 
 	iter, err := utils.NewAsyncItemsCursor(container,
-		&v3io.GetItemsInput{Path: logsPathPrefix + "/", AttributeNames: []string{"__name"}},
+		&v3io.GetItemsInput{Path: m.LogsFolderPath + "/", AttributeNames: []string{"__name"}},
 		8, nil, m.logger)
 
 	if err != nil {
-		return nil, fmt.Errorf("Failed to list Frames History log folder %v for read, err: %v", logsPathPrefix, err)
+		return fmt.Errorf("Failed to list Frames History log folder %v for read, err: %v", m.LogsFolderPath, err)
 	}
 
-	// Create default constant columns. Other type-specific column will be added during iteration
-	defaultColumns := make([]frames.Column, 7)
-	defaultColumns[0], _ = frames.NewSliceColumn("UserName", []string{})
-	defaultColumns[1], _ = frames.NewSliceColumn("BackendName", []string{})
-	defaultColumns[2], _ = frames.NewSliceColumn("TableName", []string{})
-	defaultColumns[3], _ = frames.NewSliceColumn("ActionDuration", []int64{})
-	defaultColumns[4], _ = frames.NewSliceColumn("StartTime", []time.Time{})
-	defaultColumns[5], _ = frames.NewSliceColumn("ActionType", []string{})
-	defaultColumns[6], _ = frames.NewSliceColumn("Container", []string{})
-	customColumnsByName := make(map[string]frames.Column)
-	indexColumn, _ := frames.NewSliceColumn("id", []int{})
 	i := 1
+
+	// Create default constant columns. Other type-specific column will be added during iteration
+	var userNameColData, backendNameColData, tableNameColData, actionTypeColData, containerColData []string
+	var actionDurationColData []int64
+	var startTimeColData []time.Time
+	var nullColumns []*pb.NullValuesMap
+	var hasNullsInCurrentDF bool
+	customColumnsByName := make(map[string][]string)
+	var indexColData []int
 
 	// go over all log files in the folder
 	for iter.Next() {
-		currentFilePath := path.Join(logsPathPrefix, iter.GetField("__name").(string))
-		fileIterator, err := v3ioutils.NewFileContentIterator(currentFilePath, maxBytesInNginxRequest, container)
+		currentFilePath := path.Join(m.LogsFolderPath, iter.GetField("__name").(string))
+		fileIterator, err := v3ioutils.NewFileContentIterator(currentFilePath, m.MaxBytesInNginxRequest, container, true)
 		if err != nil {
-			return nil, errors.Wrapf(err, "Failed to get '%v'", currentFilePath)
+			return errors.Wrapf(err, "Failed to get '%v'", currentFilePath)
 		}
 
 		if !fileIterator.Next() {
 			if fileIterator.Error() != nil {
-				return nil, err
+				return err
 			}
 			continue
 		}
 
+		var rowsInCurrentDF int
 	ScanningFileChunk:
 		scanner := bufio.NewScanner(bytes.NewReader(fileIterator.At()))
 		for scanner.Scan() {
+			if rowsInCurrentDF == maxLogsInMessage {
+				var columns []frames.Column
+				col, _ := frames.NewSliceColumn("UserName", userNameColData)
+				columns = append(columns, col)
+				col, _ = frames.NewSliceColumn("BackendName", backendNameColData)
+				columns = append(columns, col)
+				col, _ = frames.NewSliceColumn("TableName", tableNameColData)
+				columns = append(columns, col)
+				col, _ = frames.NewSliceColumn("ActionDuration", actionDurationColData)
+				columns = append(columns, col)
+				col, _ = frames.NewSliceColumn("StartTime", startTimeColData)
+				columns = append(columns, col)
+				col, _ = frames.NewSliceColumn("ActionType", actionTypeColData)
+				columns = append(columns, col)
+				col, _ = frames.NewSliceColumn("Container", containerColData)
+				columns = append(columns, col)
+
+				indexColumn, _ := frames.NewSliceColumn("id", indexColData)
+
+				for colName, colData := range customColumnsByName {
+					col, _ = frames.NewSliceColumn(colName, colData)
+					columns = append(columns, col)
+				}
+
+				nullMask := nullColumns
+				if !hasNullsInCurrentDF {
+					nullMask = nil
+				}
+
+				frame, err := frames.NewFrameWithNullValues(columns, []frames.Column{indexColumn}, nil, nullMask)
+				if err != nil {
+					return err
+				}
+				out <- frame
+
+				rowsInCurrentDF = 0
+				userNameColData = []string{}
+				backendNameColData = []string{}
+				tableNameColData = []string{}
+				actionDurationColData = []int64{}
+				startTimeColData = []time.Time{}
+				actionTypeColData = []string{}
+				containerColData = []string{}
+				indexColData = []int{}
+
+				customColumnsByName = make(map[string][]string)
+				nullColumns = []*pb.NullValuesMap{}
+				hasNullsInCurrentDF = false
+			}
+
 			var entry HistoryEntry
 
 			if err := json.Unmarshal([]byte(scanner.Text()), &entry); err != nil {
@@ -231,75 +315,122 @@ func (m *HistoryServer) GetLogs(request *frames.HistoryRequest) (frames.Frame, e
 					scanner = bufio.NewScanner(bytes.NewReader(append(scanner.Bytes(), fileIterator.At()...)))
 					if scanner.Scan() {
 						if innerErr := json.Unmarshal([]byte(scanner.Text()), &entry); innerErr != nil {
-							return nil, innerErr
+							return innerErr
 						}
 					} else {
-						return nil, scanner.Err()
+						return scanner.Err()
 					}
 				} else {
-					return nil, fmt.Errorf("error reading logs. json marshal error:%v\n iterator error: %v", err, fileIterator.Error())
+					return fmt.Errorf("error reading logs. json marshal error:%v\n iterator error: %v", err, fileIterator.Error())
 				}
 			}
 			// filter out logs
 			if !filter.filter(entry) {
 				continue
 			}
-			_ = AppendColumn(defaultColumns[0], entry.UserName)
-			_ = AppendColumn(defaultColumns[1], entry.BackendName)
-			_ = AppendColumn(defaultColumns[2], entry.TableName)
-			_ = AppendColumn(defaultColumns[3], entry.ActionDuration.Nanoseconds()/1e6)
-			_ = AppendColumn(defaultColumns[4], entry.StartTime)
-			_ = AppendColumn(defaultColumns[5], entry.ActionType)
-			_ = AppendColumn(defaultColumns[6], entry.Container)
+
+			userNameColData = append(userNameColData, entry.UserName)
+			backendNameColData = append(backendNameColData, entry.BackendName)
+			tableNameColData = append(tableNameColData, entry.TableName)
+			actionDurationColData = append(actionDurationColData, entry.ActionDuration.Nanoseconds()/1e6)
+			startTimeColData = append(startTimeColData, entry.StartTime)
+			actionTypeColData = append(actionTypeColData, entry.ActionType)
+			containerColData = append(containerColData, entry.Container)
+
+			// Fill columns with nil if there was no value
+			var currentNullColumns pb.NullValuesMap
+			currentNullColumns.NullColumns = make(map[string]bool)
 
 			for k, v := range entry.AdditionalData {
 				// If this column already exists, append new data
 				if _, ok := customColumnsByName[k]; !ok {
 					// Create a new column with nil values up until this row
-					data := make([]string, i)
-					data[i-1] = v
-					customColumnsByName[k], err = frames.NewSliceColumn(k, data)
-					if err != nil {
-						return nil, err
+					data := make([]string, rowsInCurrentDF+1)
+					data[rowsInCurrentDF] = v
+					customColumnsByName[k] = data
+
+					// Backwards set as null all previous rows of this column
+					if rowsInCurrentDF > 0 {
+						hasNullsInCurrentDF = true
+						for i := 0; i < rowsInCurrentDF; i++ {
+							nullColumns[i].NullColumns[k] = true
+						}
+					}
+					for i := 0; i < rowsInCurrentDF; i++ {
+						nullColumns[i].NullColumns[k] = true
+						hasNullsInCurrentDF = true
 					}
 				} else {
-					_ = AppendColumn(customColumnsByName[k], v)
+					customColumnsByName[k] = append(customColumnsByName[k], v)
 				}
 			}
 
 			// Add null values
-			for columnName, col := range customColumnsByName {
+			for columnName := range customColumnsByName {
 				if _, ok := entry.AdditionalData[columnName]; !ok {
-					_ = AppendNil(col)
+					customColumnsByName[columnName] = append(customColumnsByName[columnName], "")
+					currentNullColumns.NullColumns[columnName] = true
+					hasNullsInCurrentDF = true
 				}
 			}
 
-			_ = AppendColumn(indexColumn, i)
+			indexColData = append(indexColData, i)
 			i++
+			rowsInCurrentDF++
+			nullColumns = append(nullColumns, &currentNullColumns)
 		}
 
 		if scanner.Err() != nil {
-			return nil, err
+			return err
 		}
 
 		// in case previous chunk ended exactly in the end of a row and we still got more data to process
 		if fileIterator.Next() {
 			goto ScanningFileChunk
 		} else if fileIterator.Error() != nil {
-			return nil, fileIterator.Error()
+			return fileIterator.Error()
 		}
 	}
 
 	if iter.Err() != nil {
-		return nil, iter.Err()
-	}
-	allColumns := defaultColumns
-
-	for _, col := range customColumnsByName {
-		allColumns = append(allColumns, col)
+		return iter.Err()
 	}
 
-	return frames.NewFrame(allColumns, []frames.Column{indexColumn}, nil)
+	var columns []frames.Column
+	col, _ := frames.NewSliceColumn("UserName", userNameColData)
+	columns = append(columns, col)
+	col, _ = frames.NewSliceColumn("BackendName", backendNameColData)
+	columns = append(columns, col)
+	col, _ = frames.NewSliceColumn("TableName", tableNameColData)
+	columns = append(columns, col)
+	col, _ = frames.NewSliceColumn("ActionDuration", actionDurationColData)
+	columns = append(columns, col)
+	col, _ = frames.NewSliceColumn("StartTime", startTimeColData)
+	columns = append(columns, col)
+	col, _ = frames.NewSliceColumn("ActionType", actionTypeColData)
+	columns = append(columns, col)
+	col, _ = frames.NewSliceColumn("Container", containerColData)
+	columns = append(columns, col)
+
+	indexColumn, _ := frames.NewSliceColumn("id", indexColData)
+
+	for colName, colData := range customColumnsByName {
+		col, _ = frames.NewSliceColumn(colName, colData)
+		columns = append(columns, col)
+	}
+
+	nullMask := nullColumns
+	if !hasNullsInCurrentDF {
+		nullMask = nil
+	}
+
+	frame, err := frames.NewFrameWithNullValues(columns, []frames.Column{indexColumn}, nil, nullMask)
+	if err != nil {
+		return err
+	}
+	out <- frame
+
+	return nil
 }
 
 func (m *HistoryServer) writeMonitoringBatch(logs []HistoryEntry) {

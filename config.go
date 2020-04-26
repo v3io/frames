@@ -50,6 +50,13 @@ type Config struct {
 	QuerierCacheSize                 int  `json:"querierCacheSize"`
 	TsdbLoadPartitionsFromSchemaAttr bool `json:"tsdbLoadPartitionsFromSchemaAttr"`
 
+	// History server related configs
+	WriteMonitoringLogsTimeoutSeconds int    `json:writeMonitoringLogsTimeoutSeconds`
+	PendingLogsBatchSize              int    `json:pendingLogsBatchSize`
+	LogsFolderPath                    string `json:logsFolderPath`
+	LogsContainer                     string `json:logsContainer`
+	MaxBytesInNginxRequest            int    `json:maxBytesInNginxRequest`
+
 	Backends []*BackendConfig `json:"backends,omitempty"`
 
 	DisableProfiling bool `json:"disableProfiling,omitempty"`

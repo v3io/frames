@@ -39,10 +39,10 @@ class FramesStub(object):
         request_serializer=frames__pb2.ExecRequest.SerializeToString,
         response_deserializer=frames__pb2.ExecResponse.FromString,
         )
-    self.History = channel.unary_unary(
+    self.History = channel.unary_stream(
         '/pb.Frames/History',
         request_serializer=frames__pb2.HistoryRequest.SerializeToString,
-        response_deserializer=frames__pb2.HistoryResponse.FromString,
+        response_deserializer=frames__pb2.Frame.FromString,
         )
 
 
@@ -120,10 +120,10 @@ def add_FramesServicer_to_server(servicer, server):
           request_deserializer=frames__pb2.ExecRequest.FromString,
           response_serializer=frames__pb2.ExecResponse.SerializeToString,
       ),
-      'History': grpc.unary_unary_rpc_method_handler(
+      'History': grpc.unary_stream_rpc_method_handler(
           servicer.History,
           request_deserializer=frames__pb2.HistoryRequest.FromString,
-          response_serializer=frames__pb2.HistoryResponse.SerializeToString,
+          response_serializer=frames__pb2.Frame.SerializeToString,
       ),
   }
   generic_handler = grpc.method_handlers_generic_handler(

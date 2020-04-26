@@ -240,8 +240,13 @@ func (api *API) Exec(request *frames.ExecRequest) (frames.Frame, error) {
 	return frame, nil
 }
 
-func (api *API) History(request *frames.HistoryRequest) (frames.Frame, error) {
-	return api.historyServer.GetLogs(request)
+func (api *API) History(request *frames.HistoryRequest, out chan frames.Frame) error {
+	err := api.historyServer.GetLogs(request, out)
+	if err != nil {
+		return err
+	}
+
+	return nil
 }
 
 func (api *API) createBackends(config *frames.Config) error {

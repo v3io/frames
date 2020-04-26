@@ -236,10 +236,6 @@ message HistoryRequest {
     string container = 8; // Filter time range
 }
 
-message HistoryResponse {
-    Frame frame = 1;
-}
-
 
 service Frames {
     rpc Read(ReadRequest) returns (stream Frame) {}
@@ -247,5 +243,5 @@ service Frames {
     rpc Create(CreateRequest) returns (CreateResponse) {}
     rpc Delete(DeleteRequest) returns (DeleteResponse) {}
     rpc Exec(ExecRequest) returns (ExecResponse) {}
-    rpc History(HistoryRequest) returns (HistoryResponse) {}
+    rpc History(HistoryRequest) returns (stream Frame) {}
 }

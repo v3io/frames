@@ -311,33 +311,40 @@ func (s *Server) Exec(ctx context.Context, req *pb.ExecRequest) (*pb.ExecRespons
 }
 
 // History returns framesd history logs
-func (s *Server) History(ctx context.Context, req *pb.HistoryRequest) (*pb.HistoryResponse, error) {
-	password := frames.InitSecretString(req.Session.Password)
-	token := frames.InitSecretString(req.Session.Token)
-	req.Session.Password = ""
-	req.Session.Token = ""
+func (s *Server) History(request *pb.HistoryRequest, stream pb.Frames_HistoryServer) error {
+	ch := make(chan frames.Frame)
 
-	request := frames.HistoryRequest{
-		Proto:    req,
+	password := frames.InitSecretString(request.Session.Password)
+	token := frames.InitSecretString(request.Session.Token)
+	request.Session.Password = ""
+	request.Session.Token = ""
+
+	req := frames.HistoryRequest{
+		Proto:    request,
 		Password: password,
 		Token:    token,
 	}
 
-	frame, err := s.api.History(&request)
-	if err != nil {
-		return nil, err
-	}
+	var apiError error
+	go func() {
+		defer close(ch)
+		apiError = s.api.History(&req, ch)
+		if apiError != nil {
+			s.logger.ErrorWith("API error reading", "error", apiError)
+		}
+	}()
 
-	resp := &pb.HistoryResponse{}
-
-	if frame != nil {
+	for frame := range ch {
 		fpb, ok := frame.(pb.Framed)
 		if !ok {
 			s.logger.Error("unknown frame type")
-			return nil, errors.New("unknown frame type")
+			return errors.New("unknown frame type")
 		}
-		resp.Frame = fpb.Proto()
+
+		if err := stream.Send(fpb.Proto()); err != nil {
+			return err
+		}
 	}
 
-	return resp, nil
+	return apiError
 }
