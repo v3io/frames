@@ -210,12 +210,12 @@ class Client(ClientBase):
             return msg2df(resp.frame, self.frame_factory)
 
     @grpc_raise(HistoryError)
-    def _history(self, backend, container, table, user, action, start_time, end_time):
-        dfs = self.do_history(backend, container, table, user, action, start_time, end_time)
+    def _history(self, backend, container, table, user, action, min_start_time, max_start_time, min_duration, max_duration):
+        dfs = self.do_history(backend, container, table, user, action, min_start_time, max_start_time, min_duration, max_duration)
         return concat_dfs(dfs, "")
 
     @grpc_raise(ReadError)
-    def do_history(self, backend, container, table, user, action, start_time, end_time):
+    def do_history(self, backend, container, table, user, action, min_start_time, max_start_time, min_duration, max_duration):
         stub = fgrpc.FramesStub(self._channel)
         request = fpb.HistoryRequest(
             session=self.session,
@@ -223,9 +223,11 @@ class Client(ClientBase):
             table=table,
             user=user,
             action=action,
-            start_time=start_time,
-            end_time=end_time,
+            min_start_time=min_start_time,
+            max_start_time=max_start_time,
             container=container,
+            min_duration=min_duration,
+            max_duration=max_duration
         )
         for frame in stub.History(request):
             yield msg2df(frame, self.frame_factory)

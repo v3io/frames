@@ -231,9 +231,11 @@ message HistoryRequest {
     string table = 3; // Filter by Table name
     string user = 4; // Filter by the user executed the command
     string action = 5; // Filter by Action type
-    string start_time = 6; // Filter time range
-    string end_time = 7; // Filter time range
+    string min_start_time = 6; // Filter time range
+    string max_start_time = 7; // Filter time range
     string container = 8; // Filter time range
+    int64 min_duration = 9; // Filter time range
+    int64 max_duration = 10; // Filter time range
 }
 
 

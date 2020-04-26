@@ -212,17 +212,17 @@ func (m *HistoryServer) AddQueryLog(readRequest *frames.ReadRequest, duration ti
 }
 
 func (m *HistoryServer) GetLogs(request *frames.HistoryRequest, out chan frames.Frame) error {
-	if request.Proto.StartTime == "" {
-		request.Proto.StartTime = "0"
+	if request.Proto.MinStartTime == "" {
+		request.Proto.MinStartTime = "0"
 	}
-	if request.Proto.EndTime == "" {
-		request.Proto.EndTime = "now"
+	if request.Proto.MaxStartTime == "" {
+		request.Proto.MaxStartTime = "now"
 	}
-	startTime, err := utils.Str2unixTime(request.Proto.StartTime)
+	startTime, err := utils.Str2unixTime(request.Proto.MinStartTime)
 	if err != nil {
 		return errors.Wrap(err, "failed to parse 'start_time' filter")
 	}
-	endTime, err := utils.Str2unixTime(request.Proto.EndTime)
+	endTime, err := utils.Str2unixTime(request.Proto.MaxStartTime)
 	if err != nil {
 		return errors.Wrap(err, "failed to parse 'end_time' filter")
 	}
@@ -233,12 +233,14 @@ func (m *HistoryServer) GetLogs(request *frames.HistoryRequest, out chan frames.
 	}
 
 	filter := historyFilter{Backend: request.Proto.Backend,
-		Action:    request.Proto.Action,
-		User:      request.Proto.User,
-		Table:     request.Proto.Table,
-		Container: request.Proto.Container,
-		StartTime: startTime,
-		EndTime:   endTime}
+		Action:       request.Proto.Action,
+		User:         request.Proto.User,
+		Table:        request.Proto.Table,
+		Container:    request.Proto.Container,
+		MinStartTime: startTime,
+		MaxStartTime: endTime,
+		MinDuration:  request.Proto.MinDuration,
+		MaxDuration:  request.Proto.MaxDuration}
 
 	iter, err := utils.NewAsyncItemsCursor(container,
 		&v3io.GetItemsInput{Path: m.LogsFolderPath + "/", AttributeNames: []string{"__name"}},
@@ -365,14 +367,16 @@ func (m *HistoryServer) GetLogs(request *frames.HistoryRequest, out chan frames.
 		return iter.Err()
 	}
 
-	frame, err := createDF(userNameColData, backendNameColData, tableNameColData, actionTypeColData, containerColData,
-		actionDurationColData, startTimeColData,
-		indexColData, customColumnsByName, nullColumns, hasNullsInCurrentDF)
-	if err != nil {
-		return err
-	}
+	if len(indexColData) > 0 {
+		frame, err := createDF(userNameColData, backendNameColData, tableNameColData, actionTypeColData, containerColData,
+			actionDurationColData, startTimeColData,
+			indexColData, customColumnsByName, nullColumns, hasNullsInCurrentDF)
+		if err != nil {
+			return err
+		}
 
-	out <- frame
+		out <- frame
+	}
 
 	return nil
 }
@@ -470,13 +474,15 @@ func (m *HistoryServer) StartEvictionTask() {
 }
 
 type historyFilter struct {
-	Backend   string
-	Table     string
-	User      string
-	Action    string
-	Container string
-	StartTime int64
-	EndTime   int64
+	Backend      string
+	Table        string
+	User         string
+	Action       string
+	Container    string
+	MinStartTime int64
+	MaxStartTime int64
+	MinDuration  int64
+	MaxDuration  int64
 }
 
 func (f historyFilter) filter(entry HistoryEntry) bool {
@@ -500,11 +506,19 @@ func (f historyFilter) filter(entry HistoryEntry) bool {
 		return false
 	}
 
-	if f.StartTime > entry.StartTime.Unix()*1000 {
+	if f.MinStartTime > entry.StartTime.Unix()*1000 {
 		return false
 	}
 
-	if f.EndTime < entry.StartTime.Unix()*1000 {
+	if f.MaxStartTime < entry.StartTime.Unix()*1000 {
+		return false
+	}
+
+	if f.MinDuration > entry.ActionDuration.Nanoseconds()/1e6 {
+		return false
+	}
+
+	if f.MaxDuration != 0 && f.MaxDuration < entry.ActionDuration.Nanoseconds()/1e6 {
 		return false
 	}
 

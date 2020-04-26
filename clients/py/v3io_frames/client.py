@@ -410,7 +410,7 @@ class ClientBase:
         self._validate_request(backend, table, ExecuteError)
         return self._execute(self._alias_backends(backend), table, command, args, expression=None)
 
-    def history(self, backend='', container='', table='', user='', action='', start_time='', end_time=''):
+    def history(self, backend='', container='', table='', user='', action='', min_start_time='', max_start_time='', min_duration=0, max_duration=0):
         """Returns usage history logs for frames service
 
         Parameters
@@ -439,7 +439,7 @@ class ClientBase:
         HistoryError
             On request error
         """
-        df = self._history(self._alias_backends(backend), container, table, user, action, start_time, end_time)
+        df = self._history(self._alias_backends(backend), container, table, user, action, min_start_time, max_start_time, min_duration, max_duration)
         df.sort_values('StartTime', inplace=True)
         return df
 
