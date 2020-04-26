@@ -38,7 +38,8 @@ func (iter *FileContentLineIterator) Next() bool {
 	if iter.currentRow == len(iter.currentLines)-2 {
 		leftover := iter.currentLines[len(iter.currentLines)-1] // will be either a partial line or an empty string
 		if iter.fileContentIterator.Next() {
-			iter.currentLines = bytes.Split(append(leftover, iter.fileContentIterator.At()...), []byte{'\n'})
+			iter.currentLines = bytes.Split(iter.fileContentIterator.At(), []byte{'\n'})
+			iter.currentLines[0] = append(leftover, iter.currentLines[0]...)
 			iter.currentRow = 0
 			return true
 		}
