@@ -458,10 +458,9 @@ func (m *HistoryServer) StartEvictionTask() {
 			// Calculate next time to tick - get the next log time-bucket (the next time we will create a new file)
 			currentTimeInSeconds := time.Now().Unix()
 			nextTimeBucket := m.HistoryFileDurationSecondSpans*(currentTimeInSeconds/m.HistoryFileDurationSecondSpans) + m.HistoryFileDurationSecondSpans
-			fmt.Printf("next time to tick %v, left: %v", nextTimeBucket, nextTimeBucket-currentTimeInSeconds)
-			ticker := time.NewTicker(time.Duration(nextTimeBucket-currentTimeInSeconds) * time.Second)
-			<-ticker.C
-			ticker.Stop()
+
+			// wait for next time to delete.
+			time.Sleep(time.Duration(nextTimeBucket-currentTimeInSeconds) * time.Second)
 
 			// Delete oldest file
 			fileToDelete := nextTimeBucket - m.HistoryFileDurationSecondSpans*int64(m.HistoryFileNum)
