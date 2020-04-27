@@ -364,7 +364,7 @@ func (m *HistoryServer) GetLogs(request *frames.HistoryRequest, out chan frames.
 			var entry HistoryEntry
 
 			if err := json.Unmarshal(lineIterator.At(), &entry); err != nil {
-				return fmt.Errorf("error reading logs. json marshal error:%v", err)
+				return fmt.Errorf("failed to parse json: %v", err)
 
 			}
 			// filter out logs
@@ -507,6 +507,7 @@ func (m *HistoryServer) writeMonitoringBatch(logs []HistoryEntry) {
 	for err != nil && retryCount < maxRetryNum {
 		// retry on 5xx errors
 		if errWithStatusCode, ok := err.(v3ioerrors.ErrorWithStatusCode); ok && errWithStatusCode.StatusCode() >= 500 {
+			m.logger.WarnWith("failed to write history logs", "retry-num", retryCount, "error", err)
 			input := &v3io.PutObjectInput{Path: logFilePath, Body: data, Append: true}
 			err = m.container.PutObjectSync(input)
 
@@ -517,7 +518,7 @@ func (m *HistoryServer) writeMonitoringBatch(logs []HistoryEntry) {
 	}
 
 	if err != nil {
-		m.logger.ErrorWith("Failed to append Frames History logs to file", "error", err, "logs", logs)
+		m.logger.ErrorWith("Failed to append Frames history logs to file", "error", err, "logs", logs)
 	}
 }
 
