@@ -158,6 +158,48 @@ func (kvSuite *KvTestSuite) generateSequentialSampleFrame(size int, indexName st
 	return frame
 }
 
+func (kvSuite *KvTestSuite) TestWriteToExistingFolderWithoutSchema() {
+	table := fmt.Sprintf("TestWriteToExistingFolderWithoutSchema%d", time.Now().UnixNano())
+
+	columnNames := []string{"n1", "n2"}
+	frame := kvSuite.generateSequentialSampleFrame(3, "idx", columnNames)
+	wreq := &frames.WriteRequest{
+		Backend:  kvSuite.backendName,
+		Table:    table,
+		SaveMode: frames.ErrorIfTableExists,
+	}
+
+	appender, err := kvSuite.client.Write(wreq)
+	if err != nil {
+		kvSuite.T().Fatal(err)
+	}
+
+	if err := appender.Add(frame); err != nil {
+		kvSuite.T().Fatal(err)
+	}
+
+	if err := appender.WaitForComplete(time.Second); err != nil {
+		kvSuite.T().Fatal(err)
+	}
+
+	//delete schema
+	schemaInput := &v3io.DeleteObjectInput{Path: table + "/.#schema"}
+	err = kvSuite.v3ioContainer.DeleteObjectSync(schemaInput)
+	if err != nil {
+		kvSuite.T().Fatal(err.Error())
+	}
+	//write again
+	appender, err = kvSuite.client.Write(wreq)
+	kvSuite.NoError(err, "failed to write frame")
+
+	err = appender.Add(frame)
+	kvSuite.NoError(err, "failed to add frame")
+
+	err = appender.WaitForComplete(time.Second)
+	kvSuite.Error(err, "writing to an existing folder without a schema should fail")
+
+}
+
 func (kvSuite *KvTestSuite) generateSequentialSampleFrameWithTypes(size int, indexName string, columnNames map[string]string) frames.Frame {
 	var icol frames.Column
 
@@ -183,6 +225,8 @@ func (kvSuite *KvTestSuite) generateSequentialSampleFrameWithTypes(size int, ind
 			columns[i] = BoolCol(kvSuite.T(), columnName, size)
 		case "time":
 			columns[i] = TimeCol(kvSuite.T(), columnName, size)
+		case "int":
+			columns[i] = IntCol(kvSuite.T(), columnName, size)
 		default:
 			kvSuite.T().Fatalf("type %v not supported", columnType)
 		}
@@ -1017,4 +1061,136 @@ func (kvSuite *KvTestSuite) TestUpdateExpressionWithNullValues() {
 	if iter.Err() != nil {
 		kvSuite.T().Fatalf("error querying items got: %v", iter.Err())
 	}
+}
+
+func (kvSuite *KvTestSuite) TestWritePartitionedTable() {
+	table := fmt.Sprintf("TestWritePartitionedTable%d", time.Now().UnixNano())
+
+	frame := kvSuite.generateRandomSampleFrame(5, "idx", []string{"n1", "n2", "n3"})
+	wreq := &frames.WriteRequest{
+		Backend:       kvSuite.backendName,
+		Table:         table,
+		PartitionKeys: []string{"n2"},
+	}
+
+	appender, err := kvSuite.client.Write(wreq)
+	if err != nil {
+		kvSuite.T().Fatal(err)
+	}
+
+	if err := appender.Add(frame); err != nil {
+		kvSuite.T().Fatal(err)
+	}
+
+	if err := appender.WaitForComplete(3 * time.Second); err != nil {
+		kvSuite.T().Fatal(err)
+	}
+
+	iter := frame.IterRows(true)
+
+	// 1. Verify all items were saved in the correct path
+	for iter.Next() {
+		currentRow := iter.Row()
+		subPath := fmt.Sprintf("n2=%v/%v", currentRow["n2"], currentRow["idx"])
+		_, err := kvSuite.v3ioContainer.GetItemSync(&v3io.GetItemInput{AttributeNames: []string{"__name"},
+			Path: fmt.Sprintf("%v/%v", table, subPath)})
+		kvSuite.Require().NoError(err, "item %v was not found", subPath)
+	}
+
+	// 2. Verify we can read the partitioned kv table
+	rreq := &pb.ReadRequest{
+		Backend: kvSuite.backendName,
+		Table:   table,
+	}
+
+	it, err := kvSuite.client.Read(rreq)
+	if err != nil {
+		kvSuite.T().Fatal(err)
+	}
+
+	for it.Next() {
+		// TODO: More checks
+		fr := it.At()
+		validateFramesAreEqual(kvSuite.Suite, fr, frame)
+	}
+
+	kvSuite.Require().NoError(it.Err())
+}
+
+func (kvSuite *KvTestSuite) TestWritePartitionedTableWithMultiplePartitions() {
+	table := fmt.Sprintf("TestWritePartitionedTable%d", time.Now().UnixNano())
+
+	frame := kvSuite.generateRandomSampleFrame(5, "idx", []string{"n1", "n2", "n3", "n4"})
+	wreq := &frames.WriteRequest{
+		Backend:       kvSuite.backendName,
+		Table:         table,
+		PartitionKeys: []string{"n2", "n3", "n4"},
+	}
+
+	appender, err := kvSuite.client.Write(wreq)
+	if err != nil {
+		kvSuite.T().Fatal(err)
+	}
+
+	if err := appender.Add(frame); err != nil {
+		kvSuite.T().Fatal(err)
+	}
+
+	if err := appender.WaitForComplete(3 * time.Second); err != nil {
+		kvSuite.T().Fatal(err)
+	}
+
+	iter := frame.IterRows(true)
+
+	// 1. Verify all items were saved in the correct path
+	for iter.Next() {
+		currentRow := iter.Row()
+		subPath := fmt.Sprintf("n2=%v/n3=%v/n4=%v/%v", currentRow["n2"], currentRow["n3"], currentRow["n4"], currentRow["idx"])
+		_, err := kvSuite.v3ioContainer.GetItemSync(&v3io.GetItemInput{AttributeNames: []string{"__name"},
+			Path: fmt.Sprintf("%v/%v", table, subPath)})
+		kvSuite.Require().NoError(err, "item %v was not found", subPath)
+	}
+
+	// 2. Verify we can read the partitioned kv table
+	rreq := &pb.ReadRequest{
+		Backend: kvSuite.backendName,
+		Table:   table,
+	}
+
+	it, err := kvSuite.client.Read(rreq)
+	if err != nil {
+		kvSuite.T().Fatal(err)
+	}
+
+	for it.Next() {
+		// TODO: More checks
+		fr := it.At()
+		validateFramesAreEqual(kvSuite.Suite, fr, frame)
+	}
+
+	kvSuite.Require().NoError(it.Err())
+}
+
+func (kvSuite *KvTestSuite) TestWritePartitionedBadPartitionColumns() {
+	table := fmt.Sprintf("TestWritePartitionedTable%d", time.Now().UnixNano())
+
+	frame := kvSuite.generateRandomSampleFrame(5, "idx", []string{"n1", "n2", "n3"})
+	wreq := &frames.WriteRequest{
+		Backend:       kvSuite.backendName,
+		Table:         table,
+		PartitionKeys: []string{"idonotexist"},
+	}
+
+	appender, err := kvSuite.client.Write(wreq)
+
+	if err != nil {
+		kvSuite.T().Fatal(err)
+	}
+
+	if err := appender.Add(frame); err != nil {
+		kvSuite.T().Fatal(err)
+	}
+
+	err = appender.WaitForComplete(3 * time.Second)
+	kvSuite.Require().Error(err, "expected error for table %v, but finished successfully", table)
 }

@@ -16,7 +16,7 @@ require (
 	github.com/pkg/errors v0.8.1
 	github.com/russross/blackfriday v1.5.2+incompatible // indirect
 	github.com/stretchr/testify v1.4.0
-	github.com/v3io/v3io-go v0.1.5-0.20200316155009-cc83de374ff2
+	github.com/v3io/v3io-go v0.1.5-0.20200413162202-5d20cf2c5c71
 	github.com/v3io/v3io-tsdb v0.9.24
 	github.com/valyala/fasthttp v1.2.0
 	github.com/xwb1989/sqlparser v0.0.0-20180606152119-120387863bf2

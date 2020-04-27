@@ -186,6 +186,7 @@ func (s *Server) Write(stream pb.Frames_WriteServer) error {
 		ImmidiateData: frame,
 		Table:         pbReq.Table,
 		SaveMode:      saveMode,
+		PartitionKeys: pbReq.PartitionKeys,
 	}
 
 	// TODO: Unite with the code in HTTP server

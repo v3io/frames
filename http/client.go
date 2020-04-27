@@ -429,13 +429,14 @@ func pbWriteReq(req *frames.WriteRequest) (*pb.InitialWriteRequest, error) {
 	}
 
 	msg := &pb.InitialWriteRequest{
-		Session:     req.Session,
-		Backend:     req.Backend,
-		Table:       req.Table,
-		InitialData: frMsg,
-		Expression:  req.Expression,
-		More:        req.HaveMore,
-		SaveMode:    req.SaveMode.String(),
+		Session:       req.Session,
+		Backend:       req.Backend,
+		Table:         req.Table,
+		InitialData:   frMsg,
+		Expression:    req.Expression,
+		More:          req.HaveMore,
+		SaveMode:      req.SaveMode.String(),
+		PartitionKeys: req.PartitionKeys,
 	}
 
 	return msg, nil
