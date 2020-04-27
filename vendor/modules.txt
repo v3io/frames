@@ -50,12 +50,12 @@ github.com/rcrowley/go-metrics
 github.com/stretchr/testify/suite
 github.com/stretchr/testify/assert
 github.com/stretchr/testify/require
-# github.com/v3io/v3io-go v0.1.5-0.20200316155009-cc83de374ff2
+# github.com/v3io/v3io-go v0.1.5-0.20200413162202-5d20cf2c5c71
 github.com/v3io/v3io-go/pkg/dataplane/http
 github.com/v3io/v3io-go/pkg/dataplane
 github.com/v3io/v3io-go/pkg/errors
 github.com/v3io/v3io-go/pkg/dataplane/schemas/node/common
-# github.com/v3io/v3io-tsdb v0.9.24
+# github.com/v3io/v3io-tsdb v0.10.1
 github.com/v3io/v3io-tsdb/pkg/utils
 github.com/v3io/v3io-tsdb/pkg/config
 github.com/v3io/v3io-tsdb/pkg/pquerier
