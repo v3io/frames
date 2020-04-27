@@ -128,6 +128,7 @@ func (api *API) Write(request *frames.WriteRequest, in chan frames.Frame) (int, 
 		return -1, -1, fmt.Errorf("unknown backend - %s", request.Backend)
 	}
 
+	ingestStartTime := time.Now()
 	appender, err := backend.Write(request)
 	if err != nil {
 		msg := "backend Write failed"
@@ -169,6 +170,11 @@ func (api *API) Write(request *frames.WriteRequest, in chan frames.Frame) (int, 
 		api.logger.DebugWith("write request with zero rows", "frames", nFrames, "requst", request)
 	}
 
+	ingestDuration := time.Now().Sub(ingestStartTime)
+	if api.historyServer != nil {
+		api.historyServer.AddIngestLog(request, ingestDuration, ingestStartTime)
+	}
+
 	return nFrames, nRows, nil
 }
 
@@ -186,9 +192,15 @@ func (api *API) Create(request *frames.CreateRequest) error {
 		return fmt.Errorf("unknown backend - %s", request.Proto.Backend)
 	}
 
+	createStartTime := time.Now()
 	if err := backend.Create(request); err != nil {
 		api.logger.ErrorWith("error creating table", "error", err, "request", request)
 		return errors.Wrap(err, "error creating table")
+	}
+
+	createDuration := time.Now().Sub(createStartTime)
+	if api.historyServer != nil {
+		api.historyServer.AddCreateLog(request, createDuration, createStartTime)
 	}
 
 	return nil
@@ -208,9 +220,16 @@ func (api *API) Delete(request *frames.DeleteRequest) error {
 		return fmt.Errorf("unknown backend - %s", request.Proto.Backend)
 	}
 
+	deleteStartTime := time.Now()
+
 	if err := backend.Delete(request); err != nil {
 		api.logger.ErrorWith("error deleting table", "error", err, "request", request)
 		return errors.Wrap(err, "can't delete")
+	}
+
+	deleteDuration := time.Now().Sub(deleteStartTime)
+	if api.historyServer != nil {
+		api.historyServer.AddDeleteLog(request, deleteDuration, deleteStartTime)
 	}
 
 	return nil

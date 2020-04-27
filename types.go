@@ -242,6 +242,25 @@ type WriteRequest struct {
 	SaveMode SaveMode
 }
 
+func (writeRequest WriteRequest) ToMap() map[string]string {
+
+	reqMap := make(map[string]string)
+
+	if writeRequest.Expression != "" {
+		reqMap["expression"] = writeRequest.Expression
+	}
+	if writeRequest.Condition != "" {
+		reqMap["condition"] = writeRequest.Condition
+	}
+	if len(writeRequest.PartitionKeys) > 0 {
+		reqMap["partitionKeys"] = strings.Join(writeRequest.PartitionKeys, ",")
+	}
+
+	reqMap["saveMode"] = writeRequest.SaveMode.String()
+
+	return reqMap
+}
+
 // CreateRequest is a table creation request
 type CreateRequest struct {
 	Proto    *pb.CreateRequest
@@ -249,11 +268,54 @@ type CreateRequest struct {
 	Token    SecretString
 }
 
+func (createRequest CreateRequest) ToMap() map[string]string {
+
+	reqMap := make(map[string]string)
+
+	if createRequest.Proto.Rate != "" {
+		reqMap["rate"] = createRequest.Proto.Rate
+	}
+	if createRequest.Proto.Aggregates != "" {
+		reqMap["aggregates"] = createRequest.Proto.Aggregates
+	}
+	if createRequest.Proto.AggregationGranularity != "" {
+		reqMap["aggregationGranularity"] = createRequest.Proto.AggregationGranularity
+	}
+	if createRequest.Proto.Shards != 0 {
+		reqMap["shards"] = fmt.Sprintf("%v", createRequest.Proto.Shards)
+	}
+	if createRequest.Proto.RetentionHours != 0 {
+		reqMap["retentionHours"] = fmt.Sprintf("%v", createRequest.Proto.RetentionHours)
+	}
+
+	return reqMap
+}
+
 // DeleteRequest is a deletion request
 type DeleteRequest struct {
 	Proto    *pb.DeleteRequest
 	Password SecretString
 	Token    SecretString
+}
+
+func (deleteRequest DeleteRequest) ToMap() map[string]string {
+
+	reqMap := make(map[string]string)
+
+	if deleteRequest.Proto.Filter != "" {
+		reqMap["filter"] = deleteRequest.Proto.Filter
+	}
+	if deleteRequest.Proto.Start != "" {
+		reqMap["start"] = deleteRequest.Proto.Start
+	}
+	if deleteRequest.Proto.End != "" {
+		reqMap["end"] = deleteRequest.Proto.End
+	}
+	if len(deleteRequest.Proto.Metrics) > 0 {
+		reqMap["metrics"] = strings.Join(deleteRequest.Proto.Metrics, ",")
+	}
+
+	return reqMap
 }
 
 // HistoryRequest is a history logs request

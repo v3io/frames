@@ -28,7 +28,10 @@ const (
 	maxLogsInMessage                    = 1000
 	maxRetryNum                         = 5
 
-	queryType = "query"
+	queryType  = "query"
+	ingestType = "ingest"
+	createType = "create"
+	deleteType = "delete"
 )
 
 type HistoryEntry struct {
@@ -213,6 +216,66 @@ func (m *HistoryServer) AddQueryLog(readRequest *frames.ReadRequest, duration ti
 	}()
 }
 
+func (m *HistoryServer) AddIngestLog(writeRequest *frames.WriteRequest, duration time.Duration, startTime time.Time) {
+	if !m.isActive {
+		return
+	}
+
+	// append the entry in a different goroutine so that it won't block
+	go func() {
+		entry := HistoryEntry{BackendName: writeRequest.Backend,
+			UserName:       writeRequest.Session.User,
+			TableName:      writeRequest.Table,
+			StartTime:      startTime,
+			ActionDuration: duration,
+			ActionType:     ingestType,
+			AdditionalData: writeRequest.ToMap(),
+			Container:      writeRequest.Session.Container}
+
+		m.requests <- entry
+	}()
+}
+
+func (m *HistoryServer) AddCreateLog(createRequest *frames.CreateRequest, duration time.Duration, startTime time.Time) {
+	if !m.isActive {
+		return
+	}
+
+	// append the entry in a different goroutine so that it won't block
+	go func() {
+		entry := HistoryEntry{BackendName: createRequest.Proto.Backend,
+			UserName:       createRequest.Proto.Session.User,
+			TableName:      createRequest.Proto.Table,
+			StartTime:      startTime,
+			ActionDuration: duration,
+			ActionType:     createType,
+			AdditionalData: createRequest.ToMap(),
+			Container:      createRequest.Proto.Session.Container}
+
+		m.requests <- entry
+	}()
+}
+
+func (m *HistoryServer) AddDeleteLog(deleteRequest *frames.DeleteRequest, duration time.Duration, startTime time.Time) {
+	if !m.isActive {
+		return
+	}
+
+	// append the entry in a different goroutine so that it won't block
+	go func() {
+		entry := HistoryEntry{BackendName: deleteRequest.Proto.Backend,
+			UserName:       deleteRequest.Proto.Session.User,
+			TableName:      deleteRequest.Proto.Table,
+			StartTime:      startTime,
+			ActionDuration: duration,
+			ActionType:     deleteType,
+			AdditionalData: deleteRequest.ToMap(),
+			Container:      deleteRequest.Proto.Session.Container}
+
+		m.requests <- entry
+	}()
+}
+
 func (m *HistoryServer) GetLogs(request *frames.HistoryRequest, out chan frames.Frame) error {
 	if request.Proto.MinStartTime == "" {
 		request.Proto.MinStartTime = "0"
@@ -262,6 +325,7 @@ func (m *HistoryServer) GetLogs(request *frames.HistoryRequest, out chan frames.
 	var hasNullsInCurrentDF bool
 	customColumnsByName := make(map[string][]string)
 	var indexColData []int
+	var rowsInCurrentDF int
 
 	// go over all log files in the folder
 	for iter.Next() {
@@ -271,7 +335,6 @@ func (m *HistoryServer) GetLogs(request *frames.HistoryRequest, out chan frames.
 			return errors.Wrapf(err, "Failed to get '%v'", currentFilePath)
 		}
 
-		var rowsInCurrentDF int
 		for lineIterator.Next() {
 			if rowsInCurrentDF == maxLogsInMessage {
 
@@ -428,7 +491,7 @@ func (m *HistoryServer) writeMonitoringBatch(logs []HistoryEntry) {
 	for _, log := range logs {
 		d, err := json.Marshal(log)
 		if err != nil {
-			m.logger.Error("Failed to marshal logs to json, err: %v. log: %v", err, log)
+			m.logger.ErrorWith("Failed to marshal logs to json", "error", err, "log", log)
 			return
 		}
 
@@ -454,7 +517,7 @@ func (m *HistoryServer) writeMonitoringBatch(logs []HistoryEntry) {
 	}
 
 	if err != nil {
-		m.logger.Error("Failed to append Frames History logs to file, err: %v. logs: %v", err, logs)
+		m.logger.ErrorWith("Failed to append Frames History logs to file", "error", err, "logs", logs)
 	}
 }
 
@@ -473,7 +536,7 @@ func (m *HistoryServer) StartEvictionTask() {
 			input := &v3io.DeleteObjectInput{Path: m.getLogFileNameByTime(fileToDelete)}
 			err := m.container.DeleteObjectSync(input)
 			if err != nil && !utils.IsNotExistsError(err) {
-				m.logger.Error("failed to delete old log file '%v', err: %v", input.Path, err)
+				m.logger.ErrorWith("failed to delete old log file", "log-path", input.Path, "error", err)
 			}
 		}
 	}()
