@@ -14,7 +14,6 @@ require (
 	github.com/nuclio/zap v0.0.2
 	github.com/pavius/impi v0.0.0-20200212064320-5db7efa5f87b // indirect
 	github.com/pkg/errors v0.8.1
-	github.com/russross/blackfriday v1.5.2+incompatible // indirect
 	github.com/stretchr/testify v1.4.0
 	github.com/v3io/v3io-go v0.1.5-0.20200413162202-5d20cf2c5c71
 	github.com/v3io/v3io-tsdb v0.10.1
