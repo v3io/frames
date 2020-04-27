@@ -114,6 +114,7 @@ func (m *HistoryServer) initDefaults() {
 }
 
 func (m *HistoryServer) getCurrentLogFileName() string {
+	// Round current time to the nearest log time-bucket
 	currentTimeInSeconds := time.Now().Unix()
 	currentTimeBucket := m.HistoryFileDurationSecondSpans * (currentTimeInSeconds / m.HistoryFileDurationSecondSpans)
 	return fmt.Sprintf("%v/%v.json", m.LogsFolderPath, currentTimeBucket)
@@ -454,7 +455,7 @@ func (m *HistoryServer) writeMonitoringBatch(logs []HistoryEntry) {
 func (m *HistoryServer) StartEvictionTask() {
 	go func() {
 		for {
-			// Calculate next time to tick
+			// Calculate next time to tick - get the next log time-bucket (the next time we will create a new file)
 			currentTimeInSeconds := time.Now().Unix()
 			nextTimeBucket := m.HistoryFileDurationSecondSpans*(currentTimeInSeconds/m.HistoryFileDurationSecondSpans) + m.HistoryFileDurationSecondSpans
 			fmt.Printf("next time to tick %v, left: %v", nextTimeBucket, nextTimeBucket-currentTimeInSeconds)
