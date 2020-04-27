@@ -25,7 +25,8 @@ const (
 	defaultLogsFolderPath               = "/monitoring/frames"
 	defaultLogsContainer                = "users"
 	defaultMaxBytesInNginxRequest       = 5 * 1024 * 1024 // 5MB
-	maxLogsInMessage                    = 2
+	maxLogsInMessage                    = 1000
+	maxRetryNum                         = 5
 
 	queryType = "query"
 )
@@ -154,14 +155,14 @@ func (m *HistoryServer) createDefaultV3ioClient() {
 
 	token := "b515fb74-e89c-4885-a742-820794e6f9ca" // os.Getenv("V3IO_ACCESS_KEY")
 	if token == "" {
-		m.logger.Warn("can not create v3io.client. could not find `V3IO_ACCESS_KEY` environment variable")
+		m.logger.Error("can not create v3io.client. could not find `V3IO_ACCESS_KEY` environment variable")
 		return
 	}
 
 	var err error
 	m.container, err = m.createV3ioClient(session, "", token)
 	if err != nil {
-		m.logger.Warn(err)
+		m.logger.Error(err)
 		return
 	}
 	m.isActive = true
@@ -427,28 +428,33 @@ func (m *HistoryServer) writeMonitoringBatch(logs []HistoryEntry) {
 	for _, log := range logs {
 		d, err := json.Marshal(log)
 		if err != nil {
-			m.logger.Warn("Failed to marshal logs to json, err: %v. logs: %v", err, logs)
+			m.logger.Error("Failed to marshal logs to json, err: %v. log: %v", err, log)
 			return
 		}
 
 		data = append(data, d...)
-		data = append(data, []byte("\n")...)
+		data = append(data, '\n')
 	}
 
 	logFilePath := m.getCurrentLogFileName()
 	input := &v3io.PutObjectInput{Path: logFilePath, Body: data, Append: true}
 	err := m.container.PutObjectSync(input)
 
-	if err != nil {
+	var retryCount int
+	for err != nil && retryCount < maxRetryNum {
 		// retry on 5xx errors
-		if errWithStatusCode, ok := err.(v3ioerrors.ErrorWithStatusCode); ok && errWithStatusCode.StatusCode() > 500 {
+		if errWithStatusCode, ok := err.(v3ioerrors.ErrorWithStatusCode); ok && errWithStatusCode.StatusCode() >= 500 {
 			input := &v3io.PutObjectInput{Path: logFilePath, Body: data, Append: true}
 			err = m.container.PutObjectSync(input)
-		}
 
-		if err != nil {
-			m.logger.Error("Failed to append Frames History logs to file, err: %v. logs: %v", err, logs)
+			retryCount++
+		} else {
+			break
 		}
+	}
+
+	if err != nil {
+		m.logger.Error("Failed to append Frames History logs to file, err: %v. logs: %v", err, logs)
 	}
 }
 
