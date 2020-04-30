@@ -350,6 +350,25 @@ type ExecRequest struct {
 	Token    SecretString
 }
 
+func (executeRequest ExecRequest) ToMap() map[string]string {
+
+	reqMap := make(map[string]string)
+
+	if executeRequest.Proto.Command != "" {
+		reqMap["command"] = executeRequest.Proto.Command
+	}
+	if executeRequest.Proto.Expression != "" {
+		reqMap["expression"] = executeRequest.Proto.Expression
+	}
+	if len(executeRequest.Proto.Args) > 0 {
+		for k, v := range executeRequest.Proto.Args {
+			reqMap[fmt.Sprintf("args_%v", k)] = v.String()
+		}
+	}
+
+	return reqMap
+}
+
 // Hides a string such as a password from both plain and json logs.
 type SecretString struct {
 	s *string

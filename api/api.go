@@ -250,12 +250,17 @@ func (api *API) Exec(request *frames.ExecRequest) (frames.Frame, error) {
 		return nil, fmt.Errorf("unknown backend - %s", request.Proto.Backend)
 	}
 
+	executeStartTime := time.Now()
 	frame, err := backend.Exec(request)
 	if err != nil {
 		api.logger.ErrorWith("error in exec", "error", err, "request", request)
 		return nil, errors.Wrap(err, "can't exec")
 	}
 
+	executeDuration := time.Now().Sub(executeStartTime)
+	if api.historyServer != nil {
+		api.historyServer.AddExecuteLog(request, executeDuration, executeStartTime)
+	}
 	return frame, nil
 }
 

@@ -28,10 +28,11 @@ const (
 	maxLogsInMessage                    = 1000
 	maxRetryNum                         = 5
 
-	queryType  = "query"
-	ingestType = "ingest"
-	createType = "create"
-	deleteType = "delete"
+	queryType   = "query"
+	ingestType  = "ingest"
+	createType  = "create"
+	deleteType  = "delete"
+	executeType = "execute"
 )
 
 type HistoryEntry struct {
@@ -156,7 +157,7 @@ func (m *HistoryServer) createDefaultV3ioClient() {
 
 	session := &frames.Session{}
 
-	token := "b515fb74-e89c-4885-a742-820794e6f9ca" // os.Getenv("V3IO_ACCESS_KEY")
+	token := "99b630dd-bcec-4d3f-a77e-31a3761cef28" // os.Getenv("V3IO_ACCESS_KEY")
 	if token == "" {
 		m.logger.Error("can not create v3io.client. could not find `V3IO_ACCESS_KEY` environment variable")
 		return
@@ -271,6 +272,26 @@ func (m *HistoryServer) AddDeleteLog(deleteRequest *frames.DeleteRequest, durati
 			ActionType:     deleteType,
 			AdditionalData: deleteRequest.ToMap(),
 			Container:      deleteRequest.Proto.Session.Container}
+
+		m.requests <- entry
+	}()
+}
+
+func (m *HistoryServer) AddExecuteLog(execRequest *frames.ExecRequest, duration time.Duration, startTime time.Time) {
+	if !m.isActive {
+		return
+	}
+
+	// append the entry in a different goroutine so that it won't block
+	go func() {
+		entry := HistoryEntry{BackendName: execRequest.Proto.Backend,
+			UserName:       execRequest.Proto.Session.User,
+			TableName:      execRequest.Proto.Table,
+			StartTime:      startTime,
+			ActionDuration: duration,
+			ActionType:     executeType,
+			AdditionalData: execRequest.ToMap(),
+			Container:      execRequest.Proto.Session.Container}
 
 		m.requests <- entry
 	}()
