@@ -3,6 +3,7 @@ package utils
 import (
 	"encoding/json"
 	"fmt"
+	"os"
 	"path"
 	"time"
 
@@ -33,6 +34,8 @@ const (
 	createType  = "create"
 	deleteType  = "delete"
 	executeType = "execute"
+
+	logFileTimeFormat = "2006-01-02T15"
 )
 
 type HistoryEntry struct {
@@ -121,12 +124,14 @@ func (m *HistoryServer) initDefaults() {
 func (m *HistoryServer) getCurrentLogFileName() string {
 	// Round current time to the nearest log time-bucket
 	currentTimeInSeconds := time.Now().Unix()
-	currentTimeBucket := m.HistoryFileDurationSecondSpans * (currentTimeInSeconds / m.HistoryFileDurationSecondSpans)
-	return fmt.Sprintf("%v/%v.json", m.LogsFolderPath, currentTimeBucket)
+	currentTimeBucketSeconds := m.HistoryFileDurationSecondSpans * (currentTimeInSeconds / m.HistoryFileDurationSecondSpans)
+	timeBucket := time.Unix(currentTimeBucketSeconds, 0).UTC()
+	return fmt.Sprintf("%v/%v.json", m.LogsFolderPath, timeBucket.Format(logFileTimeFormat))
 }
 
 func (m *HistoryServer) getLogFileNameByTime(timeBucket int64) string {
-	return fmt.Sprintf("%v/%v.json", m.LogsFolderPath, timeBucket)
+	desiredTime := time.Unix(timeBucket, 0).UTC()
+	return fmt.Sprintf("%v/%v.json", m.LogsFolderPath, desiredTime.Format(logFileTimeFormat))
 }
 
 func (m *HistoryServer) Start() {
@@ -157,7 +162,7 @@ func (m *HistoryServer) createDefaultV3ioClient() {
 
 	session := &frames.Session{}
 
-	token := "99b630dd-bcec-4d3f-a77e-31a3761cef28" // os.Getenv("V3IO_ACCESS_KEY")
+	token := os.Getenv("V3IO_ACCESS_KEY")
 	if token == "" {
 		m.logger.Error("can not create v3io.client. could not find `V3IO_ACCESS_KEY` environment variable")
 		return
@@ -313,11 +318,6 @@ func (m *HistoryServer) GetLogs(request *frames.HistoryRequest, out chan frames.
 		return errors.Wrap(err, "failed to parse 'end_time' filter")
 	}
 
-	container, err := m.createV3ioClient(request.Proto.Session, request.Password.Get(), request.Token.Get())
-	if err != nil {
-		return err
-	}
-
 	filter := historyFilter{Backend: request.Proto.Backend,
 		Action:       request.Proto.Action,
 		User:         request.Proto.User,
@@ -328,7 +328,7 @@ func (m *HistoryServer) GetLogs(request *frames.HistoryRequest, out chan frames.
 		MinDuration:  request.Proto.MinDuration,
 		MaxDuration:  request.Proto.MaxDuration}
 
-	iter, err := utils.NewAsyncItemsCursor(container,
+	iter, err := utils.NewAsyncItemsCursor(m.container,
 		&v3io.GetItemsInput{Path: m.LogsFolderPath + "/", AttributeNames: []string{"__name"}},
 		8, nil, m.logger)
 
@@ -351,7 +351,7 @@ func (m *HistoryServer) GetLogs(request *frames.HistoryRequest, out chan frames.
 	// go over all log files in the folder
 	for iter.Next() {
 		currentFilePath := path.Join(m.LogsFolderPath, iter.GetField("__name").(string))
-		lineIterator, err := v3ioutils.NewFileContentLineIterator(currentFilePath, m.MaxBytesInNginxRequest, container)
+		lineIterator, err := v3ioutils.NewFileContentLineIterator(currentFilePath, m.MaxBytesInNginxRequest, m.container)
 		if err != nil {
 			return errors.Wrapf(err, "Failed to get '%v'", currentFilePath)
 		}
@@ -512,7 +512,7 @@ func (m *HistoryServer) writeMonitoringBatch(logs []HistoryEntry) {
 	for _, log := range logs {
 		d, err := json.Marshal(log)
 		if err != nil {
-			m.logger.ErrorWith("Failed to marshal logs to json", "error", err, "log", log)
+			m.logger.ErrorWith("Failed to marshal log to json", "error", err, "log", log)
 			return
 		}
 
@@ -526,9 +526,9 @@ func (m *HistoryServer) writeMonitoringBatch(logs []HistoryEntry) {
 
 	var retryCount int
 	for err != nil && retryCount < maxRetryNum {
+		m.logger.WarnWith("failed to write history logs", "retry-num", retryCount, "error", err)
 		// retry on 5xx errors
 		if errWithStatusCode, ok := err.(v3ioerrors.ErrorWithStatusCode); ok && errWithStatusCode.StatusCode() >= 500 {
-			m.logger.WarnWith("failed to write history logs", "retry-num", retryCount, "error", err)
 			input := &v3io.PutObjectInput{Path: logFilePath, Body: data, Append: true}
 			err = m.container.PutObjectSync(input)
 
