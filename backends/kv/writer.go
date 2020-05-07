@@ -40,10 +40,8 @@ type Appender struct {
 	request       *frames.WriteRequest
 	container     v3io.Container
 	tablePath     string
-	responseChan  chan *v3io.Response
-	commChan      chan int
+	requestChan   chan *v3io.UpdateItemInput
 	doneChan      chan bool
-	sent          int
 	logger        logger.Logger
 	schema        v3ioutils.V3ioSchema
 	asyncErr      error
@@ -103,16 +101,17 @@ func (kv *Backend) Write(request *frames.WriteRequest) (frames.FrameAppender, er
 		schema = v3ioutils.NewSchema(v3ioutils.DefaultKeyColumn, "")
 	}
 	appender := Appender{
-		request:      request,
-		container:    container,
-		tablePath:    tablePath,
-		responseChan: make(chan *v3io.Response, 1000),
-		commChan:     make(chan int, 2),
-		doneChan:     make(chan bool),
-		logger:       kv.logger,
-		schema:       schema,
+		request:     request,
+		container:   container,
+		tablePath:   tablePath,
+		requestChan: make(chan *v3io.UpdateItemInput, kv.numWorkers*2),
+		logger:      kv.logger,
+		schema:      schema,
 	}
-	go appender.respWaitLoop(time.Minute)
+
+	for i := 0; i < kv.numWorkers; i++ {
+		go appender.updateItemWorker()
+	}
 
 	if request.ImmidiateData != nil {
 		err := appender.Add(request.ImmidiateData)
@@ -295,14 +294,7 @@ func (a *Appender) Add(frame frames.Frame) error {
 			Condition:  condition,
 			UpdateMode: a.request.SaveMode.GetNginxModeName()}
 		a.logger.DebugWith("write", "input", input)
-		_, err = a.container.UpdateItem(&input, r, a.responseChan)
-
-		if err != nil {
-			a.logger.ErrorWith("write error", "error", err)
-			return err
-		}
-
-		a.sent++
+		a.requestChan <- &input
 	}
 
 	a.rowsProcessed += frame.Len()
@@ -365,13 +357,7 @@ func (a *Appender) update(frame frames.Frame) error {
 			Condition:  cond,
 			UpdateMode: a.request.SaveMode.GetNginxModeName()}
 		a.logger.DebugWith("write update", "input", input)
-		_, err = a.container.UpdateItem(&input, r, a.responseChan)
-		if err != nil {
-			a.logger.ErrorWith("write update error", "error", err)
-			return err
-		}
-
-		a.sent++
+		a.requestChan <- &input
 	}
 
 	return nil
@@ -428,14 +414,12 @@ func validColName(name string) string {
 
 // WaitForComplete waits for write to complete
 func (a *Appender) WaitForComplete(timeout time.Duration) error {
-	a.logger.DebugWith("WaitForComplete", "sent", a.sent)
-	a.commChan <- a.sent
-	<-a.doneChan
+	a.Close()
 	return a.asyncErr
 }
 
 func (a *Appender) Close() {
-
+	close(a.requestChan)
 }
 
 func (a *Appender) indexValFunc(frame frames.Frame) (func(int) interface{}, error) {
@@ -491,55 +475,30 @@ func (a *Appender) funcFromCol(indexCol frames.Column) (func(int) interface{}, e
 	return fn, nil
 }
 
-func (a *Appender) respWaitLoop(timeout time.Duration) {
-	responses := 0
-	requests := -1
-	a.logger.Debug("write wait loop started")
-	timer := time.NewTimer(timeout)
-
-	active := false
+func (a *Appender) updateItemWorker() {
 	for {
 		select {
 
-		case resp := <-a.responseChan:
-			a.logger.DebugWith("write response", "response", resp)
-			responses++
-			active = true
-			timer.Reset(timeout)
+		case req := <-a.requestChan:
+			a.logger.DebugWith("write request", "request", req)
 
-			input := resp.Request().Input.(*v3io.UpdateItemInput)
+			resp, err := a.container.UpdateItemSync(req)
+			if err != nil {
+				a.logger.ErrorWith("failed to send update item request", "error", err)
+				a.asyncErr = err
+			}
 
 			if resp.Error != nil {
 				// If condition evaluated to false, log this and discard error
 				if isFalseConditionError(resp.Error) {
-					a.logger.Info("condition for item '%v' evaluated to false", resp.Request().Input)
-				} else if isOnlyNewItemUpdateModeItemExistError(resp.Error, input.UpdateMode) {
-					a.logger.Info("trying to write to an existing item with update mode 'CreateNewItemsOnly' (item: '%v')", resp.Request().Input)
+					a.logger.Info("condition for item '%v' evaluated to false", req)
+				} else if isOnlyNewItemUpdateModeItemExistError(resp.Error, req.UpdateMode) {
+					a.logger.Info("trying to write to an existing item with update mode 'CreateNewItemsOnly' (item: '%v')", req)
 				} else {
 					a.logger.ErrorWith("failed-write response", "error", resp.Error)
 					a.asyncErr = resp.Error
 				}
 			}
-
-			if requests == responses {
-				a.doneChan <- true
-				return
-			}
-
-		case requests = <-a.commChan:
-			if requests <= responses {
-				a.doneChan <- true
-				return
-			}
-
-		case <-timer.C:
-			if !active {
-				a.logger.ErrorWith("Response loop timed out. ", "requests", requests, "response", responses)
-				a.asyncErr = fmt.Errorf("response loop timed out")
-				a.doneChan <- true
-				return
-			}
-			active = false
 		}
 	}
 }
