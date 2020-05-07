@@ -251,7 +251,9 @@ func (b *Backend) Delete(request *frames.DeleteRequest) error {
 		}
 	}
 
-	delAll := request.Proto.Start == "" && request.Proto.End == ""
+	// Only if no parameters were specified, the entire table will be deleted
+	delAll := request.Proto.Start == "" && request.Proto.End == "" &&
+		len(request.Proto.Metrics) == 0 && request.Proto.Filter == ""
 
 	adapter, err := b.GetAdapter(request.Proto.Session, request.Password.Get(), request.Token.Get(), request.Proto.Table)
 	if err != nil {
