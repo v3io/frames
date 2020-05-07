@@ -35,7 +35,7 @@ const (
 	deleteType  = "delete"
 	executeType = "execute"
 
-	logFileTimeFormat = "2006-01-02T15"
+	logFileTimeFormat = "20060102T150405Z"
 )
 
 type HistoryEntry struct {
@@ -122,11 +122,10 @@ func (m *HistoryServer) initDefaults() {
 }
 
 func (m *HistoryServer) getCurrentLogFileName() string {
-	// Round current time to the nearest log time-bucket
+	// Round current time to the according log time-bucket
 	currentTimeInSeconds := time.Now().Unix()
 	currentTimeBucketSeconds := m.HistoryFileDurationSecondSpans * (currentTimeInSeconds / m.HistoryFileDurationSecondSpans)
-	timeBucket := time.Unix(currentTimeBucketSeconds, 0).UTC()
-	return fmt.Sprintf("%v/%v.json", m.LogsFolderPath, timeBucket.Format(logFileTimeFormat))
+	return m.getLogFileNameByTime(currentTimeBucketSeconds)
 }
 
 func (m *HistoryServer) getLogFileNameByTime(timeBucket int64) string {
