@@ -39,7 +39,7 @@ func (tsdbSuite *TsdbTestSuite) generateSampleFrame(t testing.TB, end time.Time)
 	size := 60
 	times := make([]time.Time, size)
 	for i := range times {
-		times[i] = end.Add(-time.Duration(size - i) * time.Second * 300)
+		times[i] = end.Add(-time.Duration(size-i) * time.Second * 300)
 	}
 
 	index, err := frames.NewSliceColumn("time", times)
@@ -66,7 +66,7 @@ func (tsdbSuite *TsdbTestSuite) generateSampleFrameWithStringMetric(t testing.TB
 	times := make([]time.Time, size)
 	end := anchorTime.Truncate(time.Hour)
 	for i := range times {
-		times[i] = end.Add(-time.Duration(size - i) * time.Second * 300)
+		times[i] = end.Add(-time.Duration(size-i) * time.Second * 300)
 	}
 
 	index, err := frames.NewSliceColumn("time", times)
