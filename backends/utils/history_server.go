@@ -57,6 +57,7 @@ type HistoryServer struct {
 	container v3io.Container
 	config    *frames.Config
 	isActive  bool
+	writeData []byte
 
 	WriteMonitoringLogsTimeout     time.Duration
 	PendingLogsBatchSize           int
@@ -506,8 +507,6 @@ func createDF(userNameColData, backendNameColData, tableNameColData, actionTypeC
 }
 
 func (m *HistoryServer) writeMonitoringBatch(logs []HistoryEntry) {
-	var data []byte
-
 	for _, log := range logs {
 		d, err := json.Marshal(log)
 		if err != nil {
@@ -515,12 +514,12 @@ func (m *HistoryServer) writeMonitoringBatch(logs []HistoryEntry) {
 			return
 		}
 
-		data = append(data, d...)
-		data = append(data, '\n')
+		m.writeData = append(m.writeData, d...)
+		m.writeData = append(m.writeData, '\n')
 	}
 
 	logFilePath := m.getCurrentLogFileName()
-	input := &v3io.PutObjectInput{Path: logFilePath, Body: data, Append: true}
+	input := &v3io.PutObjectInput{Path: logFilePath, Body: m.writeData, Append: true}
 	err := m.container.PutObjectSync(input)
 
 	var retryCount int
@@ -528,7 +527,7 @@ func (m *HistoryServer) writeMonitoringBatch(logs []HistoryEntry) {
 		m.logger.WarnWith("failed to write history logs", "retry-num", retryCount, "error", err)
 		// retry on 5xx errors
 		if errWithStatusCode, ok := err.(v3ioerrors.ErrorWithStatusCode); ok && errWithStatusCode.StatusCode() >= 500 {
-			input := &v3io.PutObjectInput{Path: logFilePath, Body: data, Append: true}
+			input := &v3io.PutObjectInput{Path: logFilePath, Body: m.writeData, Append: true}
 			err = m.container.PutObjectSync(input)
 
 			retryCount++
@@ -540,6 +539,9 @@ func (m *HistoryServer) writeMonitoringBatch(logs []HistoryEntry) {
 	if err != nil {
 		m.logger.ErrorWith("Failed to append Frames history logs to file", "error", err, "logs", logs)
 	}
+
+	// reset the slice for future reuse
+	m.writeData = m.writeData[:0]
 }
 
 func (m *HistoryServer) StartEvictionTask() {
