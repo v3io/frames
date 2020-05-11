@@ -41,7 +41,7 @@ type Appender struct {
 	container     v3io.Container
 	tablePath     string
 	requestChan   chan *v3io.UpdateItemInput
-	doneChan      chan bool
+	doneChan      chan struct{}
 	logger        logger.Logger
 	schema        v3ioutils.V3ioSchema
 	asyncErr      error
@@ -105,6 +105,7 @@ func (kv *Backend) Write(request *frames.WriteRequest) (frames.FrameAppender, er
 		container:   container,
 		tablePath:   tablePath,
 		requestChan: make(chan *v3io.UpdateItemInput, kv.numWorkers*2),
+		doneChan:    make(chan struct{}, kv.numWorkers),
 		logger:      kv.logger,
 		schema:      schema,
 	}
@@ -415,6 +416,9 @@ func validColName(name string) string {
 // WaitForComplete waits for write to complete
 func (a *Appender) WaitForComplete(timeout time.Duration) error {
 	a.Close()
+	for i := 0; i < cap(a.doneChan); i++ {
+		<-a.doneChan
+	}
 	return a.asyncErr
 }
 
@@ -476,31 +480,29 @@ func (a *Appender) funcFromCol(indexCol frames.Column) (func(int) interface{}, e
 }
 
 func (a *Appender) updateItemWorker() {
-	for {
-		select {
+	for req := range a.requestChan {
+		a.logger.DebugWith("write request", "request", req)
 
-		case req := <-a.requestChan:
-			a.logger.DebugWith("write request", "request", req)
+		resp, err := a.container.UpdateItemSync(req)
+		if err != nil {
+			a.logger.ErrorWith("failed to send update item request", "error", err)
+			a.asyncErr = err
+		}
 
-			resp, err := a.container.UpdateItemSync(req)
-			if err != nil {
-				a.logger.ErrorWith("failed to send update item request", "error", err)
-				a.asyncErr = err
-			}
-
-			if resp.Error != nil {
-				// If condition evaluated to false, log this and discard error
-				if isFalseConditionError(resp.Error) {
-					a.logger.Info("condition for item '%v' evaluated to false", req)
-				} else if isOnlyNewItemUpdateModeItemExistError(resp.Error, req.UpdateMode) {
-					a.logger.Info("trying to write to an existing item with update mode 'CreateNewItemsOnly' (item: '%v')", req)
-				} else {
-					a.logger.ErrorWith("failed-write response", "error", resp.Error)
-					a.asyncErr = resp.Error
-				}
+		if resp.Error != nil {
+			// If condition evaluated to false, log this and discard error
+			if isFalseConditionError(resp.Error) {
+				a.logger.Info("condition for item '%v' evaluated to false", req)
+			} else if isOnlyNewItemUpdateModeItemExistError(resp.Error, req.UpdateMode) {
+				a.logger.Info("trying to write to an existing item with update mode 'CreateNewItemsOnly' (item: '%v')", req)
+			} else {
+				a.logger.ErrorWith("failed-write response", "error", resp.Error)
+				a.asyncErr = resp.Error
 			}
 		}
 	}
+
+	a.doneChan <- struct{}{}
 }
 
 // Check whether the current error was caused specifically because the condition was evaluated to false.
