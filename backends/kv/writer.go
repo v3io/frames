@@ -485,18 +485,17 @@ func (a *Appender) updateItemWorker() {
 
 		resp, err := a.container.UpdateItemSync(req)
 		if err != nil {
-			a.logger.ErrorWith("failed to send update item request", "error", err)
-			a.asyncErr = err
-		} else if resp.Error != nil {
 			// If condition evaluated to false, log this and discard error
-			if isFalseConditionError(resp.Error) {
+			if isFalseConditionError(err) {
 				a.logger.Info("condition for item '%v' evaluated to false", req)
-			} else if isOnlyNewItemUpdateModeItemExistError(resp.Error, req.UpdateMode) {
+			} else if isOnlyNewItemUpdateModeItemExistError(err, req.UpdateMode) {
 				a.logger.Info("trying to write to an existing item with update mode 'CreateNewItemsOnly' (item: '%v')", req)
 			} else {
-				a.logger.ErrorWith("failed-write response", "error", resp.Error)
-				a.asyncErr = resp.Error
+				a.logger.ErrorWith("failed to update item", "error", err)
+				a.asyncErr = err
 			}
+		} else {
+			resp.Release()
 		}
 	}
 
