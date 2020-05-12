@@ -123,7 +123,7 @@ func (m *HistoryServer) initDefaults() {
 }
 
 func (m *HistoryServer) getCurrentLogFileName() string {
-	// Round current time to the according log time-bucket
+	// Round current time down to the nearest time bucket
 	currentTimeInSeconds := time.Now().Unix()
 	currentTimeBucketSeconds := m.HistoryFileDurationSecondSpans * (currentTimeInSeconds / m.HistoryFileDurationSecondSpans)
 	return m.getLogFileNameByTime(currentTimeBucketSeconds)
