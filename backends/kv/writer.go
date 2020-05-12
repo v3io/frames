@@ -487,9 +487,7 @@ func (a *Appender) updateItemWorker() {
 		if err != nil {
 			a.logger.ErrorWith("failed to send update item request", "error", err)
 			a.asyncErr = err
-		}
-
-		if resp.Error != nil {
+		} else if resp.Error != nil {
 			// If condition evaluated to false, log this and discard error
 			if isFalseConditionError(resp.Error) {
 				a.logger.Info("condition for item '%v' evaluated to false", req)
