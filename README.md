@@ -6,7 +6,7 @@
 V3IO Frames (**"Frames"**) is a multi-model open-source data-access library that provides a unified high-performance DataFrame API for working with different types of data sources (backends).
 The library was developed by Iguazio to simplify working with data in the [Iguazio Data Science Platform](https://www.iguazio.com) (**"the platform"**), but it can be extended to support additional backend types.
 
-> **Note:** For a full API reference of the Frames platform backends, including detailed examples, see the Frames API reference in [the platform documentation](https://www.iguazio.com/docs/reference/latest-release/api-reference/frames/).
+> **Note:** For a full API reference of the Frames platform backends, including detailed examples, see the Frames API reference in [the platform documentation](https://www.iguazio.com/docs/latest-release/reference/api-reference/frames/).
 
 #### In This Document
 
@@ -58,13 +58,13 @@ All Frames client methods receive a [`backend`](#client-method-param-backend) pa
 Frames currently supports the following backend types:
 
 - `nosql` | `kv` &mdash; a platform NoSQL (key/value) table.
-  See the [platform NoSQL backend API reference](https://www.iguazio.com/docs/reference/latest-release/api-reference/frames/nosql/).
+  See the [platform NoSQL backend API reference](https://www.iguazio.com/docs/latest-release/reference/api-reference/frames/nosql/).
   <br/><br/>
   > **Note:** The documentation uses the `"nosql"` alias to the `"kv"` type, which was added in Frames v0.6.10-v0.9.13; `"kv"` is still supported for backwards compatibility with earlier releases.
 - `stream` &mdash; a platform data stream **[Tech Preview]**.
-  See the [platform TSDB backend API reference](https://www.iguazio.com/docs/reference/latest-release/api-reference/frames/tsdb/).
+  See the [platform TSDB backend API reference](https://www.iguazio.com/docs/latest-release/reference/api-reference/frames/tsdb/).
 - `tsdb` &mdash; a time-series database (TSDB).
-  See the [platform streaming backend API reference](https://www.iguazio.com/docs/reference/latest-release/api-reference/frames/stream/).
+  See the [platform streaming backend API reference](https://www.iguazio.com/docs/latest-release/reference/api-reference/frames/stream/).
 - `csv` &mdash; a comma-separated-value (CSV) file.
   This backend type is used only for testing purposes.
 
@@ -87,7 +87,7 @@ The `Client` class features the following methods for supporting operations on a
 
 When creating a Frames client, you must provide valid credentials for accessing the backend data, which Frames will use to identify the identity of the user.
 This can be done by using any of the following alternative methods (documented in order of precedence).
-For more information about the user authentication for the platform backends, see the [platform documentation](https://www.iguazio.com/docs/reference/latest-release/api-reference/frames/overview/#user-authentication):
+For more information about the user authentication for the platform backends, see the [platform documentation](https://www.iguazio.com/docs/latest-release/reference/api-reference/frames/overview/#user-authentication):
 
 - <a id="user-auth-client-const-params"></a>Provide the authentication credentials in the call to the [`Client` constructor](#client-constructor) &mdash; either by setting the [`token`](#client-param-token) parameter to a valid authentication token (access key) or by setting the [`user`](#client-param-user) and [`password`](#client-param-password) parameters to a username and password.
   Note that you cannot set the token parameter concurrently with the username and password parameters.
@@ -120,7 +120,7 @@ Client(address=""[, data_url=""], container=""[, user="", password="", token=""]
 
 - <a id="client-param-address"></a>**address** &mdash; The address of the Frames service (`framesd`).
   Use the `grpc://` prefix for gRPC (default; recommended) or the `http://` prefix for HTTP.
-  When running locally on the platform, set this parameter to `framesd:8081` to use the gRPC (recommended) or to `framesd:8080` to use HTTP; for more information, see the [platform documentation](https://www.iguazio.com/docs/reference/latest-release/api-reference/frames/client-constructor/).
+  When running locally on the platform, set this parameter to `framesd:8081` to use the gRPC (recommended) or to `framesd:8080` to use HTTP; for more information, see the [platform documentation](https://www.iguazio.com/docs/latest-release/reference/api-reference/frames/client-constructor/).
 
   - **Type:** `str`
   - **Requirement:** Required 
@@ -248,7 +248,7 @@ All Frames backends that support the `create` method support the following commo
 <a id="method-create-params-tsdb"></a>
 #### `tsdb` Backend `create` Parameters
 
-The following `create` parameters are specific to the `tsdb` backend and are passed as keyword arguments via the `kw` parameter; for more information and examples, see the platform's [Frames TSDB-backend reference](https://www.iguazio.com/docs/reference/latest-release/api-reference/frames/tsdb/create/):
+The following `create` parameters are specific to the `tsdb` backend and are passed as keyword arguments via the `kw` parameter; for more information and examples, see the platform's [Frames TSDB-backend reference](https://www.iguazio.com/docs/latest-release/reference/api-reference/frames/tsdb/create/):
 
 - <a id="method-create-tsdb-param-rate"></a>**rate** &mdash; metric-samples ingestion rate.
 
@@ -275,7 +275,7 @@ The following `create` parameters are specific to the `tsdb` backend and are pas
 <a id="method-create-params-stream"></a>
 #### `stream` Backend `create` Parameters
 
-The following `create` parameters are specific to the `stream` backend and are passed as keyword arguments via the `kw` parameter; for more information and examples, see the platform's [Frames streaming-backend reference](https://www.iguazio.com/docs/reference/latest-release/api-reference/frames/stream/create/):
+The following `create` parameters are specific to the `stream` backend and are passed as keyword arguments via the `kw` parameter; for more information and examples, see the platform's [Frames streaming-backend reference](https://www.iguazio.com/docs/latest-release/reference/api-reference/frames/stream/create/):
 
 - <a id="method-create-stream-param-shards"></a>**shards** &mdash; The number of stream shards to create.
 
@@ -380,11 +380,11 @@ All Frames backends that support the `write` method support the following common
 <a id="method-write-params-nosql"></a>
 #### `nosql` Backend `write` Parameters
 
-The following `write` parameters are specific to the `nosql` backend; for more information and examples, see the platform's [Frames NoSQL-backend reference](https://www.iguazio.com/docs/reference/latest-release/api-reference/frames/nosql/write/):
+The following `write` parameters are specific to the `nosql` backend; for more information and examples, see the platform's [Frames NoSQL-backend reference](https://www.iguazio.com/docs/latest-release/reference/api-reference/frames/nosql/write/):
 
 <!--
 - <a id="method-write-nosql-param-expression"></a>**expression** (Optional) (default: `None`) &mdash; A platform update expression that determines how to update the table for all items in the DataFrame.
-  For detailed information about platform update expressions, see the [platform documentation](https://www.iguazio.com/docs/reference/latest-release/expressions/update-expression/).
+  For detailed information about platform update expressions, see the [platform documentation](https://www.iguazio.com/docs/latest-release/reference/expressions/update-expression/).
 -->
   <!-- [IntInfo] [c-no-update-expression-support] (24.9.19) See Bug IG-12510,
     Requirement IG-5339, & DOC IG-12272. TODO: When update expressions are
@@ -415,7 +415,7 @@ client.write(backend="nosql", table="mytable", dfs=df, expression="city='NY'", c
 <a id="method-write-params-tsdb"></a>
 #### `tsdb` Backend `write` Parameters
 
-The following `write` parameter descriptions are specific to the `tsdb` backend; for more information and examples, see the platform's [Frames TSDB-backend reference](https://www.iguazio.com/docs/reference/latest-release/api-reference/frames/tsdb/write/):
+The following `write` parameter descriptions are specific to the `tsdb` backend; for more information and examples, see the platform's [Frames TSDB-backend reference](https://www.iguazio.com/docs/latest-release/reference/api-reference/frames/tsdb/write/):
 
 - <a id="method-write-tsdb-param-labels"></a>**labels** &mdash; A dictionary of metric labels of the format `{<label>: <value>[, <label>: <value>, ...]}` to apply to all the DataFrame rows.
   For example, `{"os": "linux", "arch": "x86"}`.
@@ -517,7 +517,7 @@ All Frames backends that support the `read` method support the following common 
 <a id="method-read-params-nosql"></a>
 #### `nosql` Backend `read` Parameters
 
-The following `read` parameters are specific to the `nosql` backend; for more information and examples, see the platform's [Frames NoSQL-backend reference](https://www.iguazio.com/docs/reference/latest-release/api-reference/frames/nosql/read/):
+The following `read` parameters are specific to the `nosql` backend; for more information and examples, see the platform's [Frames NoSQL-backend reference](https://www.iguazio.com/docs/latest-release/reference/api-reference/frames/nosql/read/):
 
 - <a id="method-read-nosql-param-max_rows_in_msg"></a>**max_rows_in_msg** &mdash; The maximum number of rows per message.
 
@@ -542,7 +542,7 @@ The following parameters are passed as keyword arguments via the `kw` parameter:
 <a id="method-read-params-tsdb"></a>
 #### `tsdb` Backend `read` Parameters
 
-The following `read` parameters are specific to the `tsdb` backend; for more information and examples, see the platform's [Frames TSDB-backend reference](https://www.iguazio.com/docs/reference/latest-release/api-reference/frames/tsdb/read/):
+The following `read` parameters are specific to the `tsdb` backend; for more information and examples, see the platform's [Frames TSDB-backend reference](https://www.iguazio.com/docs/latest-release/reference/api-reference/frames/tsdb/read/):
 
 - <a id="method-read-tsdb-param-group_by"></a>**group_by** **[Tech Preview]** &mdash; A group-by query string.
   <br/>
@@ -610,7 +610,7 @@ The following parameters are passed as keyword arguments via the `kw` parameter:
 <a id="method-read-params-stream"></a>
 #### `stream` Backend `read` Parameters
 
-The following `read` parameters are specific to the `stream` backend and are passed as keyword arguments via the `kw` parameter; for more information and examples, see the platform's [Frames streaming-backend reference](https://www.iguazio.com/docs/reference/latest-release/api-reference/frames/stream/read/):
+The following `read` parameters are specific to the `stream` backend and are passed as keyword arguments via the `kw` parameter; for more information and examples, see the platform's [Frames streaming-backend reference](https://www.iguazio.com/docs/latest-release/reference/api-reference/frames/stream/read/):
 
 - <a id="method-read-stream-param-seek"></a>**seek** &mdash; Seek type.
   <br/>
@@ -716,7 +716,7 @@ delete(backend, table, filter='', start='', end='', if_missing=FAIL
 <a id="method-delete-params-nosql"></a>
 #### `nosql` Backend `delete` Parameters
 
-The following `delete` parameters are specific to the `nosql` backend; for more information and examples, see the platform's [Frames NoSQL-backend reference](https://www.iguazio.com/docs/reference/latest-release/api-reference/frames/nosql/delete/):
+The following `delete` parameters are specific to the `nosql` backend; for more information and examples, see the platform's [Frames NoSQL-backend reference](https://www.iguazio.com/docs/latest-release/reference/api-reference/frames/nosql/delete/):
 
 - <a id="method-delete-nosql-param-filter"></a>**filter** &mdash; A filter expression that identifies specific items to delete.
 
@@ -727,7 +727,7 @@ The following `delete` parameters are specific to the `nosql` backend; for more 
 <a id="method-delete-params-tsdb"></a>
 #### `tsdb` Backend `delete` Parameters
 
-The following `delete` parameters are specific to the `tsdb` backend; for more information and examples, see the platform's [Frames TSDB-backend reference](https://www.iguazio.com/docs/reference/latest-release/api-reference/frames/tsdb/delete/):
+The following `delete` parameters are specific to the `tsdb` backend; for more information and examples, see the platform's [Frames TSDB-backend reference](https://www.iguazio.com/docs/latest-release/reference/api-reference/frames/tsdb/delete/):
 
 - <a id="method-delete-tsdb-param-start"></a>**start** &mdash; Start (minimum) time for the delete operation &mdash; i.e., delete only items whose data sample time is at or after (`>=`) the specified start time.
 
@@ -816,7 +816,7 @@ All Frames backends that support the `execute` method support the following comm
 <a id="method-execute-nosql-cmds"></a>
 #### `nosql` Backend `execute` Commands
 
-The following `execute` commands are specific to the `nosql` backend; for more information and examples, see the platform's [Frames NoSQL-backend reference](https://www.iguazio.com/docs/reference/latest-release/api-reference/frames/nosql/execute/):
+The following `execute` commands are specific to the `nosql` backend; for more information and examples, see the platform's [Frames NoSQL-backend reference](https://www.iguazio.com/docs/latest-release/reference/api-reference/frames/nosql/execute/):
 
 - <a id="method-execute-nosql-cmd-infer"></a>**infer | infer_schema** &mdash; Infers the data schema of a given NoSQL table and creates a schema file for the table.
 
@@ -827,7 +827,7 @@ The following `execute` commands are specific to the `nosql` backend; for more i
 
 <!--
 - <a id="method-execute-nosql-cmd-update"></a>**update** &mdash; Updates a specific item in a NoSQL table according to the provided update expression.
-  For detailed information about platform update expressions, see the [platform documentation](https://www.iguazio.com/docs/reference/latest-release/expressions/update-expression/).
+  For detailed information about platform update expressions, see the [platform documentation](https://www.iguazio.com/docs/latest-release/reference/expressions/update-expression/).
 
   Example:
   ```python
@@ -839,7 +839,7 @@ The following `execute` commands are specific to the `nosql` backend; for more i
 <a id="method-execute-stream-cmds"></a>
 #### `stream` Backend `execute` Commands
 
-The following `execute` commands are specific to the `stream` backend; for more information and examples, see the platform's [Frames streaming-backend reference](https://www.iguazio.com/docs/reference/latest-release/api-reference/frames/stream/execute/):
+The following `execute` commands are specific to the `stream` backend; for more information and examples, see the platform's [Frames streaming-backend reference](https://www.iguazio.com/docs/latest-release/reference/api-reference/frames/stream/execute/):
 
 - <a id="method-execute-stream-cmd-put"></a>**put** &mdash; Adds records to a stream shard.
 
