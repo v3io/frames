@@ -42,7 +42,7 @@ func (tsdbSuite *TsdbTestSuite) generateSampleFrame(t testing.TB, end time.Time)
 		times[i] = end.Add(-time.Duration(size-i) * time.Second * 300)
 	}
 
-	index, err := frames.NewSliceColumn("idx", times)
+	index, err := frames.NewSliceColumn("time", times)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -69,7 +69,7 @@ func (tsdbSuite *TsdbTestSuite) generateSampleFrameWithStringMetric(t testing.TB
 		times[i] = end.Add(-time.Duration(size-i) * time.Second * 300)
 	}
 
-	index, err := frames.NewSliceColumn("idx", times)
+	index, err := frames.NewSliceColumn("time", times)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -196,7 +196,7 @@ func (tsdbSuite *TsdbTestSuite) TestRegressionIG14560() {
 	cpuCol, err := frames.NewSliceColumn("cpu", cpu)
 	tsdbSuite.Require().NoError(err)
 
-	index, err := frames.NewSliceColumn("idx", times)
+	index, err := frames.NewSliceColumn("time", times)
 	tsdbSuite.Require().NoError(err)
 
 	columns := []frames.Column{cpuCol}
@@ -579,4 +579,78 @@ func (tsdbSuite *TsdbTestSuite) TestDeleteAll() {
 	_, err = tsdbSuite.v3ioContainer.GetItemSync(&input)
 
 	tsdbSuite.Require().Error(err, "expected error but finished successfully")
+}
+
+func (tsdbSuite *TsdbTestSuite) TestDeleteAllSamplesButNotTable() {
+	table := fmt.Sprintf("TestDeleteAllSamplesButNotTable%d", time.Now().UnixNano())
+
+	tsdbSuite.T().Log("create")
+	req := &pb.CreateRequest{
+		Backend: tsdbSuite.backendName,
+		Table:   table,
+		Rate:    "1/s",
+	}
+	if err := tsdbSuite.client.Create(req); err != nil {
+		tsdbSuite.T().Fatal(err)
+	}
+
+	tsdbSuite.T().Log("write")
+	end, _ := time.Parse(time.RFC3339, "2019-12-12T05:00:00Z")
+
+	frame := tsdbSuite.generateSampleFrame(tsdbSuite.T(), end)
+	wreq := &frames.WriteRequest{
+		Backend: tsdbSuite.backendName,
+		Table:   table,
+	}
+
+	appender, err := tsdbSuite.client.Write(wreq)
+	if err != nil {
+		tsdbSuite.T().Fatal(err)
+	}
+
+	if err := appender.Add(frame); err != nil {
+		tsdbSuite.T().Fatal(err)
+	}
+
+	if err := appender.WaitForComplete(3 * time.Second); err != nil {
+		tsdbSuite.T().Fatal(err)
+	}
+
+	tsdbSuite.T().Log("delete")
+	dreq := &pb.DeleteRequest{
+		Backend: tsdbSuite.backendName,
+		Table:   table,
+		Start:   "",
+		End:     "",
+		Filter:  "1==1",
+	}
+
+	if err := tsdbSuite.client.Delete(dreq); err != nil {
+		tsdbSuite.T().Fatal(err)
+	}
+
+	// Verify the entire table was not deleted
+	input := v3io.GetItemInput{Path: fmt.Sprintf("%v/.schema", table), AttributeNames: []string{"__name"}}
+	_, err = tsdbSuite.v3ioContainer.GetItemSync(&input)
+
+	tsdbSuite.Require().NoError(err, "entire tsdb table got deleted")
+
+	// Verify no data is returned
+	rreq := &pb.ReadRequest{
+		Backend: tsdbSuite.backendName,
+		Table:   table,
+		Start:   "0",
+		End:     veryHighTimestamp,
+	}
+
+	it, err := tsdbSuite.client.Read(rreq)
+	if err != nil {
+		tsdbSuite.T().Fatal(err)
+	}
+
+	tsdbSuite.Require().True(it.Next(), "expecting nothing to be deleted")
+
+	if err := it.Err(); err != nil {
+		tsdbSuite.T().Fatal(err)
+	}
 }
