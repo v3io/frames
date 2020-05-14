@@ -140,37 +140,37 @@ podTemplate(label: "${git_project}-${label}", inheritFrom: "jnlp-docker-golang-p
                                     github.upload_asset(git_project, git_project_user, "framesd-${github.TAG_VERSION}-windows-amd64", RELEASE_ID, GIT_TOKEN, "${github.BUILD_FOLDER}/src/github.com/${git_project_upstream_user}/${git_project}")
                                 }
                             },
-                            'upload to pypi': {
-                                container('python37') {
-                                    release_body = github.get_release_body("frames", git_project_user, github.TAG_VERSION, GIT_TOKEN)
-                                    if (release_body.startsWith("Autorelease")) {
-                                        echo "Autorelease is not uploading frames py to pypi."
-                                    } else if( "${github.TAG_VERSION}" != "unstable" ) {
-                                        withCredentials([
-                                                usernamePassword(credentialsId: "iguazio-prod-pypi-credentials", passwordVariable: 'V3IO_PYPI_PASSWORD', usernameVariable: 'V3IO_PYPI_USER')
-                                        ]) {
-                                            dir("${github.BUILD_FOLDER}/src/github.com/${git_project_upstream_user}/${git_project}") {
-                                                FRAMES_PYPI_VERSION = sh(
-                                                        script: "echo ${github.DOCKER_TAG_VERSION} | awk -F - '{print \$1}'",
-                                                        returnStdout: true
-                                                ).trim()
-                                                common.shellc("pip install pipenv")
-                                                common.shellc("make python-deps")
-                                                sh "make test-py"
-                                                try {
-                                                    common.shellc("TRAVIS_REPO_SLUG=v3io/frames V3IO_PYPI_USER=${V3IO_PYPI_USER} V3IO_PYPI_PASSWORD=${V3IO_PYPI_PASSWORD} TRAVIS_TAG=${FRAMES_PYPI_VERSION} make pypi")
-                                                } catch (err) {
-                                                    unstable("Failed uploading to pypi")
-                                                    // Do not continue stages
-                                                    throw err
-                                                }
-                                            }
-                                        }
-                                    } else {
-                                        echo "Uploading to pypi only stable version"
-                                    }
-                                }
-                            },
+                            // 'upload to pypi': {
+                            //     container('python37') {
+                            //         release_body = github.get_release_body("frames", git_project_user, github.TAG_VERSION, GIT_TOKEN)
+                            //         if (release_body.startsWith("Autorelease")) {
+                            //             echo "Autorelease is not uploading frames py to pypi."
+                            //         } else if( "${github.TAG_VERSION}" != "unstable" ) {
+                            //             withCredentials([
+                            //                     usernamePassword(credentialsId: "iguazio-prod-pypi-credentials", passwordVariable: 'V3IO_PYPI_PASSWORD', usernameVariable: 'V3IO_PYPI_USER')
+                            //             ]) {
+                            //                 dir("${github.BUILD_FOLDER}/src/github.com/${git_project_upstream_user}/${git_project}") {
+                            //                     FRAMES_PYPI_VERSION = sh(
+                            //                             script: "echo ${github.DOCKER_TAG_VERSION} | awk -F - '{print \$1}'",
+                            //                             returnStdout: true
+                            //                     ).trim()
+                            //                     common.shellc("pip install pipenv")
+                            //                     common.shellc("make python-deps")
+                            //                     sh "make test-py"
+                            //                     try {
+                            //                         common.shellc("TRAVIS_REPO_SLUG=v3io/frames V3IO_PYPI_USER=${V3IO_PYPI_USER} V3IO_PYPI_PASSWORD=${V3IO_PYPI_PASSWORD} TRAVIS_TAG=${FRAMES_PYPI_VERSION} make pypi")
+                            //                     } catch (err) {
+                            //                         unstable("Failed uploading to pypi")
+                            //                         // Do not continue stages
+                            //                         throw err
+                            //                     }
+                            //                 }
+                            //             }
+                            //         } else {
+                            //             echo "Uploading to pypi only stable version"
+                            //         }
+                            //     }
+                            // },
                     )
 
                     container('docker-cmd') {
