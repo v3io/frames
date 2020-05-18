@@ -114,7 +114,7 @@ func (b *Backend) newAdapter(session *frames.Session, password string, token str
 	if b.backendConfig.Workers == 0 {
 		resp, err := container.GetClusterMDSync(&v3io.GetClusterMDInput{})
 		if err != nil {
-			return nil, fmt.Errorf("could not detrmine num vns in cluster")
+			return nil, errors.Wrap(err, "could not determine num vns in cluster")
 		}
 		getClusterMDOutput := resp.Output.(*v3io.GetClusterMDOutput)
 		b.backendConfig.Workers = getClusterMDOutput.NumberOfVNs
