@@ -101,7 +101,7 @@ func (kv *Backend) Write(request *frames.WriteRequest) (frames.FrameAppender, er
 		schema = v3ioutils.NewSchema(v3ioutils.DefaultKeyColumn, "")
 	}
 
-	numUpdateItemWorkers := kv.numWorkers * 2
+	numUpdateItemWorkers := kv.numWorkers * 4
 
 	appender := Appender{
 		request:     request,
