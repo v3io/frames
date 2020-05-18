@@ -100,19 +100,31 @@ func (kv *Backend) Write(request *frames.WriteRequest) (frames.FrameAppender, er
 	if schema == nil {
 		schema = v3ioutils.NewSchema(v3ioutils.DefaultKeyColumn, "")
 	}
+
+	numUpdateItemWorkers := kv.numWorkers * 2
+
 	appender := Appender{
 		request:     request,
 		container:   container,
 		tablePath:   tablePath,
-		requestChan: make(chan *v3io.UpdateItemInput, kv.numWorkers*2),
-		doneChan:    make(chan struct{}, kv.numWorkers),
+		requestChan: make(chan *v3io.UpdateItemInput, numUpdateItemWorkers*2),
+		doneChan:    make(chan struct{}, 1),
 		logger:      kv.logger,
 		schema:      schema,
 	}
 
-	for i := 0; i < kv.numWorkers; i++ {
-		go appender.updateItemWorker()
+	internalDoneChan := make(chan struct{}, numUpdateItemWorkers)
+
+	for i := 0; i < numUpdateItemWorkers; i++ {
+		go appender.updateItemWorker(internalDoneChan)
 	}
+
+	go func() {
+		for i := 0; i < numUpdateItemWorkers; i++ {
+			<-internalDoneChan
+		}
+		appender.doneChan <- struct{}{}
+	}()
 
 	if request.ImmidiateData != nil {
 		err := appender.Add(request.ImmidiateData)
@@ -416,9 +428,7 @@ func validColName(name string) string {
 // WaitForComplete waits for write to complete
 func (a *Appender) WaitForComplete(timeout time.Duration) error {
 	a.Close()
-	for i := 0; i < cap(a.doneChan); i++ {
-		<-a.doneChan
-	}
+	<-a.doneChan
 	return a.asyncErr
 }
 
@@ -479,7 +489,7 @@ func (a *Appender) funcFromCol(indexCol frames.Column) (func(int) interface{}, e
 	return fn, nil
 }
 
-func (a *Appender) updateItemWorker() {
+func (a *Appender) updateItemWorker(doneChan chan<- struct{}) {
 	for req := range a.requestChan {
 		a.logger.DebugWith("write request", "request", req)
 
@@ -499,7 +509,7 @@ func (a *Appender) updateItemWorker() {
 		}
 	}
 
-	a.doneChan <- struct{}{}
+	doneChan <- struct{}{}
 }
 
 // Check whether the current error was caused specifically because the condition was evaluated to false.
