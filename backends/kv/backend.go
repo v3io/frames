@@ -34,21 +34,23 @@ import (
 
 // Backend is NoSQL (key/value) backend
 type Backend struct {
-	logger            logger.Logger
-	numWorkers        int
-	inactivityTimeout time.Duration
-	framesConfig      *frames.Config
-	v3ioContext       v3io.Context
+	logger             logger.Logger
+	numWorkers         int
+	updateWorkersPerVN int
+	inactivityTimeout  time.Duration
+	framesConfig       *frames.Config
+	v3ioContext        v3io.Context
 }
 
 // NewBackend returns a new NoSQL (key/value) backend
 func NewBackend(logger logger.Logger, v3ioContext v3io.Context, config *frames.BackendConfig, framesConfig *frames.Config) (frames.DataBackend, error) {
 	newBackend := Backend{
-		logger:            logger.GetChild("kv"),
-		numWorkers:        config.Workers,
-		framesConfig:      framesConfig,
-		v3ioContext:       v3ioContext,
-		inactivityTimeout: 0,
+		logger:             logger.GetChild("kv"),
+		numWorkers:         config.Workers,
+		updateWorkersPerVN: config.UpdateWorkersPerVN,
+		framesConfig:       framesConfig,
+		v3ioContext:        v3ioContext,
+		inactivityTimeout:  0,
 	}
 	return &newBackend, nil
 }
