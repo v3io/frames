@@ -101,24 +101,26 @@ func (kv *Backend) Write(request *frames.WriteRequest) (frames.FrameAppender, er
 		schema = v3ioutils.NewSchema(v3ioutils.DefaultKeyColumn, "")
 	}
 
+	numUpdateWorkers := kv.numWorkers * kv.updateWorkersPerVN
+
 	appender := Appender{
 		request:     request,
 		container:   container,
 		tablePath:   tablePath,
-		requestChan: make(chan *v3io.UpdateItemInput, kv.updateWorkersPerVN*2),
+		requestChan: make(chan *v3io.UpdateItemInput, numUpdateWorkers*2),
 		doneChan:    make(chan struct{}, 1),
 		logger:      kv.logger,
 		schema:      schema,
 	}
 
-	internalDoneChan := make(chan struct{}, kv.updateWorkersPerVN)
+	internalDoneChan := make(chan struct{}, numUpdateWorkers)
 
-	for i := 0; i < kv.updateWorkersPerVN; i++ {
+	for i := 0; i < numUpdateWorkers; i++ {
 		go appender.updateItemWorker(internalDoneChan)
 	}
 
 	go func() {
-		for i := 0; i < kv.updateWorkersPerVN; i++ {
+		for i := 0; i < numUpdateWorkers; i++ {
 			<-internalDoneChan
 		}
 		appender.doneChan <- struct{}{}
