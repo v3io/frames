@@ -194,7 +194,7 @@ func initBackendDefaults(cfg *BackendConfig, framesConfig *Config) {
 
 	if cfg.UpdateWorkersPerVN == 0 {
 		if framesConfig.UpdateWorkersPerVN == 0 {
-			cfg.UpdateWorkersPerVN = 2
+			cfg.UpdateWorkersPerVN = 8
 		} else {
 			cfg.UpdateWorkersPerVN = framesConfig.UpdateWorkersPerVN
 		}
