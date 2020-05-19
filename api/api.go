@@ -125,7 +125,6 @@ func (api *API) Write(request *frames.WriteRequest, in chan frames.Frame) (int, 
 		api.logger.ErrorWith(msg, "error", err)
 		return -1, -1, errors.Wrap(err, msg)
 	}
-	defer appender.Close()
 	nFrames, nRows := 0, 0
 	if request.ImmidiateData != nil {
 		nFrames, nRows = 1, request.ImmidiateData.Len()
