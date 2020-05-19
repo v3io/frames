@@ -79,7 +79,7 @@ func (kv *Backend) Write(request *frames.WriteRequest) (frames.FrameAppender, er
 		switch request.SaveMode {
 		case frames.OverwriteTable:
 			// If this is the first time we writing to the table, there is nothing to delete.
-			err = v3ioutils.DeleteTable(kv.logger, container, tablePath, "", kv.numWorkers, true)
+			err = v3ioutils.DeleteTable(kv.logger, container, tablePath, "", kv.numWorkers, kv.numWorkers*kv.updateWorkersPerVN, true)
 			if err != nil {
 				return nil, fmt.Errorf("error occured while deleting table '%v', err: %v", tablePath, err)
 			}

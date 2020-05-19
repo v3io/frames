@@ -68,7 +68,7 @@ func (b *Backend) Delete(request *frames.DeleteRequest) error {
 		return err
 	}
 
-	return v3ioutils.DeleteTable(b.logger, container, path, request.Proto.Filter, b.numWorkers, request.Proto.IfMissing == frames.IgnoreError)
+	return v3ioutils.DeleteTable(b.logger, container, path, request.Proto.Filter, b.numWorkers, b.numWorkers*b.updateWorkersPerVN, request.Proto.IfMissing == frames.IgnoreError)
 	// TODO: delete the table directory entry if filter == ""
 }
 
