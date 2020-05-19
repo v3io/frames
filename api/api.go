@@ -235,7 +235,7 @@ func (api *API) createBackends(config *frames.Config) error {
 	api.backends = make(map[string]frames.DataBackend)
 
 	for _, backendConfig := range config.Backends {
-		newClient := v3iohttp.NewClient(&v3iohttp.NewClientInput{DialTimeout: 0, MaxConnsPerHost: backendConfig.MaxConnections})
+		newClient := v3iohttp.NewClient(&v3iohttp.NewClientInput{DialTimeout: time.Duration(backendConfig.DialTimeoutSeconds) * time.Second, MaxConnsPerHost: backendConfig.MaxConnections})
 
 		api.logger.InfoWith("Creating v3io context for backend",
 			"backend", backendConfig.Name,
