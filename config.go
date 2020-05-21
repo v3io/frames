@@ -45,7 +45,8 @@ type Config struct {
 	SessionKey     string `json:"sessionKey,omitempty"`
 
 	// Number of parallel V3IO worker routines
-	Workers int `json:"workers"`
+	Workers            int `json:"workers"`
+	UpdateWorkersPerVN int `json:"updateWorkersPerVN"`
 
 	QuerierCacheSize                 int  `json:"querierCacheSize"`
 	TsdbLoadPartitionsFromSchemaAttr bool `json:"tsdbLoadPartitionsFromSchemaAttr"`
@@ -135,6 +136,7 @@ type BackendConfig struct {
 	Type                    string `json:"type"` // v3io, csv, ...
 	Name                    string `json:"name"`
 	Workers                 int    `json:"workers"`
+	UpdateWorkersPerVN      int    `json:"updateWorkersPerVN"`
 	V3ioGoWorkers           int    `json:"v3ioGoWorkers"`
 	V3ioGoRequestChanLength int    `json:"v3ioGoRequestChanLength"`
 	MaxConnections          int    `json:"maxConnections"`
@@ -197,6 +199,15 @@ func firstVal(args ...string) string {
 func initBackendDefaults(cfg *BackendConfig, framesConfig *Config) {
 	if cfg.Workers == 0 {
 		cfg.Workers = framesConfig.Workers
+	}
+
+	if cfg.UpdateWorkersPerVN == 0 {
+		if framesConfig.UpdateWorkersPerVN == 0 {
+			cfg.UpdateWorkersPerVN = 8
+		} else {
+			cfg.UpdateWorkersPerVN = framesConfig.UpdateWorkersPerVN
+		}
+
 	}
 
 	if cfg.MaxConnections == 0 {
