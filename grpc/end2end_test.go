@@ -58,7 +58,7 @@ func TestEnd2End(t *testing.T) {
 		t.Fatal(err)
 	}
 
-	srv, err := grpc.NewServer(cfg, fmt.Sprintf(":%d", port), nil)
+	srv, err := grpc.NewServer(cfg, fmt.Sprintf(":%d", port), nil, nil)
 	if err != nil {
 		t.Fatal(err)
 	}

@@ -34,6 +34,7 @@ import (
 	"github.com/pkg/errors"
 	"github.com/v3io/frames"
 	"github.com/v3io/frames/api"
+	"github.com/v3io/frames/backends/utils"
 	"github.com/v3io/frames/pb"
 	"github.com/valyala/fasthttp"
 )
@@ -60,7 +61,7 @@ type Server struct {
 }
 
 // NewServer creates a new server
-func NewServer(config *frames.Config, addr string, logger logger.Logger) (*Server, error) {
+func NewServer(config *frames.Config, addr string, logger logger.Logger, historyServer *utils.HistoryServer) (*Server, error) {
 	var err error
 
 	if err := config.Validate(); err != nil {
@@ -78,7 +79,7 @@ func NewServer(config *frames.Config, addr string, logger logger.Logger) (*Serve
 		}
 	}
 
-	api, err := api.New(logger, config)
+	api, err := api.New(logger, config, historyServer)
 	if err != nil {
 		return nil, errors.Wrap(err, "can't create API")
 	}
@@ -479,6 +480,63 @@ func (s *Server) handleSimpleJSON(ctx *fasthttp.RequestCtx, method string) {
 	}
 }
 
+func (s *Server) handleHistory(ctx *fasthttp.RequestCtx) {
+	if !ctx.IsPost() { // ctx.PostBody() blocks on GET
+		ctx.Error("unsupported method", http.StatusMethodNotAllowed)
+	}
+
+	requestInner := &pb.HistoryRequest{}
+	if err := json.Unmarshal(ctx.PostBody(), requestInner); err != nil {
+		s.logger.ErrorWith("can't decode request", "error", err)
+		ctx.Error(fmt.Sprintf("bad request - %s", err), http.StatusBadRequest)
+		return
+	}
+	request := &frames.HistoryRequest{
+		Proto: requestInner,
+	}
+
+	s.httpAuth(ctx, request.Proto.Session)
+	request.Password = frames.InitSecretString(request.Proto.Session.Password)
+	request.Token = frames.InitSecretString(request.Proto.Session.Token)
+	request.Proto.Session.Password = ""
+	request.Proto.Session.Token = ""
+
+	ch := make(chan frames.Frame)
+	var apiError error
+	go func() {
+		defer close(ch)
+		apiError = s.api.History(request, ch)
+		if apiError != nil {
+			s.logger.ErrorWith("error reading", "error", apiError)
+		}
+	}()
+
+	ctx.SetBodyStreamWriter(func(w *bufio.Writer) {
+		enc := frames.NewEncoder(w)
+		for frame := range ch {
+			iface, ok := frame.(pb.Framed)
+			if !ok {
+				s.logger.Error("unknown frame type")
+				s.writeError(enc, fmt.Errorf("unknown frame type"))
+			}
+
+			if err := enc.Encode(iface.Proto()); err != nil {
+				s.logger.ErrorWith("can't encode result", "error", err)
+				s.writeError(enc, err)
+			}
+
+			if err := w.Flush(); err != nil {
+				s.logger.ErrorWith("can't flush", "error", err)
+				s.writeError(enc, err)
+			}
+		}
+
+		if apiError != nil {
+			s.writeError(enc, apiError)
+		}
+	})
+}
+
 // based on https://github.com/buaazp/fasthttprouter/tree/master/examples/auth
 func (s *Server) httpAuth(ctx *fasthttp.RequestCtx, session *frames.Session) {
 	auth := ctx.Request.Header.Peek("Authorization")
@@ -534,6 +592,7 @@ func (s *Server) initRoutes() {
 		"/read":     s.handleRead,
 		"/write":    s.handleWrite,
 		"/exec":     s.handleExec,
+		"/history":  s.handleHistory,
 		"/":         s.handleStatus,
 		"/query":    s.handleSimpleJSONQuery,
 		"/search":   s.handleSimpleJSONSearch,

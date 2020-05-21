@@ -26,7 +26,7 @@ from urllib3.exceptions import HTTPError
 from . import frames_pb2 as fpb
 from .client import ClientBase, RawFrame
 from .errors import (CreateError, DeleteError, Error, ExecuteError, ReadError,
-                     WriteError)
+                     WriteError, HistoryError)
 from .frames_pb2 import Frame
 from .pbutils import df2msg, msg2df, pb2py
 from .pdutils import concat_dfs, should_reorder_columns
@@ -196,6 +196,33 @@ class Client(ClientBase):
 
         msg = Frame.FromString(b64decode(frame))
         return msg2df(msg, self.frame_factory)
+
+    @connection_error(HistoryError)
+    def _history(self, backend, container, table, user, action, min_start_time, max_start_time, min_duration, max_duration):
+        request = {
+            'session': pb2py(self.session),
+            'backend': backend,
+            'table': table,
+            'user': user,
+            'action': action,
+            'min_start_time': min_start_time,
+            'max_start_time': max_start_time,
+            'container': container,
+            'min_duration': min_duration,
+            'max_duration': max_duration
+        }
+
+        url = self._url_for('history')
+        resp = self._session.post(url,
+                                  json=request,
+                                  headers=self._get_headers(json=True),
+                                  stream=True)
+        if not resp.ok:
+            raise Error('cannot call API - {}'.format(resp.text))
+
+        dfs = self._iter_dfs(resp.raw, None, False)
+
+        return concat_dfs(dfs, "", self.frame_factory, self.concat)
 
     def _url_for(self, action):
         return self.address + '/' + action

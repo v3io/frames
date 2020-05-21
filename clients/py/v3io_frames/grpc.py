@@ -18,14 +18,14 @@ import typing
 from datetime import datetime
 from functools import wraps
 
-import grpc
 import pandas as pd
 
+import grpc
 from . import frames_pb2 as fpb  # noqa
 from . import frames_pb2_grpc as fgrpc  # noqa
 from .client import ClientBase, RawFrame
 from .errors import (CreateError, DeleteError, ExecuteError, ReadError,
-                     WriteError)
+                     WriteError, HistoryError)
 from .http import format_go_time
 from .pbutils import msg2df, pb_map, df2msg
 from .pdutils import concat_dfs, should_reorder_columns
@@ -208,6 +208,29 @@ class Client(ClientBase):
         resp = stub.Exec(request)
         if resp.frame:
             return msg2df(resp.frame, self.frame_factory)
+
+    @grpc_raise(HistoryError)
+    def _history(self, backend, container, table, user, action, min_start_time, max_start_time, min_duration, max_duration):
+        dfs = self.do_history(backend, container, table, user, action, min_start_time, max_start_time, min_duration, max_duration)
+        return concat_dfs(dfs, "")
+
+    @grpc_raise(ReadError)
+    def do_history(self, backend, container, table, user, action, min_start_time, max_start_time, min_duration, max_duration):
+        stub = fgrpc.FramesStub(self._channel)
+        request = fpb.HistoryRequest(
+            session=self.session,
+            backend=backend,
+            table=table,
+            user=user,
+            action=action,
+            min_start_time=min_start_time,
+            max_start_time=max_start_time,
+            container=container,
+            min_duration=min_duration,
+            max_duration=max_duration
+        )
+        for frame in stub.History(request):
+            yield msg2df(frame, self.frame_factory)
 
 
 def write_stream(request, frames):
