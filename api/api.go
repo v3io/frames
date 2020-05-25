@@ -36,6 +36,7 @@ import (
 	_ "github.com/v3io/frames/backends/kv"
 	_ "github.com/v3io/frames/backends/stream"
 	_ "github.com/v3io/frames/backends/tsdb"
+	"github.com/v3io/frames/backends/utils"
 	v3iohttp "github.com/v3io/v3io-go/pkg/dataplane/http"
 )
 
@@ -46,13 +47,14 @@ const (
 // API layer, implements common CRUD operations
 // TODO: Call it DAL? (data access layer)
 type API struct {
-	logger   logger.Logger
-	backends map[string]frames.DataBackend
-	config   *frames.Config
+	logger        logger.Logger
+	backends      map[string]frames.DataBackend
+	config        *frames.Config
+	historyServer *utils.HistoryServer
 }
 
 // New returns a new API layer struct
-func New(logger logger.Logger, config *frames.Config) (*API, error) {
+func New(logger logger.Logger, config *frames.Config, historyServer *utils.HistoryServer) (*API, error) {
 	if logger == nil {
 		var err error
 		logger, err = frames.NewLogger(config.Log.Level)
@@ -62,8 +64,9 @@ func New(logger logger.Logger, config *frames.Config) (*API, error) {
 	}
 
 	api := &API{
-		logger: logger,
-		config: config,
+		logger:        logger,
+		config:        config,
+		historyServer: historyServer,
 	}
 
 	if err := api.createBackends(config); err != nil {
@@ -86,6 +89,7 @@ func (api *API) Read(request *frames.ReadRequest, out chan frames.Frame) error {
 		return fmt.Errorf("unknown backend - %q", request.Proto.Backend)
 	}
 
+	queryStartTime := time.Now()
 	iter, err := backend.Read(request)
 	if err != nil {
 		api.logger.ErrorWith("can't query", "error", err)
@@ -96,12 +100,17 @@ func (api *API) Read(request *frames.ReadRequest, out chan frames.Frame) error {
 		out <- iter.At()
 	}
 
+	queryDuration := time.Now().Sub(queryStartTime)
+
 	if err := iter.Err(); err != nil {
 		msg := "error during iteration"
 		api.logger.ErrorWith(msg, "error", err)
 		return errors.Wrap(err, msg)
 	}
 
+	if api.historyServer != nil {
+		api.historyServer.AddQueryLog(request, queryDuration, queryStartTime)
+	}
 	return nil
 }
 
@@ -119,13 +128,13 @@ func (api *API) Write(request *frames.WriteRequest, in chan frames.Frame) (int, 
 		return -1, -1, fmt.Errorf("unknown backend - %s", request.Backend)
 	}
 
+	ingestStartTime := time.Now()
 	appender, err := backend.Write(request)
 	if err != nil {
 		msg := "backend Write failed"
 		api.logger.ErrorWith(msg, "error", err)
 		return -1, -1, errors.Wrap(err, msg)
 	}
-	defer appender.Close()
 	nFrames, nRows := 0, 0
 	if request.ImmidiateData != nil {
 		nFrames, nRows = 1, request.ImmidiateData.Len()
@@ -160,6 +169,11 @@ func (api *API) Write(request *frames.WriteRequest, in chan frames.Frame) (int, 
 		api.logger.DebugWith("write request with zero rows", "frames", nFrames, "requst", request)
 	}
 
+	ingestDuration := time.Now().Sub(ingestStartTime)
+	if api.historyServer != nil {
+		api.historyServer.AddIngestLog(request, ingestDuration, ingestStartTime)
+	}
+
 	return nFrames, nRows, nil
 }
 
@@ -177,9 +191,15 @@ func (api *API) Create(request *frames.CreateRequest) error {
 		return fmt.Errorf("unknown backend - %s", request.Proto.Backend)
 	}
 
+	createStartTime := time.Now()
 	if err := backend.Create(request); err != nil {
 		api.logger.ErrorWith("error creating table", "error", err, "request", request)
 		return errors.Wrap(err, "error creating table")
+	}
+
+	createDuration := time.Now().Sub(createStartTime)
+	if api.historyServer != nil {
+		api.historyServer.AddCreateLog(request, createDuration, createStartTime)
 	}
 
 	return nil
@@ -199,9 +219,16 @@ func (api *API) Delete(request *frames.DeleteRequest) error {
 		return fmt.Errorf("unknown backend - %s", request.Proto.Backend)
 	}
 
+	deleteStartTime := time.Now()
+
 	if err := backend.Delete(request); err != nil {
 		api.logger.ErrorWith("error deleting table", "error", err, "request", request)
 		return errors.Wrap(err, "can't delete")
+	}
+
+	deleteDuration := time.Now().Sub(deleteStartTime)
+	if api.historyServer != nil {
+		api.historyServer.AddDeleteLog(request, deleteDuration, deleteStartTime)
 	}
 
 	return nil
@@ -222,13 +249,22 @@ func (api *API) Exec(request *frames.ExecRequest) (frames.Frame, error) {
 		return nil, fmt.Errorf("unknown backend - %s", request.Proto.Backend)
 	}
 
+	executeStartTime := time.Now()
 	frame, err := backend.Exec(request)
 	if err != nil {
 		api.logger.ErrorWith("error in exec", "error", err, "request", request)
 		return nil, errors.Wrap(err, "can't exec")
 	}
 
+	executeDuration := time.Now().Sub(executeStartTime)
+	if api.historyServer != nil {
+		api.historyServer.AddExecuteLog(request, executeDuration, executeStartTime)
+	}
 	return frame, nil
+}
+
+func (api *API) History(request *frames.HistoryRequest, out chan frames.Frame) error {
+	return api.historyServer.GetLogs(request, out)
 }
 
 func (api *API) createBackends(config *frames.Config) error {

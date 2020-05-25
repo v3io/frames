@@ -30,6 +30,7 @@ import (
 	"github.com/pkg/errors"
 	"github.com/v3io/frames"
 	"github.com/v3io/frames/api"
+	"github.com/v3io/frames/backends/utils"
 	"github.com/v3io/frames/pb"
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/reflection"
@@ -51,7 +52,7 @@ type Server struct {
 }
 
 // NewServer returns a new gRPC server
-func NewServer(config *frames.Config, addr string, logger logger.Logger) (*Server, error) {
+func NewServer(config *frames.Config, addr string, logger logger.Logger, historyServer *utils.HistoryServer) (*Server, error) {
 	if err := config.Validate(); err != nil {
 		return nil, errors.Wrap(err, "bad configuration")
 	}
@@ -68,7 +69,7 @@ func NewServer(config *frames.Config, addr string, logger logger.Logger) (*Serve
 		}
 	}
 
-	api, err := api.New(logger, config)
+	api, err := api.New(logger, config, historyServer)
 	if err != nil {
 		return nil, errors.Wrap(err, "can't create API")
 	}
@@ -307,4 +308,43 @@ func (s *Server) Exec(ctx context.Context, req *pb.ExecRequest) (*pb.ExecRespons
 	}
 
 	return resp, nil
+}
+
+// History returns framesd history logs
+func (s *Server) History(request *pb.HistoryRequest, stream pb.Frames_HistoryServer) error {
+	ch := make(chan frames.Frame)
+
+	password := frames.InitSecretString(request.Session.Password)
+	token := frames.InitSecretString(request.Session.Token)
+	request.Session.Password = ""
+	request.Session.Token = ""
+
+	req := frames.HistoryRequest{
+		Proto:    request,
+		Password: password,
+		Token:    token,
+	}
+
+	var apiError error
+	go func() {
+		defer close(ch)
+		apiError = s.api.History(&req, ch)
+		if apiError != nil {
+			s.logger.ErrorWith("API error reading", "error", apiError)
+		}
+	}()
+
+	for frame := range ch {
+		fpb, ok := frame.(pb.Framed)
+		if !ok {
+			s.logger.Error("unknown frame type")
+			return errors.New("unknown frame type")
+		}
+
+		if err := stream.Send(fpb.Proto()); err != nil {
+			return err
+		}
+	}
+
+	return apiError
 }
