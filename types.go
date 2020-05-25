@@ -21,6 +21,8 @@ such restriction.
 package frames
 
 import (
+	"fmt"
+	"strings"
 	"time"
 
 	"github.com/pkg/errors"
@@ -156,6 +158,65 @@ type ReadRequest struct {
 	Token    SecretString
 }
 
+func (readRequest ReadRequest) ToMap() map[string]string {
+
+	reqMap := make(map[string]string, 10)
+
+	if readRequest.Proto.Query != "" {
+		reqMap["query"] = readRequest.Proto.Query
+	}
+	if len(readRequest.Proto.Columns) > 0 {
+		reqMap["columns"] = strings.Join(readRequest.Proto.Columns, ",")
+	}
+	if readRequest.Proto.Filter != "" {
+		reqMap["filter"] = readRequest.Proto.Filter
+	}
+	if readRequest.Proto.GroupBy != "" {
+		reqMap["groupBy"] = readRequest.Proto.GroupBy
+	}
+	if readRequest.Proto.Limit != 0 {
+		reqMap["limit"] = fmt.Sprintf("%v", readRequest.Proto.Limit)
+	}
+	if readRequest.Proto.MessageLimit != 0 {
+		reqMap["messageLimit"] = fmt.Sprintf("%v", readRequest.Proto.MessageLimit)
+	}
+	if len(readRequest.Proto.ShardingKeys) > 0 {
+		reqMap["shardingkeys"] = strings.Join(readRequest.Proto.ShardingKeys, ",")
+	}
+	if readRequest.Proto.SortKeyRangeStart != "" {
+		reqMap["sortKeyRangeStart"] = readRequest.Proto.SortKeyRangeStart
+	}
+	if readRequest.Proto.SortKeyRangeEnd != "" {
+		reqMap["sortKeyRangeEnd"] = readRequest.Proto.SortKeyRangeEnd
+	}
+	if readRequest.Proto.Start != "" {
+		reqMap["start"] = readRequest.Proto.Start
+	}
+	if readRequest.Proto.End != "" {
+		reqMap["end"] = readRequest.Proto.End
+	}
+	if readRequest.Proto.Step != "" {
+		reqMap["step"] = readRequest.Proto.Step
+	}
+	if readRequest.Proto.Aggregators != "" {
+		reqMap["aggregators"] = readRequest.Proto.Aggregators
+	}
+	if readRequest.Proto.AggregationWindow != "" {
+		reqMap["aggregationWindow"] = readRequest.Proto.AggregationWindow
+	}
+	if readRequest.Proto.Seek != "" {
+		reqMap["seek"] = readRequest.Proto.Seek
+	}
+	if readRequest.Proto.ShardId != "" {
+		reqMap["shardID"] = readRequest.Proto.ShardId
+	}
+	if readRequest.Proto.Sequence != 0 {
+		reqMap["sequence"] = fmt.Sprintf("%v", readRequest.Proto.Sequence)
+	}
+
+	return reqMap
+}
+
 // JoinStruct is a join structure
 type JoinStruct = pb.JoinStruct
 
@@ -181,6 +242,25 @@ type WriteRequest struct {
 	SaveMode SaveMode
 }
 
+func (writeRequest WriteRequest) ToMap() map[string]string {
+
+	reqMap := make(map[string]string)
+
+	if writeRequest.Expression != "" {
+		reqMap["expression"] = writeRequest.Expression
+	}
+	if writeRequest.Condition != "" {
+		reqMap["condition"] = writeRequest.Condition
+	}
+	if len(writeRequest.PartitionKeys) > 0 {
+		reqMap["partitionKeys"] = strings.Join(writeRequest.PartitionKeys, ",")
+	}
+
+	reqMap["saveMode"] = writeRequest.SaveMode.String()
+
+	return reqMap
+}
+
 // CreateRequest is a table creation request
 type CreateRequest struct {
 	Proto    *pb.CreateRequest
@@ -188,9 +268,59 @@ type CreateRequest struct {
 	Token    SecretString
 }
 
+func (createRequest CreateRequest) ToMap() map[string]string {
+
+	reqMap := make(map[string]string)
+
+	if createRequest.Proto.Rate != "" {
+		reqMap["rate"] = createRequest.Proto.Rate
+	}
+	if createRequest.Proto.Aggregates != "" {
+		reqMap["aggregates"] = createRequest.Proto.Aggregates
+	}
+	if createRequest.Proto.AggregationGranularity != "" {
+		reqMap["aggregationGranularity"] = createRequest.Proto.AggregationGranularity
+	}
+	if createRequest.Proto.Shards != 0 {
+		reqMap["shards"] = fmt.Sprintf("%v", createRequest.Proto.Shards)
+	}
+	if createRequest.Proto.RetentionHours != 0 {
+		reqMap["retentionHours"] = fmt.Sprintf("%v", createRequest.Proto.RetentionHours)
+	}
+
+	return reqMap
+}
+
 // DeleteRequest is a deletion request
 type DeleteRequest struct {
 	Proto    *pb.DeleteRequest
+	Password SecretString
+	Token    SecretString
+}
+
+func (deleteRequest DeleteRequest) ToMap() map[string]string {
+
+	reqMap := make(map[string]string)
+
+	if deleteRequest.Proto.Filter != "" {
+		reqMap["filter"] = deleteRequest.Proto.Filter
+	}
+	if deleteRequest.Proto.Start != "" {
+		reqMap["start"] = deleteRequest.Proto.Start
+	}
+	if deleteRequest.Proto.End != "" {
+		reqMap["end"] = deleteRequest.Proto.End
+	}
+	if len(deleteRequest.Proto.Metrics) > 0 {
+		reqMap["metrics"] = strings.Join(deleteRequest.Proto.Metrics, ",")
+	}
+
+	return reqMap
+}
+
+// HistoryRequest is a history logs request
+type HistoryRequest struct {
+	Proto    *pb.HistoryRequest
 	Password SecretString
 	Token    SecretString
 }
@@ -218,6 +348,25 @@ type ExecRequest struct {
 	Proto    *pb.ExecRequest
 	Password SecretString
 	Token    SecretString
+}
+
+func (executeRequest ExecRequest) ToMap() map[string]string {
+
+	reqMap := make(map[string]string)
+
+	if executeRequest.Proto.Command != "" {
+		reqMap["command"] = executeRequest.Proto.Command
+	}
+	if executeRequest.Proto.Expression != "" {
+		reqMap["expression"] = executeRequest.Proto.Expression
+	}
+	if len(executeRequest.Proto.Args) > 0 {
+		for k, v := range executeRequest.Proto.Args {
+			reqMap[fmt.Sprintf("args_%v", k)] = v.String()
+		}
+	}
+
+	return reqMap
 }
 
 // Hides a string such as a password from both plain and json logs.

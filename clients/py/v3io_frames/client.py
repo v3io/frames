@@ -256,7 +256,7 @@ class ClientBase:
             max_rows_in_msg, marker, iterator, get_raw, **kw)
 
     def write(self, backend, table, dfs, expression='', condition='',
-              labels=None,  max_rows_in_msg=0, index_cols=None,
+              labels=None, max_rows_in_msg=0, index_cols=None,
               save_mode='createNewItemsOnly', partition_keys=None):
         """Writes data to a data collection
 
@@ -305,7 +305,7 @@ class ClientBase:
             dfs = [dfs]
 
         if max_rows_in_msg:
-            dfs = self._iter_chunks(dfs,  max_rows_in_msg)
+            dfs = self._iter_chunks(dfs, max_rows_in_msg)
 
         request = self._encode_write(
             self._alias_backends(backend), table, expression, condition, save_mode, partition_keys)
@@ -409,6 +409,41 @@ class ClientBase:
         """
         self._validate_request(backend, table, ExecuteError)
         return self._execute(self._alias_backends(backend), table, command, args, expression=None)
+
+    def history(self, backend='', container='', table='', user='', action='', min_start_time='', max_start_time='', min_duration=0, max_duration=0):
+        """Returns usage history logs for frames service
+
+        Parameters
+        ----------
+        backend (Optional) : str
+            Filter by Backend name - 'nosql'/'kv' | 'tsdb' | 'stream' | 'csv' (for tests)
+        table (Optional) : str
+            Filter by associated table
+        user (Optional) : str
+            Filter by the user that ran the command
+        action (Optional) : str
+            Filter logs by action type - 'query'
+        start_time (Optional): string
+            Start log time to query, as a string containing an RFC 3339 time, a Unix
+             timestamp in milliseconds, a relative time (`'now'` or
+             `'now-[0-9]+[mhd]'`, where `m` = minutes, `h` = hours, and `'d'` =
+             days), or 0 for the earliest time; the default is 0, to get all logs.
+         end_time (Optional): string
+            End log time to query, as a string containing an RFC 3339 time, a Unix
+             timestamp in milliseconds, a relative time (`'now'` or
+             `'now-[0-9]+[mhd]'`, where `m` = minutes, `h` = hours, and `'d'` =
+             days); the default is 'now', to get all logs.
+
+        Raises
+        ------
+        HistoryError
+            On request error
+        """
+        df = self._history(self._alias_backends(backend), container, table, user, action, min_start_time, max_start_time, min_duration, max_duration)
+
+        if not df.empty:
+            df.sort_values('StartTime', inplace=True)
+        return df
 
     def _fix_address(self, address):
         return address

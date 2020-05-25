@@ -107,45 +107,50 @@ func AsInt64Array(val []byte) []uint64 {
 }
 
 // DeleteTable deletes a table
-func DeleteTable(logger logger.Logger, container v3io.Container, path, filter string, workers int, ignoreMissing bool) error {
+func DeleteTable(logger logger.Logger, container v3io.Container, path, filter string, getItemsWorkers int, deleteWorkers int, ignoreMissing bool) error {
+
+	overallNumWorkers := getItemsWorkers + deleteWorkers
 
 	fileNameChan := make(chan string, 1024)
-	getItemsTerminationChan := make(chan error, workers)
-	deleteTerminationChan := make(chan error, workers)
-	onErrorTerminationChannel := make(chan struct{}, 2*workers)
+	getItemsTerminationChan := make(chan error, getItemsWorkers)
+	deleteTerminationChan := make(chan error, deleteWorkers)
+	onErrorTerminationChannel := make(chan struct{}, overallNumWorkers)
 
-	for i := 0; i < workers; i++ {
+	for i := 0; i < getItemsWorkers; i++ {
 		input := &v3io.GetItemsInput{
 			Path:           path,
 			AttributeNames: []string{"__name"},
 			Filter:         filter,
 			Segment:        i,
-			TotalSegments:  workers,
+			TotalSegments:  getItemsWorkers,
 		}
 		go getItemsWorker(container, input, fileNameChan, getItemsTerminationChan, onErrorTerminationChannel)
+	}
+
+	for i := 0; i < deleteWorkers; i++ {
 		go deleteObjectWorker(path, container, fileNameChan, deleteTerminationChan, onErrorTerminationChannel)
 	}
 
 	var getItemsTerminated, deletesTerminated int
-	for deletesTerminated < workers {
+	for deletesTerminated < deleteWorkers {
 		select {
 		case err := <-getItemsTerminationChan:
 			if err != nil {
 				// If requested to ignore non-existing tables do not return error.
 				if errorWithStatusCode, ok := err.(v3ioerrors.ErrorWithStatusCode); !ok || !ignoreMissing || errorWithStatusCode.StatusCode() != http.StatusNotFound {
-					for i := 0; i < 2*workers; i++ {
+					for i := 0; i < overallNumWorkers; i++ {
 						onErrorTerminationChannel <- struct{}{}
 					}
 					return errors.Wrapf(err, "GetItems failed during recursive delete of '%s'.", path)
 				}
 			}
 			getItemsTerminated++
-			if getItemsTerminated == workers {
+			if getItemsTerminated == getItemsWorkers {
 				close(fileNameChan)
 			}
 		case err := <-deleteTerminationChan:
 			if err != nil {
-				for i := 0; i < 2*workers; i++ {
+				for i := 0; i < overallNumWorkers; i++ {
 					onErrorTerminationChannel <- struct{}{}
 				}
 				return errors.Wrapf(err, "Delete failed during recursive delete of '%s'.", path)
