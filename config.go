@@ -23,6 +23,7 @@ package frames
 import (
 	"encoding/json"
 	"fmt"
+	"math"
 	"os"
 )
 
@@ -211,7 +212,7 @@ func initBackendDefaults(cfg *BackendConfig, framesConfig *Config) {
 	}
 
 	if cfg.MaxConnections == 0 {
-		cfg.MaxConnections = 2048
+		cfg.MaxConnections = math.MaxInt64
 	}
 
 	if cfg.DialTimeoutSeconds == 0 {
@@ -223,7 +224,7 @@ func initBackendDefaults(cfg *BackendConfig, framesConfig *Config) {
 		case "csv", "stream":
 			cfg.V3ioGoWorkers = 256
 		default:
-			cfg.V3ioGoWorkers = cfg.MaxConnections / 2
+			cfg.V3ioGoWorkers = 1024
 		}
 	}
 
