@@ -58,6 +58,8 @@ github.com/nuclio/nuclio-test-go v0.0.0-20180704132150-0ce6587f8e37/go.mod h1:aO
 github.com/nuclio/zap v0.0.0-20180228181516-4a2bd2f9ef28/go.mod h1:SUxPsgePvlyjx6c5MtGdB50pf0IQThtlyLwISLboeuc=
 github.com/nuclio/zap v0.0.2 h1:rY5PkMOl8CTkqRqIPuxziBiKK6Mq/8oEurfgRnNtqf0=
 github.com/nuclio/zap v0.0.2/go.mod h1:SUxPsgePvlyjx6c5MtGdB50pf0IQThtlyLwISLboeuc=
+github.com/pavius/impi v0.0.3 h1:DND6MzU+BLABhOZXbELR3FU8b+zDgcq4dOCNLhiTYuI=
+github.com/pavius/impi v0.0.3/go.mod h1:x/hU0bfdWIhuOT1SKwiJg++yvkk6EuOtJk8WtDZqgr8=
 github.com/pavius/zap v0.0.0-20180228181622-8d52692529b8/go.mod h1:6FWOCx06uh50GClv8S2cfk3asqTJs3qq3ZNRtLZE77I=
 github.com/pavius/zap v1.4.2-0.20180228181622-8d52692529b8 h1:WqLgmr/wj9TO5Sc6oYPQRAJBxuHE0NTeuVeFnT+FZVo=
 github.com/pavius/zap v1.4.2-0.20180228181622-8d52692529b8/go.mod h1:6FWOCx06uh50GClv8S2cfk3asqTJs3qq3ZNRtLZE77I=
@@ -72,8 +74,8 @@ github.com/prometheus/prometheus v2.5.0+incompatible/go.mod h1:oAIUtOny2rjMX0OWN
 github.com/rcrowley/go-metrics v0.0.0-20181016184325-3113b8401b8a h1:9ZKAASQSHhDYGoxY8uLVpewe1GDZ2vu2Tr/vTdVAkFQ=
 github.com/rcrowley/go-metrics v0.0.0-20181016184325-3113b8401b8a/go.mod h1:bCqnVzQkZxMG4s8nGwiZ5l3QUCyqpo9Y+/ZMZ9VjZe4=
 github.com/rs/xid v1.1.0/go.mod h1:+uKXf+4Djp6Md1KODXJxgGQPKngRmWyn10oCKFzNHOQ=
-github.com/russross/blackfriday v1.5.2+incompatible/go.mod h1:JO/DiYxRf+HjHt06OyowR9PTA263kcR/rfWxYHBV53g=
 github.com/russross/blackfriday v1.5.2/go.mod h1:JO/DiYxRf+HjHt06OyowR9PTA263kcR/rfWxYHBV53g=
+github.com/russross/blackfriday v1.5.2+incompatible/go.mod h1:JO/DiYxRf+HjHt06OyowR9PTA263kcR/rfWxYHBV53g=
 github.com/spaolacci/murmur3 v0.0.0-20180118202830-f09979ecbc72 h1:qLC7fQah7D6K1B0ujays3HV9gkFtllcxhzImRR7ArPQ=
 github.com/spaolacci/murmur3 v0.0.0-20180118202830-f09979ecbc72/go.mod h1:JwIasOWyU6f++ZhiEuf87xNszmSA2myDM2Kzu9HwQUA=
 github.com/spf13/cobra v0.0.3/go.mod h1:1l0Ry5zgKvJasoi3XT1TypsSe7PqH0Sj9dhYf7v3XqQ=
@@ -100,6 +102,8 @@ github.com/v3io/v3io-go v0.1.5-0.20200301152134-6880d30985de h1:UcOuqrNG4DFs50f+
 github.com/v3io/v3io-go v0.1.5-0.20200301152134-6880d30985de/go.mod h1:D0W1tjsVgcp4xk3ZI2fjKTKaOpYJLewN1BPN0x2osO4=
 github.com/v3io/v3io-go v0.1.5-0.20200308131040-79c5a91d3daf/go.mod h1:D0W1tjsVgcp4xk3ZI2fjKTKaOpYJLewN1BPN0x2osO4=
 github.com/v3io/v3io-go v0.1.5-0.20200316155009-cc83de374ff2/go.mod h1:D0W1tjsVgcp4xk3ZI2fjKTKaOpYJLewN1BPN0x2osO4=
+github.com/v3io/v3io-go v0.1.5-0.20200416113214-f1b82b9a8e82 h1:4LEQnRvqUtAk++AOKlrIUa13KJmmc7i4dy+gFej4vQk=
+github.com/v3io/v3io-go v0.1.5-0.20200416113214-f1b82b9a8e82/go.mod h1:D0W1tjsVgcp4xk3ZI2fjKTKaOpYJLewN1BPN0x2osO4=
 github.com/v3io/v3io-go v0.1.5-0.20200416113214-f1b82b9a8e827102205ac180d9973680abe65de5 h1:VN9+Z6IcOsIWjjMAqfcfzbvuWObstdCBAZJ6G3o/6AI=
 github.com/v3io/v3io-go v0.1.5-0.20200416113214-f1b82b9a8e827102205ac180d9973680abe65de5/go.mod h1:D0W1tjsVgcp4xk3ZI2fjKTKaOpYJLewN1BPN0x2osO4=
 github.com/v3io/v3io-go-http v0.0.0-20190221115935-53e2b487c9a2 h1:NJc63wM25iS+ci5z7LVwjWD4QM0QpTQw/fovKzatss0=

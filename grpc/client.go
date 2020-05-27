@@ -58,7 +58,7 @@ func NewClient(address string, session *frames.Session, logger logger.Logger) (*
 	conn, err := grpc.Dial(
 		address,
 		grpc.WithInsecure(),
-		grpc.WithMaxMsgSize(grpcMsgSize),
+		grpc.WithDefaultCallOptions(MaxCallRecvMsgSize(grpcMsgSize)),
 	)
 	if err != nil {
 		return nil, errors.Wrap(err, "can't create gRPC connection")

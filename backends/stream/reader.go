@@ -45,7 +45,7 @@ type streamIterator struct {
 func (b *Backend) Read(request *frames.ReadRequest) (frames.FrameIterator, error) {
 
 	if request.Proto.Table == "" || request.Proto.Seek == "" || request.Proto.ShardId == "" {
-		return nil, fmt.Errorf("missing essential paramaters, need: table, seek, shard parameters")
+		return nil, fmt.Errorf("missing essential parameters, need: table, seek, shard parameters")
 	}
 
 	container, path, err := b.newConnection(request.Proto.Session, request.Password.Get(), request.Token.Get(), request.Proto.Table, true)

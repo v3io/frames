@@ -100,7 +100,7 @@ func (api *API) Read(request *frames.ReadRequest, out chan frames.Frame) error {
 		out <- iter.At()
 	}
 
-	queryDuration := time.Now().Sub(queryStartTime)
+	queryDuration := time.Since(queryStartTime)
 
 	if err := iter.Err(); err != nil {
 		msg := "error during iteration"
@@ -169,7 +169,7 @@ func (api *API) Write(request *frames.WriteRequest, in chan frames.Frame) (int, 
 		api.logger.DebugWith("write request with zero rows", "frames", nFrames, "requst", request)
 	}
 
-	ingestDuration := time.Now().Sub(ingestStartTime)
+	ingestDuration := time.Since(ingestStartTime)
 	if api.historyServer != nil {
 		api.historyServer.AddIngestLog(request, ingestDuration, ingestStartTime)
 	}

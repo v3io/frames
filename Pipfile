@@ -1,0 +1,20 @@
+[[source]]
+url = "https://pypi.org/simple"
+verify_ssl = true
+name = "pypi"
+
+[packages]
+googleapis-common-protos = ">=1.5.3"
+grpcio-tools = ">=1.26.0"
+pandas = ">=0.23.4"
+requests = ">=2.19.1"
+
+[dev-packages]
+flake8 = "*"
+ipython = "*"
+numpydoc = "*"
+pytest = "*"
+pyyaml = "*"
+sphinx = "*"
+twine = "*"
+pytest-benchmark = "*"

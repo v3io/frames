@@ -174,7 +174,7 @@ func DeleteTable(logger logger.Logger, container v3io.Container, path, filter st
 func getItemsWorker(container v3io.Container, input *v3io.GetItemsInput, fileNameChan chan<- string, terminationChan chan<- error, onErrorTerminationChannel <-chan struct{}) {
 	for {
 		select {
-		case _ = <-onErrorTerminationChannel:
+		case <-onErrorTerminationChannel:
 			terminationChan <- nil
 			return
 		default:
@@ -216,7 +216,7 @@ func deleteObjectWorker(tablePath string, container v3io.Container, fileNameChan
 					return
 				}
 			}
-		case _ = <-onErrorTerminationChannel:
+		case <-onErrorTerminationChannel:
 			return
 		}
 	}
