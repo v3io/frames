@@ -23,10 +23,8 @@ func newWorker(ctx context.Context, pool *Pool) (*worker, error) {
 
 func (w *worker) handleTasks() error {
 	for {
-		select {
-		case task := <-w.pool.taskChan:
-			_ = w.handleTask(task)
-		}
+		task := <-w.pool.taskChan
+		_ = w.handleTask(task)
 	}
 }
 
