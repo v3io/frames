@@ -22,4 +22,4 @@ require (
 
 replace github.com/xwb1989/sqlparser => github.com/v3io/sqlparser v0.0.0-20190306105200-4d7273501871
 
-replace github.com/v3io/v3io-go => github.com/gtopper/v3io-go v0.0.0-00000000000000-de03c95353eacfbd5a4933a4039ca02cf953d8f7
+replace github.com/v3io/v3io-go => github.com/gtopper/v3io-go v0.0.0-00000000000000-fb9dda26ff414d2b62d1aca066be17d7a54e506c

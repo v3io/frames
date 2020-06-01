@@ -23,7 +23,6 @@ package frames
 import (
 	"encoding/json"
 	"fmt"
-	"math"
 	"os"
 )
 
@@ -212,7 +211,8 @@ func initBackendDefaults(cfg *BackendConfig, framesConfig *Config) {
 	}
 
 	if cfg.MaxConnections == 0 {
-		cfg.MaxConnections = math.MaxInt64
+		// Generally, there are 16k ephemeral ports available. We default to a 10k max to allow using most but not all.
+		cfg.MaxConnections = 10000
 	}
 
 	if cfg.DialTimeoutSeconds == 0 {
