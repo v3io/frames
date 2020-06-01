@@ -211,7 +211,7 @@ func initBackendDefaults(cfg *BackendConfig, framesConfig *Config) {
 	}
 
 	if cfg.MaxConnections == 0 {
-		// Generally, there are 16k ephemeral ports available. We default to a 10k max to allow using most but not all.
+		// Generally, on a Linux system, there are 28k ephemeral ports available. We default to a 10k max.
 		cfg.MaxConnections = 10000
 	}
 
