@@ -24,6 +24,7 @@ package api
 
 import (
 	"fmt"
+	"math"
 	"strings"
 	"time"
 
@@ -271,7 +272,7 @@ func (api *API) createBackends(config *frames.Config) error {
 	api.backends = make(map[string]frames.DataBackend)
 
 	for _, backendConfig := range config.Backends {
-		newClient := v3iohttp.NewClient(&v3iohttp.NewClientInput{DialTimeout: time.Duration(backendConfig.DialTimeoutSeconds) * time.Second})
+		newClient := v3iohttp.NewClient(&v3iohttp.NewClientInput{DialTimeout: time.Duration(backendConfig.DialTimeoutSeconds) * time.Second, MaxConnsPerHost: math.MaxInt64})
 
 		api.logger.InfoWith("Creating v3io context for backend",
 			"backend", backendConfig.Name,
