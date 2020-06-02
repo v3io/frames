@@ -284,7 +284,7 @@ func (api *API) createBackends(config *frames.Config) error {
 			HTTPClient:     newClient,
 			NumWorkers:     backendConfig.V3ioGoWorkers,
 			RequestChanLen: backendConfig.V3ioGoRequestChanLength,
-			MaxConns:       int64(backendConfig.MaxConnections),
+			MaxConns:       backendConfig.MaxConnections,
 		}
 		// create a context for the backend
 		v3ioContext, err := v3iohttp.NewContext(api.logger, newContextInput)
