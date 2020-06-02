@@ -101,7 +101,7 @@ func (api *API) Read(request *frames.ReadRequest, out chan frames.Frame) error {
 		out <- iter.At()
 	}
 
-	queryDuration := time.Now().Sub(queryStartTime)
+	queryDuration := time.Since(queryStartTime)
 
 	if err := iter.Err(); err != nil {
 		msg := "error during iteration"
@@ -170,7 +170,7 @@ func (api *API) Write(request *frames.WriteRequest, in chan frames.Frame) (int, 
 		api.logger.DebugWith("write request with zero rows", "frames", nFrames, "requst", request)
 	}
 
-	ingestDuration := time.Now().Sub(ingestStartTime)
+	ingestDuration := time.Since(ingestStartTime)
 	if api.historyServer != nil {
 		api.historyServer.AddIngestLog(request, ingestDuration, ingestStartTime)
 	}
@@ -198,7 +198,7 @@ func (api *API) Create(request *frames.CreateRequest) error {
 		return errors.Wrap(err, "error creating table")
 	}
 
-	createDuration := time.Now().Sub(createStartTime)
+	createDuration := time.Since(createStartTime)
 	if api.historyServer != nil {
 		api.historyServer.AddCreateLog(request, createDuration, createStartTime)
 	}
@@ -227,7 +227,7 @@ func (api *API) Delete(request *frames.DeleteRequest) error {
 		return errors.Wrap(err, "can't delete")
 	}
 
-	deleteDuration := time.Now().Sub(deleteStartTime)
+	deleteDuration := time.Since(deleteStartTime)
 	if api.historyServer != nil {
 		api.historyServer.AddDeleteLog(request, deleteDuration, deleteStartTime)
 	}
@@ -257,7 +257,7 @@ func (api *API) Exec(request *frames.ExecRequest) (frames.Frame, error) {
 		return nil, errors.Wrap(err, "can't exec")
 	}
 
-	executeDuration := time.Now().Sub(executeStartTime)
+	executeDuration := time.Since(executeStartTime)
 	if api.historyServer != nil {
 		api.historyServer.AddExecuteLog(request, executeDuration, executeStartTime)
 	}

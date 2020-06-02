@@ -149,7 +149,7 @@ func (b *Backend) Write(request *frames.WriteRequest) (frames.FrameAppender, err
 
 	if request.ImmidiateData != nil {
 		if err := ca.Add(request.ImmidiateData); err != nil {
-			return nil, errors.Wrap(err, "cannot add immidiate data")
+			return nil, errors.Wrap(err, "cannot add immediate data")
 		}
 	}
 
@@ -290,10 +290,10 @@ func (it *FrameIterator) buildFrame(rows [][]string) (frames.Frame, error) {
 			err  error
 		)
 
-		switch val0.(type) {
+		switch val0 := val0.(type) {
 		case int64:
 			typedData := make([]int64, len(rows))
-			typedData[0] = val0.(int64)
+			typedData[0] = val0
 			for r, row := range rows[1:] {
 				val, ok := it.parseValue(row[c]).(int64)
 				if !ok {
@@ -307,7 +307,7 @@ func (it *FrameIterator) buildFrame(rows [][]string) (frames.Frame, error) {
 			data = typedData
 		case float64:
 			typedData := make([]float64, len(rows))
-			typedData[0] = val0.(float64)
+			typedData[0] = val0
 			for r, row := range rows[1:] {
 				val, ok := it.parseValue(row[c]).(float64)
 				if !ok {
@@ -321,14 +321,14 @@ func (it *FrameIterator) buildFrame(rows [][]string) (frames.Frame, error) {
 			data = typedData
 		case string:
 			typedData := make([]string, len(rows))
-			typedData[0] = val0.(string)
+			typedData[0] = val0
 			for r, row := range rows[1:] {
 				typedData[r+1] = row[c] // +1 since we start in first row
 			}
 			data = typedData
 		case time.Time:
 			typedData := make([]time.Time, len(rows))
-			typedData[0] = val0.(time.Time)
+			typedData[0] = val0
 			for r, row := range rows[1:] {
 				val, ok := it.parseValue(row[c]).(time.Time)
 				if !ok {
@@ -342,7 +342,7 @@ func (it *FrameIterator) buildFrame(rows [][]string) (frames.Frame, error) {
 			data = typedData
 		case bool:
 			typedData := make([]bool, len(rows))
-			typedData[0] = val0.(bool)
+			typedData[0] = val0
 			for r, row := range rows[1:] {
 				val, ok := it.parseValue(row[c]).(bool)
 				if !ok {

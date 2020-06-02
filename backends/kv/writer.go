@@ -81,7 +81,7 @@ func (kv *Backend) Write(request *frames.WriteRequest) (frames.FrameAppender, er
 			// If this is the first time we writing to the table, there is nothing to delete.
 			err = v3ioutils.DeleteTable(kv.logger, container, tablePath, "", kv.numWorkers, kv.numWorkers*kv.updateWorkersPerVN, true)
 			if err != nil {
-				return nil, fmt.Errorf("error occured while deleting table '%v', err: %v", tablePath, err)
+				return nil, fmt.Errorf("error occurred while deleting table '%v', err: %v", tablePath, err)
 			}
 			schema = nil
 		case frames.ErrorIfTableExists:
@@ -478,10 +478,7 @@ func (a *Appender) funcFromCol(indexCol frames.Column) (func(int) interface{}, e
 	case frames.BoolType:
 		fn = func(i int) interface{} {
 			bval, _ := indexCol.BoolAt(i)
-			if bval {
-				return true
-			}
-			return false
+			return bval
 		}
 	default:
 		return nil, fmt.Errorf("unknown column type - '%v'", indexCol.DType())

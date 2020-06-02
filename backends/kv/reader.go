@@ -247,9 +247,7 @@ func (ki *Iterator) Next() bool {
 				continue
 			}
 
-			var err error
-			err = utils.AppendNil(byName[name])
-			if err != nil {
+			if err := utils.AppendNil(byName[name]); err != nil {
 				ki.err = err
 				return false
 			}
