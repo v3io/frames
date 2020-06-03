@@ -106,7 +106,13 @@ podTemplate(label: "${git_project}-${label}", inheritFrom: "jnlp-docker-golang-p
                                     }
                                 }
                             },
-
+                            'build framulate': {
+                                container('docker-cmd') {
+                                    dir("${github.BUILD_FOLDER}/src/github.com/${git_project_upstream_user}/${git_project}") {
+                                        common.shellc("FRAMES_REPOSITORY= FRAMES_TAG=${github.DOCKER_TAG_VERSION} make build-framulate")
+                                    }
+                                }
+                            },
                     )
 
                     parallel(
@@ -168,7 +174,9 @@ podTemplate(label: "${git_project}-${label}", inheritFrom: "jnlp-docker-golang-p
                     )
 
                     container('docker-cmd') {
-                        dockerx.images_push_multi_registries(["frames:${github.DOCKER_TAG_VERSION}"], [pipelinex.DockerRepo.ARTIFACTORY_IGUAZIO, pipelinex.DockerRepo.DOCKER_HUB, pipelinex.DockerRepo.QUAY_IO])
+                        dockerx.images_push_multi_registries(
+                            ["frames:${github.DOCKER_TAG_VERSION}", "framulate:${github.DOCKER_TAG_VERSION}"],
+                            [pipelinex.DockerRepo.ARTIFACTORY_IGUAZIO, pipelinex.DockerRepo.DOCKER_HUB, pipelinex.DockerRepo.QUAY_IO])
                     }
                 }
             }
