@@ -263,10 +263,8 @@ func newLset(labels map[string]interface{}, name string, singleCol bool, extraId
 		lset = append(lset, utils.Label{Name: "__name__", Value: name})
 	}
 
-	if extraIdx != nil {
-		for i, idx := range extraIdx {
-			lset = append(lset, utils.Label{Name: idx, Value: extraIdxVals[i]})
-		}
+	for i, idx := range extraIdx {
+		lset = append(lset, utils.Label{Name: idx, Value: extraIdxVals[i]})
 	}
 	sort.Sort(lset)
 	return lset, nil

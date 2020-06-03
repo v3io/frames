@@ -11,9 +11,10 @@ require (
 	github.com/nuclio/errors v0.0.1
 	github.com/nuclio/logger v0.0.1
 	github.com/nuclio/zap v0.0.2
+	github.com/pavius/impi v0.0.3 // indirect
 	github.com/pkg/errors v0.8.1
 	github.com/stretchr/testify v1.4.0
-	github.com/v3io/v3io-go v0.1.5-0.20200416113214-f1b82b9a8e827102205ac180d9973680abe65de5
+	github.com/v3io/v3io-go v0.1.5-0.20200416113214-f1b82b9a8e82
 	github.com/v3io/v3io-tsdb v0.10.3
 	github.com/valyala/fasthttp v1.2.0
 	github.com/xwb1989/sqlparser v0.0.0-20180606152119-120387863bf2
@@ -22,3 +23,5 @@ require (
 )
 
 replace github.com/xwb1989/sqlparser => github.com/v3io/sqlparser v0.0.0-20190306105200-4d7273501871
+
+replace github.com/v3io/v3io-go => github.com/v3io/v3io-go v0.0.0-20200602081255-9a94144f811c

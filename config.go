@@ -211,7 +211,8 @@ func initBackendDefaults(cfg *BackendConfig, framesConfig *Config) {
 	}
 
 	if cfg.MaxConnections == 0 {
-		cfg.MaxConnections = 2048
+		// Generally, on a Linux system, there are 28k ephemeral ports available. We default to a 10k max.
+		cfg.MaxConnections = 10000
 	}
 
 	if cfg.DialTimeoutSeconds == 0 {
@@ -223,7 +224,7 @@ func initBackendDefaults(cfg *BackendConfig, framesConfig *Config) {
 		case "csv", "stream":
 			cfg.V3ioGoWorkers = 256
 		default:
-			cfg.V3ioGoWorkers = cfg.MaxConnections / 2
+			cfg.V3ioGoWorkers = 1024
 		}
 	}
 

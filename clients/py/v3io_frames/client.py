@@ -417,22 +417,28 @@ class ClientBase:
         ----------
         backend (Optional) : str
             Filter by Backend name - 'nosql'/'kv' | 'tsdb' | 'stream' | 'csv' (for tests)
+        container (Optional) : str
+            Filter by associated v3io container
         table (Optional) : str
             Filter by associated table
         user (Optional) : str
             Filter by the user that ran the command
         action (Optional) : str
-            Filter logs by action type - 'query'
-        start_time (Optional): string
+            Filter logs by action type - supported actions: 'create, delete, execute, ingest, query'
+        min_start_time (Optional): string
             Start log time to query, as a string containing an RFC 3339 time, a Unix
              timestamp in milliseconds, a relative time (`'now'` or
              `'now-[0-9]+[mhd]'`, where `m` = minutes, `h` = hours, and `'d'` =
              days), or 0 for the earliest time; the default is 0, to get all logs.
-         end_time (Optional): string
+         max_start_time (Optional): string
             End log time to query, as a string containing an RFC 3339 time, a Unix
              timestamp in milliseconds, a relative time (`'now'` or
              `'now-[0-9]+[mhd]'`, where `m` = minutes, `h` = hours, and `'d'` =
              days); the default is 'now', to get all logs.
+         min_duration (Optional): int
+            Minimum desired action duration time in milliseconds.
+         max_duration (Optional): int
+            Maximum desired action duration time in milliseconds.
 
         Raises
         ------
