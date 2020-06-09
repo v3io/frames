@@ -45,9 +45,9 @@ var (
 
 func main() {
 	var config struct {
-		file        string
-		httpAddr    string
-		grpcAddr    string
+		file     string
+		httpAddr string
+		grpcAddr string
 	}
 
 	flag.StringVar(&config.file, "config", "", "path to configuration file (YAML)")
