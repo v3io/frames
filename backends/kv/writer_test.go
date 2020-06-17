@@ -22,10 +22,10 @@ package kv
 
 import (
 	"fmt"
-	"github.com/stretchr/testify/suite"
 	"testing"
 	"time"
 
+	"github.com/stretchr/testify/suite"
 	"github.com/v3io/frames"
 	"github.com/v3io/frames/test"
 )
