@@ -91,7 +91,6 @@ func (b *Backend) newConfig(session *frames.Session) *config.V3ioConfig {
 
 func (b *Backend) newAdapter(session *frames.Session, password string, token string, path string) (*tsdb.V3ioAdapter, error) {
 
-	session = frames.InitSessionDefaults(session, b.framesConfig)
 	containerName, newPath, err := v3ioutils.ProcessPaths(session, path, false)
 	if err != nil {
 		return nil, err
@@ -142,6 +141,8 @@ func getBytes(str string) []byte {
 
 // GetAdapter returns an adapter
 func (b *Backend) GetAdapter(session *frames.Session, password string, token string, path string) (*tsdb.V3ioAdapter, error) {
+
+	session = frames.InitSessionDefaults(session, b.framesConfig)
 	adapter, err := b.newAdapter(session, password, token, path)
 	if err != nil {
 		return nil, err
@@ -152,6 +153,7 @@ func (b *Backend) GetAdapter(session *frames.Session, password string, token str
 // GetQuerier returns a querier
 func (b *Backend) GetQuerier(session *frames.Session, password string, token string, path string) (*pquerier.V3ioQuerier, error) {
 
+	session = frames.InitSessionDefaults(session, b.framesConfig)
 	h := fnv.New64()
 	_, _ = h.Write(getBytes(session.Url))
 	_, _ = h.Write(getBytes(session.Container))
