@@ -22,6 +22,7 @@ package kv
 
 import (
 	"fmt"
+	"github.com/stretchr/testify/suite"
 	"testing"
 	"time"
 
@@ -29,8 +30,8 @@ import (
 	"github.com/v3io/frames/test"
 )
 
-func TestWriter(t *testing.T) {
-	t.Skip("TODO")
+type WriterTestSuite struct {
+	suite.Suite
 }
 
 func generateSequentialSampleFrameWithTypes(t *testing.T, size int, indexName string, columnNames map[string]string) frames.Frame {
@@ -73,7 +74,8 @@ func generateSequentialSampleFrameWithTypes(t *testing.T, size int, indexName st
 	return frame
 }
 
-func TestGenExpr(t *testing.T) {
+func (suite *WriterTestSuite) TestGenExpr() {
+	t := suite.T()
 	frame := generateSequentialSampleFrameWithTypes(t, 1,
 		"idx", map[string]string{"n1": "float", "n2": "time", "n3": "string", "n4": "bool"})
 	expression := "n1={n1};n2={n2};n3={n3};n4={n4};idx={idx};"
@@ -94,4 +96,35 @@ func TestGenExpr(t *testing.T) {
 	if expected != actual {
 		t.Fatalf("expression didn't match expected. \nexpected: %v \n actual: %v", expected, actual)
 	}
+}
+
+func (suite *WriterTestSuite) TestValidateFrameInput() {
+	column, err := frames.NewLabelColumn("col1", 5, 1)
+	suite.NoError(err)
+	columns := []frames.Column{column}
+	frame, err := frames.NewFrame(columns, nil, nil)
+	if err != nil {
+		suite.NoError(err)
+	}
+	writeRequest := frames.WriteRequest{}
+	err = validateFrameInput(frame, &writeRequest)
+	suite.NoError(err)
+}
+
+func (suite *WriterTestSuite) TestValidateFrameInputEmptyColumnName() {
+	column, err := frames.NewLabelColumn("", 5, 1)
+	suite.NoError(err)
+	columns := []frames.Column{column}
+	frame, err := frames.NewFrame(columns, nil, nil)
+	if err != nil {
+		suite.NoError(err)
+	}
+	writeRequest := frames.WriteRequest{}
+	err = validateFrameInput(frame, &writeRequest)
+	suite.Error(err)
+	suite.Equal("column number 0 has an empty name", err.Error())
+}
+
+func TestWriterTestSuite(t *testing.T) {
+	suite.Run(t, new(WriterTestSuite))
 }
