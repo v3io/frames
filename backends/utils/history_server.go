@@ -29,8 +29,8 @@ const (
 	maxLogsInMessage                    = 1000
 	maxRetryNum                         = 5
 
-	queryType   = "query"
-	ingestType  = "ingest"
+	readType    = "read"
+	WriteType   = "write"
 	createType  = "create"
 	deleteType  = "delete"
 	executeType = "execute"
@@ -202,7 +202,7 @@ func (m *HistoryServer) createV3ioClient(session *frames.Session, password strin
 	return container, nil
 }
 
-func (m *HistoryServer) AddQueryLog(readRequest *frames.ReadRequest, duration time.Duration, startTime time.Time) {
+func (m *HistoryServer) AddReadLog(readRequest *frames.ReadRequest, duration time.Duration, startTime time.Time) {
 	if !m.isActive {
 		return
 	}
@@ -214,7 +214,7 @@ func (m *HistoryServer) AddQueryLog(readRequest *frames.ReadRequest, duration ti
 			TableName:      readRequest.Proto.Table,
 			StartTime:      startTime,
 			ActionDuration: duration,
-			ActionType:     queryType,
+			ActionType:     readType,
 			AdditionalData: readRequest.ToMap(),
 			Container:      readRequest.Proto.Session.Container}
 
@@ -222,7 +222,7 @@ func (m *HistoryServer) AddQueryLog(readRequest *frames.ReadRequest, duration ti
 	}()
 }
 
-func (m *HistoryServer) AddIngestLog(writeRequest *frames.WriteRequest, duration time.Duration, startTime time.Time) {
+func (m *HistoryServer) AddWriteLog(writeRequest *frames.WriteRequest, duration time.Duration, startTime time.Time) {
 	if !m.isActive {
 		return
 	}
@@ -234,7 +234,7 @@ func (m *HistoryServer) AddIngestLog(writeRequest *frames.WriteRequest, duration
 			TableName:      writeRequest.Table,
 			StartTime:      startTime,
 			ActionDuration: duration,
-			ActionType:     ingestType,
+			ActionType:     WriteType,
 			AdditionalData: writeRequest.ToMap(),
 			Container:      writeRequest.Session.Container}
 

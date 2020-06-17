@@ -110,7 +110,7 @@ func (api *API) Read(request *frames.ReadRequest, out chan frames.Frame) error {
 	}
 
 	if api.historyServer != nil {
-		api.historyServer.AddQueryLog(request, queryDuration, queryStartTime)
+		api.historyServer.AddReadLog(request, queryDuration, queryStartTime)
 	}
 	return nil
 }
@@ -172,7 +172,7 @@ func (api *API) Write(request *frames.WriteRequest, in chan frames.Frame) (int, 
 
 	ingestDuration := time.Since(ingestStartTime)
 	if api.historyServer != nil {
-		api.historyServer.AddIngestLog(request, ingestDuration, ingestStartTime)
+		api.historyServer.AddWriteLog(request, ingestDuration, ingestStartTime)
 	}
 
 	return nFrames, nRows, nil
