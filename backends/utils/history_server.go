@@ -334,8 +334,6 @@ func (m *HistoryServer) GetLogs(request *frames.HistoryRequest, out chan frames.
 		return fmt.Errorf("Failed to list Frames History log folder %v for read, err: %v", m.LogsFolderPath, err)
 	}
 
-	i := 1
-
 	// Create default constant columns. Other type-specific column will be added during iteration
 	var userNameColData, backendNameColData, tableNameColData, actionTypeColData, containerColData []string
 	var actionDurationColData []int64
@@ -343,7 +341,6 @@ func (m *HistoryServer) GetLogs(request *frames.HistoryRequest, out chan frames.
 	var nullColumns []*pb.NullValuesMap
 	var hasNullsInCurrentDF bool
 	customColumnsByName := make(map[string][]string)
-	var indexColData []int
 	var rowsInCurrentDF int
 
 	// go over all log files in the folder
@@ -359,7 +356,7 @@ func (m *HistoryServer) GetLogs(request *frames.HistoryRequest, out chan frames.
 
 				frame, err := createDF(userNameColData, backendNameColData, tableNameColData, actionTypeColData, containerColData,
 					actionDurationColData, startTimeColData,
-					indexColData, customColumnsByName, nullColumns, hasNullsInCurrentDF)
+					rowsInCurrentDF, customColumnsByName, nullColumns, hasNullsInCurrentDF)
 				if err != nil {
 					return err
 				}
@@ -373,7 +370,6 @@ func (m *HistoryServer) GetLogs(request *frames.HistoryRequest, out chan frames.
 				startTimeColData = []time.Time{}
 				actionTypeColData = []string{}
 				containerColData = []string{}
-				indexColData = []int{}
 
 				customColumnsByName = make(map[string][]string)
 				nullColumns = []*pb.NullValuesMap{}
@@ -436,8 +432,6 @@ func (m *HistoryServer) GetLogs(request *frames.HistoryRequest, out chan frames.
 				}
 			}
 
-			indexColData = append(indexColData, i)
-			i++
 			rowsInCurrentDF++
 			nullColumns = append(nullColumns, &currentNullColumns)
 		}
@@ -451,10 +445,10 @@ func (m *HistoryServer) GetLogs(request *frames.HistoryRequest, out chan frames.
 		return iter.Err()
 	}
 
-	if len(indexColData) > 0 {
+	if rowsInCurrentDF > 0 {
 		frame, err := createDF(userNameColData, backendNameColData, tableNameColData, actionTypeColData, containerColData,
 			actionDurationColData, startTimeColData,
-			indexColData, customColumnsByName, nullColumns, hasNullsInCurrentDF)
+			rowsInCurrentDF, customColumnsByName, nullColumns, hasNullsInCurrentDF)
 		if err != nil {
 			return err
 		}
@@ -467,7 +461,7 @@ func (m *HistoryServer) GetLogs(request *frames.HistoryRequest, out chan frames.
 
 func createDF(userNameColData, backendNameColData, tableNameColData, actionTypeColData, containerColData []string,
 	actionDurationColData []int64, startTimeColData []time.Time,
-	indexColData []int, customColumnsByName map[string][]string, nullColumns []*pb.NullValuesMap, hasNullsInCurrentDF bool) (frames.Frame, error) {
+	size int, customColumnsByName map[string][]string, nullColumns []*pb.NullValuesMap, hasNullsInCurrentDF bool) (frames.Frame, error) {
 	var columns []frames.Column
 	col, _ := frames.NewSliceColumn("UserName", userNameColData)
 	columns = append(columns, col)
@@ -484,7 +478,7 @@ func createDF(userNameColData, backendNameColData, tableNameColData, actionTypeC
 	col, _ = frames.NewSliceColumn("Container", containerColData)
 	columns = append(columns, col)
 
-	indexColumn, _ := frames.NewSliceColumn("id", indexColData)
+	indexColumn, _ := frames.NewLabelColumn("id", nil, size)
 
 	for colName, colData := range customColumnsByName {
 		col, _ = frames.NewSliceColumn(colName, colData)
@@ -596,19 +590,21 @@ func (f historyFilter) filter(entry HistoryEntry) bool {
 		return false
 	}
 
-	if f.MinStartTime > entry.StartTime.Unix()*1000 {
+	logTimeInMillis := entry.StartTime.UnixNano() / int64(time.Millisecond)
+	if f.MinStartTime > logTimeInMillis {
 		return false
 	}
 
-	if f.MaxStartTime < entry.StartTime.Unix()*1000 {
+	if f.MaxStartTime < logTimeInMillis {
 		return false
 	}
 
-	if f.MinDuration > entry.ActionDuration.Nanoseconds()/1e6 {
+	durationTimeInMillis := entry.ActionDuration.Nanoseconds() / int64(time.Millisecond)
+	if f.MinDuration > durationTimeInMillis {
 		return false
 	}
 
-	if f.MaxDuration != 0 && f.MaxDuration < entry.ActionDuration.Nanoseconds()/1e6 {
+	if f.MaxDuration != 0 && f.MaxDuration < durationTimeInMillis {
 		return false
 	}
 

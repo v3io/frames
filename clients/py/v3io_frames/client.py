@@ -449,6 +449,7 @@ class ClientBase:
 
         if not df.empty:
             df.sort_values('StartTime', inplace=True)
+            df.reset_index(inplace=True)
         return df
 
     def _fix_address(self, address):

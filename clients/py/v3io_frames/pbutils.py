@@ -82,13 +82,17 @@ def pb2py(obj):
 
 
 def msg2df(frame, frame_factory, columns=None, do_reorder=True):
-    indices = [col2series(idx, None) for idx in frame.indices]
-    if len(indices) == 1:
-        new_index = indices[0]
-    elif len(indices) > 1:
-        new_index = pd.MultiIndex.from_arrays(indices)
-    else:
+    # Treat Null typed index as pandas range-index
+    if len(frame.indices) == 1 and frame.indices[0].dtype == fpb.NULL:
         new_index = None
+    else:
+        indices = [col2series(idx, None) for idx in frame.indices]
+        if len(indices) == 1:
+            new_index = indices[0]
+        elif len(indices) > 1:
+            new_index = pd.MultiIndex.from_arrays(indices)
+        else:
+            new_index = None
 
     data = {col.name: col2series(col, new_index) for col in frame.columns}
 
