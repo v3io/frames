@@ -52,6 +52,7 @@ func NewFilesCursor(container v3io.Container, input *v3io.GetContainerContentsIn
 		return nil, err
 	}
 
+	res.Release()
 	newFilesIterator.currentResponse = res.Output.(*v3io.GetContainerContentsOutput)
 	return newFilesIterator, nil
 }
@@ -71,13 +72,13 @@ func (ic *FilesCursor) Next() bool {
 		ic.currentFile = ic.currentResponse.Contents[ic.itemIndex]
 		ic.itemIndex++
 	} else {
-		newInput := &v3io.GetContainerContentsInput{Path: ic.input.Path, Marker: ic.currentResponse.NextMarker}
-		res, err := ic.container.GetContainerContentsSync(newInput)
+		ic.input.Marker = ic.currentResponse.NextMarker
+		res, err := ic.container.GetContainerContentsSync(ic.input)
 		if err != nil {
 			ic.currentError = err
 			return false
 		}
-
+		res.Release()
 		ic.currentResponse = res.Output.(*v3io.GetContainerContentsOutput)
 		ic.itemIndex = 0
 		return ic.Next()
