@@ -402,6 +402,9 @@ func NewLabelColumn(name string, value interface{}, size int) (Column, error) {
 	case time.Time:
 		msg.Dtype = pb.DType_TIME
 		msg.Times = []int64{value.(time.Time).UnixNano()}
+	case nil:
+		msg.Dtype = pb.DType_NULL
+		msg.Bools = []bool{false}
 	default:
 		return nil, fmt.Errorf("unknown data type %T", value)
 	}
