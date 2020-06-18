@@ -4,7 +4,6 @@ import (
 	"encoding/json"
 	"fmt"
 	"os"
-	"path"
 	"time"
 
 	"github.com/nuclio/logger"
@@ -328,9 +327,8 @@ func (m *HistoryServer) GetLogs(request *frames.HistoryRequest, out chan frames.
 		MinDuration:  request.Proto.MinDuration,
 		MaxDuration:  request.Proto.MaxDuration}
 
-	iter, err := utils.NewAsyncItemsCursor(m.container,
-		&v3io.GetItemsInput{Path: m.LogsFolderPath + "/", AttributeNames: []string{"__name"}},
-		8, nil, m.logger)
+	iter, err := v3ioutils.NewFilesCursor(m.container, &v3io.GetContainerContentsInput{Path: m.LogsFolderPath + "/"},
+		m.logger)
 
 	if err != nil {
 		return fmt.Errorf("Failed to list Frames History log folder %v for read, err: %v", m.LogsFolderPath, err)
@@ -350,7 +348,7 @@ func (m *HistoryServer) GetLogs(request *frames.HistoryRequest, out chan frames.
 
 	// go over all log files in the folder
 	for iter.Next() {
-		currentFilePath := path.Join(m.LogsFolderPath, iter.GetField("__name").(string))
+		currentFilePath := iter.GetFilePath()
 		lineIterator, err := v3ioutils.NewFileContentLineIterator(currentFilePath, m.MaxBytesInNginxRequest, m.container)
 		if err != nil {
 			return errors.Wrapf(err, "Failed to get '%v'", currentFilePath)
