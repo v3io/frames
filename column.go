@@ -382,32 +382,31 @@ func NewLabelColumn(name string, value interface{}, size int) (Column, error) {
 		Name: name,
 		Size: int64(size),
 	}
-	if value == nil {
+
+	switch value.(type) {
+	case bool:
+		msg.Dtype = pb.DType_BOOLEAN
+		msg.Bools = []bool{value.(bool)}
+	case float64:
+		msg.Dtype = pb.DType_FLOAT
+		msg.Floats = []float64{value.(float64)}
+	case int:
+		msg.Dtype = pb.DType_INTEGER
+		msg.Ints = []int64{int64(value.(int))}
+	case int64:
+		msg.Dtype = pb.DType_INTEGER
+		msg.Ints = []int64{value.(int64)}
+	case string:
+		msg.Dtype = pb.DType_STRING
+		msg.Strings = []string{value.(string)}
+	case time.Time:
+		msg.Dtype = pb.DType_TIME
+		msg.Times = []int64{value.(time.Time).UnixNano()}
+	case nil:
 		msg.Dtype = pb.DType_NULL
 		msg.Bools = []bool{false}
-	} else {
-		switch value.(type) {
-		case bool:
-			msg.Dtype = pb.DType_BOOLEAN
-			msg.Bools = []bool{value.(bool)}
-		case float64:
-			msg.Dtype = pb.DType_FLOAT
-			msg.Floats = []float64{value.(float64)}
-		case int:
-			msg.Dtype = pb.DType_INTEGER
-			msg.Ints = []int64{int64(value.(int))}
-		case int64:
-			msg.Dtype = pb.DType_INTEGER
-			msg.Ints = []int64{value.(int64)}
-		case string:
-			msg.Dtype = pb.DType_STRING
-			msg.Strings = []string{value.(string)}
-		case time.Time:
-			msg.Dtype = pb.DType_TIME
-			msg.Times = []int64{value.(time.Time).UnixNano()}
-		default:
-			return nil, fmt.Errorf("unknown data type %T", value)
-		}
+	default:
+		return nil, fmt.Errorf("unknown data type %T", value)
 	}
 
 	col := &colImpl{
