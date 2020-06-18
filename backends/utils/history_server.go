@@ -327,8 +327,7 @@ func (m *HistoryServer) GetLogs(request *frames.HistoryRequest, out chan frames.
 		MinDuration:  request.Proto.MinDuration,
 		MaxDuration:  request.Proto.MaxDuration}
 
-	iter, err := v3ioutils.NewFilesCursor(m.container, &v3io.GetContainerContentsInput{Path: m.LogsFolderPath + "/"},
-		m.logger)
+	iter, err := v3ioutils.NewFilesCursor(m.container, &v3io.GetContainerContentsInput{Path: m.LogsFolderPath + "/"})
 
 	if err != nil {
 		return fmt.Errorf("Failed to list Frames History log folder %v for read, err: %v", m.LogsFolderPath, err)
