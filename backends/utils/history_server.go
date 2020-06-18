@@ -598,11 +598,12 @@ func (f historyFilter) filter(entry HistoryEntry) bool {
 		return false
 	}
 
-	if f.MinStartTime > entry.StartTime.Unix()*1000 {
+	logTimeInMillis := entry.StartTime.UnixNano() / int64(time.Millisecond)
+	if f.MinStartTime > logTimeInMillis {
 		return false
 	}
 
-	if f.MaxStartTime < entry.StartTime.Unix()*1000 {
+	if f.MaxStartTime < logTimeInMillis {
 		return false
 	}
 
