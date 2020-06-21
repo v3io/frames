@@ -304,6 +304,11 @@ class ClientBase:
         if isinstance(dfs, pd.DataFrame):
             dfs = [dfs]
 
+        if dfs:
+            for df in dfs:
+                if df.index.name == '':
+                    df.index.name = 'idx'
+
         if max_rows_in_msg:
             dfs = self._iter_chunks(dfs, max_rows_in_msg)
 
@@ -449,6 +454,7 @@ class ClientBase:
 
         if not df.empty:
             df.sort_values('StartTime', inplace=True)
+            df.reset_index(inplace=True)
         return df
 
     def _fix_address(self, address):
