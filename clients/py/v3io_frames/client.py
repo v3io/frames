@@ -304,9 +304,10 @@ class ClientBase:
         if isinstance(dfs, pd.DataFrame):
             dfs = [dfs]
 
-        for df in dfs:
-            if df.index.name == '':
-                df.index.name = 'idx'
+        if dfs:
+            for df in dfs:
+                if df.index.name == '':
+                    df.index.name = 'idx'
 
         if max_rows_in_msg:
             dfs = self._iter_chunks(dfs, max_rows_in_msg)
