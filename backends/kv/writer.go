@@ -163,11 +163,6 @@ func validateFrameInput(frame frames.Frame, request *frames.WriteRequest) error 
 			return fmt.Errorf("column number %d has an empty name", columnNumber)
 		}
 	}
-	for indexNumber, index := range frame.Indices() {
-		if len(index.Name()) == 0 {
-			return fmt.Errorf("index number %d has an empty name", indexNumber)
-		}
-	}
 	if len(request.PartitionKeys) > 0 {
 		for _, partitionColumnName := range request.PartitionKeys {
 			_, err := frame.Column(partitionColumnName)
