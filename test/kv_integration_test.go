@@ -1200,26 +1200,19 @@ func (kvSuite *KvTestSuite) TestWritePartitionedTableWithNullValues() {
 
 	index := []string{"mike", "joe"}
 	icol, err := frames.NewSliceColumn("idx", index)
-	if err != nil {
-		kvSuite.T().Fatal(err)
-	}
+	kvSuite.Require().NoError(err)
+
 	n1 := []float64{1.0, 0.0}
 	n1Col, err := frames.NewSliceColumn("n1", n1)
-	if err != nil {
-		kvSuite.T().Fatal(err)
-	}
+	kvSuite.Require().NoError(err)
 
 	n2 := []string{"", "tal"}
 	n2Col, err := frames.NewSliceColumn("n2", n2)
-	if err != nil {
-		kvSuite.T().Fatal(err)
-	}
+	kvSuite.Require().NoError(err)
 
 	n3 := []bool{false, true}
 	n3Col, err := frames.NewSliceColumn("n3", n3)
-	if err != nil {
-		kvSuite.T().Fatal(err)
-	}
+	kvSuite.Require().NoError(err)
 
 	columns := []frames.Column{n1Col, n2Col, n3Col}
 
@@ -1230,9 +1223,7 @@ func (kvSuite *KvTestSuite) TestWritePartitionedTableWithNullValues() {
 	nullValues[1].NullColumns["n1"] = true
 
 	frame, err := frames.NewFrameWithNullValues(columns, []frames.Column{icol}, nil, nullValues)
-	if err != nil {
-		kvSuite.T().Fatal(err)
-	}
+	kvSuite.Require().NoError(err)
 
 	wreq := &frames.WriteRequest{
 		Backend:       kvSuite.backendName,
@@ -1241,21 +1232,18 @@ func (kvSuite *KvTestSuite) TestWritePartitionedTableWithNullValues() {
 	}
 
 	appender, err := kvSuite.client.Write(wreq)
-	if err != nil {
-		kvSuite.T().Fatal(err)
-	}
+	kvSuite.Require().NoError(err)
 
-	if err := appender.Add(frame); err != nil {
-		kvSuite.T().Fatal(err)
-	}
+	err = appender.Add(frame)
+	kvSuite.Require().NoError(err)
 
-	if err := appender.WaitForComplete(3 * time.Second); err != nil {
-		kvSuite.T().Fatal(err)
-	}
+	err = appender.WaitForComplete(3 * time.Second)
+	kvSuite.Require().NoError(err)
 
-	expected := make(map[string]string)
-	expected["mike"] = "n1=1/n2=null/n3=null/mike"
-	expected["joe"] = "n1=null/n2=tal/n3=true/joe"
+	expected := map[string]string{
+		"mike": "n1=1/n2=null/n3=null/mike",
+		"joe":  "n1=null/n2=tal/n3=true/joe",
+	}
 
 	// Verify all items were saved in the correct path
 	for _, subPath := range expected {
