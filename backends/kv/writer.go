@@ -176,7 +176,7 @@ func validateFrameInput(frame frames.Frame, request *frames.WriteRequest) error 
 				return errors.Wrap(err, fmt.Sprintf("column '%v' does not exist in the dataframe", partitionColumnName))
 			}
 			if distinctPartitionKeys[partitionColumnName] {
-				return fmt.Errorf("column '%v' appears more than once as a partitions key", partitionColumnName)
+				return fmt.Errorf("column '%v' appears more than once as a partition key", partitionColumnName)
 			}
 			distinctPartitionKeys[partitionColumnName] = true
 		}

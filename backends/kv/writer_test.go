@@ -138,7 +138,7 @@ func (suite *WriterTestSuite) TestValidateFrameInputRepeatingShardingKey() {
 	writeRequest := frames.WriteRequest{PartitionKeys: []string{"col1", "col2", "col1"}}
 	err = validateFrameInput(frame, &writeRequest)
 	suite.Error(err)
-	suite.Equal("column 'col1' appears more than once as a partitions key", err.Error())
+	suite.Equal("column 'col1' appears more than once as a partition key", err.Error())
 }
 
 func TestWriterTestSuite(t *testing.T) {
