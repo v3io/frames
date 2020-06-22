@@ -125,6 +125,22 @@ func (suite *WriterTestSuite) TestValidateFrameInputEmptyColumnName() {
 	suite.Equal("column number 0 has an empty name", err.Error())
 }
 
+func (suite *WriterTestSuite) TestValidateFrameInputRepeatingShardingKey() {
+	column, err := frames.NewLabelColumn("col1", 5, 1)
+	suite.NoError(err)
+	column2, err := frames.NewLabelColumn("col2", 5, 1)
+	suite.NoError(err)
+	columns := []frames.Column{column, column2}
+	frame, err := frames.NewFrame(columns, nil, nil)
+	if err != nil {
+		suite.NoError(err)
+	}
+	writeRequest := frames.WriteRequest{PartitionKeys: []string{"col1", "col2", "col1"}}
+	err = validateFrameInput(frame, &writeRequest)
+	suite.Error(err)
+	suite.Equal("column 'col1' appears more than once as a partition key", err.Error())
+}
+
 func TestWriterTestSuite(t *testing.T) {
 	suite.Run(t, new(WriterTestSuite))
 }
