@@ -163,17 +163,17 @@ func validateFrameInput(frame frames.Frame, request *frames.WriteRequest) error 
 			return fmt.Errorf("column number %d has an empty name", columnNumber)
 		}
 	}
-	for indexNumber, index := range frame.Indices() {
-		if len(index.Name()) == 0 {
-			return fmt.Errorf("index number %d has an empty name", indexNumber)
-		}
-	}
 	if len(request.PartitionKeys) > 0 {
+		distinctPartitionKeys := make(map[string]bool)
 		for _, partitionColumnName := range request.PartitionKeys {
 			_, err := frame.Column(partitionColumnName)
 			if err != nil {
 				return errors.Wrap(err, fmt.Sprintf("column '%v' does not exist in the dataframe", partitionColumnName))
 			}
+			if distinctPartitionKeys[partitionColumnName] {
+				return fmt.Errorf("column '%v' appears more than once as a partition key", partitionColumnName)
+			}
+			distinctPartitionKeys[partitionColumnName] = true
 		}
 	}
 	return nil
