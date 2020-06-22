@@ -301,7 +301,7 @@ func (a *Appender) Add(frame frames.Frame) error {
 		subPathString := itemSubPath.String()
 
 		if keyVal == "" {
-			return errors.Errorf("invalid input. key %qould not be empty", indexName)
+			return errors.Errorf("invalid input. key %q should not be empty", indexName)
 		}
 		if sortingKeyName != "" && sortingKeyVal == "" {
 			return errors.Errorf("invalid input. sorting key %q should not be empty", sortingKeyName)
