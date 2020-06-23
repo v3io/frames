@@ -288,7 +288,11 @@ func (a *Appender) Add(frame frames.Frame) error {
 				if err != nil {
 					return err
 				}
-				itemSubPath.WriteString(fmt.Sprintf("%v", val))
+				if frame.IsNull(r, partitionColumnName) {
+					itemSubPath.WriteString(fmt.Sprint("null"))
+				} else {
+					itemSubPath.WriteString(fmt.Sprintf("%v", val))
+				}
 				itemSubPath.WriteString("/")
 			}
 		}

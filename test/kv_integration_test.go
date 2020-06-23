@@ -1194,3 +1194,61 @@ func (kvSuite *KvTestSuite) TestWritePartitionedBadPartitionColumns() {
 	err = appender.WaitForComplete(3 * time.Second)
 	kvSuite.Require().Error(err, "expected error for table %v, but finished successfully", table)
 }
+
+func (kvSuite *KvTestSuite) TestWritePartitionedTableWithNullValues() {
+	table := fmt.Sprintf("TestWritePartitionedTableWithNullValues%d", time.Now().UnixNano())
+
+	index := []string{"mike", "joe"}
+	icol, err := frames.NewSliceColumn("idx", index)
+	kvSuite.Require().NoError(err)
+
+	n1 := []float64{1.0, 0.0}
+	n1Col, err := frames.NewSliceColumn("n1", n1)
+	kvSuite.Require().NoError(err)
+
+	n2 := []string{"", "tal"}
+	n2Col, err := frames.NewSliceColumn("n2", n2)
+	kvSuite.Require().NoError(err)
+
+	n3 := []bool{false, true}
+	n3Col, err := frames.NewSliceColumn("n3", n3)
+	kvSuite.Require().NoError(err)
+
+	columns := []frames.Column{n1Col, n2Col, n3Col}
+
+	nullValues := initializeNullColumns(len(index))
+	nullValues[0].NullColumns["n2"] = true
+	nullValues[0].NullColumns["n3"] = true
+
+	nullValues[1].NullColumns["n1"] = true
+
+	frame, err := frames.NewFrameWithNullValues(columns, []frames.Column{icol}, nil, nullValues)
+	kvSuite.Require().NoError(err)
+
+	wreq := &frames.WriteRequest{
+		Backend:       kvSuite.backendName,
+		Table:         table,
+		PartitionKeys: []string{"n1", "n2", "n3"},
+	}
+
+	appender, err := kvSuite.client.Write(wreq)
+	kvSuite.Require().NoError(err)
+
+	err = appender.Add(frame)
+	kvSuite.Require().NoError(err)
+
+	err = appender.WaitForComplete(3 * time.Second)
+	kvSuite.Require().NoError(err)
+
+	expected := map[string]string{
+		"mike": "n1=1/n2=null/n3=null/mike",
+		"joe":  "n1=null/n2=tal/n3=true/joe",
+	}
+
+	// Verify all items were saved in the correct path
+	for _, subPath := range expected {
+		_, err := kvSuite.v3ioContainer.GetItemSync(&v3io.GetItemInput{AttributeNames: []string{"__name"},
+			Path: fmt.Sprintf("%v/%v", table, subPath)})
+		kvSuite.Require().NoError(err, "item %v was not found", subPath)
+	}
+}
