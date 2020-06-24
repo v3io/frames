@@ -100,59 +100,72 @@ func (suite *WriterTestSuite) TestGenExpr() {
 
 func (suite *WriterTestSuite) TestValidateFrameInput() {
 	column, err := frames.NewLabelColumn("col1", 5, 1)
-	suite.NoError(err)
+	suite.Require().NoError(err)
 	columns := []frames.Column{column}
 	frame, err := frames.NewFrame(columns, nil, nil)
-	if err != nil {
-		suite.NoError(err)
-	}
+	suite.Require().NoError(err)
 	writeRequest := frames.WriteRequest{}
 	err = validateFrameInput(frame, &writeRequest)
-	suite.NoError(err)
+	suite.Require().NoError(err)
 }
 
 func (suite *WriterTestSuite) TestValidateFrameInputEmptyColumnName() {
 	column, err := frames.NewLabelColumn("", 5, 1)
-	suite.NoError(err)
+	suite.Require().NoError(err)
 	columns := []frames.Column{column}
 	frame, err := frames.NewFrame(columns, nil, nil)
-	if err != nil {
-		suite.NoError(err)
-	}
+	suite.Require().NoError(err)
 	writeRequest := frames.WriteRequest{}
 	err = validateFrameInput(frame, &writeRequest)
-	suite.Error(err)
-	suite.Equal("column number 0 has an empty name", err.Error())
+	suite.Require().Error(err)
+	suite.Require().Equal("column number 0 has an empty name", err.Error())
 }
 
 func (suite *WriterTestSuite) TestValidateFrameInputRepeatingShardingKey() {
 	column, err := frames.NewLabelColumn("col1", 5, 1)
-	suite.NoError(err)
+	suite.Require().NoError(err)
 	column2, err := frames.NewLabelColumn("col2", 5, 1)
-	suite.NoError(err)
+	suite.Require().NoError(err)
 	columns := []frames.Column{column, column2}
 	frame, err := frames.NewFrame(columns, nil, nil)
-	if err != nil {
-		suite.NoError(err)
-	}
+
+	suite.Require().NoError(err)
 	writeRequest := frames.WriteRequest{PartitionKeys: []string{"col1", "col2", "col1"}}
 	err = validateFrameInput(frame, &writeRequest)
-	suite.Error(err)
-	suite.Equal("column 'col1' appears more than once as a partition key", err.Error())
+	suite.Require().Error(err)
+	suite.Require().Equal("column 'col1' appears more than once as a partition key", err.Error())
 }
 
 func (suite *WriterTestSuite) TestValidateFrameInputInvalidColumnName() {
 	column, err := frames.NewLabelColumn("****T-dawg!", 5, 1)
-	suite.NoError(err)
+	suite.Require().NoError(err)
 	columns := []frames.Column{column}
 	frame, err := frames.NewFrame(columns, nil, nil)
-	if err != nil {
-		suite.NoError(err)
-	}
+	suite.Require().NoError(err)
+
 	writeRequest := frames.WriteRequest{}
 	err = validateFrameInput(frame, &writeRequest)
-	suite.Error(err)
-	suite.Equal("column '****T-dawg!' has an invalid name", err.Error())
+	suite.Require().Error(err)
+	suite.Require().Equal("column '****T-dawg!' has an invalid name", err.Error())
+}
+
+func (suite *WriterTestSuite) TestValidateFrameInputColumnNameTooLong() {
+	columnNameRune := make([]rune, maximumAttributeNameLength+1)
+	for i := range columnNameRune {
+		columnNameRune[i] = 'a'
+	}
+
+	columnName := string(columnNameRune)
+	column, err := frames.NewLabelColumn(columnName, 5, 1)
+	suite.Require().NoError(err)
+	columns := []frames.Column{column}
+	frame, err := frames.NewFrame(columns, nil, nil)
+	suite.Require().NoError(err)
+
+	writeRequest := frames.WriteRequest{}
+	err = validateFrameInput(frame, &writeRequest)
+	suite.Require().Error(err)
+	suite.Require().Equal(fmt.Sprintf("column '%v' exceeding maximum allowed attribute name of %v", columnName, maximumAttributeNameLength), err.Error())
 }
 
 func TestWriterTestSuite(t *testing.T) {

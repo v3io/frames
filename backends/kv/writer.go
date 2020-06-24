@@ -54,6 +54,8 @@ const (
 	falseConditionOuterErrorCode           = "16777244"
 	falseConditionInnerErrorCode           = "16777245"
 	createNewItemOnlyExistingItemErrorCode = "369098809"
+
+	maximumAttributeNameLength = 256
 )
 
 var (
@@ -170,11 +172,17 @@ func validateFrameInput(frame frames.Frame, request *frames.WriteRequest) error 
 		if !validColumnNamePattern.MatchString(name) {
 			return fmt.Errorf("column '%v' has an invalid name", name)
 		}
+		if len(name) > maximumAttributeNameLength {
+			return fmt.Errorf("column '%v' exceeding maximum allowed attribute name of %v", name, maximumAttributeNameLength)
+		}
 	}
 	for _, index := range frame.Indices() {
 		name := index.Name()
 		if !validColumnNamePattern.MatchString(name) {
 			return fmt.Errorf("index '%v' has an invalid name", name)
+		}
+		if len(name) > maximumAttributeNameLength {
+			return fmt.Errorf("column '%v' exceeding maximum allowed attribute name of %v", name, maximumAttributeNameLength)
 		}
 	}
 	if len(request.PartitionKeys) > 0 {
