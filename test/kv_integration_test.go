@@ -304,15 +304,9 @@ func (kvSuite *KvTestSuite) TestRangeScan() {
 	schema := &v3ioutils.OldV3ioSchema{}
 	err = json.Unmarshal(resp.HTTPResponse.Body(), schema)
 	kvSuite.Require().NoError(err)
-	if schema.Key != "key" {
-		kvSuite.T().Fatal("wrong key in schema, expected 'key', got ", schema.Key)
-	}
-	if schema.SortingKey != "sorting" {
-		kvSuite.T().Fatal("wrong sorting key in schema, expected 'sorting', got ", schema.SortingKey)
-	}
-	if len(schema.Fields) != 3 {
-		kvSuite.T().Fatal("wrong number of columns in schema, expected 3, got ", len(schema.Fields))
-	}
+	kvSuite.Require().Equal("key", schema.Key)
+	kvSuite.Require().Equal("sorting", schema.SortingKey)
+	kvSuite.Require().Len(schema.Fields, 3, "wrong number of columns in schema")
 	////
 	rreq := &pb.ReadRequest{
 		Backend:           kvSuite.backendName,
@@ -355,20 +349,15 @@ func (kvSuite *KvTestSuite) TestRangeScan() {
 
 	for it.Next() {
 		frame = it.At()
-		if len(frame.Indices()) != 2 {
-			kvSuite.T().Fatal("wrong number of indices, expected 2, got ", len(frame.Indices()))
-		}
+		kvSuite.Require().Len(frame.Indices(), 2, "wrong number of indices")
 		indexCol := frame.Indices()[0]
 		sortcol := frame.Indices()[1]
-		if frame.Len() != 2 {
-			kvSuite.T().Fatal("got different number of results, expected 2, got ", frame.Len())
-		}
+		kvSuite.Require().Equal(2, frame.Len(), "got different number of results")
 		for i := 0; i < frame.Len(); i++ {
 			currentKey, _ := indexCol.StringAt(i)
 			sorting, _ := sortcol.StringAt(i)
-			if !(currentKey == "mike" && (sorting == "aa" || sorting == "bb")) {
-				kvSuite.T().Fatal("key name does not match, expected mike.aa or mike.bb, got ", frame)
-			}
+			kvSuite.Require().Equal("mike", currentKey)
+			kvSuite.Require().Contains([]string{"aa", "bb"}, sorting)
 		}
 	}
 }

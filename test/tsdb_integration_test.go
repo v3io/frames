@@ -140,10 +140,7 @@ func (tsdbSuite *TsdbTestSuite) TestAll() {
 		resultCount += fr.Len()
 	}
 	// TODO: More checks
-	if !(resultCount == frame.Len() || resultCount-1 == frame.Len()) {
-		tsdbSuite.T().Fatalf("wrong length: %d != %d", resultCount, frame.Len())
-	}
-
+	tsdbSuite.Require().Contains([]int{resultCount, resultCount}, frame.Len(), "wrong length")
 	tsdbSuite.Require().NoError(it.Err())
 
 	tsdbSuite.T().Log("delete")

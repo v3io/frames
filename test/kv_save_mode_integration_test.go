@@ -372,11 +372,10 @@ func (kvSuite *KvTestSuite) TestSaveModeUpdateItemChangeNumricColumnType() {
 	}
 
 	for _, field := range schema.Fields {
-		if field.Name != "idx" && field.Type != "double" {
-			kvSuite.T().Fatal("expected type float, got ", field.Type)
+		if field.Name != "idx" {
+			kvSuite.Require().Equal("double", field.Type)
 		}
 	}
-
 }
 
 func (kvSuite *KvTestSuite) TestSaveModeUpdateItemChangeIndexName() {
