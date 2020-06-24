@@ -91,7 +91,7 @@ func (kvSuite *KvTestSuite) TestSaveModeOverwriteTableExists() {
 	iter, err := kvSuite.client.Read(rreq)
 	kvSuite.Require().NoError(err, "error reading from kv")
 	for iter.Next() {
-		kvSuite.EqualValues(newColumns, iter.At().Names(), "expected column names do not match actual")
+		kvSuite.Require().EqualValues(newColumns, iter.At().Names(), "expected column names do not match actual")
 	}
 
 	kvSuite.Require().NoError(iter.Err(), "error reading from kv")
@@ -124,7 +124,7 @@ func (kvSuite *KvTestSuite) TestSaveModeOverwriteTableDoesntExists() {
 	iter, err := kvSuite.client.Read(rreq)
 	kvSuite.Require().NoError(err, "error reading from kv")
 	for iter.Next() {
-		kvSuite.EqualValues(newColumns, iter.At().Names(), "expected column names do not match actual")
+		kvSuite.Require().EqualValues(newColumns, iter.At().Names(), "expected column names do not match actual")
 	}
 
 	kvSuite.Require().NoError(iter.Err(), "error reading from kv")
@@ -365,9 +365,7 @@ func (kvSuite *KvTestSuite) TestSaveModeUpdateItemChangeNumricColumnType() {
 
 	schemaInput := &v3io.GetObjectInput{Path: table + "/.#schema"}
 	resp, err := kvSuite.v3ioContainer.GetObjectSync(schemaInput)
-	if err != nil {
-		kvSuite.T().Fatal(err.Error())
-	}
+	kvSuite.Require().NoError(err)
 	schema := &v3ioutils.OldV3ioSchema{}
 	if err := json.Unmarshal(resp.HTTPResponse.Body(), schema); err != nil {
 		kvSuite.T().Fatal(err)

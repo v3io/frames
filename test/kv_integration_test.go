@@ -62,9 +62,7 @@ func (kvSuite *KvTestSuite) toMillis(date string) int64 {
 }
 
 func (kvSuite *KvTestSuite) SetupSuite() {
-	if kvSuite.client == nil {
-		kvSuite.FailNow("client not set")
-	}
+	kvSuite.Require().NotNil(kvSuite.client, "client not set")
 }
 
 func (kvSuite *KvTestSuite) generateRandomSampleFrameWithEmptyIndices(size int, indexNames []string, emptyIndices map[string]bool, columnNames []string) frames.Frame {
@@ -253,9 +251,7 @@ func (kvSuite *KvTestSuite) TestAll() {
 	for it.Next() {
 		// TODO: More checks
 		fr := it.At()
-		if !(fr.Len() == frame.Len() || fr.Len()-1 == frame.Len()) {
-			kvSuite.T().Fatalf("wrong length: %d != %d", fr.Len(), frame.Len())
-		}
+		kvSuite.Require().Contains([]int{fr.Len(), fr.Len() - 1}, frame.Len(), "wrong length")
 	}
 
 	kvSuite.Require().NoError(it.Err())
@@ -298,9 +294,8 @@ func (kvSuite *KvTestSuite) TestRangeScan() {
 	err = appender.Add(frame)
 	kvSuite.Require().NoError(err)
 
-	if err := appender.WaitForComplete(3 * time.Second); err != nil {
-		kvSuite.T().Fatal(err)
-	}
+	err = appender.WaitForComplete(3 * time.Second)
+	kvSuite.Require().NoError(err)
 
 	//check schema
 	schemaInput := &v3io.GetObjectInput{Path: table + "/.#schema"}
@@ -559,9 +554,7 @@ func (kvSuite *KvTestSuite) TestRequestSpecificColumns() {
 
 	for it.Next() {
 		fr := it.At()
-		if !(fr.Len() == frame.Len() || fr.Len()-1 == frame.Len()) {
-			kvSuite.T().Fatalf("wrong length: %d != %d", fr.Len(), frame.Len())
-		}
+		kvSuite.Require().Contains([]int{fr.Len(), fr.Len() - 1}, frame.Len(), "wrong length")
 		kvSuite.Require().EqualValues(requestedColumns, fr.Names(), "got other columns than requested")
 	}
 
@@ -601,9 +594,7 @@ func (kvSuite *KvTestSuite) TestRequestSpecificColumnsWithKey() {
 
 	for it.Next() {
 		fr := it.At()
-		if !(fr.Len() == frame.Len() || fr.Len()-1 == frame.Len()) {
-			kvSuite.T().Fatalf("wrong length: %d != %d", fr.Len(), frame.Len())
-		}
+		kvSuite.Require().Contains([]int{fr.Len(), fr.Len() - 1}, frame.Len(), "wrong length")
 		kvSuite.Require().EqualValues(requestedColumns, fr.Names(), "got other columns than requested")
 		kvSuite.Require().Equal("_idx", fr.Indices()[0].Name(), "got wrong index name")
 	}
@@ -622,17 +613,14 @@ func (kvSuite *KvTestSuite) TestDeleteWithFilter() {
 	}
 
 	appender, err := kvSuite.client.Write(wreq)
-	if err != nil {
-		kvSuite.T().Fatal(err)
-	}
+	kvSuite.Require().NoError(err)
 
-	if err := appender.Add(frame); err != nil {
-		kvSuite.T().Fatal(err)
-	}
+	err = appender.Add(frame)
+	kvSuite.Require().NoError(err)
 
-	if err := appender.WaitForComplete(3 * time.Second); err != nil {
-		kvSuite.T().Fatal(err)
-	}
+	err = appender.WaitForComplete(3 * time.Second)
+	kvSuite.Require().NoError(err)
+
 	kvSuite.T().Log("delete")
 	dreq := &pb.DeleteRequest{
 		Backend: kvSuite.backendName,
@@ -640,9 +628,8 @@ func (kvSuite *KvTestSuite) TestDeleteWithFilter() {
 		Filter:  "__mtime_secs > 0",
 	}
 
-	if err := kvSuite.client.Delete(dreq); err != nil {
-		kvSuite.T().Fatal(err)
-	}
+	err = kvSuite.client.Delete(dreq)
+	kvSuite.Require().NoError(err)
 
 	// check only schema is left
 	kvSuite.T().Log("read")
@@ -699,8 +686,7 @@ func (kvSuite *KvTestSuite) TestRequestSystemAttrs() {
 		kvSuite.Require().EqualValues(requestedColumns, fr.Names(), "got other columns than requested")
 	}
 
-	err = it.Err()
-	kvSuite.Require().NoError(err)
+	kvSuite.Require().NoError(it.Err())
 }
 func (kvSuite *KvTestSuite) TestNonExistingColumns() {
 	table := fmt.Sprintf("TestNonExistingColumns%d", time.Now().UnixNano())
@@ -712,17 +698,13 @@ func (kvSuite *KvTestSuite) TestNonExistingColumns() {
 	}
 
 	appender, err := kvSuite.client.Write(wreq)
-	if err != nil {
-		kvSuite.T().Fatal(err)
-	}
+	kvSuite.Require().NoError(err)
 
-	if err := appender.Add(frame); err != nil {
-		kvSuite.T().Fatal(err)
-	}
+	err = appender.Add(frame)
+	kvSuite.Require().NoError(err)
 
-	if err := appender.WaitForComplete(3 * time.Second); err != nil {
-		kvSuite.T().Fatal(err)
-	}
+	err = appender.WaitForComplete(3 * time.Second)
+	kvSuite.Require().NoError(err)
 
 	kvSuite.T().Log("read")
 	rreq := &pb.ReadRequest{
@@ -861,9 +843,7 @@ func (kvSuite *KvTestSuite) TestUpdateExpressionWithNullValues() {
 
 	index := []string{"mike", "joe", "jim", "nil"}
 	icol, err := frames.NewSliceColumn("idx", index)
-	if err != nil {
-		kvSuite.T().Fatal(err)
-	}
+	kvSuite.Require().NoError(err)
 
 	columns := []frames.Column{
 		FloatCol(kvSuite.T(), "n1", len(index)),
@@ -873,9 +853,7 @@ func (kvSuite *KvTestSuite) TestUpdateExpressionWithNullValues() {
 	}
 
 	frame, err := frames.NewFrame(columns, []frames.Column{icol}, nil)
-	if err != nil {
-		kvSuite.T().Fatal(err)
-	}
+	kvSuite.Require().NoError(err)
 
 	kvSuite.T().Log("write: prepare")
 	wreq := &frames.WriteRequest{

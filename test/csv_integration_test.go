@@ -34,9 +34,7 @@ func GetCsvTestsConstructorFunc() SuiteCreateFunc {
 }
 
 func (csvSuite *CsvTestSuite) SetupSuite() {
-	if csvSuite.client == nil {
-		csvSuite.FailNow("client not set")
-	}
+	csvSuite.Require().NotNil(csvSuite.client, "client not set")
 }
 
 func (csvSuite *CsvTestSuite) generateSampleFrame(t testing.TB) frames.Frame {
@@ -97,9 +95,8 @@ func (csvSuite *CsvTestSuite) TestAll() {
 	appender, err := csvSuite.client.Write(wreq)
 	csvSuite.Require().NoError(err)
 
-	if err := appender.Add(frame); err != nil {
-		csvSuite.T().Fatal(err)
-	}
+	err = appender.Add(frame)
+	csvSuite.Require().NoError(err)
 
 	err = appender.WaitForComplete(3 * time.Second)
 	csvSuite.Require().NoError(err)
@@ -118,9 +115,7 @@ func (csvSuite *CsvTestSuite) TestAll() {
 	for it.Next() {
 		// TODO: More checks
 		fr := it.At()
-		if !(fr.Len() == frame.Len() || fr.Len()-1 == frame.Len()) {
-			csvSuite.T().Fatalf("wrong length: %d != %d", fr.Len(), frame.Len())
-		}
+		csvSuite.Require().Contains([]int{fr.Len(), fr.Len() - 1}, frame.Len(), "wrong length")
 	}
 
 	csvSuite.Require().NoError(it.Err())
