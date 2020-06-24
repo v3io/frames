@@ -53,9 +53,7 @@ func (csvSuite *CsvTestSuite) generateSampleFrame(t testing.TB) frames.Frame {
 		}
 	}
 	col, err = frames.NewSliceColumn("bools", bools)
-	if err != nil {
-		t.Fatal(err)
-	}
+	csvSuite.Require().NoError(err)
 	columns = append(columns, col)
 
 	col = FloatCol(t, "floats", size)
@@ -66,9 +64,7 @@ func (csvSuite *CsvTestSuite) generateSampleFrame(t testing.TB) frames.Frame {
 		ints[i] = random.Int63()
 	}
 	col, err = frames.NewSliceColumn("ints", ints)
-	if err != nil {
-		t.Fatal(err)
-	}
+	csvSuite.Require().NoError(err)
 	columns = append(columns, col)
 
 	col = StringCol(t, "strings", size)
@@ -79,15 +75,11 @@ func (csvSuite *CsvTestSuite) generateSampleFrame(t testing.TB) frames.Frame {
 		times[i] = time.Now().Add(time.Duration(i) * time.Second)
 	}
 	col, err = frames.NewSliceColumn("times", times)
-	if err != nil {
-		t.Fatal(err)
-	}
+	csvSuite.Require().NoError(err)
 	columns = append(columns, col)
 
 	frame, err := frames.NewFrame(columns, nil, nil)
-	if err != nil {
-		t.Fatal(err)
-	}
+	csvSuite.Require().NoError(err)
 
 	return frame
 }
@@ -103,17 +95,14 @@ func (csvSuite *CsvTestSuite) TestAll() {
 	}
 
 	appender, err := csvSuite.client.Write(wreq)
-	if err != nil {
-		csvSuite.T().Fatal(err)
-	}
+	csvSuite.Require().NoError(err)
 
 	if err := appender.Add(frame); err != nil {
 		csvSuite.T().Fatal(err)
 	}
 
-	if err := appender.WaitForComplete(3 * time.Second); err != nil {
-		csvSuite.T().Fatal(err)
-	}
+	err = appender.WaitForComplete(3 * time.Second)
+	csvSuite.Require().NoError(err)
 
 	time.Sleep(3 * time.Second) // Let DB sync
 
@@ -124,9 +113,7 @@ func (csvSuite *CsvTestSuite) TestAll() {
 	}
 
 	it, err := csvSuite.client.Read(rreq)
-	if err != nil {
-		csvSuite.T().Fatal(err)
-	}
+	csvSuite.Require().NoError(err)
 
 	for it.Next() {
 		// TODO: More checks
@@ -136,9 +123,7 @@ func (csvSuite *CsvTestSuite) TestAll() {
 		}
 	}
 
-	if err := it.Err(); err != nil {
-		csvSuite.T().Fatal(err)
-	}
+	csvSuite.Require().NoError(it.Err())
 
 	csvSuite.T().Log("delete")
 	dreq := &pb.DeleteRequest{
@@ -146,8 +131,6 @@ func (csvSuite *CsvTestSuite) TestAll() {
 		Table:   table,
 	}
 
-	if err := csvSuite.client.Delete(dreq); err != nil {
-		csvSuite.T().Fatal(err)
-	}
-
+	err = csvSuite.client.Delete(dreq)
+	csvSuite.Require().NoError(err)
 }

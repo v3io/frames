@@ -55,17 +55,13 @@ type mainTestSuite struct {
 
 func (mainSuite *mainTestSuite) newGrpcClient() frames.Client {
 	client, err := grpc.NewClient(mainSuite.info.grpcAddr, mainSuite.info.session, mainSuite.logger)
-	if err != nil {
-		mainSuite.T().Fatalf("could not craete grpc client, err: %v", err)
-	}
+	mainSuite.Require().NoError(err, "could not craete grpc client")
 	return client
 }
 
 func (mainSuite *mainTestSuite) newHttpClient() frames.Client {
 	client, err := http.NewClient(mainSuite.info.httpAddr, mainSuite.info.session, mainSuite.logger)
-	if err != nil {
-		mainSuite.T().Fatalf("could not craete http client, err: %v", err)
-	}
+	mainSuite.Require().NoError(err, "could not craete http client")
 	return client
 }
 
