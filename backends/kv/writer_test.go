@@ -76,16 +76,14 @@ func generateSequentialSampleFrameWithTypes(t *testing.T, size int, indexName st
 
 func (suite *WriterTestSuite) TestGenExpr() {
 	t := suite.T()
-	frame := generateSequentialSampleFrameWithTypes(t, 1,
-		"idx", map[string]string{"n1": "float", "n2": "time", "n3": "string", "n4": "bool"})
+	names := map[string]string{"n1": "float", "n2": "time", "n3": "string", "n4": "bool"}
+	frame := generateSequentialSampleFrameWithTypes(t, 1, "idx", names)
 	expression := "n1={n1};n2={n2};n3={n3};n4={n4};idx={idx};"
 
 	frameData := test.FrameToDataMap(frame)["0"]
 
 	actual, err := genExpr(expression, frame, 0)
-	if err != nil {
-		t.Fatalf("failed to generate expression, err: %v", err)
-	}
+	suite.Require().NoError(err, "failed to generate expression")
 
 	idx, n1, n2, n3, n4 := frameData["idx"], frameData["n1"], frameData["n2"], frameData["n3"], frameData["n4"]
 	n2Time := n2.(time.Time)
@@ -93,9 +91,7 @@ func (suite *WriterTestSuite) TestGenExpr() {
 
 	expected := fmt.Sprintf("n1=%v;n2=%v:%v;n3='%v';n4=%v;idx=%v;", n1, n2Seconds, n2Nanos, n3, n4, idx)
 
-	if expected != actual {
-		t.Fatalf("expression didn't match expected. \nexpected: %v \n actual: %v", expected, actual)
-	}
+	suite.Require().Equal(expected, actual)
 }
 
 func (suite *WriterTestSuite) TestValidateFrameInput() {
@@ -128,7 +124,6 @@ func (suite *WriterTestSuite) TestValidateFrameInputRepeatingShardingKey() {
 	suite.Require().NoError(err)
 	columns := []frames.Column{column, column2}
 	frame, err := frames.NewFrame(columns, nil, nil)
-
 	suite.Require().NoError(err)
 	writeRequest := frames.WriteRequest{PartitionKeys: []string{"col1", "col2", "col1"}}
 	err = validateFrameInput(frame, &writeRequest)
