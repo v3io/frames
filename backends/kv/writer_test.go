@@ -141,6 +141,20 @@ func (suite *WriterTestSuite) TestValidateFrameInputRepeatingShardingKey() {
 	suite.Equal("column 'col1' appears more than once as a partition key", err.Error())
 }
 
+func (suite *WriterTestSuite) TestValidateFrameInputInvalidColumnName() {
+	column, err := frames.NewLabelColumn("****T-dawg!", 5, 1)
+	suite.NoError(err)
+	columns := []frames.Column{column}
+	frame, err := frames.NewFrame(columns, nil, nil)
+	if err != nil {
+		suite.NoError(err)
+	}
+	writeRequest := frames.WriteRequest{}
+	err = validateFrameInput(frame, &writeRequest)
+	suite.Error(err)
+	suite.Equal("column '****T-dawg!' has an invalid name", err.Error())
+}
+
 func TestWriterTestSuite(t *testing.T) {
 	suite.Run(t, new(WriterTestSuite))
 }
