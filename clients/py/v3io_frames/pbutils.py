@@ -203,9 +203,10 @@ def df2msg(df, labels=None, index_cols=None):
         if not is_range and not isinstance(name, str):
             raise Exception('Column names must be strings')
         series = df[name]
+        typ = schema[name]
         if isinstance(name, int):
             name = 'column_' + str(name)
-        columns.append(series2col_with_dtype(series, name, schema[name]))
+        columns.append(series2col_with_dtype(series, name, typ))
 
     return fpb.Frame(
         columns=columns,
