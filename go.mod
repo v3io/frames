@@ -1,6 +1,6 @@
 module github.com/v3io/frames
 
-go 1.12
+go 1.14
 
 require (
 	github.com/ghodss/yaml v1.0.0
@@ -9,7 +9,6 @@ require (
 	github.com/nuclio/errors v0.0.1
 	github.com/nuclio/logger v0.0.1
 	github.com/nuclio/zap v0.0.2
-	github.com/pavius/impi v0.0.3 // indirect
 	github.com/pkg/errors v0.8.1
 	github.com/stretchr/testify v1.4.0
 	github.com/v3io/v3io-go v0.1.5-0.20200416113214-f1b82b9a8e82
