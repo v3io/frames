@@ -22,11 +22,14 @@ package backends
 
 import (
 	"fmt"
+	"reflect"
 	"strings"
 	"sync"
 
 	"github.com/nuclio/logger"
+	"github.com/pkg/errors"
 	"github.com/v3io/frames"
+	"github.com/v3io/frames/pb"
 	v3io "github.com/v3io/v3io-go/pkg/dataplane"
 )
 
@@ -63,4 +66,47 @@ func GetFactory(typ string) Factory {
 	defer lock.RUnlock()
 
 	return factories[normalizeType(typ)]
+}
+
+var globalRequestFieldsByRequestType = map[reflect.Type]map[string]bool{
+	reflect.TypeOf(pb.ReadRequest{}): {
+		"Session":      true,
+		"Backend":      true,
+		"Schema":       true,
+		"DataFormat":   true,
+		"RowLayout":    true,
+		"MultiIndex":   true,
+		"Query":        true,
+		"Table":        true,
+		"Columns":      true,
+		"Filter":       true,
+		"GroupBy":      true,
+		"Join":         true,
+		"Limit":        true,
+		"MessageLimit": true,
+		"Marker":       true,
+		"ResetIndex":   true,
+	},
+	reflect.TypeOf(pb.DeleteRequest{}): {
+		"Session":   true,
+		"Backend":   true,
+		"Table":     true,
+		"Filter":    true,
+		"IfMissing": true,
+	},
+}
+
+func ValidateRequest(backend string, request interface{}, allowedFields map[string]bool) error {
+
+	reftype := reflect.TypeOf(request).Elem()
+	for i := 0; i < reftype.NumField(); i++ {
+		field := reftype.Field(i)
+		fieldName := field.Name
+		fieldValue := reflect.ValueOf(request).Elem().FieldByName(fieldName).Interface()
+		zeroValue := reflect.Zero(field.Type).Interface()
+		if !globalRequestFieldsByRequestType[reftype][fieldName] && !allowedFields[fieldName] && !reflect.DeepEqual(fieldValue, zeroValue) {
+			return errors.Errorf("%s cannot be used as an argument to a %s to %s backend", fieldName, reftype.Name(), backend)
+		}
+	}
+	return nil
 }

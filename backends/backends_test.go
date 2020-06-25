@@ -26,9 +26,15 @@ import (
 	"testing"
 
 	"github.com/nuclio/logger"
+	"github.com/stretchr/testify/suite"
 	"github.com/v3io/frames"
+	"github.com/v3io/frames/pb"
 	v3io "github.com/v3io/v3io-go/pkg/dataplane"
 )
+
+type BackendsTestSuite struct {
+	suite.Suite
+}
 
 // Special error return from testFactory so we can see it's this function
 var errorBackendsTest = fmt.Errorf("backends test")
@@ -37,26 +43,39 @@ func testFactory(logger.Logger, v3io.Context, *frames.BackendConfig, *frames.Con
 	return nil, errorBackendsTest
 }
 
-func TestBackends(t *testing.T) {
+func (suite *BackendsTestSuite) TestBackends() {
 	typ := "testBackend"
 	err := Register(typ, testFactory)
-	if err != nil {
-		t.Fatalf("can't register - %s", err)
-	}
+	suite.Require().NoError(err)
 
 	err = Register(typ, testFactory)
-	if err == nil {
-		t.Fatalf("managed to register twice")
-	}
+	suite.Require().Error(err)
 
 	capsType := strings.ToUpper(typ)
 	factory := GetFactory(capsType)
-	if factory == nil {
-		t.Fatalf("can't get %q - %s", capsType, err)
-	}
+	suite.Require().NotNil(factory)
 
 	_, err = factory(nil, nil, nil, nil)
-	if err != errorBackendsTest {
-		t.Fatalf("wrong factory")
-	}
+	suite.Require().Equal(errorBackendsTest, err)
+}
+
+func (suite *BackendsTestSuite) TestValidateEmptyReadRequest() {
+	err := ValidateRequest("mybackend", &pb.ReadRequest{}, nil)
+	suite.NoError(err)
+}
+
+func (suite *BackendsTestSuite) TestValidateSimpleReadRequest() {
+	err := ValidateRequest("kv", &pb.ReadRequest{Segments: []int64{5}}, map[string]bool{"Segments": true})
+	suite.Require().NoError(err)
+}
+
+func (suite *BackendsTestSuite) TestValidateBadReadRequest() {
+	err := ValidateRequest("tsdb", &pb.ReadRequest{Segments: []int64{5}}, nil)
+	suite.Require().Error(err)
+	expected := "Segments cannot be used as an argument to a ReadRequest to tsdb backend"
+	suite.Require().Equal(expected, err.Error())
+}
+
+func TestBackendsTestSuite(t *testing.T) {
+	suite.Run(t, new(BackendsTestSuite))
 }

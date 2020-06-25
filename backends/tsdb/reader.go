@@ -26,6 +26,7 @@ import (
 
 	"github.com/pkg/errors"
 	"github.com/v3io/frames"
+	"github.com/v3io/frames/backends"
 	"github.com/v3io/v3io-tsdb/pkg/config"
 	"github.com/v3io/v3io-tsdb/pkg/pquerier"
 	tsdbutils "github.com/v3io/v3io-tsdb/pkg/utils"
@@ -49,7 +50,20 @@ type tsdbIterator struct {
 	currTsdbFrame    frames.Frame
 }
 
+var allowedReadRequestFields = map[string]bool{
+	"Start":             true,
+	"End":               true,
+	"Step":              true,
+	"Aggregators":       true,
+	"AggregationWindow": true,
+}
+
 func (b *Backend) Read(request *frames.ReadRequest) (frames.FrameIterator, error) {
+
+	err := backends.ValidateRequest("tsdb", request.Proto, allowedReadRequestFields)
+	if err != nil {
+		return nil, err
+	}
 
 	step, err := tsdbutils.Str2duration(request.Proto.Step)
 	if err != nil {
