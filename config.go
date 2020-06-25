@@ -59,6 +59,7 @@ type Config struct {
 	MaxBytesInNginxRequest            int    `json:maxBytesInNginxRequest`
 	HistoryFileDurationHourSpans      int64  `json:historyFileDurationHourSpans`
 	HistoryFileNum                    int    `json:historyFileNum`
+	DisableHistory                    bool   `json:disableHistory`
 
 	Backends []*BackendConfig `json:"backends,omitempty"`
 
