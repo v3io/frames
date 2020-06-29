@@ -129,7 +129,7 @@ endif
 .PHONY: impi
 impi:
 	@echo Installing impi...
-	go get -u github.com/pavius/impi/cmd/impi
+	GO111MODULE=off go get -u github.com/pavius/impi/cmd/impi
 	@echo Verifying imports...
 	$(GOPATH)/bin/impi \
 		--local github.com/iguazio/provazio \
@@ -141,7 +141,7 @@ impi:
 
 $(GOPATH)/bin/golangci-lint:
 	@echo Installing golangci-lint...
-	curl -sfL https://install.goreleaser.com/github.com/golangci/golangci-lint.sh | sh -s v1.10.2
+	curl -sfL https://install.goreleaser.com/github.com/golangci/golangci-lint.sh | sh -s v1.27.0
 	cp ./bin/golangci-lint $(GOPATH)/bin/
 
 .PHONY: lint

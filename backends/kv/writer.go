@@ -311,7 +311,7 @@ func (a *Appender) Add(frame frames.Frame) error {
 					return err
 				}
 				if frame.IsNull(r, partitionColumnName) {
-					itemSubPath.WriteString(fmt.Sprint("null"))
+					itemSubPath.WriteString("null")
 				} else {
 					itemSubPath.WriteString(fmt.Sprintf("%v", val))
 				}
