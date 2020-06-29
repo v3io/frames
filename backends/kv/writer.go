@@ -30,6 +30,7 @@ import (
 	"github.com/nuclio/logger"
 	"github.com/pkg/errors"
 	"github.com/v3io/frames"
+	"github.com/v3io/frames/backends"
 	"github.com/v3io/frames/backends/utils"
 	"github.com/v3io/frames/v3ioutils"
 	v3io "github.com/v3io/v3io-go/pkg/dataplane"
@@ -62,8 +63,20 @@ var (
 	validColumnNamePattern = regexp.MustCompile("^[a-zA-Z_][a-zA-Z0-9_]*$")
 )
 
+var allowedWriteRequestFields = map[string]bool{
+	"Expression":    true,
+	"Condition":     true,
+	"PartitionKeys": true,
+	"SaveMode":      true,
+}
+
 // Write supports writing to the backend
 func (kv *Backend) Write(request *frames.WriteRequest) (frames.FrameAppender, error) {
+
+	err := backends.ValidateRequest("kv", request, allowedWriteRequestFields)
+	if err != nil {
+		return nil, err
+	}
 
 	container, tablePath, err := kv.newConnection(request.Session, request.Password.Get(), request.Token.Get(), request.Table, true)
 	if err != nil {

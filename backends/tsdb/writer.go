@@ -28,11 +28,23 @@ import (
 	"github.com/nuclio/logger"
 	"github.com/pkg/errors"
 	"github.com/v3io/frames"
+	"github.com/v3io/frames/backends"
 	"github.com/v3io/v3io-tsdb/pkg/tsdb"
 	"github.com/v3io/v3io-tsdb/pkg/utils"
 )
 
+var allowedWriteRequestFields = map[string]bool{
+	"MultiIndex": true,
+	"Query":      true,
+}
+
 func (b *Backend) Write(request *frames.WriteRequest) (frames.FrameAppender, error) {
+
+	err := backends.ValidateRequest("tsdb", request, allowedWriteRequestFields)
+	if err != nil {
+		return nil, err
+	}
+
 	b.logger.DebugWith("write request", "request", request)
 	adapter, err := b.GetAdapter(request.Session, request.Password.Get(), request.Token.Get(), request.Table)
 	if err != nil {

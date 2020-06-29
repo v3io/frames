@@ -76,6 +76,18 @@ func (suite *BackendsTestSuite) TestValidateBadReadRequest() {
 	suite.Require().Equal(expected, err.Error())
 }
 
+func (suite *BackendsTestSuite) TestValidateWriteRequest() {
+	request := &frames.WriteRequest{Session: &frames.Session{}, PartitionKeys: []string{"mykey"}}
+	err := ValidateRequest("kv", request, map[string]bool{"PartitionKeys": true})
+	suite.Require().NoError(err)
+}
+
+func (suite *BackendsTestSuite) TestValidateBadWriteRequest() {
+	request := &frames.WriteRequest{Session: &frames.Session{}, PartitionKeys: []string{"mykey"}}
+	err := ValidateRequest("tsdb", request, nil)
+	suite.Require().Error(err)
+}
+
 func TestBackendsTestSuite(t *testing.T) {
 	suite.Run(t, new(BackendsTestSuite))
 }
