@@ -33,14 +33,9 @@ import (
 	"github.com/v3io/v3io-tsdb/pkg/utils"
 )
 
-var allowedWriteRequestFields = map[string]bool{
-	"MultiIndex": true,
-	"Query":      true,
-}
-
 func (b *Backend) Write(request *frames.WriteRequest) (frames.FrameAppender, error) {
 
-	err := backends.ValidateRequest("tsdb", request, allowedWriteRequestFields)
+	err := backends.ValidateRequest("tsdb", request, nil)
 	if err != nil {
 		return nil, err
 	}
