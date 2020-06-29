@@ -245,6 +245,8 @@ class ClientBase:
             - When `iterator` is False (default) - returns a single DataFrame.
             - When `iterator` is True - returns a DataFrames iterator.
         """
+        if not backend:
+            raise ReadError('no backend')
         if not (table or query):
             raise ReadError('missing data')
 
