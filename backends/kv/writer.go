@@ -136,7 +136,7 @@ func (kv *Backend) Write(request *frames.WriteRequest) (frames.FrameAppender, er
 	if request.ImmidiateData != nil {
 		err := appender.Add(request.ImmidiateData)
 		if err != nil {
-			appender.Close()
+			close(appender.requestChan)
 			return nil, err
 		}
 	}
@@ -463,13 +463,12 @@ func validColName(name string) string {
 
 // WaitForComplete waits for write to complete
 func (a *Appender) WaitForComplete(timeout time.Duration) error {
-	a.Close()
+	close(a.requestChan)
 	<-a.doneChan
 	return a.asyncErr
 }
 
 func (a *Appender) Close() {
-	close(a.requestChan)
 }
 
 func (a *Appender) indexValFunc(frame frames.Frame) (func(int) interface{}, error) {
