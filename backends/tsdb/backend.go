@@ -233,9 +233,19 @@ func (b *Backend) Create(request *frames.CreateRequest) error {
 	return err
 }
 
+var allowedDeleteRequestFields = map[string]bool{
+	"Start":   true,
+	"End":     true,
+	"Metrics": true,
+}
+
 // Delete deletes a table or part of it
 func (b *Backend) Delete(request *frames.DeleteRequest) error {
-	var err error
+
+	err := backends.ValidateRequest("tsdb", request.Proto, allowedDeleteRequestFields)
+	if err != nil {
+		return err
+	}
 
 	end := time.Now().Unix() * 1000
 	if request.Proto.End != "" {
