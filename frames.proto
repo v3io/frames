@@ -116,12 +116,12 @@ message ReadRequest {
     TableSchema schema = 3;
     string data_format = 4;
     bool row_layout = 5;
-    bool multi_index = 6;
-    string query = 7; // SQL Query
+    bool multi_index = 6; // TSDB
+    string query = 7; // TSDB - SQL Query
     string table = 8; // Table name
     repeated string columns = 9;
     string filter = 10;
-    string group_by = 11;
+    string group_by = 11; // TSDB
     repeated JoinStruct join = 12;
 
     int64 limit = 13;
@@ -154,11 +154,11 @@ message InitialWriteRequest {
     string backend = 2;
     string table = 3;
     Frame initial_data = 4;
-    string expression = 5;
-    bool more = 6;
-    repeated string partition_keys = 7;
-    string condition = 8;
-    string save_mode = 9;
+    string expression = 5; // NoSQL
+    bool more = 6; // Stream
+    repeated string partition_keys = 7; // NoSQL
+    string condition = 8; // NoSQL
+    string save_mode = 9; // NoSQL
 }
 
 message WriteRequest {

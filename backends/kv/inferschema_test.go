@@ -25,11 +25,11 @@ func (suite *InferSchemaTestSuite) TestInferSchemaSimple() {
 		{"__name": "scratchy", "name": "scratchy", "animal": "cat", "age": 9},
 	}
 	schema, err := schemaFromKeys(keyField, rowSet)
-	suite.NoError(err)
+	suite.Require().NoError(err)
 	concreteSchema := schema.(*v3ioutils.OldV3ioSchema)
-	suite.Equal("name", concreteSchema.Key)
-	suite.Equal("", concreteSchema.SortingKey)
-	suite.ElementsMatch(expectedFields, concreteSchema.Fields)
+	suite.Require().Equal("name", concreteSchema.Key)
+	suite.Require().Equal("", concreteSchema.SortingKey)
+	suite.Require().ElementsMatch(expectedFields, concreteSchema.Fields)
 }
 
 func (suite *InferSchemaTestSuite) TestInferSchemaWhenNoColumnMatches() {
@@ -40,8 +40,8 @@ func (suite *InferSchemaTestSuite) TestInferSchemaWhenNoColumnMatches() {
 		{"__name": "scratchy", "name": "scratchy", "animal": "cat", "age": 9},
 	}
 	_, err := schemaFromKeys(keyField, rowSet)
-	suite.Error(err)
-	suite.Equal("could not determine which column is the table's primary-key attribute, because no column matches the primary-key attribute", err.Error())
+	suite.Require().Error(err)
+	suite.Require().Equal("could not determine which column is the table's primary-key attribute, because no column matches the primary-key attribute", err.Error())
 }
 
 func (suite *InferSchemaTestSuite) TestInferSchemaWhenTwoColumnsMatch() {
@@ -52,8 +52,8 @@ func (suite *InferSchemaTestSuite) TestInferSchemaWhenTwoColumnsMatch() {
 		{"__name": "scratchy", "name": "scratchy", "second_name": "scratchy", "age": 9},
 	}
 	_, err := schemaFromKeys(keyField, rowSet)
-	suite.Error(err)
-	suite.Equal("could not determine which column is the table's primary-key attribute, because 2 columns (name, second_name) match the primary-key attribute", err.Error())
+	suite.Require().Error(err)
+	suite.Require().Equal("could not determine which column is the table's primary-key attribute, because 2 columns (name, second_name) match the primary-key attribute", err.Error())
 }
 
 func (suite *InferSchemaTestSuite) TestInferSchemaWhenTwoColumnsMatchButKeyIsProvided() {
@@ -70,11 +70,11 @@ func (suite *InferSchemaTestSuite) TestInferSchemaWhenTwoColumnsMatchButKeyIsPro
 		{"__name": "scratchy", "name": "scratchy", "second_name": "scratchy", "age": 9},
 	}
 	schema, err := schemaFromKeys(keyField, rowSet)
-	suite.NoError(err)
+	suite.Require().NoError(err)
 	concreteSchema := schema.(*v3ioutils.OldV3ioSchema)
-	suite.Equal("name", concreteSchema.Key)
-	suite.Equal("", concreteSchema.SortingKey)
-	suite.ElementsMatch(expectedFields, concreteSchema.Fields)
+	suite.Require().Equal("name", concreteSchema.Key)
+	suite.Require().Equal("", concreteSchema.SortingKey)
+	suite.Require().ElementsMatch(expectedFields, concreteSchema.Fields)
 }
 
 func (suite *InferSchemaTestSuite) TestInferSchemaWhenOneColumnMatches() {
@@ -91,11 +91,11 @@ func (suite *InferSchemaTestSuite) TestInferSchemaWhenOneColumnMatches() {
 		{"__name": "scratchy", "name": "scratchy", "second_name": "NOT_scratchy", "age": 9},
 	}
 	schema, err := schemaFromKeys(keyField, rowSet)
-	suite.NoError(err)
+	suite.Require().NoError(err)
 	concreteSchema := schema.(*v3ioutils.OldV3ioSchema)
-	suite.Equal("name", concreteSchema.Key)
-	suite.Equal("", concreteSchema.SortingKey)
-	suite.ElementsMatch(expectedFields, concreteSchema.Fields)
+	suite.Require().Equal("name", concreteSchema.Key)
+	suite.Require().Equal("", concreteSchema.SortingKey)
+	suite.Require().ElementsMatch(expectedFields, concreteSchema.Fields)
 }
 
 func (suite *InferSchemaTestSuite) TestInferSchemaWhenTypesDontMatch() {
@@ -106,8 +106,8 @@ func (suite *InferSchemaTestSuite) TestInferSchemaWhenTypesDontMatch() {
 		{"__name": "scratchy", "name": "scratchy", "animal": "cat", "age": 9},
 	}
 	_, err := schemaFromKeys(keyField, rowSet)
-	suite.Error(err)
-	suite.Equal("type 'string' of value '2' doesn't match type 'int' of value '3' for column 'age'.", err.Error())
+	suite.Require().Error(err)
+	suite.Require().Equal("type 'string' of value '2' doesn't match type 'int' of value '3' for column 'age'.", err.Error())
 }
 
 func (suite *InferSchemaTestSuite) TestInferSchemaWhenColumnIsIntAndFloat() {
@@ -127,8 +127,8 @@ func (suite *InferSchemaTestSuite) TestInferSchemaWhenColumnIsIntAndFloat() {
 		{Name: "age", Type: "double", Nullable: true},
 	}
 	concreteSchema := schema.(*v3ioutils.OldV3ioSchema)
-	suite.Equal("name", concreteSchema.Key)
-	suite.ElementsMatch(expectedFields, concreteSchema.Fields)
+	suite.Require().Equal("name", concreteSchema.Key)
+	suite.Require().ElementsMatch(expectedFields, concreteSchema.Fields)
 }
 
 func (suite *InferSchemaTestSuite) TestInferSchemaWithSortingKey() {
@@ -145,11 +145,11 @@ func (suite *InferSchemaTestSuite) TestInferSchemaWithSortingKey() {
 		{"__name": "mocha.cat", "name": "mocha", "animal": "cat", "age": 9},
 	}
 	schema, err := schemaFromKeys(keyField, rowSet)
-	suite.NoError(err)
+	suite.Require().NoError(err)
 	concreteSchema := schema.(*v3ioutils.OldV3ioSchema)
-	suite.Equal("name", concreteSchema.Key)
-	suite.Equal("animal", concreteSchema.SortingKey)
-	suite.ElementsMatch(expectedFields, concreteSchema.Fields)
+	suite.Require().Equal("name", concreteSchema.Key)
+	suite.Require().Equal("animal", concreteSchema.SortingKey)
+	suite.Require().ElementsMatch(expectedFields, concreteSchema.Fields)
 }
 
 func (suite *InferSchemaTestSuite) TestInferSchemaWithPrimaryKeyWithDot() {
@@ -166,11 +166,11 @@ func (suite *InferSchemaTestSuite) TestInferSchemaWithPrimaryKeyWithDot() {
 		{"__name": "scratch.y", "name": "scratch.y", "suffix": "y", "age": 9},
 	}
 	schema, err := schemaFromKeys(keyField, rowSet)
-	suite.NoError(err)
+	suite.Require().NoError(err)
 	concreteSchema := schema.(*v3ioutils.OldV3ioSchema)
-	suite.Equal("name", concreteSchema.Key)
-	suite.Equal("", concreteSchema.SortingKey)
-	suite.ElementsMatch(expectedFields, concreteSchema.Fields)
+	suite.Require().Equal("name", concreteSchema.Key)
+	suite.Require().Equal("", concreteSchema.SortingKey)
+	suite.Require().ElementsMatch(expectedFields, concreteSchema.Fields)
 }
 
 func (suite *InferSchemaTestSuite) TestInferSchemaWithNumericColumns() {
@@ -187,11 +187,11 @@ func (suite *InferSchemaTestSuite) TestInferSchemaWithNumericColumns() {
 		{"__name": "2", "idx": 2, "col1": 3, "col2": 6},
 	}
 	schema, err := schemaFromKeys(keyField, rowSet)
-	suite.NoError(err)
+	suite.Require().NoError(err)
 	concreteSchema := schema.(*v3ioutils.OldV3ioSchema)
-	suite.Equal("idx", concreteSchema.Key)
-	suite.Equal("", concreteSchema.SortingKey)
-	suite.ElementsMatch(expectedFields, concreteSchema.Fields)
+	suite.Require().Equal("idx", concreteSchema.Key)
+	suite.Require().Equal("", concreteSchema.SortingKey)
+	suite.Require().ElementsMatch(expectedFields, concreteSchema.Fields)
 }
 
 func (suite *InferSchemaTestSuite) TestInferSchemaWithSortingKeyAndNumericColumns() {
@@ -208,11 +208,11 @@ func (suite *InferSchemaTestSuite) TestInferSchemaWithSortingKeyAndNumericColumn
 		{"__name": "3.cat", "id": 3, "animal": "cat", "age": 9},
 	}
 	schema, err := schemaFromKeys(keyField, rowSet)
-	suite.NoError(err)
+	suite.Require().NoError(err)
 	concreteSchema := schema.(*v3ioutils.OldV3ioSchema)
-	suite.Equal("id", concreteSchema.Key)
-	suite.Equal("animal", concreteSchema.SortingKey)
-	suite.ElementsMatch(expectedFields, concreteSchema.Fields)
+	suite.Require().Equal("id", concreteSchema.Key)
+	suite.Require().Equal("animal", concreteSchema.SortingKey)
+	suite.Require().ElementsMatch(expectedFields, concreteSchema.Fields)
 }
 
 func TestInferSchemaTestSuite(t *testing.T) {

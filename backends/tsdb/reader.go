@@ -26,18 +26,11 @@ import (
 
 	"github.com/pkg/errors"
 	"github.com/v3io/frames"
+	"github.com/v3io/frames/backends"
 	"github.com/v3io/v3io-tsdb/pkg/config"
 	"github.com/v3io/v3io-tsdb/pkg/pquerier"
 	tsdbutils "github.com/v3io/v3io-tsdb/pkg/utils"
 )
-
-type tsdbIteratorOld struct {
-	request     *frames.ReadRequest
-	set         tsdbutils.SeriesSet
-	err         error
-	withColumns bool
-	currFrame   frames.Frame
-}
 
 type tsdbIterator struct {
 	request          *frames.ReadRequest
@@ -49,7 +42,23 @@ type tsdbIterator struct {
 	currTsdbFrame    frames.Frame
 }
 
+var allowedReadRequestFields = map[string]bool{
+	"MultiIndex":        true,
+	"Query":             true,
+	"GroupBy":           true,
+	"Start":             true,
+	"End":               true,
+	"Step":              true,
+	"Aggregators":       true,
+	"AggregationWindow": true,
+}
+
 func (b *Backend) Read(request *frames.ReadRequest) (frames.FrameIterator, error) {
+
+	err := backends.ValidateRequest("tsdb", request.Proto, allowedReadRequestFields)
+	if err != nil {
+		return nil, err
+	}
 
 	step, err := tsdbutils.Str2duration(request.Proto.Step)
 	if err != nil {
@@ -207,83 +216,5 @@ func (i *tsdbIterator) Err() error {
 }
 
 func (i *tsdbIterator) At() frames.Frame {
-	return i.currFrame
-}
-
-func (i *tsdbIteratorOld) Next() bool {
-	if i.set.Next() {
-		series := i.set.At()
-		labels := map[string]interface{}{}
-		values := []float64{}
-		times := []time.Time{}
-
-		iter := series.Iterator()
-		for iter.Next() {
-			t, v := iter.At()
-			values = append(values, v)
-			times = append(times, time.Unix(t/1000, (t%1000)*1000))
-		}
-
-		if iter.Err() != nil {
-			i.err = iter.Err()
-			return false
-		}
-
-		timeCol, err := frames.NewSliceColumn("Date", times)
-		if err != nil {
-			i.err = err
-			return false
-		}
-
-		colname := "values"
-		valCol, err := frames.NewSliceColumn(colname, values)
-		if err != nil {
-			i.err = err
-			return false
-		}
-
-		columns := []frames.Column{valCol}
-		indices := []frames.Column{timeCol}
-		for _, v := range series.Labels() {
-			name := v.Name
-			if v.Name == "__name__" {
-				name = "metric_name"
-			}
-
-			labels[name] = v.Value
-			icol, err := frames.NewLabelColumn(name, v.Value, len(values))
-			if err != nil {
-				i.err = err
-				return false
-			}
-
-			if i.request.Proto.MultiIndex {
-				indices = append(indices, icol)
-			} else {
-				columns = append(columns, icol)
-			}
-		}
-
-		i.currFrame, err = frames.NewFrame(columns, indices, labels)
-		if err != nil {
-			i.err = err
-			return false
-		}
-
-		return true
-	}
-
-	if i.set.Err() != nil {
-		i.err = i.set.Err()
-	}
-
-	return false
-}
-
-func (i *tsdbIteratorOld) Err() error {
-	return i.err
-}
-
-func (i *tsdbIteratorOld) At() frames.Frame {
 	return i.currFrame
 }

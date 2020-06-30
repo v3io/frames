@@ -40,8 +40,21 @@ const (
 
 var systemAttrs = []string{"__gid", "__mode", "__mtime_nsecs", "__mtime_secs", "__size", "__uid", "__ctime_nsecs", "__ctime_secs", "__atime_secs", "__atime_nsecs", "__obj_type", "__collection_id"}
 
+var allowedReadRequestFields = map[string]bool{
+	"Segments":          true,
+	"TotalSegments":     true,
+	"ShardingKeys":      true,
+	"SortKeyRangeStart": true,
+	"SortKeyRangeEnd":   true,
+}
+
 // Read sends a read request
 func (kv *Backend) Read(request *frames.ReadRequest) (frames.FrameIterator, error) {
+
+	err := backends.ValidateRequest("kv", request.Proto, allowedReadRequestFields)
+	if err != nil {
+		return nil, err
+	}
 
 	if request.Proto.MessageLimit == 0 {
 		request.Proto.MessageLimit = 256 // TODO: More?
