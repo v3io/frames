@@ -96,6 +96,12 @@ func (b *Backend) Create(request *frames.CreateRequest) error {
 
 // Delete will delete a table
 func (b *Backend) Delete(request *frames.DeleteRequest) error {
+
+	err := backends.ValidateRequest("csv", request.Proto, nil)
+	if err != nil {
+		return err
+	}
+
 	csvPath := b.csvPath(request.Proto.Table)
 	if request.Proto.IfMissing == frames.FailOnError && !fileExists(csvPath) {
 		return fmt.Errorf("path to file '%q' doesn't exist", request.Proto.Table)
@@ -110,6 +116,12 @@ func (b *Backend) Delete(request *frames.DeleteRequest) error {
 
 // Read handles reading
 func (b *Backend) Read(request *frames.ReadRequest) (frames.FrameIterator, error) {
+
+	err := backends.ValidateRequest("csv", request.Proto, nil)
+	if err != nil {
+		return nil, err
+	}
+
 	file, err := os.Open(b.csvPath(request.Proto.Table))
 	if err != nil {
 		return nil, err

@@ -192,7 +192,7 @@ class ClientBase:
         self.frame_factory = frame_factory
         self.concat = concat
 
-    def read(self, backend='', table='', query='', columns=None, filter='',
+    def read(self, backend, table='', query='', columns=None, filter='',
              group_by='', limit=0, data_format='', row_layout=False,
              max_rows_in_msg=0, marker='', iterator=False, get_raw=False, **kw):
         """Reads data from a data collection (runs a data query)

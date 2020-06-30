@@ -74,7 +74,11 @@ func NewHistoryServer(logger logger.Logger, cfg *frames.Config) *HistoryServer {
 		isActive: false,
 		config:   cfg}
 
-	mon.initDefaults()
+	err := mon.initDefaults()
+	if err != nil {
+		logger.WarnWith("could not initialize defaults for frames-history", "err", err)
+		return nil
+	}
 
 	mon.createDefaultV3ioClient()
 	if mon.isActive {
@@ -84,7 +88,7 @@ func NewHistoryServer(logger logger.Logger, cfg *frames.Config) *HistoryServer {
 	return &mon
 }
 
-func (m *HistoryServer) initDefaults() {
+func (m *HistoryServer) initDefaults() error {
 	m.WriteMonitoringLogsTimeout = defaultWriteMonitoringLogsTimeout
 	if m.config.WriteMonitoringLogsTimeoutSeconds != 0 {
 		m.WriteMonitoringLogsTimeout = time.Duration(m.config.WriteMonitoringLogsTimeoutSeconds) * time.Second
@@ -111,14 +115,20 @@ func (m *HistoryServer) initDefaults() {
 	}
 
 	m.HistoryFileDurationSecondSpans = defaultHistoryFileDurationInSeconds
-	if m.config.HistoryFileDurationHourSpans != 0 {
-		m.HistoryFileDurationSecondSpans = m.config.HistoryFileDurationHourSpans * 3600
+	if m.config.HistoryFileDurationSpans != "" {
+		durationInMillis, err := utils.Str2duration(m.config.HistoryFileDurationSpans)
+		if err != nil {
+			return err
+		}
+		m.HistoryFileDurationSecondSpans = durationInMillis / 1000
 	}
 
 	m.HistoryFileNum = defaultHistoryFileNum
 	if m.config.HistoryFileNum != 0 {
 		m.HistoryFileNum = m.config.HistoryFileNum
 	}
+
+	return nil
 }
 
 func (m *HistoryServer) getCurrentLogFileName() string {

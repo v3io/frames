@@ -92,6 +92,11 @@ func (b *Backend) Create(request *frames.CreateRequest) error {
 // Delete deletes a table or part of it
 func (b *Backend) Delete(request *frames.DeleteRequest) error {
 
+	err := backends.ValidateRequest("stream", request.Proto, nil)
+	if err != nil {
+		return err
+	}
+
 	container, path, err := b.newConnection(request.Proto.Session, request.Password.Get(), request.Token.Get(), request.Proto.Table, true)
 	if err != nil {
 		return err

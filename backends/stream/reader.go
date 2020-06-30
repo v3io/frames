@@ -27,6 +27,7 @@ import (
 	"time"
 
 	"github.com/v3io/frames"
+	"github.com/v3io/frames/backends"
 	v3io "github.com/v3io/v3io-go/pkg/dataplane"
 	"github.com/v3io/v3io-tsdb/pkg/utils"
 )
@@ -42,7 +43,18 @@ type streamIterator struct {
 	isLast       bool
 }
 
+var allowedReadRequestFields = map[string]bool{
+	"Seek":     true,
+	"ShardId":  true,
+	"Sequence": true,
+}
+
 func (b *Backend) Read(request *frames.ReadRequest) (frames.FrameIterator, error) {
+
+	err := backends.ValidateRequest("stream", request.Proto, allowedReadRequestFields)
+	if err != nil {
+		return nil, err
+	}
 
 	if request.Proto.Table == "" || request.Proto.Seek == "" || request.Proto.ShardId == "" {
 		return nil, fmt.Errorf("missing essential parameters, need: table, seek, shard parameters")
