@@ -117,6 +117,20 @@ func (suite *WriterTestSuite) TestValidateFrameInputEmptyColumnName() {
 	suite.Require().Equal("column number 0 has an empty name", err.Error())
 }
 
+func (suite *WriterTestSuite) TestValidateFrameInputEmptyIndexName() {
+	column, err := frames.NewLabelColumn("col1", 5, 1)
+	suite.Require().NoError(err)
+	columns := []frames.Column{column}
+	index, err := frames.NewLabelColumn("", 5, 1)
+	suite.Require().NoError(err)
+	indices := []frames.Column{index}
+	frame, err := frames.NewFrame(columns, indices, nil)
+	suite.Require().NoError(err)
+	writeRequest := frames.WriteRequest{}
+	err = validateFrameInput(frame, &writeRequest)
+	suite.Require().NoError(err)
+}
+
 func (suite *WriterTestSuite) TestValidateFrameInputRepeatingShardingKey() {
 	column, err := frames.NewLabelColumn("col1", 5, 1)
 	suite.Require().NoError(err)
