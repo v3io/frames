@@ -266,6 +266,9 @@ func (api *API) Exec(request *frames.ExecRequest) (frames.Frame, error) {
 }
 
 func (api *API) History(request *frames.HistoryRequest, out chan frames.Frame) error {
+	if api.historyServer == nil {
+		return errors.New("history server was not initialized properly. To enable this feature, please contact the system administrator")
+	}
 	return api.historyServer.GetLogs(request, out)
 }
 
