@@ -448,8 +448,7 @@ class ClientBase:
         df = self._history(self._alias_backends(backend), container, table, user, action, min_start_time, max_start_time, min_duration, max_duration)
 
         if not df.empty:
-            df.sort_values('StartTime', inplace=True)
-            df.reset_index(inplace=True)
+            df.sort_values('StartTime', inplace=True, ignore_index=True)
         return df
 
     def _fix_address(self, address):
