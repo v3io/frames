@@ -191,7 +191,7 @@ func validateFrameInput(frame frames.Frame, request *frames.WriteRequest) error 
 	}
 	for _, index := range frame.Indices() {
 		name := index.Name()
-		if !validColumnNamePattern.MatchString(name) {
+		if name != "" && !validColumnNamePattern.MatchString(name) {
 			return fmt.Errorf("index '%v' has an invalid name", name)
 		}
 		if len(name) > maximumAttributeNameLength {
