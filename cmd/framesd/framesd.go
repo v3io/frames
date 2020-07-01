@@ -84,7 +84,7 @@ func main() {
 	if !cfg.DisableHistory {
 		historyServer, err = utils.NewHistoryServer(framesLogger, cfg)
 		if err != nil {
-			framesLogger.WarnWith("could not initialize defaults for frames-history", "err", err)
+			framesLogger.WarnWith("failed to initialize frames-history", "err", err)
 		}
 	}
 
