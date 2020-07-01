@@ -23,6 +23,7 @@ package kv
 import (
 	"fmt"
 	"reflect"
+	"regexp"
 	"sort"
 	"strings"
 
@@ -33,8 +34,9 @@ import (
 )
 
 var (
-	intType   = reflect.TypeOf(1)
-	floatType = reflect.TypeOf(1.0)
+	intType            = reflect.TypeOf(1)
+	floatType          = reflect.TypeOf(1.0)
+	hashedBucketFormat = regexp.MustCompile("^[a-zA-z]+_[0-9]+$")
 )
 
 func (b *Backend) inferSchema(request *frames.ExecRequest) error {
@@ -83,15 +85,23 @@ func schemaFromKeys(keyField string, rowSet []map[string]interface{}) (v3ioutils
 	columnCanBeFullKey := make(map[string]bool)
 	columnCanBePrimaryKey := make(map[string]bool)
 	columnCanBeSortingKey := make(map[string]bool)
+	columnCanBeHashedPrimeryKey := make(map[string]bool)
 
 	for _, row := range rowSet {
 		keyValue := row["__name"].(string)
 		var primaryKeyValue string
 		var sortingKeyValue string
+		var hashedPrimaryKeyValue string
 		indexOfDot := strings.Index(keyValue, ".")
 		if indexOfDot >= 0 && indexOfDot < len(keyValue)-1 {
 			sortingKeyValue = keyValue[indexOfDot+1:]
 			primaryKeyValue = keyValue[:indexOfDot]
+
+			if hashedBucketFormat.MatchString(primaryKeyValue) {
+				indexOfUnderscore := strings.Index(primaryKeyValue, "_")
+				hashedPrimaryKeyValue = keyValue[:indexOfUnderscore]
+				primaryKeyValue = ""
+			}
 		}
 		for attrName, attrValue := range row {
 			if attrName == "__name" {
@@ -130,6 +140,12 @@ func schemaFromKeys(keyField string, rowSet []map[string]interface{}) (v3ioutils
 					columnCanBeSortingKey[attrName] = true
 				}
 				columnCanBeSortingKey[attrName] = columnCanBeSortingKey[attrName] && attrValueAsString == sortingKeyValue
+			}
+			if hashedPrimaryKeyValue != "" {
+				if _, ok = columnCanBeHashedPrimeryKey[attrName]; !ok {
+					columnCanBeHashedPrimeryKey[attrName] = true
+				}
+				columnCanBeHashedPrimeryKey[attrName] = columnCanBePrimaryKey[attrName] && attrValueAsString == hashedPrimaryKeyValue
 			}
 		}
 	}

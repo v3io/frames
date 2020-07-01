@@ -215,6 +215,28 @@ func (suite *InferSchemaTestSuite) TestInferSchemaWithSortingKeyAndNumericColumn
 	suite.Require().ElementsMatch(expectedFields, concreteSchema.Fields)
 }
 
+func (suite *InferSchemaTestSuite) TestInferSchemaWithHashedPrimaryKey() {
+	expectedFields := []v3ioutils.OldSchemaField{
+		{Name: "name", Type: "string", Nullable: false},
+		{Name: "animal", Type: "string", Nullable: false},
+		{Name: "age", Type: "long", Nullable: true},
+	}
+
+	keyField := ""
+	rowSet := []map[string]interface{}{
+		{"__name": "rocky_2.dog", "name": "rocky", "animal": "dog", "age": 2},
+		{"__name": "mocha_2.dog", "name": "mocha", "animal": "dog", "age": 3},
+		{"__name": "mocha_4.cat", "name": "mocha", "animal": "cat", "age": 9},
+	}
+	schema, err := schemaFromKeys(keyField, rowSet)
+	suite.Require().NoError(err)
+	concreteSchema := schema.(*v3ioutils.OldV3ioSchema)
+	suite.Require().Equal("name", concreteSchema.Key)
+	suite.Require().Equal("animal", concreteSchema.SortingKey)
+	suite.Require().ElementsMatch(expectedFields, concreteSchema.Fields)
+	suite.Require().ElementsMatch(64, concreteSchema.HashingBucketNum)
+}
+
 func TestInferSchemaTestSuite(t *testing.T) {
 	suite.Run(t, new(InferSchemaTestSuite))
 }
