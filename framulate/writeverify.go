@@ -229,7 +229,7 @@ func (s *writeVerifyScenario) createTSDBVerifyTask(taskGroup *repeatingtask.Task
 
 			return err
 		},
-		OnCompleteHandle: func(cookie interface{}) error {
+		OnCompleteHandler: func(cookie interface{}) error {
 			tsdbSeriesInstance := cookie.(*tsdbSeries)
 
 			// release the stuff we attached to the task so we don't accumulate too much memory

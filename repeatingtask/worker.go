@@ -56,8 +56,8 @@ func (w *worker) handleTask(task *Task) error {
 		}
 	}
 
-	if task.OnCompleteHandle != nil{
-		err = task.OnCompleteHandle(task.Cookie)
+	if task.OnCompleteHandler != nil{
+		err = task.OnCompleteHandler(task.Cookie)
 		task.ErrorsChan <- &TaskError{
 			Repetition: int(repetitionIndex),
 			Error:      err,
