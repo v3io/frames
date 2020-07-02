@@ -49,15 +49,14 @@ func (te *TaskErrors) Error() error {
 }
 
 type Task struct {
-	NumReptitions     int
-	MaxParallel       int
-	Handler           func(interface{}, int) error
-	OnCompleteHandler func(interface{}) error
-	OnCompleteChan    chan struct{}
-	Timeout           time.Duration
-	ErrorsChan        chan *TaskError
-	MaxNumErrors      int
-	Cookie            interface{}
+	NumReptitions  int
+	MaxParallel    int
+	Handler        func(interface{}, int) error
+	OnCompleteChan chan struct{}
+	Timeout        time.Duration
+	ErrorsChan     chan *TaskError
+	MaxNumErrors   int
+	Cookie         interface{}
 
 	repititionIndex        uint64
 	numCompletions         uint64

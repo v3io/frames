@@ -227,16 +227,11 @@ func (s *writeVerifyScenario) createTSDBVerifyTask(taskGroup *repeatingtask.Task
 			// stats stuff
 			atomic.AddUint64(&s.numSeriesVerified, 1)
 
-			return err
-		},
-		OnCompleteHandler: func(cookie interface{}) error {
-			tsdbSeriesInstance := cookie.(*tsdbSeries)
-
 			// release the stuff we attached to the task so we don't accumulate too much memory
 			tsdbSeriesInstance.timestamps = nil
 			tsdbSeriesInstance.values = nil
 
-			return nil
+			return err
 		},
 	}
 
