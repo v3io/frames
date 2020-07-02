@@ -56,6 +56,14 @@ func (w *worker) handleTask(task *Task) error {
 		}
 	}
 
+	if task.OnCompleteHandle != nil{
+		err = task.OnCompleteHandle(task.Cookie)
+		task.ErrorsChan <- &TaskError{
+			Repetition: int(repetitionIndex),
+			Error:      err,
+		}
+	}
+
 	// increment # of times we completed
 	currentNumCompletions := atomic.AddUint64(&task.numCompletions, 1)
 
