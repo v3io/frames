@@ -234,7 +234,7 @@ func (suite *InferSchemaTestSuite) TestInferSchemaWithHashedPrimaryKey() {
 	suite.Require().Equal("name", concreteSchema.Key)
 	suite.Require().Equal("animal", concreteSchema.SortingKey)
 	suite.Require().ElementsMatch(expectedFields, concreteSchema.Fields)
-	suite.Require().ElementsMatch(64, concreteSchema.HashingBucketNum)
+	suite.Require().Equal(64, concreteSchema.HashingBucketNum)
 }
 
 func TestInferSchemaTestSuite(t *testing.T) {

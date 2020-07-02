@@ -36,7 +36,7 @@ import (
 var (
 	intType            = reflect.TypeOf(1)
 	floatType          = reflect.TypeOf(1.0)
-	hashedBucketFormat = regexp.MustCompile("^[a-zA-z]+_[0-9]+$")
+	hashedBucketFormat = regexp.MustCompile("^[a-zA-z0-9]+_[0-9]+$")
 )
 
 func (b *Backend) inferSchema(request *frames.ExecRequest) error {
@@ -145,18 +145,26 @@ func schemaFromKeys(keyField string, rowSet []map[string]interface{}) (v3ioutils
 				if _, ok = columnCanBeHashedPrimeryKey[attrName]; !ok {
 					columnCanBeHashedPrimeryKey[attrName] = true
 				}
-				columnCanBeHashedPrimeryKey[attrName] = columnCanBePrimaryKey[attrName] && attrValueAsString == hashedPrimaryKeyValue
+				columnCanBeHashedPrimeryKey[attrName] = columnCanBeHashedPrimeryKey[attrName] && attrValueAsString == hashedPrimaryKeyValue
 			}
 		}
 	}
 
 	var primaryKeyField string
 	var sortingKeyField string
+	var hashingBuckets int
 	if keyField == "" {
 		possibleFullKeys := filterOutFalse(columnCanBeFullKey)
 		possiblePrimaryKeys := filterOutFalse(columnCanBePrimaryKey)
 		possibleSortingKeys := filterOutFalse(columnCanBeSortingKey)
-		if len(possiblePrimaryKeys) == 1 {
+		possibleHashedPrimaryKeys := filterOutFalse(columnCanBeHashedPrimeryKey)
+		if len(possibleHashedPrimaryKeys) == 1 {
+			primaryKeyField = possibleHashedPrimaryKeys[0]
+			hashingBuckets = 64 // we cannot infer the hashing buckets, hence we assume it's the default
+			if len(possibleSortingKeys) == 1 {
+				sortingKeyField = possibleSortingKeys[0]
+			}
+		} else if len(possiblePrimaryKeys) == 1 {
 			primaryKeyField = possiblePrimaryKeys[0]
 			if len(possibleSortingKeys) == 1 {
 				sortingKeyField = possibleSortingKeys[0]
@@ -179,7 +187,7 @@ func schemaFromKeys(keyField string, rowSet []map[string]interface{}) (v3ioutils
 		}
 	}
 
-	newSchema := v3ioutils.NewSchema(keyField, sortingKeyField)
+	newSchema := v3ioutils.NewSchemaWithHashingBuckets(keyField, sortingKeyField, hashingBuckets)
 
 	for name, value := range columnNameToValue {
 		err := newSchema.AddField(name, value, name != keyField && name != sortingKeyField)
