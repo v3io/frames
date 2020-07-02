@@ -12,7 +12,7 @@ require (
 	github.com/pkg/errors v0.8.1
 	github.com/stretchr/testify v1.4.0
 	github.com/v3io/v3io-go v0.1.5-0.20200416113214-f1b82b9a8e82
-	github.com/v3io/v3io-tsdb v0.10.4
+	github.com/v3io/v3io-tsdb v0.10.6
 	github.com/valyala/fasthttp v1.2.0
 	github.com/xwb1989/sqlparser v0.0.0-20180606152119-120387863bf2
 	golang.org/x/net v0.0.0-20181114220301-adae6a3d119a
