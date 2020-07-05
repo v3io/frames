@@ -115,7 +115,7 @@ frames:
 		--env GOOS=$(GOOS) \
 		--env GOARCH=$(GOARCH) \
 		--env FRAMES_TAG=$(FRAMES_TAG) \
-		golang:1.12 \
+		golang:1.14 \
 		make frames-bin
 
 PHONY: gofmt
