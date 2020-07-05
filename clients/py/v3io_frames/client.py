@@ -370,7 +370,7 @@ class ClientBase:
         if_missing (Optional) : int (frames_pb2 pb.ErrorOptions)
             Determines the behavior when the specified collection doesn't
             exist - `FAIL` (default) to raise an error or `IGNORE` to ignore
-        metrics : string
+        metrics : list of string
              (`tsdb` backend only) List of specific metric names to delete.
 
         Raises

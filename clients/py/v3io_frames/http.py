@@ -152,12 +152,17 @@ class Client(ClientBase):
             'session': pb2py(self.session),
             'backend': backend,
             'table': table,
-            'filter': filter,
-            'start': start,
-            'end': end,
             'if_missing': if_missing,
-            'metrics': metrics,
         }
+
+        if filter:
+            request['filter'] = filter
+        if start:
+            request['start'] = start
+        if end:
+            request['end'] = end
+        if metrics:
+            request['metrics'] = metrics
 
         convert_go_times(request, ('start', 'end'))
 
