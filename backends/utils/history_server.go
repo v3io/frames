@@ -67,7 +67,7 @@ type HistoryServer struct {
 	HistoryFileNum                 int
 }
 
-func NewHistoryServer(logger logger.Logger, cfg *frames.Config) *HistoryServer {
+func NewHistoryServer(logger logger.Logger, cfg *frames.Config) (*HistoryServer, error) {
 	mon := HistoryServer{
 		logger:   logger,
 		requests: make(chan HistoryEntry, 100),
@@ -76,16 +76,19 @@ func NewHistoryServer(logger logger.Logger, cfg *frames.Config) *HistoryServer {
 
 	err := mon.initDefaults()
 	if err != nil {
-		logger.WarnWith("could not initialize defaults for frames-history", "err", err)
-		return nil
+		return nil, err
 	}
 
-	mon.createDefaultV3ioClient()
+	err = mon.createDefaultV3ioClient()
+	if err != nil {
+		return nil, err
+	}
+
 	if mon.isActive {
 		mon.Start()
 		mon.StartEvictionTask()
 	}
-	return &mon
+	return &mon, nil
 }
 
 func (m *HistoryServer) initDefaults() error {
@@ -167,23 +170,23 @@ func (m *HistoryServer) Start() {
 	}()
 }
 
-func (m *HistoryServer) createDefaultV3ioClient() {
+func (m *HistoryServer) createDefaultV3ioClient() error {
 
 	session := &frames.Session{}
 
 	token := os.Getenv("V3IO_ACCESS_KEY")
 	if token == "" {
-		m.logger.Error("can not create v3io.client. could not find `V3IO_ACCESS_KEY` environment variable")
-		return
+		return errors.New("can not create v3io.client. could not find `V3IO_ACCESS_KEY` environment variable")
 	}
 
 	var err error
 	m.container, err = m.createV3ioClient(session, "", token)
 	if err != nil {
-		m.logger.Error(err)
-		return
+		return err
 	}
 	m.isActive = true
+
+	return nil
 }
 
 func (m *HistoryServer) createV3ioClient(session *frames.Session, password string, token string) (v3io.Container, error) {
