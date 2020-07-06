@@ -36,7 +36,7 @@ import (
 var (
 	intType            = reflect.TypeOf(1)
 	floatType          = reflect.TypeOf(1.0)
-	hashedBucketFormat = regexp.MustCompile("^[a-zA-z0-9]+_[0-9]+$")
+	hashedBucketFormat = regexp.MustCompile("^[a-zA-Z_][a-zA-Z0-9_]*_[0-9]+$")
 )
 
 func (b *Backend) inferSchema(request *frames.ExecRequest) error {
@@ -85,7 +85,7 @@ func schemaFromKeys(keyField string, rowSet []map[string]interface{}) (v3ioutils
 	columnCanBeFullKey := make(map[string]bool)
 	columnCanBePrimaryKey := make(map[string]bool)
 	columnCanBeSortingKey := make(map[string]bool)
-	columnCanBeHashedPrimeryKey := make(map[string]bool)
+	columnCanBeHashedPrimaryKey := make(map[string]bool)
 
 	for _, row := range rowSet {
 		keyValue := row["__name"].(string)
@@ -95,12 +95,13 @@ func schemaFromKeys(keyField string, rowSet []map[string]interface{}) (v3ioutils
 		indexOfDot := strings.Index(keyValue, ".")
 		if indexOfDot >= 0 && indexOfDot < len(keyValue)-1 {
 			sortingKeyValue = keyValue[indexOfDot+1:]
-			primaryKeyValue = keyValue[:indexOfDot]
+			potentialPrimaryKey := keyValue[:indexOfDot]
 
-			if hashedBucketFormat.MatchString(primaryKeyValue) {
-				indexOfUnderscore := strings.Index(primaryKeyValue, "_")
+			if hashedBucketFormat.MatchString(potentialPrimaryKey) {
+				indexOfUnderscore := strings.LastIndex(potentialPrimaryKey, "_")
 				hashedPrimaryKeyValue = keyValue[:indexOfUnderscore]
-				primaryKeyValue = ""
+			} else {
+				primaryKeyValue = potentialPrimaryKey
 			}
 		}
 		for attrName, attrValue := range row {
@@ -142,10 +143,10 @@ func schemaFromKeys(keyField string, rowSet []map[string]interface{}) (v3ioutils
 				columnCanBeSortingKey[attrName] = columnCanBeSortingKey[attrName] && attrValueAsString == sortingKeyValue
 			}
 			if hashedPrimaryKeyValue != "" {
-				if _, ok = columnCanBeHashedPrimeryKey[attrName]; !ok {
-					columnCanBeHashedPrimeryKey[attrName] = true
+				if _, ok = columnCanBeHashedPrimaryKey[attrName]; !ok {
+					columnCanBeHashedPrimaryKey[attrName] = true
 				}
-				columnCanBeHashedPrimeryKey[attrName] = columnCanBeHashedPrimeryKey[attrName] && attrValueAsString == hashedPrimaryKeyValue
+				columnCanBeHashedPrimaryKey[attrName] = columnCanBeHashedPrimaryKey[attrName] && attrValueAsString == hashedPrimaryKeyValue
 			}
 		}
 	}
@@ -157,7 +158,7 @@ func schemaFromKeys(keyField string, rowSet []map[string]interface{}) (v3ioutils
 		possibleFullKeys := filterOutFalse(columnCanBeFullKey)
 		possiblePrimaryKeys := filterOutFalse(columnCanBePrimaryKey)
 		possibleSortingKeys := filterOutFalse(columnCanBeSortingKey)
-		possibleHashedPrimaryKeys := filterOutFalse(columnCanBeHashedPrimeryKey)
+		possibleHashedPrimaryKeys := filterOutFalse(columnCanBeHashedPrimaryKey)
 		if len(possibleHashedPrimaryKeys) == 1 {
 			primaryKeyField = possibleHashedPrimaryKeys[0]
 			hashingBuckets = 64 // we cannot infer the hashing buckets, hence we assume it's the default
