@@ -95,13 +95,11 @@ func schemaFromKeys(keyField string, rowSet []map[string]interface{}) (v3ioutils
 		indexOfDot := strings.Index(keyValue, ".")
 		if indexOfDot >= 0 && indexOfDot < len(keyValue)-1 {
 			sortingKeyValue = keyValue[indexOfDot+1:]
-			potentialPrimaryKey := keyValue[:indexOfDot]
+			primaryKeyValue = keyValue[:indexOfDot]
 
-			if hashedBucketFormat.MatchString(potentialPrimaryKey) {
-				indexOfUnderscore := strings.LastIndex(potentialPrimaryKey, "_")
+			if hashedBucketFormat.MatchString(primaryKeyValue) {
+				indexOfUnderscore := strings.LastIndex(primaryKeyValue, "_")
 				hashedPrimaryKeyValue = keyValue[:indexOfUnderscore]
-			} else {
-				primaryKeyValue = potentialPrimaryKey
 			}
 		}
 		for attrName, attrValue := range row {
