@@ -339,7 +339,7 @@ class ClientBase:
         return self._create(self._alias_backends(backend), table, schema, if_exists, **kw)
 
     def delete(self, backend, table, filter='', start='', end='',
-               if_missing=FAIL, metrics=[]):
+               if_missing=FAIL, metrics=None):
         """Deletes a table or stream or specific table items
 
         Parameters
@@ -370,7 +370,7 @@ class ClientBase:
         if_missing (Optional) : int (frames_pb2 pb.ErrorOptions)
             Determines the behavior when the specified collection doesn't
             exist - `FAIL` (default) to raise an error or `IGNORE` to ignore
-        metrics : string
+        metrics : []str
              (`tsdb` backend only) List of specific metric names to delete.
 
         Raises
