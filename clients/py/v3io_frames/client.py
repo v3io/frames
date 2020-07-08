@@ -257,7 +257,7 @@ class ClientBase:
 
     def write(self, backend, table, dfs, expression='', condition='',
               labels=None, max_rows_in_msg=0, index_cols=None,
-              save_mode='createNewItemsOnly', partition_keys=None):
+              save_mode='', partition_keys=None):
         """Writes data to a data collection
 
         Parameters
@@ -304,11 +304,15 @@ class ClientBase:
         if isinstance(dfs, pd.DataFrame):
             dfs = [dfs]
 
+        canonical_backend_name = self._alias_backends(backend)
+
+        if not save_mode and canonical_backend_name == 'kv':
+            save_mode = 'createNewItemsOnly'
+
         if max_rows_in_msg:
             dfs = self._iter_chunks(dfs, max_rows_in_msg)
 
-        request = self._encode_write(
-            self._alias_backends(backend), table, expression, condition, save_mode, partition_keys)
+        request = self._encode_write(canonical_backend_name, table, expression, condition, save_mode, partition_keys)
         return self._write(request, dfs, labels, index_cols)
 
     def create(self, backend, table, schema=None, if_exists=FAIL, **kw):
