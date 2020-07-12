@@ -26,6 +26,7 @@ The library was developed by Iguazio to simplify working with data in the [Iguaz
 - [`read` Method](#method-read)
 - [`delete` Method](#method-delete)
 - [`execute` Method](#method-execute)
+- [`history` Method](#method-history)
 
 <a id="api-reference-overview"></a>
 ### Overview
@@ -79,6 +80,7 @@ The `Client` class features the following methods for supporting operations on a
 - [`write`](#method-write) &mdash; writes data from pandas DataFrames to a collection.
 - [`execute`](#method-execute) &mdash; executes a backend-specific command on a collection.
   Each backend may support multiple commands.
+- [`history`](#method-history) &mdash; returns information about requests made to the service.
 
 > **Note:** Some methods or method parameters are backend-specific, as detailed in this reference.
 
@@ -849,6 +851,99 @@ The following `execute` commands are specific to the `stream` backend; for more 
                  args={'data': '{"cpu": 12.4, "mem": 31.1, "disk": 12.7}',
                        "client_info": "my custom info", "partition": "PK1"})
   ```
+
+<a id="method-history"></a>
+### `history` Method
+
+By default every command ran with frames is logged.  
+`History` returns information about requests made to the service as a pandas DataFrame.
+
+- [Syntax](#method-history-syntax)
+- [Common parameters](#method-history-params)
+- [Return Value](#method-history-return-value)
+- [Examples](#method-history-examples)
+
+<a id="method-history-syntax"></a>
+#### Syntax
+
+```python
+history(backend='', container='', table='', user='', action='', min_start_time='', max_start_time='',
+min_duration=0, max_duration=0):
+```
+
+<a id="method-history-params"></a>
+#### Common `history` Parameters
+
+- <a id="method-history-param-backend"></a>**backend** &mdash; filter logs by backend.
+
+  - **Type:** `str`
+  - **Requirement:** Optional
+
+- <a id="method-history-param-container"></a>**container** &mdash; filter logs by container.
+
+  - **Type:** `str`
+  - **Requirement:** Optional
+
+- <a id="method-history-param-table"></a>**table** &mdash; filter logs by table.
+  - **Type:** `str`
+  - **Requirement:** Optional
+
+- <a id="method-history-param-user"></a>**user** &mdash; filter logs by the user that executed the command.
+
+  - **Type:** `str`
+  - **Requirement:** Optional
+
+- <a id="method-history-param-action"></a>**action** &mdash; filter logs by frames action.
+
+  - **Type:** `str`
+  - **Requirement:** Optional
+  - **Valid Values:**  `"create"` | `"delete"` | `"execute"` | `"read"` | `"write"`
+
+- <a id="method-history-param-min_start_time"></a>**min_start_time** &mdash; specify start time of the desired logs.
+
+  - **Type:** `str`
+  - **Requirement:** Optional
+  - **Valid Values:** A string containing an RFC 3339 time, a Unix timestamp in milliseconds, a relative time of the format `"now"` or `"now-[0-9]+[mhd]"` (where `m` = minutes, `h` = hours, and `'d'` = days), or 0 for the earliest time.
+    For example: `"2016-01-02T15:34:26Z"`; `"1451748866"`; `"now-90m"`; `"0"`.
+
+- <a id="method-history-param-max_start_time"></a>**max_start_time** &mdash; specify end time of the desired logs.
+
+  - **Type:** `str`
+  - **Requirement:** Optional
+  - **Valid Values:** A string containing an RFC 3339 time, a Unix timestamp in milliseconds, a relative time of the format `"now"` or `"now-[0-9]+[mhd]"` (where `m` = minutes, `h` = hours, and `'d'` = days), or 0 for the earliest time.
+    For example: `"2016-01-02T15:34:26Z"`; `"1451748866"`; `"now-90m"`; `"0"`.
+
+- <a id="method-history-param-min_duration"></a>**min_duration** &mdash; specify minimum duration in milliseconds for the desired logs.
+
+  - **Type:** `int`
+  - **Requirement:** Optional
+  
+- <a id="method-history-param-max_duration"></a>**max_duration** &mdash; specify maximum duration in milliseconds for the desired logs.
+
+  - **Type:** `int`
+  - **Requirement:** Optional
+  
+<a id="method-history-return-value"></a>  
+#### Return Value
+
+Returns a single DataFrame.
+
+<a id="method-history-examples"></a>
+#### `history` Examples
+
+<a id="method-history-examples"></a>
+
+```python
+df = client.history()
+```
+
+```python
+df = client.history(backend='tsdb', action='read')
+```
+
+```python
+df = client.history(container='test-0', min_start_time='now-1d', min_duration='50')
+```
 
 <a id="contributing"></a>
 ## Contributing
