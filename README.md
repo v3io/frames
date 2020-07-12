@@ -80,7 +80,7 @@ The `Client` class features the following methods for supporting operations on a
 - [`write`](#method-write) &mdash; writes data from pandas DataFrames to a collection.
 - [`execute`](#method-execute) &mdash; executes a backend-specific command on a collection.
   Each backend may support multiple commands.
-- [`history`](#method-history) &mdash; returns usage logs for frames service.
+- [`history`](#method-history) &mdash; returns information about requests made to the service.
 
 > **Note:** Some methods or method parameters are backend-specific, as detailed in this reference.
 
@@ -856,7 +856,7 @@ The following `execute` commands are specific to the `stream` backend; for more 
 ### `history` Method
 
 By default every command ran with frames is logged.  
-`History` returns usage history logs for frames service into a pandas DataFrame.
+`History` returns information about requests made to the service as a pandas DataFrame.
 
 - [Syntax](#method-history-syntax)
 - [Common parameters](#method-history-params)
