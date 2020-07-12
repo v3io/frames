@@ -58,10 +58,10 @@ func (iter *FileContentIterator) Next() bool {
 				return false
 			}
 			return iter.Next()
-		} else {
-			iter.err = res.Error
-			return false
 		}
+
+		iter.err = res.Error
+		return false
 	}
 
 	iter.retries = 0
