@@ -3,7 +3,9 @@ package utils
 import (
 	"encoding/json"
 	"fmt"
+	"net/http"
 	"os"
+	"strings"
 	"time"
 
 	"github.com/nuclio/logger"
@@ -358,6 +360,14 @@ func (m *HistoryServer) GetLogs(request *frames.HistoryRequest, out chan frames.
 	// go over all log files in the folder
 	for iter.Next() {
 		currentFilePath := iter.GetFilePath()
+		// filter out log files based on the given time filter
+		isvalid, err := m.filterLogFileByPath(filter, currentFilePath)
+		if err != nil {
+			return err
+		}
+		if !isvalid {
+			continue
+		}
 		lineIterator, err := v3ioutils.NewFileContentLineIterator(currentFilePath, m.MaxBytesInNginxRequest, m.container)
 		if err != nil {
 			return errors.Wrapf(err, "Failed to get '%v'", currentFilePath)
@@ -530,7 +540,8 @@ func (m *HistoryServer) writeMonitoringBatch(logs []HistoryEntry) {
 	for err != nil && retryCount < maxRetryNum {
 		m.logger.WarnWith("failed to write history logs", "retry-num", retryCount, "error", err)
 		// retry on 5xx errors
-		if errWithStatusCode, ok := err.(v3ioerrors.ErrorWithStatusCode); ok && errWithStatusCode.StatusCode() >= 500 {
+		if errWithStatusCode, ok := err.(v3ioerrors.ErrorWithStatusCode); ok &&
+			(errWithStatusCode.StatusCode() >= http.StatusInternalServerError || errWithStatusCode.StatusCode() == http.StatusConflict) {
 			input := &v3io.PutObjectInput{Path: logFilePath, Body: m.writeData, Append: true}
 			err = m.container.PutObjectSync(input)
 
@@ -567,6 +578,26 @@ func (m *HistoryServer) StartEvictionTask() {
 			}
 		}
 	}()
+}
+
+func (m *HistoryServer) filterLogFileByPath(filter historyFilter, path string) (bool, error) {
+	lastSlash := strings.LastIndex(path, "/")
+	logFileName := path[lastSlash+1 : len(path)-5] // removing the `.json` suffix
+	logStartTime, err := time.Parse(logFileTimeFormat, logFileName)
+	if err != nil {
+		return false, err
+	}
+
+	logStartTimeInMillis := logStartTime.UnixNano() / int64(time.Millisecond)
+	if filter.MinStartTime >= logStartTimeInMillis+m.HistoryFileDurationSecondSpans*1000 {
+		return false, nil
+	}
+
+	if filter.MaxStartTime < logStartTimeInMillis {
+		return false, nil
+	}
+
+	return true, nil
 }
 
 type historyFilter struct {

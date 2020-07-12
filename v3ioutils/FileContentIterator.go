@@ -6,6 +6,10 @@ import (
 	v3io "github.com/v3io/v3io-go/pkg/dataplane"
 )
 
+const (
+	maxRetries = 5
+)
+
 type FileContentIterator struct {
 	container    v3io.Container
 	nextOffset   int
@@ -15,6 +19,7 @@ type FileContentIterator struct {
 	currentData  []byte
 	err          error
 	gotLastChunk bool
+	retries      int
 }
 
 func NewFileContentIterator(path string, bytesStep int, container v3io.Container) (*FileContentIterator, error) {
@@ -41,10 +46,25 @@ func (iter *FileContentIterator) Next() bool {
 
 	res := <-iter.responseChan
 	if res.Error != nil {
+		if iter.retries < maxRetries &&
+			(res.HTTPResponse.StatusCode() >= http.StatusInternalServerError ||
+				res.HTTPResponse.StatusCode() == http.StatusConflict) {
+			iter.retries++
+
+			input := res.Request().Input.(*v3io.GetObjectInput)
+			_, err := iter.container.GetObject(input, nil, iter.responseChan)
+			if err != nil {
+				iter.err = err
+				return false
+			}
+			return iter.Next()
+		}
+
 		iter.err = res.Error
 		return false
 	}
 
+	iter.retries = 0
 	iter.currentData = res.Body()
 
 	if res.HTTPResponse.StatusCode() == http.StatusPartialContent {
