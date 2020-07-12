@@ -921,6 +921,8 @@ min_duration=0, max_duration=0):
 
   - **Type:** `int`
   - **Requirement:** Optional
+  
+<a id="method-history-return-value"></a>  
 #### Return Value
 
 Returns a single DataFrame.
