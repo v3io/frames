@@ -874,16 +874,17 @@ min_duration=0, max_duration=0):
 <a id="method-history-params"></a>
 #### Common `history` Parameters
 
-- <a id="method-history-param-backend"></a>**backend** &mdash; filter logs by specific backend.
+- <a id="method-history-param-backend"></a>**backend** &mdash; filter logs by backend.
 
   - **Type:** `str`
   - **Requirement:** Optional
 
-- <a id="method-history-param-container"></a>**container** &mdash; filter logs by specific container.
+- <a id="method-history-param-container"></a>**container** &mdash; filter logs by container.
+
   - **Type:** `str`
   - **Requirement:** Optional
 
-- <a id="method-history-param-table"></a>**table** &mdash; filter logs by specific table.
+- <a id="method-history-param-table"></a>**table** &mdash; filter logs by table.
   - **Type:** `str`
   - **Requirement:** Optional
 
@@ -892,7 +893,7 @@ min_duration=0, max_duration=0):
   - **Type:** `str`
   - **Requirement:** Optional
 
-- <a id="method-history-param-action"></a>**action** &mdash; filter logs by specific frames action.
+- <a id="method-history-param-action"></a>**action** &mdash; filter logs by frames action.
 
   - **Type:** `str`
   - **Requirement:** Optional
