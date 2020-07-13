@@ -1,6 +1,7 @@
 package v3ioutils
 
 import (
+	v3ioerrors "github.com/v3io/v3io-go/pkg/errors"
 	"net/http"
 
 	v3io "github.com/v3io/v3io-go/pkg/dataplane"
@@ -46,9 +47,10 @@ func (iter *FileContentIterator) Next() bool {
 
 	res := <-iter.responseChan
 	if res.Error != nil {
-		if iter.retries < maxRetries &&
-			(res.HTTPResponse.StatusCode() >= http.StatusInternalServerError ||
-				res.HTTPResponse.StatusCode() == http.StatusConflict) {
+		if errWithStatusCode, ok := res.Error.(*v3ioerrors.ErrorWithStatusCode); ok &&
+			iter.retries < maxRetries &&
+			(errWithStatusCode.StatusCode() >= http.StatusInternalServerError ||
+				errWithStatusCode.StatusCode() == http.StatusConflict) {
 			iter.retries++
 
 			input := res.Request().Input.(*v3io.GetObjectInput)
