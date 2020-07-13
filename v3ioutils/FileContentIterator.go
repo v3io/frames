@@ -1,10 +1,10 @@
 package v3ioutils
 
 import (
-	v3ioerrors "github.com/v3io/v3io-go/pkg/errors"
 	"net/http"
 
 	v3io "github.com/v3io/v3io-go/pkg/dataplane"
+	v3ioerrors "github.com/v3io/v3io-go/pkg/errors"
 )
 
 const (
