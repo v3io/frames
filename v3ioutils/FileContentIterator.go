@@ -3,12 +3,13 @@ package v3ioutils
 import (
 	"net/http"
 
+	"github.com/nuclio/logger"
 	v3io "github.com/v3io/v3io-go/pkg/dataplane"
 	v3ioerrors "github.com/v3io/v3io-go/pkg/errors"
 )
 
 const (
-	maxRetries = 5
+	maxRetries = 10
 )
 
 type FileContentIterator struct {
@@ -21,13 +22,15 @@ type FileContentIterator struct {
 	err          error
 	gotLastChunk bool
 	retries      int
+	logger       logger.Logger
 }
 
-func NewFileContentIterator(path string, bytesStep int, container v3io.Container) (*FileContentIterator, error) {
+func NewFileContentIterator(path string, bytesStep int, container v3io.Container, logger logger.Logger) (*FileContentIterator, error) {
 	iter := &FileContentIterator{container: container,
 		step:         bytesStep,
 		path:         path,
-		responseChan: make(chan *v3io.Response, 1)}
+		responseChan: make(chan *v3io.Response, 1),
+		logger:       logger}
 
 	input := &v3io.GetObjectInput{Path: path, NumBytes: bytesStep}
 	_, err := container.GetObject(input, nil, iter.responseChan)
@@ -47,7 +50,7 @@ func (iter *FileContentIterator) Next() bool {
 
 	res := <-iter.responseChan
 	if res.Error != nil {
-		if errWithStatusCode, ok := res.Error.(*v3ioerrors.ErrorWithStatusCode); ok &&
+		if errWithStatusCode, ok := res.Error.(v3ioerrors.ErrorWithStatusCode); ok &&
 			iter.retries < maxRetries &&
 			(errWithStatusCode.StatusCode() >= http.StatusInternalServerError ||
 				errWithStatusCode.StatusCode() == http.StatusConflict) {
@@ -56,12 +59,17 @@ func (iter *FileContentIterator) Next() bool {
 			input := res.Request().Input.(*v3io.GetObjectInput)
 			_, err := iter.container.GetObject(input, nil, iter.responseChan)
 			if err != nil {
+				iter.logger.WarnWith("got error fetching file content",
+					"input", input, "num-reties", iter.retries, "err", res.Error)
 				iter.err = err
 				return false
 			}
 			return iter.Next()
 		}
 
+		iter.logger.WarnWith("got error fetching file content after all retries",
+			"input", res.Request().Input.(*v3io.GetObjectInput),
+			"num-reties", iter.retries, "err", res.Error)
 		iter.err = res.Error
 		return false
 	}

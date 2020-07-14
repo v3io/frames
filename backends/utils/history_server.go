@@ -368,7 +368,7 @@ func (m *HistoryServer) GetLogs(request *frames.HistoryRequest, out chan frames.
 		if !isvalid {
 			continue
 		}
-		lineIterator, err := v3ioutils.NewFileContentLineIterator(currentFilePath, m.MaxBytesInNginxRequest, m.container)
+		lineIterator, err := v3ioutils.NewFileContentLineIterator(currentFilePath, m.MaxBytesInNginxRequest, m.container, m.logger)
 		if err != nil {
 			return errors.Wrapf(err, "Failed to get '%v'", currentFilePath)
 		}
