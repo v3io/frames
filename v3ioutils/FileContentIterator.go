@@ -60,7 +60,7 @@ func (iter *FileContentIterator) Next() bool {
 			_, err := iter.container.GetObject(input, nil, iter.responseChan)
 			if err != nil {
 				iter.logger.WarnWith("got error fetching file content",
-					"input", input, "num-reties", iter.retries, "err", res.Error)
+					"input", input, "num-retries", iter.retries, "err", res.Error)
 				iter.err = err
 				return false
 			}
@@ -69,7 +69,7 @@ func (iter *FileContentIterator) Next() bool {
 
 		iter.logger.WarnWith("got error fetching file content after all retries",
 			"input", res.Request().Input.(*v3io.GetObjectInput),
-			"num-reties", iter.retries, "err", res.Error)
+			"num-retries", iter.retries, "err", res.Error)
 		iter.err = res.Error
 		return false
 	}
