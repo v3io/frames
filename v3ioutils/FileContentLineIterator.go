@@ -4,6 +4,7 @@ import (
 	"bytes"
 	"fmt"
 
+	"github.com/nuclio/logger"
 	v3io "github.com/v3io/v3io-go/pkg/dataplane"
 )
 
@@ -14,9 +15,9 @@ type FileContentLineIterator struct {
 	err                 error
 }
 
-func NewFileContentLineIterator(path string, bytesStep int, container v3io.Container) (*FileContentLineIterator, error) {
+func NewFileContentLineIterator(path string, bytesStep int, container v3io.Container, logger logger.Logger) (*FileContentLineIterator, error) {
 
-	contentIter, err := NewFileContentIterator(path, bytesStep, container)
+	contentIter, err := NewFileContentIterator(path, bytesStep, container, logger)
 	if err != nil {
 		return nil, err
 	}
