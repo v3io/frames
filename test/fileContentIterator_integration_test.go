@@ -4,6 +4,7 @@ import (
 	"strings"
 	"testing"
 
+	"github.com/v3io/frames"
 	"github.com/v3io/frames/v3ioutils"
 	v3io "github.com/v3io/v3io-go/pkg/dataplane"
 )
@@ -33,7 +34,8 @@ func TestFileContentIterator(t *testing.T) {
 		t.Fatalf("failed to put object, err: %v", err)
 	}
 	defer deleteObj(path, container)
-	iter, err := v3ioutils.NewFileContentIterator(path, 2*1024*1024, container)
+	logger, _ := frames.NewLogger("")
+	iter, err := v3ioutils.NewFileContentIterator(path, 2*1024*1024, container, logger)
 
 	if err != nil {
 		t.Fatal(err)
@@ -74,7 +76,8 @@ func TestFileContentLineIterator(t *testing.T) {
 		t.Fatalf("failed to put object, err: %v", err)
 	}
 	defer deleteObj(path, container)
-	iter, err := v3ioutils.NewFileContentLineIterator(path, 20, container)
+	logger, _ := frames.NewLogger("")
+	iter, err := v3ioutils.NewFileContentLineIterator(path, 20, container, logger)
 
 	if err != nil {
 		t.Fatal(err)
