@@ -167,7 +167,8 @@ func (m *HistoryServer) Start() {
 		for {
 			select {
 			case entry := <-m.requests:
-				// If the new request time exceeds the current log file time range, save the existing logs and
+				// If the new request time exceeds the current log file time range, save the existing logs
+				// and insert the current event to the pending list
 				if len(pendingLogs) > 0 {
 					if entry.StartTime.After(currentBatchMaxTime) {
 						m.writeMonitoringBatch(pendingLogs)
