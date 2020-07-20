@@ -135,13 +135,6 @@ func (m *HistoryServer) initDefaults() error {
 	return nil
 }
 
-func (m *HistoryServer) getCurrentLogFileName() string {
-	// Round current time down to the nearest time bucket
-	currentTimeInSeconds := time.Now().Unix()
-	currentTimeBucketSeconds := m.HistoryFileDurationSecondSpans * (currentTimeInSeconds / m.HistoryFileDurationSecondSpans)
-	return m.getLogFileNameByTime(currentTimeBucketSeconds)
-}
-
 func (m *HistoryServer) getLogFileMaxTimeByEventTime(eventTime time.Time) time.Time {
 	eventTimeInSeconds := eventTime.Unix()
 	maxTimeInSeconds := m.HistoryFileDurationSecondSpans*(eventTimeInSeconds/m.HistoryFileDurationSecondSpans) + m.HistoryFileDurationSecondSpans - 1
