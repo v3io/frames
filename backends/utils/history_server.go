@@ -53,7 +53,6 @@ type HistoryEntry struct {
 
 type HistoryServer struct {
 	logger    logger.Logger
-	logs      []HistoryEntry
 	requests  chan HistoryEntry
 	container v3io.Container
 	config    *frames.Config
@@ -136,11 +135,16 @@ func (m *HistoryServer) initDefaults() error {
 	return nil
 }
 
-func (m *HistoryServer) getCurrentLogFileName() string {
-	// Round current time down to the nearest time bucket
-	currentTimeInSeconds := time.Now().Unix()
-	currentTimeBucketSeconds := m.HistoryFileDurationSecondSpans * (currentTimeInSeconds / m.HistoryFileDurationSecondSpans)
-	return m.getLogFileNameByTime(currentTimeBucketSeconds)
+func (m *HistoryServer) getLogFileMaxTimeByEventTime(eventTime time.Time) time.Time {
+	eventTimeInSeconds := eventTime.Unix()
+	maxTimeInSeconds := m.HistoryFileDurationSecondSpans*(eventTimeInSeconds/m.HistoryFileDurationSecondSpans) + m.HistoryFileDurationSecondSpans - 1
+	return time.Unix(maxTimeInSeconds, 0)
+}
+
+func (m *HistoryServer) getLogFileNameByEventTime(eventTime time.Time) string {
+	eventTimeInSeconds := eventTime.Unix()
+	eventTimeBucketSeconds := m.HistoryFileDurationSecondSpans * (eventTimeInSeconds / m.HistoryFileDurationSecondSpans)
+	return m.getLogFileNameByTime(eventTimeBucketSeconds)
 }
 
 func (m *HistoryServer) getLogFileNameByTime(timeBucket int64) string {
@@ -151,12 +155,27 @@ func (m *HistoryServer) getLogFileNameByTime(timeBucket int64) string {
 func (m *HistoryServer) Start() {
 	go func() {
 		var pendingLogs []HistoryEntry
+		var currentBatchMaxTime time.Time
 
 		for {
 			select {
 			case entry := <-m.requests:
+				// If the new request time exceeds the current log file time range, save the existing logs
+				// and insert the current event to the pending list
+				if len(pendingLogs) > 0 {
+					if entry.StartTime.After(currentBatchMaxTime) {
+						m.writeMonitoringBatch(pendingLogs)
+						pendingLogs = pendingLogs[:0]
+						pendingLogs = append(pendingLogs, entry)
+						currentBatchMaxTime = m.getLogFileMaxTimeByEventTime(entry.StartTime)
+						continue
+					}
+				} else {
+					// set current batch end time
+					currentBatchMaxTime = m.getLogFileMaxTimeByEventTime(entry.StartTime)
+				}
+
 				pendingLogs = append(pendingLogs, entry)
-				m.logs = append(m.logs, entry)
 
 				if len(pendingLogs) == m.PendingLogsBatchSize {
 					m.writeMonitoringBatch(pendingLogs)
@@ -532,7 +551,7 @@ func (m *HistoryServer) writeMonitoringBatch(logs []HistoryEntry) {
 		m.writeData = append(m.writeData, '\n')
 	}
 
-	logFilePath := m.getCurrentLogFileName()
+	logFilePath := m.getLogFileNameByEventTime(logs[0].StartTime)
 	input := &v3io.PutObjectInput{Path: logFilePath, Body: m.writeData, Append: true}
 	err := m.container.PutObjectSync(input)
 
