@@ -73,6 +73,8 @@ github.com/nuclio/zap v0.0.2/go.mod h1:SUxPsgePvlyjx6c5MtGdB50pf0IQThtlyLwISLboe
 github.com/pavius/impi v0.0.0-20180302134524-c1cbdcb8df2b/go.mod h1:x/hU0bfdWIhuOT1SKwiJg++yvkk6EuOtJk8WtDZqgr8=
 github.com/pavius/impi v0.0.0-20200212064320-5db7efa5f87b h1:Te2cVBQZncOwLG4qR4Jex2EFd6i8lSqC9GzUFNBwS/0=
 github.com/pavius/impi v0.0.0-20200212064320-5db7efa5f87b/go.mod h1:x/hU0bfdWIhuOT1SKwiJg++yvkk6EuOtJk8WtDZqgr8=
+github.com/pavius/impi v0.0.3 h1:DND6MzU+BLABhOZXbELR3FU8b+zDgcq4dOCNLhiTYuI=
+github.com/pavius/impi v0.0.3/go.mod h1:x/hU0bfdWIhuOT1SKwiJg++yvkk6EuOtJk8WtDZqgr8=
 github.com/pavius/zap v0.0.0-20180228181622-8d52692529b8/go.mod h1:6FWOCx06uh50GClv8S2cfk3asqTJs3qq3ZNRtLZE77I=
 github.com/pavius/zap v1.4.2-0.20180228181622-8d52692529b8 h1:WqLgmr/wj9TO5Sc6oYPQRAJBxuHE0NTeuVeFnT+FZVo=
 github.com/pavius/zap v1.4.2-0.20180228181622-8d52692529b8/go.mod h1:6FWOCx06uh50GClv8S2cfk3asqTJs3qq3ZNRtLZE77I=
@@ -165,6 +167,7 @@ github.com/v3io/v3io-tsdb v0.9.23 h1:BE7AcJACWoh0OXPaXgIUiDB+bFkYWcsgL6s2xa2C60g
 github.com/v3io/v3io-tsdb v0.9.23/go.mod h1:8xi2vWbHDIVfOsENKPAI+X70F7JZvfD9ucYYJ5YJYeI=
 github.com/v3io/v3io-tsdb v0.9.24 h1:99C89uv0f8qet4RLuI3baNMUElDeaiVaaO74zbi0qHw=
 github.com/v3io/v3io-tsdb v0.9.24/go.mod h1:8xi2vWbHDIVfOsENKPAI+X70F7JZvfD9ucYYJ5YJYeI=
+github.com/v3io/v3io-tsdb v0.9.25 h1:QRK93nJbcLiUJ98Ptw/kKbyabZVC3psh1U1EMJFK+RY=
 github.com/v3io/v3io-tsdb v0.9.25/go.mod h1:8xi2vWbHDIVfOsENKPAI+X70F7JZvfD9ucYYJ5YJYeI=
 github.com/valyala/bytebufferpool v1.0.0 h1:GqA5TC/0021Y/b9FG4Oi9Mr3q7XYx6KllzawFIhcdPw=
 github.com/valyala/bytebufferpool v1.0.0/go.mod h1:6bBcMArwyJ5K/AmCkWv1jt77kVWyCJ6HpOuEn7z0Csc=
