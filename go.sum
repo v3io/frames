@@ -74,6 +74,8 @@ github.com/v3io/v3io-go v0.0.0-20200602081255-9a94144f811c h1:IX8Gm8g/hh4Al5g9bH
 github.com/v3io/v3io-go v0.0.0-20200602081255-9a94144f811c/go.mod h1:5poBlcjZG5TiexRTYI44PE6tHzZz5Z60w+iS899pWtc=
 github.com/v3io/v3io-tsdb v0.10.6 h1:LguncLKvsa2Vk7yl3giyIY/w13OCJuitCpLvGpZXtto=
 github.com/v3io/v3io-tsdb v0.10.6/go.mod h1:mxCvI+onp7t/L1MUN3kcUuDefilb9Jk3jcXW7Bz1qhU=
+github.com/v3io/v3io-tsdb v0.10.7 h1:PPSCO4vN1oxX7Xd4T9k8dpZMmH0BZS9eQy0MDTWYA/U=
+github.com/v3io/v3io-tsdb v0.10.7/go.mod h1:mxCvI+onp7t/L1MUN3kcUuDefilb9Jk3jcXW7Bz1qhU=
 github.com/valyala/bytebufferpool v1.0.0 h1:GqA5TC/0021Y/b9FG4Oi9Mr3q7XYx6KllzawFIhcdPw=
 github.com/valyala/bytebufferpool v1.0.0/go.mod h1:6bBcMArwyJ5K/AmCkWv1jt77kVWyCJ6HpOuEn7z0Csc=
 github.com/valyala/fasthttp v1.2.0 h1:dzZJf2IuMiclVjdw0kkT+f9u4YdrapbNyGAN47E/qnk=
