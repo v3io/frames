@@ -340,7 +340,7 @@ write(backend, table, dfs, expression='', condition='', labels=None,
     partition_keys=None):
 ```
 
-> **Note:** The `expression` and `partition_keys` parameters aren't supported in the current release.
+> **Note:** The `expression` parameter isn't supported in the current release.
 <!-- [c-no-update-expression-support] -->
 
 <a id="method-write-common-params"></a>
