@@ -71,6 +71,8 @@ github.com/v3io/sqlparser v0.0.0-20190306105200-4d7273501871/go.mod h1:QD2Bo64oy
 github.com/v3io/v3io-go v0.1.5-0.20200416113214-f1b82b9a8e82/go.mod h1:D0W1tjsVgcp4xk3ZI2fjKTKaOpYJLewN1BPN0x2osO4=
 github.com/v3io/v3io-go v0.1.9/go.mod h1:5poBlcjZG5TiexRTYI44PE6tHzZz5Z60w+iS899pWtc=
 github.com/v3io/v3io-tsdb v0.10.9/go.mod h1:mxCvI+onp7t/L1MUN3kcUuDefilb9Jk3jcXW7Bz1qhU=
+github.com/v3io/v3io-tsdb v0.10.10 h1:iXuCkt7twOVMEs5ho86Q6jcowoG/WcWPneJgw4LcHuM=
+github.com/v3io/v3io-tsdb v0.10.10/go.mod h1:zrwE+Kj0uNMh9GffiDcNlms0ly2TPj+3ZDdXcqRIrCc=
 github.com/valyala/bytebufferpool v1.0.0/go.mod h1:6bBcMArwyJ5K/AmCkWv1jt77kVWyCJ6HpOuEn7z0Csc=
 github.com/valyala/fasthttp v1.2.0/go.mod h1:4vX61m6KN+xDduDNwXrhIAVZaZaZiQ1luJk8LWSxF3s=
 github.com/valyala/tcplisten v0.0.0-20161114210144-ceec8f93295a/go.mod h1:v3UYOV9WzVtRmSR+PDvWpU/qWl4Wa5LApYYX4ZtKbio=
