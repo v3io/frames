@@ -223,7 +223,10 @@ func (s *Server) handleWrite(ctx *fasthttp.RequestCtx) {
 
 	reader, writer := io.Pipe()
 	go func() {
-		_ = ctx.Request.BodyWriteTo(writer)
+		err := ctx.Request.BodyWriteTo(writer)
+		if err != nil {
+			s.logger.ErrorWith("Failed to write request body", "error", err)
+		}
 		_ = writer.Close()
 	}()
 
