@@ -484,10 +484,10 @@ func (a *Appender) WaitForComplete(timeout time.Duration) error {
 	}
 	close(a.requestChan)
 	select {
-		case <-a.doneChan:
-			return a.asyncErr
-		case <-time.After(maxWaitTime):
-			return errors.Errorf("The operation timed out after %.2f seconds.", maxWaitTime.Seconds())
+	case <-a.doneChan:
+		return a.asyncErr
+	case <-time.After(maxWaitTime):
+		return errors.Errorf("The operation timed out after %.2f seconds.", maxWaitTime.Seconds())
 	}
 }
 
