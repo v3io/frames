@@ -476,9 +476,20 @@ func validColName(name string) string {
 
 // WaitForComplete waits for write to complete
 func (a *Appender) WaitForComplete(timeout time.Duration) error {
+	var maxWaitTime time.Duration
+	if timeout == 0 {
+		maxWaitTime = 24 * time.Hour
+	} else if timeout > 0 {
+		maxWaitTime = timeout
+	}
 	close(a.requestChan)
-	<-a.doneChan
-	return a.asyncErr
+	select {
+		case <-a.doneChan:
+			return a.asyncErr
+		case <-time.After(maxWaitTime):
+			err := errors.Errorf("The operation timed out after %.2f seconds.", maxWaitTime.Seconds())
+			return err
+	}
 }
 
 func (a *Appender) Close() {
