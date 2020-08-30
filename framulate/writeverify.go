@@ -190,10 +190,6 @@ func (s *writeVerifyScenario) createTSDBWriteTask(taskGroup *repeatingtask.TaskG
 				// stats stuff
 				atomic.AddUint64(&s.numSeriesWritten, 1)
 
-				// release the stuff we attached to the task so we don't accumulate too much memory
-				tsdbSeriesInstance.timestamps = nil
-				tsdbSeriesInstance.values = nil
-
 				return nil
 			},
 		}
@@ -230,6 +226,10 @@ func (s *writeVerifyScenario) createTSDBVerifyTask(taskGroup *repeatingtask.Task
 
 			// stats stuff
 			atomic.AddUint64(&s.numSeriesVerified, 1)
+
+			// release the stuff we attached to the task so we don't accumulate too much memory
+			tsdbSeriesInstance.timestamps = nil
+			tsdbSeriesInstance.values = nil
 
 			return err
 		},

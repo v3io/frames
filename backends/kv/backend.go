@@ -28,6 +28,7 @@ import (
 	"github.com/nuclio/logger"
 	"github.com/pkg/errors"
 	"github.com/v3io/frames"
+	"github.com/v3io/frames/backends"
 	"github.com/v3io/frames/v3ioutils"
 	"github.com/v3io/v3io-go/pkg/dataplane"
 )
@@ -62,6 +63,11 @@ func (b *Backend) Create(request *frames.CreateRequest) error {
 
 // Delete deletes a table (or part of it)
 func (b *Backend) Delete(request *frames.DeleteRequest) error {
+
+	err := backends.ValidateRequest("kv", request.Proto, nil)
+	if err != nil {
+		return err
+	}
 
 	container, path, err := b.newConnection(request.Proto.Session, request.Password.Get(), request.Token.Get(), request.Proto.Table, true)
 	if err != nil {

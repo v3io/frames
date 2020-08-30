@@ -23,12 +23,14 @@ package kv
 import (
 	"fmt"
 	"net/http"
+	"regexp"
 	"strings"
 	"time"
 
 	"github.com/nuclio/logger"
 	"github.com/pkg/errors"
 	"github.com/v3io/frames"
+	"github.com/v3io/frames/backends"
 	"github.com/v3io/frames/backends/utils"
 	"github.com/v3io/frames/v3ioutils"
 	v3io "github.com/v3io/v3io-go/pkg/dataplane"
@@ -53,10 +55,28 @@ const (
 	falseConditionOuterErrorCode           = "16777244"
 	falseConditionInnerErrorCode           = "16777245"
 	createNewItemOnlyExistingItemErrorCode = "369098809"
+
+	maximumAttributeNameLength = 256
 )
+
+var (
+	validColumnNamePattern = regexp.MustCompile("^[a-zA-Z_][a-zA-Z0-9_]*$")
+)
+
+var allowedWriteRequestFields = map[string]bool{
+	"Expression":    true,
+	"Condition":     true,
+	"PartitionKeys": true,
+	"SaveMode":      true,
+}
 
 // Write supports writing to the backend
 func (kv *Backend) Write(request *frames.WriteRequest) (frames.FrameAppender, error) {
+
+	err := backends.ValidateRequest("kv", request, allowedWriteRequestFields)
+	if err != nil {
+		return nil, err
+	}
 
 	container, tablePath, err := kv.newConnection(request.Session, request.Password.Get(), request.Token.Get(), request.Table, true)
 	if err != nil {
@@ -129,7 +149,7 @@ func (kv *Backend) Write(request *frames.WriteRequest) (frames.FrameAppender, er
 	if request.ImmidiateData != nil {
 		err := appender.Add(request.ImmidiateData)
 		if err != nil {
-			appender.Close()
+			close(appender.requestChan)
 			return nil, err
 		}
 	}
@@ -161,6 +181,21 @@ func validateFrameInput(frame frames.Frame, request *frames.WriteRequest) error 
 	for columnNumber, name := range names {
 		if len(name) == 0 {
 			return fmt.Errorf("column number %d has an empty name", columnNumber)
+		}
+		if !validColumnNamePattern.MatchString(name) {
+			return fmt.Errorf("column '%v' has an invalid name", name)
+		}
+		if len(name) > maximumAttributeNameLength {
+			return fmt.Errorf("column '%v' exceeding maximum allowed attribute name of %v", name, maximumAttributeNameLength)
+		}
+	}
+	for _, index := range frame.Indices() {
+		name := index.Name()
+		if name != "" && !validColumnNamePattern.MatchString(name) {
+			return fmt.Errorf("index '%v' has an invalid name", name)
+		}
+		if len(name) > maximumAttributeNameLength {
+			return fmt.Errorf("column '%v' exceeding maximum allowed attribute name of %v", name, maximumAttributeNameLength)
 		}
 	}
 	if len(request.PartitionKeys) > 0 {
@@ -288,7 +323,11 @@ func (a *Appender) Add(frame frames.Frame) error {
 				if err != nil {
 					return err
 				}
-				itemSubPath.WriteString(fmt.Sprintf("%v", val))
+				if frame.IsNull(r, partitionColumnName) {
+					itemSubPath.WriteString("null")
+				} else {
+					itemSubPath.WriteString(fmt.Sprintf("%v", val))
+				}
 				itemSubPath.WriteString("/")
 			}
 		}
@@ -437,13 +476,12 @@ func validColName(name string) string {
 
 // WaitForComplete waits for write to complete
 func (a *Appender) WaitForComplete(timeout time.Duration) error {
-	a.Close()
+	close(a.requestChan)
 	<-a.doneChan
 	return a.asyncErr
 }
 
 func (a *Appender) Close() {
-	close(a.requestChan)
 }
 
 func (a *Appender) indexValFunc(frame frames.Frame) (func(int) interface{}, error) {

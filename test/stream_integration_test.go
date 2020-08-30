@@ -60,9 +60,7 @@ func (streamSuite *StreamTestSuite) generateSampleFrame(t testing.TB) frames.Fra
 }
 
 func (streamSuite *StreamTestSuite) SetupSuite() {
-	if streamSuite.client == nil {
-		streamSuite.FailNow("client not set")
-	}
+	streamSuite.Require().NotNil(streamSuite.client, "client not set")
 }
 
 func (streamSuite *StreamTestSuite) TestAll() {
@@ -88,17 +86,13 @@ func (streamSuite *StreamTestSuite) TestAll() {
 	}
 
 	appender, err := streamSuite.client.Write(wreq)
-	if err != nil {
-		streamSuite.T().Fatal(err)
-	}
+	streamSuite.Require().NoError(err)
 
-	if err := appender.Add(frame); err != nil {
-		streamSuite.T().Fatal(err)
-	}
+	err = appender.Add(frame)
+	streamSuite.Require().NoError(err)
 
-	if err := appender.WaitForComplete(3 * time.Second); err != nil {
-		streamSuite.T().Fatal(err)
-	}
+	err = appender.WaitForComplete(3 * time.Second)
+	streamSuite.Require().NoError(err)
 
 	time.Sleep(3 * time.Second) // Let DB sync
 
@@ -111,21 +105,15 @@ func (streamSuite *StreamTestSuite) TestAll() {
 	}
 
 	it, err := streamSuite.client.Read(rreq)
-	if err != nil {
-		streamSuite.T().Fatal(err)
-	}
+	streamSuite.Require().NoError(err)
 
 	for it.Next() {
 		// TODO: More checks
 		fr := it.At()
-		if !(fr.Len() == frame.Len() || fr.Len()-1 == frame.Len()) {
-			streamSuite.T().Fatalf("wrong length: %d != %d", fr.Len(), frame.Len())
-		}
+		streamSuite.Require().Contains([]int{fr.Len(), fr.Len() - 1}, frame.Len(), "wrong length")
 	}
 
-	if err := it.Err(); err != nil {
-		streamSuite.T().Fatal(err)
-	}
+	streamSuite.Require().NoError(it.Err())
 
 	streamSuite.T().Log("delete")
 	dreq := &pb.DeleteRequest{
@@ -133,8 +121,6 @@ func (streamSuite *StreamTestSuite) TestAll() {
 		Table:   table,
 	}
 
-	if err := streamSuite.client.Delete(dreq); err != nil {
-		streamSuite.T().Fatal(err)
-	}
-
+	err = streamSuite.client.Delete(dreq)
+	streamSuite.Require().NoError(err)
 }

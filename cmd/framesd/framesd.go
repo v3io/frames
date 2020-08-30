@@ -79,7 +79,14 @@ func main() {
 	if err != nil {
 		log.Fatalf("error: can't create logger - %s", err)
 	}
-	historyServer := utils.NewHistoryServer(framesLogger, cfg)
+
+	var historyServer *utils.HistoryServer
+	if !cfg.DisableHistory {
+		historyServer, err = utils.NewHistoryServer(framesLogger, cfg)
+		if err != nil {
+			framesLogger.WarnWith("failed to initialize frames-history", "err", err)
+		}
+	}
 
 	hsrv, err := framesHttp.NewServer(cfg, config.httpAddr, framesLogger, historyServer)
 	if err != nil {

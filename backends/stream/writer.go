@@ -27,10 +27,20 @@ import (
 	"github.com/nuclio/logger"
 	"github.com/pkg/errors"
 	"github.com/v3io/frames"
+	"github.com/v3io/frames/backends"
 	"github.com/v3io/v3io-go/pkg/dataplane"
 )
 
+var allowedWriteRequestFields = map[string]bool{
+	"HaveMore": true,
+}
+
 func (b *Backend) Write(request *frames.WriteRequest) (frames.FrameAppender, error) {
+
+	err := backends.ValidateRequest("stream", request, allowedWriteRequestFields)
+	if err != nil {
+		return nil, err
+	}
 
 	container, tablePath, err := b.newConnection(request.Session, request.Password.Get(), request.Token.Get(), request.Table, true)
 	if err != nil {

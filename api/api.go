@@ -136,6 +136,7 @@ func (api *API) Write(request *frames.WriteRequest, in chan frames.Frame) (int, 
 		api.logger.ErrorWith(msg, "error", err)
 		return -1, -1, errors.Wrap(err, msg)
 	}
+	defer appender.Close()
 	nFrames, nRows := 0, 0
 	if request.ImmidiateData != nil {
 		nFrames, nRows = 1, request.ImmidiateData.Len()
@@ -265,6 +266,9 @@ func (api *API) Exec(request *frames.ExecRequest) (frames.Frame, error) {
 }
 
 func (api *API) History(request *frames.HistoryRequest, out chan frames.Frame) error {
+	if api.historyServer == nil {
+		return errors.New("history server was not initialized properly. To enable this feature, please contact the system administrator")
+	}
 	return api.historyServer.GetLogs(request, out)
 }
 

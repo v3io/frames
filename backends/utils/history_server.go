@@ -3,7 +3,9 @@ package utils
 import (
 	"encoding/json"
 	"fmt"
+	"net/http"
 	"os"
+	"strings"
 	"time"
 
 	"github.com/nuclio/logger"
@@ -51,7 +53,6 @@ type HistoryEntry struct {
 
 type HistoryServer struct {
 	logger    logger.Logger
-	logs      []HistoryEntry
 	requests  chan HistoryEntry
 	container v3io.Container
 	config    *frames.Config
@@ -67,24 +68,31 @@ type HistoryServer struct {
 	HistoryFileNum                 int
 }
 
-func NewHistoryServer(logger logger.Logger, cfg *frames.Config) *HistoryServer {
+func NewHistoryServer(logger logger.Logger, cfg *frames.Config) (*HistoryServer, error) {
 	mon := HistoryServer{
 		logger:   logger,
 		requests: make(chan HistoryEntry, 100),
 		isActive: false,
 		config:   cfg}
 
-	mon.initDefaults()
+	err := mon.initDefaults()
+	if err != nil {
+		return nil, err
+	}
 
-	mon.createDefaultV3ioClient()
+	err = mon.createDefaultV3ioClient()
+	if err != nil {
+		return nil, err
+	}
+
 	if mon.isActive {
 		mon.Start()
 		mon.StartEvictionTask()
 	}
-	return &mon
+	return &mon, nil
 }
 
-func (m *HistoryServer) initDefaults() {
+func (m *HistoryServer) initDefaults() error {
 	m.WriteMonitoringLogsTimeout = defaultWriteMonitoringLogsTimeout
 	if m.config.WriteMonitoringLogsTimeoutSeconds != 0 {
 		m.WriteMonitoringLogsTimeout = time.Duration(m.config.WriteMonitoringLogsTimeoutSeconds) * time.Second
@@ -111,21 +119,32 @@ func (m *HistoryServer) initDefaults() {
 	}
 
 	m.HistoryFileDurationSecondSpans = defaultHistoryFileDurationInSeconds
-	if m.config.HistoryFileDurationHourSpans != 0 {
-		m.HistoryFileDurationSecondSpans = m.config.HistoryFileDurationHourSpans * 3600
+	if m.config.HistoryFileDurationSpans != "" {
+		durationInMillis, err := utils.Str2duration(m.config.HistoryFileDurationSpans)
+		if err != nil {
+			return err
+		}
+		m.HistoryFileDurationSecondSpans = durationInMillis / 1000
 	}
 
 	m.HistoryFileNum = defaultHistoryFileNum
 	if m.config.HistoryFileNum != 0 {
 		m.HistoryFileNum = m.config.HistoryFileNum
 	}
+
+	return nil
 }
 
-func (m *HistoryServer) getCurrentLogFileName() string {
-	// Round current time down to the nearest time bucket
-	currentTimeInSeconds := time.Now().Unix()
-	currentTimeBucketSeconds := m.HistoryFileDurationSecondSpans * (currentTimeInSeconds / m.HistoryFileDurationSecondSpans)
-	return m.getLogFileNameByTime(currentTimeBucketSeconds)
+func (m *HistoryServer) getLogFileMaxTimeByEventTime(eventTime time.Time) time.Time {
+	eventTimeInSeconds := eventTime.Unix()
+	maxTimeInSeconds := m.HistoryFileDurationSecondSpans*(eventTimeInSeconds/m.HistoryFileDurationSecondSpans) + m.HistoryFileDurationSecondSpans - 1
+	return time.Unix(maxTimeInSeconds, 0)
+}
+
+func (m *HistoryServer) getLogFileNameByEventTime(eventTime time.Time) string {
+	eventTimeInSeconds := eventTime.Unix()
+	eventTimeBucketSeconds := m.HistoryFileDurationSecondSpans * (eventTimeInSeconds / m.HistoryFileDurationSecondSpans)
+	return m.getLogFileNameByTime(eventTimeBucketSeconds)
 }
 
 func (m *HistoryServer) getLogFileNameByTime(timeBucket int64) string {
@@ -136,12 +155,27 @@ func (m *HistoryServer) getLogFileNameByTime(timeBucket int64) string {
 func (m *HistoryServer) Start() {
 	go func() {
 		var pendingLogs []HistoryEntry
+		var currentBatchMaxTime time.Time
 
 		for {
 			select {
 			case entry := <-m.requests:
+				// If the new request time exceeds the current log file time range, save the existing logs
+				// and insert the current event to the pending list
+				if len(pendingLogs) > 0 {
+					if entry.StartTime.After(currentBatchMaxTime) {
+						m.writeMonitoringBatch(pendingLogs)
+						pendingLogs = pendingLogs[:0]
+						pendingLogs = append(pendingLogs, entry)
+						currentBatchMaxTime = m.getLogFileMaxTimeByEventTime(entry.StartTime)
+						continue
+					}
+				} else {
+					// set current batch end time
+					currentBatchMaxTime = m.getLogFileMaxTimeByEventTime(entry.StartTime)
+				}
+
 				pendingLogs = append(pendingLogs, entry)
-				m.logs = append(m.logs, entry)
 
 				if len(pendingLogs) == m.PendingLogsBatchSize {
 					m.writeMonitoringBatch(pendingLogs)
@@ -157,23 +191,23 @@ func (m *HistoryServer) Start() {
 	}()
 }
 
-func (m *HistoryServer) createDefaultV3ioClient() {
+func (m *HistoryServer) createDefaultV3ioClient() error {
 
 	session := &frames.Session{}
 
 	token := os.Getenv("V3IO_ACCESS_KEY")
 	if token == "" {
-		m.logger.Error("can not create v3io.client. could not find `V3IO_ACCESS_KEY` environment variable")
-		return
+		return errors.New("can not create v3io.client. could not find `V3IO_ACCESS_KEY` environment variable")
 	}
 
 	var err error
 	m.container, err = m.createV3ioClient(session, "", token)
 	if err != nil {
-		m.logger.Error(err)
-		return
+		return err
 	}
 	m.isActive = true
+
+	return nil
 }
 
 func (m *HistoryServer) createV3ioClient(session *frames.Session, password string, token string) (v3io.Container, error) {
@@ -345,7 +379,15 @@ func (m *HistoryServer) GetLogs(request *frames.HistoryRequest, out chan frames.
 	// go over all log files in the folder
 	for iter.Next() {
 		currentFilePath := iter.GetFilePath()
-		lineIterator, err := v3ioutils.NewFileContentLineIterator(currentFilePath, m.MaxBytesInNginxRequest, m.container)
+		// filter out log files based on the given time filter
+		isvalid, err := m.filterLogFileByPath(filter, currentFilePath)
+		if err != nil {
+			return err
+		}
+		if !isvalid {
+			continue
+		}
+		lineIterator, err := v3ioutils.NewFileContentLineIterator(currentFilePath, m.MaxBytesInNginxRequest, m.container, m.logger)
 		if err != nil {
 			return errors.Wrapf(err, "Failed to get '%v'", currentFilePath)
 		}
@@ -509,7 +551,7 @@ func (m *HistoryServer) writeMonitoringBatch(logs []HistoryEntry) {
 		m.writeData = append(m.writeData, '\n')
 	}
 
-	logFilePath := m.getCurrentLogFileName()
+	logFilePath := m.getLogFileNameByEventTime(logs[0].StartTime)
 	input := &v3io.PutObjectInput{Path: logFilePath, Body: m.writeData, Append: true}
 	err := m.container.PutObjectSync(input)
 
@@ -517,7 +559,8 @@ func (m *HistoryServer) writeMonitoringBatch(logs []HistoryEntry) {
 	for err != nil && retryCount < maxRetryNum {
 		m.logger.WarnWith("failed to write history logs", "retry-num", retryCount, "error", err)
 		// retry on 5xx errors
-		if errWithStatusCode, ok := err.(v3ioerrors.ErrorWithStatusCode); ok && errWithStatusCode.StatusCode() >= 500 {
+		if errWithStatusCode, ok := err.(v3ioerrors.ErrorWithStatusCode); ok &&
+			(errWithStatusCode.StatusCode() >= http.StatusInternalServerError || errWithStatusCode.StatusCode() == http.StatusConflict) {
 			input := &v3io.PutObjectInput{Path: logFilePath, Body: m.writeData, Append: true}
 			err = m.container.PutObjectSync(input)
 
@@ -554,6 +597,26 @@ func (m *HistoryServer) StartEvictionTask() {
 			}
 		}
 	}()
+}
+
+func (m *HistoryServer) filterLogFileByPath(filter historyFilter, path string) (bool, error) {
+	lastSlash := strings.LastIndex(path, "/")
+	logFileName := path[lastSlash+1 : len(path)-5] // removing the `.json` suffix
+	logStartTime, err := time.Parse(logFileTimeFormat, logFileName)
+	if err != nil {
+		return false, err
+	}
+
+	logStartTimeInMillis := logStartTime.UnixNano() / int64(time.Millisecond)
+	if filter.MinStartTime >= logStartTimeInMillis+m.HistoryFileDurationSecondSpans*1000 {
+		return false, nil
+	}
+
+	if filter.MaxStartTime < logStartTimeInMillis {
+		return false, nil
+	}
+
+	return true, nil
 }
 
 type historyFilter struct {

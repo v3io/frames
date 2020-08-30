@@ -192,7 +192,7 @@ class ClientBase:
         self.frame_factory = frame_factory
         self.concat = concat
 
-    def read(self, backend='', table='', query='', columns=None, filter='',
+    def read(self, backend, table='', query='', columns=None, filter='',
              group_by='', limit=0, data_format='', row_layout=False,
              max_rows_in_msg=0, marker='', iterator=False, get_raw=False, **kw):
         """Reads data from a data collection (runs a data query)
@@ -257,7 +257,7 @@ class ClientBase:
 
     def write(self, backend, table, dfs, expression='', condition='',
               labels=None, max_rows_in_msg=0, index_cols=None,
-              save_mode='createNewItemsOnly', partition_keys=None):
+              save_mode='', partition_keys=None):
         """Writes data to a data collection
 
         Parameters
@@ -304,11 +304,15 @@ class ClientBase:
         if isinstance(dfs, pd.DataFrame):
             dfs = [dfs]
 
+        canonical_backend_name = self._alias_backends(backend)
+
+        if not save_mode and canonical_backend_name == 'kv':
+            save_mode = 'createNewItemsOnly'
+
         if max_rows_in_msg:
             dfs = self._iter_chunks(dfs, max_rows_in_msg)
 
-        request = self._encode_write(
-            self._alias_backends(backend), table, expression, condition, save_mode, partition_keys)
+        request = self._encode_write(canonical_backend_name, table, expression, condition, save_mode, partition_keys)
         return self._write(request, dfs, labels, index_cols)
 
     def create(self, backend, table, schema=None, if_exists=FAIL, **kw):
@@ -339,7 +343,7 @@ class ClientBase:
         return self._create(self._alias_backends(backend), table, schema, if_exists, **kw)
 
     def delete(self, backend, table, filter='', start='', end='',
-               if_missing=FAIL, metrics=[]):
+               if_missing=FAIL, metrics=None):
         """Deletes a table or stream or specific table items
 
         Parameters
@@ -370,7 +374,7 @@ class ClientBase:
         if_missing (Optional) : int (frames_pb2 pb.ErrorOptions)
             Determines the behavior when the specified collection doesn't
             exist - `FAIL` (default) to raise an error or `IGNORE` to ignore
-        metrics : string
+        metrics : []str
              (`tsdb` backend only) List of specific metric names to delete.
 
         Raises
@@ -448,8 +452,7 @@ class ClientBase:
         df = self._history(self._alias_backends(backend), container, table, user, action, min_start_time, max_start_time, min_duration, max_duration)
 
         if not df.empty:
-            df.sort_values('StartTime', inplace=True)
-            df.reset_index(inplace=True)
+            df.sort_values('StartTime', inplace=True, ignore_index=True)
         return df
 
     def _fix_address(self, address):
