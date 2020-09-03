@@ -140,16 +140,24 @@ func (req *simpleJSONQueryRequest) GetReadRequest(session *frames.Session) *fram
 			session.Container = req.Container
 		}
 	}
+	if req.Backend == "tsdb" {
+		return &frames.ReadRequest{Proto: &pb.ReadRequest{
+			Backend: req.Backend,
+			Table:   req.Table,
+			Columns: req.Fields,
+			Start:   req.Range.From,
+			End:     req.Range.To,
+			Step:    req.Step,
+			Session: session,
+			Filter:  req.Filter,
+			Query:   req.Query}}
+	}
 	return &frames.ReadRequest{Proto: &pb.ReadRequest{
 		Backend: req.Backend,
 		Table:   req.Table,
 		Columns: req.Fields,
-		Start:   req.Range.From,
-		End:     req.Range.To,
-		Step:    req.Step,
 		Session: session,
-		Filter:  req.Filter,
-		Query:   req.Query}}
+		Filter:  req.Filter}}
 }
 
 func (req *simpleJSONQueryRequest) formatTable(ch chan frames.Frame) (interface{}, error) {
