@@ -46,6 +46,10 @@ func NewSchema(key string, sortingKey string) V3ioSchema {
 	return &OldV3ioSchema{Fields: []OldSchemaField{}, Key: key, SortingKey: sortingKey}
 }
 
+func NewSchemaWithHashingBuckets(key string, sortingKey string, hashingBucketNum int) V3ioSchema {
+	return &OldV3ioSchema{Fields: []OldSchemaField{}, Key: key, SortingKey: sortingKey, HashingBucketNum: hashingBucketNum}
+}
+
 // SchemaFromJSON return a schema from JSON data
 func SchemaFromJSON(data []byte) (V3ioSchema, error) {
 	var schema OldV3ioSchema
@@ -162,6 +166,15 @@ func (s *OldV3ioSchema) merge(new *OldV3ioSchema) (bool, error) {
 			changed = true
 		} else {
 			return changed, fmt.Errorf("changing sorting key is not allowed, old: %v, new:%v", s.SortingKey, new.SortingKey)
+		}
+	}
+
+	if s.HashingBucketNum != new.HashingBucketNum && new.HashingBucketNum != 0 {
+		if isFirstSchema {
+			s.HashingBucketNum = new.HashingBucketNum
+			changed = true
+		} else {
+			return changed, fmt.Errorf("changing hashing buckets is not allowed, old: %v, new:%v", s.HashingBucketNum, new.HashingBucketNum)
 		}
 	}
 
