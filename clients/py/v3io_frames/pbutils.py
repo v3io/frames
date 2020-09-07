@@ -364,27 +364,7 @@ def get_actual_types(df):
         elif is_float(col.dtype):
             column_types[col.name] = fpb.FLOAT
         elif is_string(col.dtype):
-            # Pandas dtype for str or "mixed" type is object
-            # Go over the column values until we reach a real value
-            # and determine whether it's bool or string
-            has_data = False
-            for x in col:
-                if pd.isnull(x):
-                    continue
-                if isinstance(x, str):
-                    column_types[col.name] = fpb.STRING
-                    has_data = True
-                    break
-                if isinstance(x, bool):
-                    column_types[col.name] = fpb.BOOLEAN
-                    has_data = True
-                    break
-                raise WriteError('{} - contains an unsupported value type - {}'
-                                 .format(col_name, type(x)))
-            # If all items in the column are None
-            # it does not matter what type the column will be, set the column as INTEGER
-            if not has_data:
-                column_types[col.name] = fpb.NULL
+            column_types[col.name] = fpb.STRING
         elif is_bool(col.dtype):
             column_types[col.name] = fpb.BOOLEAN
         elif is_datetime(col.dtype):
@@ -404,6 +384,7 @@ def should_encode_index(df):
         return True
 
     return not isinstance(df.index, pd.RangeIndex)
+
 
 def is_categorical_dtype(dtype):
     return isinstance(dtype, CategoricalDtype)
