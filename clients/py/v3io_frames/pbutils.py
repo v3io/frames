@@ -364,7 +364,16 @@ def get_actual_types(df):
         elif is_float(col.dtype):
             column_types[col.name] = fpb.FLOAT
         elif is_string(col.dtype):
-            column_types[col.name] = fpb.STRING
+            has_data = False
+            for x in col:
+                if pd.isnull(x):
+                    continue
+                if isinstance(x, str):
+                    column_types[col.name] = fpb.STRING
+                    has_data = True
+                    break
+            if not has_data:
+                column_types[col.name] = fpb.NULL
         elif is_bool(col.dtype):
             column_types[col.name] = fpb.BOOLEAN
         elif is_datetime(col.dtype):
