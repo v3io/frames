@@ -20,3 +20,4 @@ require (
 )
 
 replace github.com/xwb1989/sqlparser => github.com/v3io/sqlparser v0.0.0-20190306105200-4d7273501871
+replace  github.com/v3io/frames => ./
