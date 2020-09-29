@@ -334,7 +334,7 @@ def get_empty_value_by_type(dtype):
     elif dtype == fpb.STRING:
         return ''
     elif dtype == fpb.TIME:
-        return datetime.fromtimestamp(0)
+        return datetime.fromtimestamp(0, pytz.UTC)
     elif dtype == fpb.BOOLEAN:
         return False
     elif dtype == fpb.NULL:
