@@ -8,9 +8,7 @@ require (
 	github.com/golang/protobuf v1.2.0
 	github.com/nuclio/errors v0.0.1
 	github.com/nuclio/logger v0.0.1
-	github.com/nuclio/nuclio-test-go v0.0.0-20180704132150-0ce6587f8e37 // indirect
 	github.com/nuclio/zap v0.0.2
-	github.com/pavius/impi v0.0.3 // indirect
 	github.com/pkg/errors v0.8.1
 	github.com/stretchr/testify v1.4.0
 	github.com/v3io/v3io-go v0.1.5-0.20200413162202-5d20cf2c5c71
