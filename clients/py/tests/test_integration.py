@@ -217,3 +217,40 @@ def test_kv_read_empty_df(framesd, session, protocol):
     assert isinstance(df, pd.DataFrame), 'iterator=False returned generator'
 
     client.delete(backend, tableName)
+
+@pytest.mark.skipif(not has_session, reason='No session found')
+@pytest.mark.skipif(not has_go, reason='Go SDK not found')
+@pytest.mark.parametrize('protocol', protocols)
+def test_datetime(framesd, session, protocol):
+    backend = 'kv'
+    test_id = uuid4().hex
+    tableName = 'integtest{}'.format(test_id)
+
+    addr = getattr(framesd, '{}_addr'.format(protocol))
+    client = v3f.Client(addr, **session)
+
+    col = pd.DataFrame(data=pd.Series([datetime.now(pytz.timezone("Africa/Abidjan")), datetime.now(pytz.timezone("America/Nassau")), None, datetime.now()]))
+    df = pd.DataFrame({'col': col})
+    client.write(backend, table=tableName, dfs=df)
+
+    df = client.read(backend, table=tableName)
+
+    client.delete(backend, tableName)
+
+@pytest.mark.skipif(not has_session, reason='No session found')
+@pytest.mark.skipif(not has_go, reason='Go SDK not found')
+@pytest.mark.parametrize('protocol', protocols)
+def test_timestamp(framesd, session, protocol):
+    backend = 'kv'
+    test_id = uuid4().hex
+    tableName = 'integtest{}'.format(test_id)
+
+    addr = getattr(framesd, '{}_addr'.format(protocol))
+    client = v3f.Client(addr, **session)
+
+    df = pd.DataFrame({'birthday': [pd.Timestamp('1940-04-25', tz='Asia/Dubai'), pd.Timestamp('1940-04-25', tz='US/Pacific'), None, pd.Timestamp('1940-04-25')]})
+    client.write(backend, table=tableName, dfs=df)
+
+    df = client.read(backend, table=tableName)
+
+    client.delete(backend, tableName)
