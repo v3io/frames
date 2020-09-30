@@ -227,11 +227,8 @@ def series2col_with_dtype(s, name, dtype):
         kw['bools'] = s
         kw['dtype'] = fpb.BOOLEAN
     elif dtype == fpb.TIME:
-        if s.dt.tz:
-            try:
-                s = s.dt.tz_localize(pytz.UTC)
-            except TypeError:
-                s = s.dt.tz_convert('UTC')
+        s = pd.to_datetime(s, utc=True)
+        s = s.dt.tz_convert('UTC')
         kw['times'] = s.astype(np.int64)
         kw['dtype'] = fpb.TIME
     elif dtype == fpb.NULL:
@@ -365,6 +362,14 @@ def get_actual_types(df):
                     break
                 if isinstance(x, bool):
                     column_types[col.name] = fpb.BOOLEAN
+                    has_data = True
+                    break
+                if isinstance(x, pd.Timestamp):
+                    column_types[col.name] = fpb.TIME
+                    has_data = True
+                    break
+                if isinstance(x, datetime):
+                    column_types[col.name] = fpb.TIME
                     has_data = True
                     break
                 raise WriteError('{} - contains an unsupported value type - {}'
