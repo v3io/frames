@@ -19,6 +19,8 @@ import numpy as np
 import pandas as pd
 import pytest
 import v3io_frames as v3f
+from datetime import datetime
+import pytz
 from conftest import has_go, test_backends, protocols, has_session
 
 tsdb_span = 5  # hours
@@ -218,6 +220,7 @@ def test_kv_read_empty_df(framesd, session, protocol):
 
     client.delete(backend, tableName)
 
+
 @pytest.mark.skipif(not has_session, reason='No session found')
 @pytest.mark.skipif(not has_go, reason='Go SDK not found')
 @pytest.mark.parametrize('protocol', protocols)
@@ -236,6 +239,7 @@ def test_datetime(framesd, session, protocol):
     df = client.read(backend, table=tableName)
 
     client.delete(backend, tableName)
+
 
 @pytest.mark.skipif(not has_session, reason='No session found')
 @pytest.mark.skipif(not has_go, reason='Go SDK not found')
