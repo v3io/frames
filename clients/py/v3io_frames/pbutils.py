@@ -228,7 +228,7 @@ def series2col_with_dtype(s, name, dtype):
         kw['dtype'] = fpb.BOOLEAN
     elif dtype == fpb.TIME:
         s = pd.to_datetime(s, utc=True)
-        s.dt.tz_convert('UTC')
+        s = s.dt.tz_convert('UTC')
         kw['times'] = s.astype(np.int64)
         kw['dtype'] = fpb.TIME
     elif dtype == fpb.NULL:
