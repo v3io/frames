@@ -477,7 +477,7 @@ Reads data from a data collection to a DataFrame, according to the specified bac
 #### Syntax
 
 ```python
-read(backend='', table='', query='', columns=None, filter='', group_by='',
+read(backend, table='', query='', columns=None, filter='', group_by='',
     limit=0, data_format='', row_layout=False, max_rows_in_msg=0, marker='',
     iterator=False, get_raw=False, **kw)
 ```

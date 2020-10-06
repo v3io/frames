@@ -21,6 +21,10 @@ import pandas as pd
 import pytz
 from google.protobuf.message import Message
 from pandas.api.types import is_datetime64_any_dtype as is_datetime
+from pandas.api.types import is_integer_dtype as is_integer
+from pandas.api.types import is_float_dtype as is_float
+from pandas.api.types import is_bool_dtype as is_bool
+from pandas.api.types import is_string_dtype as is_string
 from pandas.core.dtypes.dtypes import CategoricalDtype
 
 from . import frames_pb2 as fpb
@@ -235,11 +239,8 @@ def series2col_with_dtype(s, name, dtype):
         kw['bools'] = s
         kw['dtype'] = fpb.BOOLEAN
     elif dtype == fpb.TIME:
-        if s.dt.tz:
-            try:
-                s = s.dt.tz_localize(pytz.UTC)
-            except TypeError:
-                s = s.dt.tz_convert('UTC')
+        s = pd.to_datetime(s, utc=True)
+        s = s.dt.tz_convert('UTC')
         kw['times'] = s.astype(np.int64)
         kw['dtype'] = fpb.TIME
     elif dtype == fpb.NULL:
@@ -256,16 +257,16 @@ def series2col(s, name):
         'kind': fpb.Column.SLICE,
     }
 
-    if is_int_dtype(s.dtype):
+    if is_integer(s.dtype):
         kw['dtype'] = fpb.INTEGER
         kw['ints'] = s
-    elif is_float_dtype(s.dtype):
+    elif is_float(s.dtype):
         kw['dtype'] = fpb.FLOAT
         kw['floats'] = s
     elif s.dtype == np.object:  # Pandas dtype for str is object
         kw['strings'] = s
         kw['dtype'] = fpb.STRING
-    elif s.dtype == np.bool:
+    elif is_bool(s.dtype):
         kw['bools'] = s
         kw['dtype'] = fpb.BOOLEAN
     elif is_datetime(s.dtype):
@@ -342,7 +343,7 @@ def get_empty_value_by_type(dtype):
     elif dtype == fpb.STRING:
         return ''
     elif dtype == fpb.TIME:
-        return datetime.fromtimestamp(0)
+        return datetime.fromtimestamp(0, pytz.UTC)
     elif dtype == fpb.BOOLEAN:
         return False
     elif dtype == fpb.NULL:
@@ -355,14 +356,11 @@ def get_actual_types(df):
 
     for col_name in df.columns:
         col = df[col_name]
-        if is_int_dtype(col.dtype):
+        if is_integer(col.dtype):
             column_types[col.name] = fpb.INTEGER
-        elif is_float_dtype(col.dtype):
+        elif is_float(col.dtype):
             column_types[col.name] = fpb.FLOAT
-        elif col.dtype == np.object:
-            # Pandas dtype for str or "mixed" type is object
-            # Go over the column values until we reach a real value
-            # and determine whether it's bool or string
+        elif is_string(col.dtype):
             has_data = False
             for x in col:
                 if pd.isnull(x):
@@ -375,13 +373,21 @@ def get_actual_types(df):
                     column_types[col.name] = fpb.BOOLEAN
                     has_data = True
                     break
+                if isinstance(x, pd.Timestamp):
+                    column_types[col.name] = fpb.TIME
+                    has_data = True
+                    break
+                if isinstance(x, datetime):
+                    column_types[col.name] = fpb.TIME
+                    has_data = True
+                    break
                 raise WriteError('{} - contains an unsupported value type - {}'
                                  .format(col_name, type(x)))
             # If all items in the column are None
             # it does not matter what type the column will be, set the column as INTEGER
             if not has_data:
                 column_types[col.name] = fpb.NULL
-        elif col.dtype == np.bool:
+        elif is_bool(col.dtype):
             column_types[col.name] = fpb.BOOLEAN
         elif is_datetime(col.dtype):
             column_types[col.name] = fpb.TIME
@@ -400,24 +406,6 @@ def should_encode_index(df):
         return True
 
     return not isinstance(df.index, pd.RangeIndex)
-
-
-# We can't use a set since hash(np.int64) != hash(pd.Series([1]).dtype)
-def is_int_dtype(dtype):
-    return \
-        dtype == np.int64 or \
-        dtype == np.int32 or \
-        dtype == np.int16 or \
-        dtype == np.int8 or \
-        dtype == np.int
-
-
-def is_float_dtype(dtype):
-    return \
-        dtype == np.float64 or \
-        dtype == np.float32 or \
-        dtype == np.float16 or \
-        dtype == np.float
 
 
 def is_categorical_dtype(dtype):
