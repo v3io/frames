@@ -29,6 +29,7 @@ import (
 	"github.com/pkg/errors"
 	"github.com/v3io/frames"
 	"github.com/v3io/frames/backends"
+	"github.com/v3io/v3io-tsdb/pkg/appender"
 	"github.com/v3io/v3io-tsdb/pkg/tsdb"
 	"github.com/v3io/v3io-tsdb/pkg/utils"
 )
@@ -77,7 +78,7 @@ type tsdbAppender struct {
 
 type metricCtx struct {
 	lset utils.Labels
-	ref  uint64
+	ref  *appender.MetricIdentifier
 }
 
 func (a *tsdbAppender) Add(frame frames.Frame) error {
