@@ -11,6 +11,8 @@ github.com/davecgh/go-spew v1.1.1 h1:vj9j/u1bqnvCEfJOwUhtlOARqs3+rkHYY13jYWTU97c
 github.com/davecgh/go-spew v1.1.1/go.mod h1:J7Y8YcW2NihsgmVo/mv3lAwl/skON4iLHjSsI+c5H38=
 github.com/dinal/v3io-tsdb v0.0.3-0.20201007104547-3e28bb562299 h1:ayAYd4YIWjKdKamJXpdBYCuB2puUjkd9cwaUqoXQw1I=
 github.com/dinal/v3io-tsdb v0.0.3-0.20201007104547-3e28bb562299/go.mod h1:l+WxedjLmjy/TThj2vhSW/OnpRw8C7dOntIXHmM/a7I=
+github.com/dinal/v3io-tsdb v0.0.3-0.20201007162339-394ca8e069dd h1:SaZ/zb4d0vg1AR/mZ0LnvyerBnQtaJ+d6QVt8TLSgLs=
+github.com/dinal/v3io-tsdb v0.0.3-0.20201007162339-394ca8e069dd/go.mod h1:l+WxedjLmjy/TThj2vhSW/OnpRw8C7dOntIXHmM/a7I=
 github.com/envoyproxy/go-control-plane v0.6.9/go.mod h1:SBwIajubJHhxtWwsL9s8ss4safvEdbitLhGGK48rN6g=
 github.com/ghodss/yaml v1.0.0 h1:wQHKEahhL6wmXdzwWG11gIVCkOv05bNOh+Rxn0yngAk=
 github.com/ghodss/yaml v1.0.0/go.mod h1:4dBDuWmgqj2HViK6kFavaiC9ZROes6MMH2rRYeMEF04=
