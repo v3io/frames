@@ -191,7 +191,7 @@ func (a *tsdbAppender) Add(frame frames.Frame) error {
 						return errors.Wrap(err, "failed to Add")
 					}
 				} else {
-					err := a.appender.AddFast(metric.lset, metric.ref, tarray[i], values[idx][i])
+					err := a.appender.AddFast(metric.ref, tarray[i], values[idx][i])
 					if err != nil {
 						return errors.Wrap(err, "failed to AddFast")
 					}
@@ -241,7 +241,7 @@ func (a *tsdbAppender) Add(frame frames.Frame) error {
 				}
 			} else {
 				for idx, metric := range metrics {
-					err := a.appender.AddFast(metric.lset, metric.ref, tarray[i], values[idx][i])
+					err := a.appender.AddFast(metric.ref, tarray[i], values[idx][i])
 					if err != nil {
 						return errors.Wrap(err, "failed to AddFast")
 					}
