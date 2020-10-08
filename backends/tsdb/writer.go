@@ -77,8 +77,8 @@ type tsdbAppender struct {
 }
 
 type metricCtx struct {
-	lset utils.Labels
-	ref  *appender.MetricIdentifier
+	lset       utils.Labels
+	identifier *appender.MetricIdentifier
 }
 
 func (a *tsdbAppender) Add(frame frames.Frame) error {
@@ -187,12 +187,12 @@ func (a *tsdbAppender) Add(frame frames.Frame) error {
 
 			for idx, metric := range metrics {
 				if i == 0 {
-					metric.ref, err = a.appender.Add(metric.lset, tarray[0], values[idx][0])
+					metric.identifier, err = a.appender.Add(metric.lset, tarray[0], values[idx][0])
 					if err != nil {
 						return errors.Wrap(err, "failed to Add")
 					}
 				} else {
-					err := a.appender.AddFast(metric.lset, metric.ref, tarray[i], values[idx][i])
+					err := a.appender.AddFast(metric.identifier, tarray[i], values[idx][i])
 					if err != nil {
 						return errors.Wrap(err, "failed to AddFast")
 					}
@@ -234,7 +234,7 @@ func (a *tsdbAppender) Add(frame frames.Frame) error {
 						return err
 					}
 					metric := metricCtx{lset: lset}
-					metric.ref, err = a.appender.Add(metric.lset, tarray[i], values[colidx][i])
+					metric.identifier, err = a.appender.Add(metric.lset, tarray[i], values[colidx][i])
 					if err != nil {
 						return errors.Wrap(err, "failed to Add")
 					}
@@ -242,7 +242,7 @@ func (a *tsdbAppender) Add(frame frames.Frame) error {
 				}
 			} else {
 				for idx, metric := range metrics {
-					err := a.appender.AddFast(metric.lset, metric.ref, tarray[i], values[idx][i])
+					err := a.appender.AddFast(metric.identifier, tarray[i], values[idx][i])
 					if err != nil {
 						return errors.Wrap(err, "failed to AddFast")
 					}
