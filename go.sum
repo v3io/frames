@@ -76,13 +76,17 @@ github.com/v3io/v3io-tsdb v0.9.20-0.20201008100856-a6346a840500 h1:VhQE7FKdqBa+e
 github.com/v3io/v3io-tsdb v0.9.20-0.20201008100856-a6346a840500/go.mod h1:l+WxedjLmjy/TThj2vhSW/OnpRw8C7dOntIXHmM/a7I=
 github.com/v3io/v3io-tsdb v0.9.20-0.20201008160240-68087d4edb0a h1:cowSaPIJMWZXzTPl68waxo2+eS+K40Vpmomy96SwNmE=
 github.com/v3io/v3io-tsdb v0.9.20-0.20201008160240-68087d4edb0a/go.mod h1:l+WxedjLmjy/TThj2vhSW/OnpRw8C7dOntIXHmM/a7I=
+github.com/v3io/v3io-tsdb v0.9.20-0.20201008162456-b19029695f34 h1:UO/LvHqEcCgqVQ4lOVxyx1y2on/D9kyaAtquJ65+LI0=
 github.com/v3io/v3io-tsdb v0.9.20-0.20201008162456-b19029695f34/go.mod h1:l+WxedjLmjy/TThj2vhSW/OnpRw8C7dOntIXHmM/a7I=
+github.com/v3io/v3io-tsdb v0.9.20-0.20201011093556-5869c021e940 h1:E/Zd++3yOXNslJaM9v1Nggq4XWYcEbAGByT5ySc4BlU=
+github.com/v3io/v3io-tsdb v0.9.20-0.20201011093556-5869c021e940/go.mod h1:l+WxedjLmjy/TThj2vhSW/OnpRw8C7dOntIXHmM/a7I=
 github.com/v3io/v3io-tsdb v0.10.12 h1:+AfPHFJVxzpKtng0Hiz256ef9abzIwKwPuzB+0jG7w8=
 github.com/v3io/v3io-tsdb v0.10.12/go.mod h1:kp586KxTfROIGwb/nzNxwDbX2Wterxro+HbiZHmK548=
 github.com/v3io/v3io-tsdb v0.11.0 h1:jN8A1EVCAzsJxozI/23Yl/aNoHJmXz+TKVQlx3ddAuk=
 github.com/v3io/v3io-tsdb v0.11.0/go.mod h1:kp586KxTfROIGwb/nzNxwDbX2Wterxro+HbiZHmK548=
 github.com/v3io/v3io-tsdb v0.11.1 h1:8ICq4RnK/T2I1vQC3nivEFVuatUW3KKuDZ4X6iTQNyY=
 github.com/v3io/v3io-tsdb v0.11.1/go.mod h1:kp586KxTfROIGwb/nzNxwDbX2Wterxro+HbiZHmK548=
+github.com/v3io/v3io-tsdb v0.11.2/go.mod h1:l+WxedjLmjy/TThj2vhSW/OnpRw8C7dOntIXHmM/a7I=
 github.com/valyala/bytebufferpool v1.0.0 h1:GqA5TC/0021Y/b9FG4Oi9Mr3q7XYx6KllzawFIhcdPw=
 github.com/valyala/bytebufferpool v1.0.0/go.mod h1:6bBcMArwyJ5K/AmCkWv1jt77kVWyCJ6HpOuEn7z0Csc=
 github.com/valyala/fasthttp v1.2.0 h1:dzZJf2IuMiclVjdw0kkT+f9u4YdrapbNyGAN47E/qnk=
