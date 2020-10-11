@@ -77,13 +77,14 @@ func NewBackend(logger logger.Logger, v3ioContext v3io.Context, cfg *frames.Back
 func (b *Backend) newConfig(session *frames.Session) *config.V3ioConfig {
 
 	cfg := &config.V3ioConfig{
-		WebAPIEndpoint: session.Url,
-		Container:      session.Container,
-		Username:       session.User,
-		Password:       session.Password,
-		AccessKey:      session.Token,
-		Workers:        b.backendConfig.Workers,
-		LogLevel:       b.framesConfig.Log.Level,
+		WebAPIEndpoint:  session.Url,
+		Container:       session.Container,
+		Username:        session.User,
+		Password:        session.Password,
+		AccessKey:       session.Token,
+		Workers:         b.backendConfig.Workers,
+		LogLevel:        b.framesConfig.Log.Level,
+		MetricCacheSize: b.framesConfig.TsdbMetricCacheSize,
 	}
 	return config.WithDefaults(cfg)
 }
