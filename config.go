@@ -48,8 +48,8 @@ type Config struct {
 	Workers            int `json:"workers"`
 	UpdateWorkersPerVN int `json:"updateWorkersPerVN"`
 
-	QuerierCacheSize                 int  `json:"querierCacheSize"`
-	TsdbLoadPartitionsFromSchemaAttr bool `json:"tsdbLoadPartitionsFromSchemaAttr"`
+	QuerierCacheSize    int `json:"querierCacheSize"`
+	TsdbMetricCacheSize int `json:"tsdbMetricCacheSize"`
 
 	// History server related configs
 	WriteMonitoringLogsTimeoutSeconds int    `json:writeMonitoringLogsTimeoutSeconds`
