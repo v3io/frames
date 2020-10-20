@@ -22,12 +22,13 @@ syntax = "proto3";
 package pb;
 
 enum DType {
-    INTEGER = 0;
-    FLOAT = 1;
-    STRING = 2;
-    TIME = 3;
-    BOOLEAN = 4;
-    NULL = 5;
+    NONE = 0;
+    INTEGER = 1;
+    FLOAT = 2;
+    STRING = 3;
+    TIME = 4;
+    BOOLEAN = 5;
+    NULL = 6;
 }
 
 message Column {
