@@ -12,8 +12,6 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-from os import environ
-
 import pandas as pd
 
 from . import frames_pb2 as fpb
@@ -183,9 +181,6 @@ class ClientBase:
         ----------
         A new `Client` object
         """
-        address = address or environ.get('V3IO_FRAMESD')
-        if not address:
-            raise ValueError('empty address')
         self.address = self._fix_address(address)
         self.session = session
         self._persist_connection = persist_connection
