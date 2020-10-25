@@ -193,7 +193,11 @@ func (a *tsdbAppender) Add(frame frames.Frame) error {
 				} else {
 					err := a.appender.AddFast(metric.ref, tarray[i], values[idx][i])
 					if err != nil {
-						return errors.Wrap(err, "failed to AddFast")
+						//retry with Add in case ref was evicted from cache
+						metric.ref, err = a.appender.Add(metric.lset, tarray[i], values[idx][i])
+						if err != nil {
+							return errors.Wrap(err, "failed to AddFast")
+						}
 					}
 				}
 			}
