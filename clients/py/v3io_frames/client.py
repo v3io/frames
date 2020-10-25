@@ -183,9 +183,6 @@ class ClientBase:
         ----------
         A new `Client` object
         """
-        address = address or environ.get('V3IO_FRAMESD')
-        if not address:
-            raise ValueError('empty address')
         self.address = self._fix_address(address)
         self.session = session
         self._persist_connection = persist_connection

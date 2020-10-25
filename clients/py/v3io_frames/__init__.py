@@ -82,6 +82,9 @@ def Client(address='', data_url='', container='', user='',
     ----------
     A new `Client` object
     """
+    address = address or environ.get('V3IO_FRAMESD')
+    if not address:
+        raise ValueError('empty address')
     if not (address.startswith("grpc://") or address.startswith("https://") or address.startswith("http://")):
         address = "grpc://" + address
     protocol = urlparse(address).scheme or 'grpc'
