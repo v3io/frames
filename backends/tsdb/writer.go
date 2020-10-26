@@ -23,6 +23,7 @@ package tsdb
 import (
 	"fmt"
 	"sort"
+	"strings"
 	"time"
 
 	"github.com/nuclio/logger"
@@ -192,8 +193,12 @@ func (a *tsdbAppender) Add(frame frames.Frame) error {
 					}
 				} else {
 					err := a.appender.AddFast(metric.ref, tarray[i], values[idx][i])
-					if err != nil {
-						return errors.Wrap(err, "failed to AddFast")
+					if err != nil && strings.Contains(err.Error(), "metric not found") {
+						//retry with Add in case ref was evicted from cache
+						metric.ref, err = a.appender.Add(metric.lset, tarray[i], values[idx][i])
+						if err != nil {
+							return errors.Wrap(err, "failed to AddFast and Add")
+						}
 					}
 				}
 			}
