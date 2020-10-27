@@ -174,8 +174,6 @@ func (i *tsdbIterator) Next() bool {
 		i.currTsdbFramePos = nextPos
 	}
 
-	labels := map[string]interface{}{}
-
 	columns := make([]frames.Column, len(frame.Names()))
 	indices := frame.Indices()
 	for i, colName := range frame.Names() {
@@ -188,7 +186,6 @@ func (i *tsdbIterator) Next() bool {
 			name = "metric_name"
 		}
 
-		labels[name] = labelValue
 		icol, err := frames.NewLabelColumn(name, labelValue, frame.Len())
 		if err != nil {
 			i.err = err
@@ -202,7 +199,7 @@ func (i *tsdbIterator) Next() bool {
 		}
 	}
 
-	i.currFrame, err = frames.NewFrameWithNullValues(columns, indices, labels, frame.NullValuesMap())
+	i.currFrame, err = frames.NewFrameWithNullValues(columns, indices, frame.Labels(), frame.NullValuesMap())
 	if err != nil {
 		i.err = err
 		return false

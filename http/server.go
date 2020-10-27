@@ -449,14 +449,42 @@ func (s *Server) handleSimpleJSONSearch(ctx *fasthttp.RequestCtx) {
 }
 
 func (s *Server) handleSimpleJSON(ctx *fasthttp.RequestCtx, method string) {
-	req, err := simpleJSONRequestFactory(method, ctx.PostBody())
+	requests, err := simpleJSONRequestFactory(method, ctx.PostBody())
 	if err != nil {
 		s.logger.ErrorWith("can't initialize simplejson request", "error", err)
 		ctx.Error(fmt.Sprintf("bad request - %s", err), http.StatusBadRequest)
 		return
 	}
-	// passing session in order to easily pass token, when implemented
+
+	var results interface{}
+	for _, req := range requests {
+		result, err := s.executeSimpleJsonSubRequest(req, ctx)
+		if err != nil {
+			ctx.Error(fmt.Sprintf("Error querying: %s", err), http.StatusInternalServerError)
+			return
+		}
+
+		results = appendSimpleJsonResults(results, result)
+	}
+
+	_ = s.replyJSON(ctx, results)
+}
+
+func appendSimpleJsonResults(origin, resToAdd interface{}) interface{} {
+	if origin == nil {
+		return resToAdd
+	}
+	switch origin.(type) {
+	case []timeSeriesOutput:
+		return append(origin.([]timeSeriesOutput), resToAdd.([]timeSeriesOutput)...)
+	default:
+		return append(origin.([]tableOutput), resToAdd.([]tableOutput)...)
+	}
+}
+
+func (s *Server) executeSimpleJsonSubRequest(req simpleJSONRequestInterface, ctx *fasthttp.RequestCtx) (interface{}, error) {
 	request := req.GetReadRequest(nil)
+	fmt.Println(request)
 
 	s.httpAuth(ctx, request.Proto.Session)
 	request.Password = frames.InitSecretString(request.Proto.Session.Password)
@@ -469,18 +497,16 @@ func (s *Server) handleSimpleJSON(ctx *fasthttp.RequestCtx, method string) {
 	go func() {
 		defer close(ch)
 		apiError = s.api.Read(request, ch)
-		if apiError != nil {
-			s.logger.ErrorWith("error reading", "error", apiError)
-		}
 	}()
+
+	resp, err := CreateResponse(req, ch)
+	if err != nil {
+		return nil, err
+	}
 	if apiError != nil {
-		ctx.Error(fmt.Sprintf("Error creating response - %s", apiError), http.StatusInternalServerError)
+		return nil, apiError
 	}
-	if resp, err := CreateResponse(req, ch); err != nil {
-		ctx.Error(fmt.Sprintf("Error creating response - %s", err), http.StatusInternalServerError)
-	} else {
-		_ = s.replyJSON(ctx, resp)
-	}
+	return resp, nil
 }
 
 func (s *Server) handleHistory(ctx *fasthttp.RequestCtx) {

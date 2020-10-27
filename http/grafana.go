@@ -48,7 +48,6 @@ const (
 )
 
 type simpleJSONRequestInterface interface {
-	ParseRequest([]byte) error
 	GetReadRequest(*frames.Session) *frames.ReadRequest
 	formatTSDB(ch chan frames.Frame) (interface{}, error)
 	formatTable(ch chan frames.Frame) (interface{}, error)
@@ -100,21 +99,38 @@ type timeSeriesOutput struct {
 	Target     string          `json:"target"`
 }
 
-func simpleJSONRequestFactory(method string, request []byte) (simpleJSONRequestInterface, error) {
-	var retval simpleJSONRequestInterface
+func simpleJSONRequestFactory(method string, request []byte) ([]simpleJSONRequestInterface, error) {
+	var reqBase requestSimpleJSONBase
+	if err := json.Unmarshal(request, &reqBase); err != nil {
+		return nil, err
+	}
+	var requests []simpleJSONRequestInterface
 	switch method {
 	case "query":
-		retval = &simpleJSONQueryRequest{Backend: defaultBackend}
+		for _, target := range reqBase.Targets {
+			currRequest := &simpleJSONQueryRequest{Backend: defaultBackend, requestSimpleJSONBase: reqBase}
+			currRequest.Type = target["type"].(string)
+			fieldInput := target["target"].(string)
+			if err := currRequest.parseQueryLine(fieldInput); err != nil {
+				return nil, err
+			}
+
+			requests = append(requests, currRequest)
+		}
 	case "search":
-		retval = &simpleJSONSearchRequest{simpleJSONQueryRequest{Backend: defaultBackend}}
+		currRequest := &simpleJSONSearchRequest{simpleJSONQueryRequest{Backend: defaultBackend,
+			requestSimpleJSONBase: reqBase}}
+		err := currRequest.ParseRequestFromTarget()
+		if err != nil {
+			return nil, err
+		}
+
+		requests = append(requests, currRequest)
 	default:
 		return nil, fmt.Errorf("Unknown method, %s", method)
 	}
 
-	if err := retval.ParseRequest(request); err != nil {
-		return nil, err
-	}
-	return retval, nil
+	return requests, nil
 }
 
 func (req *simpleJSONQueryRequest) getFormatType() outputType {
@@ -161,7 +177,7 @@ func (req *simpleJSONQueryRequest) GetReadRequest(session *frames.Session) *fram
 }
 
 func (req *simpleJSONQueryRequest) formatTable(ch chan frames.Frame) (interface{}, error) {
-	retVal := []tableOutput{}
+	var retVal []tableOutput
 	var err error
 	for frame := range ch {
 		simpleJSONData := tableOutput{Type: "table", Rows: [][]interface{}{}, Columns: []tableColumn{}}
@@ -223,7 +239,7 @@ func (req *simpleJSONQueryRequest) formatTSDB(ch chan frames.Frame) (interface{}
 		}
 	}
 
-	retval := []timeSeriesOutput{}
+	var retval []timeSeriesOutput
 
 	if len(req.Fields) == 0 || req.Fields[0] == "*" { // return all fields, sorted
 		for target, datapoints := range data {
@@ -260,7 +276,7 @@ func CreateResponse(req simpleJSONRequestInterface, ch chan frames.Frame) (inter
 }
 
 func (req *simpleJSONSearchRequest) formatTable(ch chan frames.Frame) (interface{}, error) {
-	retval := []interface{}{}
+	var retval []interface{}
 	for frame := range ch {
 		iter := frame.IterRows(true)
 		for iter.Next() {
@@ -280,24 +296,7 @@ func (req *simpleJSONSearchRequest) formatTSDB(ch chan frames.Frame) (interface{
 	return nil, errors.New("TSDB search not implemented yet")
 }
 
-func (req *simpleJSONQueryRequest) ParseRequest(requestBody []byte) error {
-	if err := json.Unmarshal(requestBody, req); err != nil {
-		return err
-	}
-	for _, target := range req.Targets {
-		req.Type = target["type"].(string)
-		fieldInput := target["target"].(string)
-		if err := req.parseQueryLine(fieldInput); err != nil {
-			return err
-		}
-	}
-	return nil
-}
-
-func (req *simpleJSONSearchRequest) ParseRequest(requestBody []byte) error {
-	if err := json.Unmarshal(requestBody, req); err != nil {
-		return err
-	}
+func (req *simpleJSONSearchRequest) ParseRequestFromTarget() error {
 	for _, target := range strings.Split(req.Target, querySeparator) {
 		if err := req.parseQueryLine(strings.TrimSpace(target)); err != nil {
 			return err
@@ -368,8 +367,16 @@ func formatTimeTSDB(timestamp interface{}) interface{} {
 
 func getBaseTargetTSDB(frame frames.Frame) string {
 	lbls := []string{}
-	for key, lbl := range frame.Labels() {
-		lbls = append(lbls, fmt.Sprintf("%s=%s", key, lbl))
+	var keys []string
+	labels := frame.Labels()
+
+	// Iterating over map produces inconsistent result so we need to sort the keys beforehand.
+	for key := range labels {
+		keys = append(keys, key)
+	}
+	sort.Strings(keys)
+	for _, key := range keys {
+		lbls = append(lbls, fmt.Sprintf("%s=%s", key, labels[key]))
 	}
 	return fmt.Sprintf("[%s]", strings.Join(lbls, ","))
 }
