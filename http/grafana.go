@@ -22,7 +22,6 @@ package http
 
 import (
 	"encoding/json"
-	"errors"
 	"fmt"
 	"math"
 	"reflect"
@@ -31,6 +30,7 @@ import (
 	"strings"
 	"time"
 
+	"github.com/pkg/errors"
 	"github.com/v3io/frames"
 	"github.com/v3io/frames/pb"
 )
@@ -112,7 +112,7 @@ func simpleJSONRequestFactory(method string, request []byte) ([]simpleJSONReques
 			currRequest.Type = target["type"].(string)
 			fieldInput := target["target"].(string)
 			if err := currRequest.parseQueryLine(fieldInput); err != nil {
-				return nil, err
+				return nil, errors.Wrap(err, "Failed to parse target")
 			}
 
 			requests = append(requests, currRequest)

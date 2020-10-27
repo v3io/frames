@@ -460,7 +460,7 @@ func (s *Server) handleSimpleJSON(ctx *fasthttp.RequestCtx, method string) {
 	for _, req := range requests {
 		result, err := s.executeSimpleJSONSubRequest(req, ctx)
 		if err != nil {
-			ctx.Error(fmt.Sprintf("Error querying: %s", err), http.StatusInternalServerError)
+			ctx.Error(fmt.Sprintf("Error querying: %s", err.Error()), http.StatusInternalServerError)
 			return
 		}
 
@@ -474,17 +474,18 @@ func appendSimpleJSONResults(origin, resToAdd interface{}) interface{} {
 	if origin == nil {
 		return resToAdd
 	}
-	switch origin.(type) {
+	switch typedOrigin := origin.(type) {
 	case []timeSeriesOutput:
-		return append(origin.([]timeSeriesOutput), resToAdd.([]timeSeriesOutput)...)
+		return append(typedOrigin, resToAdd.([]timeSeriesOutput)...)
+	case []tableOutput:
+		return append(typedOrigin, resToAdd.([]tableOutput)...)
 	default:
-		return append(origin.([]tableOutput), resToAdd.([]tableOutput)...)
+		return origin
 	}
 }
 
 func (s *Server) executeSimpleJSONSubRequest(req simpleJSONRequestInterface, ctx *fasthttp.RequestCtx) (interface{}, error) {
 	request := req.GetReadRequest(nil)
-	fmt.Println(request)
 
 	s.httpAuth(ctx, request.Proto.Session)
 	request.Password = frames.InitSecretString(request.Proto.Session.Password)
@@ -501,7 +502,7 @@ func (s *Server) executeSimpleJSONSubRequest(req simpleJSONRequestInterface, ctx
 
 	resp, err := CreateResponse(req, ch)
 	if err != nil {
-		return nil, err
+		return nil, errors.Wrap(err, "Failed to build a response")
 	}
 	if apiError != nil {
 		return nil, apiError
@@ -517,7 +518,7 @@ func (s *Server) handleHistory(ctx *fasthttp.RequestCtx) {
 	requestInner := &pb.HistoryRequest{}
 	if err := json.Unmarshal(ctx.PostBody(), requestInner); err != nil {
 		s.logger.ErrorWith("can't decode request", "error", err)
-		ctx.Error(fmt.Sprintf("bad request - %s", err), http.StatusBadRequest)
+		ctx.Error(fmt.Sprintf("bad request - %v", err), http.StatusBadRequest)
 		return
 	}
 	request := &frames.HistoryRequest{
