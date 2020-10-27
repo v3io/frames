@@ -458,19 +458,19 @@ func (s *Server) handleSimpleJSON(ctx *fasthttp.RequestCtx, method string) {
 
 	var results interface{}
 	for _, req := range requests {
-		result, err := s.executeSimpleJsonSubRequest(req, ctx)
+		result, err := s.executeSimpleJSONSubRequest(req, ctx)
 		if err != nil {
 			ctx.Error(fmt.Sprintf("Error querying: %s", err), http.StatusInternalServerError)
 			return
 		}
 
-		results = appendSimpleJsonResults(results, result)
+		results = appendSimpleJSONResults(results, result)
 	}
 
 	_ = s.replyJSON(ctx, results)
 }
 
-func appendSimpleJsonResults(origin, resToAdd interface{}) interface{} {
+func appendSimpleJSONResults(origin, resToAdd interface{}) interface{} {
 	if origin == nil {
 		return resToAdd
 	}
@@ -482,7 +482,7 @@ func appendSimpleJsonResults(origin, resToAdd interface{}) interface{} {
 	}
 }
 
-func (s *Server) executeSimpleJsonSubRequest(req simpleJSONRequestInterface, ctx *fasthttp.RequestCtx) (interface{}, error) {
+func (s *Server) executeSimpleJSONSubRequest(req simpleJSONRequestInterface, ctx *fasthttp.RequestCtx) (interface{}, error) {
 	request := req.GetReadRequest(nil)
 	fmt.Println(request)
 
