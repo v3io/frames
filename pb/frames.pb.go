@@ -58,7 +58,7 @@ func (x DType) String() string {
 	return proto.EnumName(DType_name, int32(x))
 }
 func (DType) EnumDescriptor() ([]byte, []int) {
-	return fileDescriptor_frames_eaff188d6347ec4a, []int{0}
+	return fileDescriptor_frames_d675737983a8bfcc, []int{0}
 }
 
 type ErrorOptions int32
@@ -81,7 +81,7 @@ func (x ErrorOptions) String() string {
 	return proto.EnumName(ErrorOptions_name, int32(x))
 }
 func (ErrorOptions) EnumDescriptor() ([]byte, []int) {
-	return fileDescriptor_frames_eaff188d6347ec4a, []int{1}
+	return fileDescriptor_frames_d675737983a8bfcc, []int{1}
 }
 
 type Column_Kind int32
@@ -104,7 +104,7 @@ func (x Column_Kind) String() string {
 	return proto.EnumName(Column_Kind_name, int32(x))
 }
 func (Column_Kind) EnumDescriptor() ([]byte, []int) {
-	return fileDescriptor_frames_eaff188d6347ec4a, []int{0, 0}
+	return fileDescriptor_frames_d675737983a8bfcc, []int{0, 0}
 }
 
 type Column struct {
@@ -127,7 +127,7 @@ func (m *Column) Reset()         { *m = Column{} }
 func (m *Column) String() string { return proto.CompactTextString(m) }
 func (*Column) ProtoMessage()    {}
 func (*Column) Descriptor() ([]byte, []int) {
-	return fileDescriptor_frames_eaff188d6347ec4a, []int{0}
+	return fileDescriptor_frames_d675737983a8bfcc, []int{0}
 }
 func (m *Column) XXX_Unmarshal(b []byte) error {
 	return xxx_messageInfo_Column.Unmarshal(m, b)
@@ -228,7 +228,7 @@ func (m *Value) Reset()         { *m = Value{} }
 func (m *Value) String() string { return proto.CompactTextString(m) }
 func (*Value) ProtoMessage()    {}
 func (*Value) Descriptor() ([]byte, []int) {
-	return fileDescriptor_frames_eaff188d6347ec4a, []int{1}
+	return fileDescriptor_frames_d675737983a8bfcc, []int{1}
 }
 func (m *Value) XXX_Unmarshal(b []byte) error {
 	return xxx_messageInfo_Value.Unmarshal(m, b)
@@ -446,7 +446,7 @@ func (m *NullValuesMap) Reset()         { *m = NullValuesMap{} }
 func (m *NullValuesMap) String() string { return proto.CompactTextString(m) }
 func (*NullValuesMap) ProtoMessage()    {}
 func (*NullValuesMap) Descriptor() ([]byte, []int) {
-	return fileDescriptor_frames_eaff188d6347ec4a, []int{2}
+	return fileDescriptor_frames_d675737983a8bfcc, []int{2}
 }
 func (m *NullValuesMap) XXX_Unmarshal(b []byte) error {
 	return xxx_messageInfo_NullValuesMap.Unmarshal(m, b)
@@ -488,7 +488,7 @@ func (m *Frame) Reset()         { *m = Frame{} }
 func (m *Frame) String() string { return proto.CompactTextString(m) }
 func (*Frame) ProtoMessage()    {}
 func (*Frame) Descriptor() ([]byte, []int) {
-	return fileDescriptor_frames_eaff188d6347ec4a, []int{3}
+	return fileDescriptor_frames_d675737983a8bfcc, []int{3}
 }
 func (m *Frame) XXX_Unmarshal(b []byte) error {
 	return xxx_messageInfo_Frame.Unmarshal(m, b)
@@ -559,7 +559,7 @@ func (m *SchemaField) Reset()         { *m = SchemaField{} }
 func (m *SchemaField) String() string { return proto.CompactTextString(m) }
 func (*SchemaField) ProtoMessage()    {}
 func (*SchemaField) Descriptor() ([]byte, []int) {
-	return fileDescriptor_frames_eaff188d6347ec4a, []int{4}
+	return fileDescriptor_frames_d675737983a8bfcc, []int{4}
 }
 func (m *SchemaField) XXX_Unmarshal(b []byte) error {
 	return xxx_messageInfo_SchemaField.Unmarshal(m, b)
@@ -626,7 +626,7 @@ func (m *SchemaKey) Reset()         { *m = SchemaKey{} }
 func (m *SchemaKey) String() string { return proto.CompactTextString(m) }
 func (*SchemaKey) ProtoMessage()    {}
 func (*SchemaKey) Descriptor() ([]byte, []int) {
-	return fileDescriptor_frames_eaff188d6347ec4a, []int{5}
+	return fileDescriptor_frames_d675737983a8bfcc, []int{5}
 }
 func (m *SchemaKey) XXX_Unmarshal(b []byte) error {
 	return xxx_messageInfo_SchemaKey.Unmarshal(m, b)
@@ -678,7 +678,7 @@ func (m *TableSchema) Reset()         { *m = TableSchema{} }
 func (m *TableSchema) String() string { return proto.CompactTextString(m) }
 func (*TableSchema) ProtoMessage()    {}
 func (*TableSchema) Descriptor() ([]byte, []int) {
-	return fileDescriptor_frames_eaff188d6347ec4a, []int{6}
+	return fileDescriptor_frames_d675737983a8bfcc, []int{6}
 }
 func (m *TableSchema) XXX_Unmarshal(b []byte) error {
 	return xxx_messageInfo_TableSchema.Unmarshal(m, b)
@@ -757,7 +757,7 @@ func (m *JoinStruct) Reset()         { *m = JoinStruct{} }
 func (m *JoinStruct) String() string { return proto.CompactTextString(m) }
 func (*JoinStruct) ProtoMessage()    {}
 func (*JoinStruct) Descriptor() ([]byte, []int) {
-	return fileDescriptor_frames_eaff188d6347ec4a, []int{7}
+	return fileDescriptor_frames_d675737983a8bfcc, []int{7}
 }
 func (m *JoinStruct) XXX_Unmarshal(b []byte) error {
 	return xxx_messageInfo_JoinStruct.Unmarshal(m, b)
@@ -794,7 +794,7 @@ func (m *Session) Reset()         { *m = Session{} }
 func (m *Session) String() string { return proto.CompactTextString(m) }
 func (*Session) ProtoMessage()    {}
 func (*Session) Descriptor() ([]byte, []int) {
-	return fileDescriptor_frames_eaff188d6347ec4a, []int{8}
+	return fileDescriptor_frames_d675737983a8bfcc, []int{8}
 }
 func (m *Session) XXX_Unmarshal(b []byte) error {
 	return xxx_messageInfo_Session.Unmarshal(m, b)
@@ -905,7 +905,7 @@ func (m *ReadRequest) Reset()         { *m = ReadRequest{} }
 func (m *ReadRequest) String() string { return proto.CompactTextString(m) }
 func (*ReadRequest) ProtoMessage()    {}
 func (*ReadRequest) Descriptor() ([]byte, []int) {
-	return fileDescriptor_frames_eaff188d6347ec4a, []int{9}
+	return fileDescriptor_frames_d675737983a8bfcc, []int{9}
 }
 func (m *ReadRequest) XXX_Unmarshal(b []byte) error {
 	return xxx_messageInfo_ReadRequest.Unmarshal(m, b)
@@ -1147,7 +1147,7 @@ func (m *InitialWriteRequest) Reset()         { *m = InitialWriteRequest{} }
 func (m *InitialWriteRequest) String() string { return proto.CompactTextString(m) }
 func (*InitialWriteRequest) ProtoMessage()    {}
 func (*InitialWriteRequest) Descriptor() ([]byte, []int) {
-	return fileDescriptor_frames_eaff188d6347ec4a, []int{10}
+	return fileDescriptor_frames_d675737983a8bfcc, []int{10}
 }
 func (m *InitialWriteRequest) XXX_Unmarshal(b []byte) error {
 	return xxx_messageInfo_InitialWriteRequest.Unmarshal(m, b)
@@ -1244,7 +1244,7 @@ func (m *WriteRequest) Reset()         { *m = WriteRequest{} }
 func (m *WriteRequest) String() string { return proto.CompactTextString(m) }
 func (*WriteRequest) ProtoMessage()    {}
 func (*WriteRequest) Descriptor() ([]byte, []int) {
-	return fileDescriptor_frames_eaff188d6347ec4a, []int{11}
+	return fileDescriptor_frames_d675737983a8bfcc, []int{11}
 }
 func (m *WriteRequest) XXX_Unmarshal(b []byte) error {
 	return xxx_messageInfo_WriteRequest.Unmarshal(m, b)
@@ -1387,7 +1387,7 @@ func (m *WriteRespose) Reset()         { *m = WriteRespose{} }
 func (m *WriteRespose) String() string { return proto.CompactTextString(m) }
 func (*WriteRespose) ProtoMessage()    {}
 func (*WriteRespose) Descriptor() ([]byte, []int) {
-	return fileDescriptor_frames_eaff188d6347ec4a, []int{12}
+	return fileDescriptor_frames_d675737983a8bfcc, []int{12}
 }
 func (m *WriteRespose) XXX_Unmarshal(b []byte) error {
 	return xxx_messageInfo_WriteRespose.Unmarshal(m, b)
@@ -1444,7 +1444,7 @@ func (m *CreateRequest) Reset()         { *m = CreateRequest{} }
 func (m *CreateRequest) String() string { return proto.CompactTextString(m) }
 func (*CreateRequest) ProtoMessage()    {}
 func (*CreateRequest) Descriptor() ([]byte, []int) {
-	return fileDescriptor_frames_eaff188d6347ec4a, []int{13}
+	return fileDescriptor_frames_d675737983a8bfcc, []int{13}
 }
 func (m *CreateRequest) XXX_Unmarshal(b []byte) error {
 	return xxx_messageInfo_CreateRequest.Unmarshal(m, b)
@@ -1544,7 +1544,7 @@ func (m *CreateResponse) Reset()         { *m = CreateResponse{} }
 func (m *CreateResponse) String() string { return proto.CompactTextString(m) }
 func (*CreateResponse) ProtoMessage()    {}
 func (*CreateResponse) Descriptor() ([]byte, []int) {
-	return fileDescriptor_frames_eaff188d6347ec4a, []int{14}
+	return fileDescriptor_frames_d675737983a8bfcc, []int{14}
 }
 func (m *CreateResponse) XXX_Unmarshal(b []byte) error {
 	return xxx_messageInfo_CreateResponse.Unmarshal(m, b)
@@ -1584,7 +1584,7 @@ func (m *DeleteRequest) Reset()         { *m = DeleteRequest{} }
 func (m *DeleteRequest) String() string { return proto.CompactTextString(m) }
 func (*DeleteRequest) ProtoMessage()    {}
 func (*DeleteRequest) Descriptor() ([]byte, []int) {
-	return fileDescriptor_frames_eaff188d6347ec4a, []int{15}
+	return fileDescriptor_frames_d675737983a8bfcc, []int{15}
 }
 func (m *DeleteRequest) XXX_Unmarshal(b []byte) error {
 	return xxx_messageInfo_DeleteRequest.Unmarshal(m, b)
@@ -1670,7 +1670,7 @@ func (m *DeleteResponse) Reset()         { *m = DeleteResponse{} }
 func (m *DeleteResponse) String() string { return proto.CompactTextString(m) }
 func (*DeleteResponse) ProtoMessage()    {}
 func (*DeleteResponse) Descriptor() ([]byte, []int) {
-	return fileDescriptor_frames_eaff188d6347ec4a, []int{16}
+	return fileDescriptor_frames_d675737983a8bfcc, []int{16}
 }
 func (m *DeleteResponse) XXX_Unmarshal(b []byte) error {
 	return xxx_messageInfo_DeleteResponse.Unmarshal(m, b)
@@ -1706,7 +1706,7 @@ func (m *ExecRequest) Reset()         { *m = ExecRequest{} }
 func (m *ExecRequest) String() string { return proto.CompactTextString(m) }
 func (*ExecRequest) ProtoMessage()    {}
 func (*ExecRequest) Descriptor() ([]byte, []int) {
-	return fileDescriptor_frames_eaff188d6347ec4a, []int{17}
+	return fileDescriptor_frames_d675737983a8bfcc, []int{17}
 }
 func (m *ExecRequest) XXX_Unmarshal(b []byte) error {
 	return xxx_messageInfo_ExecRequest.Unmarshal(m, b)
@@ -1779,7 +1779,7 @@ func (m *ExecResponse) Reset()         { *m = ExecResponse{} }
 func (m *ExecResponse) String() string { return proto.CompactTextString(m) }
 func (*ExecResponse) ProtoMessage()    {}
 func (*ExecResponse) Descriptor() ([]byte, []int) {
-	return fileDescriptor_frames_eaff188d6347ec4a, []int{18}
+	return fileDescriptor_frames_d675737983a8bfcc, []int{18}
 }
 func (m *ExecResponse) XXX_Unmarshal(b []byte) error {
 	return xxx_messageInfo_ExecResponse.Unmarshal(m, b)
@@ -1826,7 +1826,7 @@ func (m *HistoryRequest) Reset()         { *m = HistoryRequest{} }
 func (m *HistoryRequest) String() string { return proto.CompactTextString(m) }
 func (*HistoryRequest) ProtoMessage()    {}
 func (*HistoryRequest) Descriptor() ([]byte, []int) {
-	return fileDescriptor_frames_eaff188d6347ec4a, []int{19}
+	return fileDescriptor_frames_d675737983a8bfcc, []int{19}
 }
 func (m *HistoryRequest) XXX_Unmarshal(b []byte) error {
 	return xxx_messageInfo_HistoryRequest.Unmarshal(m, b)
@@ -2272,9 +2272,9 @@ var _Frames_serviceDesc = grpc.ServiceDesc{
 	Metadata: "frames.proto",
 }
 
-func init() { proto.RegisterFile("frames.proto", fileDescriptor_frames_eaff188d6347ec4a) }
+func init() { proto.RegisterFile("frames.proto", fileDescriptor_frames_d675737983a8bfcc) }
 
-var fileDescriptor_frames_eaff188d6347ec4a = []byte{
+var fileDescriptor_frames_d675737983a8bfcc = []byte{
 	// 1924 bytes of a gzipped FileDescriptorProto
 	0x1f, 0x8b, 0x08, 0x00, 0x00, 0x00, 0x00, 0x00, 0x02, 0xff, 0xb4, 0x58, 0xcd, 0x72, 0x1b, 0xc7,
 	0x11, 0xe6, 0xe2, 0x7f, 0x1b, 0x20, 0x04, 0x8d, 0x65, 0x69, 0x05, 0xcb, 0x11, 0xb4, 0x92, 0x63,
