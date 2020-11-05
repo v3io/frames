@@ -250,8 +250,7 @@ class Client(ClientBase):
             return
 
         if __version__ != version:
-            warnings.warn("Warning - Server version \'" + version + "\' is different from client version \'" +
-                          __version__ + "\'. Some operations may not work.")
+            warnings.warn("Warning - Server version \'" + version + "\' is different from client version \'" + __version__ + "\'. Some operations may not work.")
         else:
             warnings.warn("Warning - Cannot resolve server version. Make sure client version is compatible.")
 

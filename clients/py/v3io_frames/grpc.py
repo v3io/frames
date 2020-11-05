@@ -42,6 +42,7 @@ channel_options = [
 
 warnings.formatwarning = lambda msg, *args, **kwargs: f'{msg}\n'
 
+
 def grpc_raise(err_cls):
     """Re-raise a different type of exception from grpc.RpcError"""
 
@@ -244,10 +245,10 @@ class Client(ClientBase):
         resp = stub.Version(request)
         if resp.version:
             if __version__ != resp.version:
-                warnings.warn("Warning - Server version \'" + resp.version + "\' is different from client version \'" +
-                              __version__ + "\'. Some operations may not work.")
+                warnings.warn("Warning - Server version \'" + resp.version + "\' is different from client version \'" + __version__ + "\'. Some operations may not work.")
             else:
                 warnings.warn("Warning - Cannot resolve server version. Make sure client version is compatible.")
+
 
 def write_stream(request, frames):
     yield fpb.WriteRequest(request=request)
