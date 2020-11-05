@@ -213,6 +213,13 @@ message DeleteRequest {
 
 message DeleteResponse {}
 
+message VersionRequest {}
+
+message ExecResponse  {
+    Frame frame = 1;
+    int64 rows = 2;
+}
+
 message ExecRequest {
     Session session = 1;
     string backend = 2; // Name of the backend
@@ -222,8 +229,8 @@ message ExecRequest {
     string expression = 6;
 }
 
-message ExecResponse {
-    Frame frame = 1;
+message VersionResponse {
+    string version = 1;
 }
 
 message HistoryRequest {
@@ -247,4 +254,5 @@ service Frames {
     rpc Delete(DeleteRequest) returns (DeleteResponse) {}
     rpc Exec(ExecRequest) returns (ExecResponse) {}
     rpc History(HistoryRequest) returns (stream Frame) {}
+    rpc Version(VersionRequest) returns (VersionResponse) {}
 }

@@ -88,7 +88,7 @@ func main() {
 		}
 	}
 
-	hsrv, err := framesHttp.NewServer(cfg, config.httpAddr, framesLogger, historyServer)
+	hsrv, err := framesHttp.NewServer(cfg, config.httpAddr, framesLogger, historyServer, Version)
 	if err != nil {
 		log.Fatalf("error: can't create HTTP server - %s", err)
 	}
@@ -97,7 +97,7 @@ func main() {
 		log.Fatalf("error: can't start HTTP server - %s", err)
 	}
 
-	gsrv, err := grpc.NewServer(cfg, config.grpcAddr, framesLogger, historyServer)
+	gsrv, err := grpc.NewServer(cfg, config.grpcAddr, framesLogger, historyServer, Version)
 	if err != nil {
 		log.Fatalf("error: can't create gRPC server - %s", err)
 	}

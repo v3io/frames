@@ -52,10 +52,11 @@ type API struct {
 	backends      map[string]frames.DataBackend
 	config        *frames.Config
 	historyServer *utils.HistoryServer
+	version       string
 }
 
 // New returns a new API layer struct
-func New(logger logger.Logger, config *frames.Config, historyServer *utils.HistoryServer) (*API, error) {
+func New(logger logger.Logger, config *frames.Config, historyServer *utils.HistoryServer, version string) (*API, error) {
 	if logger == nil {
 		var err error
 		logger, err = frames.NewLogger(config.Log.Level)
@@ -68,6 +69,7 @@ func New(logger logger.Logger, config *frames.Config, historyServer *utils.Histo
 		logger:        logger,
 		config:        config,
 		historyServer: historyServer,
+		version:       version,
 	}
 
 	if err := api.createBackends(config); err != nil {
@@ -270,6 +272,11 @@ func (api *API) History(request *frames.HistoryRequest, out chan frames.Frame) e
 		return errors.New("history server was not initialized properly. To enable this feature, please contact the system administrator")
 	}
 	return api.historyServer.GetLogs(request, out)
+}
+
+// Exec executes a command on the backend
+func (api *API) Version(_ *frames.VersionRequest) (string, error) {
+	return api.version, nil
 }
 
 func (api *API) createBackends(config *frames.Config) error {

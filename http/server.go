@@ -61,7 +61,7 @@ type Server struct {
 }
 
 // NewServer creates a new server
-func NewServer(config *frames.Config, addr string, logger logger.Logger, historyServer *utils.HistoryServer) (*Server, error) {
+func NewServer(config *frames.Config, addr string, logger logger.Logger, historyServer *utils.HistoryServer, version string) (*Server, error) {
 	var err error
 
 	if err := config.Validate(); err != nil {
@@ -79,7 +79,7 @@ func NewServer(config *frames.Config, addr string, logger logger.Logger, history
 		}
 	}
 
-	api, err := api.New(logger, config, historyServer)
+	api, err := api.New(logger, config, historyServer, version)
 	if err != nil {
 		return nil, errors.Wrap(err, "can't create API")
 	}
@@ -440,6 +440,33 @@ func (s *Server) handleExec(ctx *fasthttp.RequestCtx) {
 	})
 }
 
+func (s *Server) handleVersion(ctx *fasthttp.RequestCtx) {
+	if !ctx.IsPost() { // ctx.PostBody() blocks on GET
+		ctx.Error("unsupported method", http.StatusMethodNotAllowed)
+	}
+
+	requestInner := &pb.VersionRequest{}
+	if err := json.Unmarshal(ctx.PostBody(), requestInner); err != nil {
+		s.logger.ErrorWith("can't decode request", "error", err)
+		ctx.Error(fmt.Sprintf("bad request - %s", err), http.StatusBadRequest)
+		return
+	}
+	request := &frames.VersionRequest{
+		Proto: requestInner,
+	}
+
+	version, err := s.api.Version(request)
+	if err != nil {
+		ctx.Error("can't exec", http.StatusInternalServerError)
+		return
+	}
+
+	ctx.SetStatusCode(http.StatusOK)
+	_ = json.NewEncoder(ctx).Encode(map[string]string{
+		"version": version,
+	})
+}
+
 func (s *Server) handleSimpleJSONQuery(ctx *fasthttp.RequestCtx) {
 	s.handleSimpleJSON(ctx, "query")
 }
@@ -626,5 +653,6 @@ func (s *Server) initRoutes() {
 		"/":         s.handleStatus,
 		"/query":    s.handleSimpleJSONQuery,
 		"/search":   s.handleSimpleJSONSearch,
+		"/version":  s.handleVersion,
 	}
 }
