@@ -50,18 +50,17 @@ func (b *Backend) inferSchema(request *frames.ExecRequest) error {
 	if val, ok := request.Proto.Args["key"]; ok {
 		keyField = val.GetSval()
 	}
-	maxrec := 10
 
 	input := v3io.GetItemsInput{Path: table, Filter: "", AttributeNames: []string{"*"}}
 	b.logger.DebugWith("GetItems for schema", "input", input)
-	iter, err := v3ioutils.NewAsyncItemsCursor(container, &input, b.numWorkers, []string{}, b.logger, 0, []string{table}, "", "")
+	iter, err := v3ioutils.NewAsyncItemsCursor(container, &input, b.numWorkers, []string{}, b.logger, b.maxRecordsInfer, []string{table}, "", "")
 	if err != nil {
 		return err
 	}
 
 	var rowSet []map[string]interface{}
 
-	for rowNum := 0; rowNum < maxrec && iter.Next(); rowNum++ {
+	for rowNum := 0; iter.Next(); rowNum++ {
 		row := iter.GetFields()
 		rowSet = append(rowSet, row)
 	}
