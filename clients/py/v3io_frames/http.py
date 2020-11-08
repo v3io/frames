@@ -247,12 +247,11 @@ class Client(ClientBase):
 
         version = out.get('version')
         if not version:
+            warnings.warn("Warning - Cannot resolve server version. Make sure client version is compatible.")
             return
 
         if __version__ != version:
-            warnings.warn("Warning - Server version \'" + version + "\' is different from client version \'" + __version__ + "\'. Some operations may not work.")
-        else:
-            warnings.warn("Warning - Cannot resolve server version. Make sure client version is compatible.")
+            warnings.warn("Warning - Server version \'" + version + "\' is different from client version \'" + __version__ + "\'. Some operations may not work as expected.")
 
     def _url_for(self, action):
         return self.address + '/' + action

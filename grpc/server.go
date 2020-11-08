@@ -49,6 +49,7 @@ type Server struct {
 	config  *frames.Config
 	logger  logger.Logger
 	server  *grpc.Server
+	version string
 }
 
 // NewServer returns a new gRPC server
@@ -69,7 +70,7 @@ func NewServer(config *frames.Config, addr string, logger logger.Logger, history
 		}
 	}
 
-	api, err := api.New(logger, config, historyServer, version)
+	api, err := api.New(logger, config, historyServer)
 	if err != nil {
 		return nil, errors.Wrap(err, "can't create API")
 	}
@@ -85,6 +86,7 @@ func NewServer(config *frames.Config, addr string, logger logger.Logger, history
 			grpc.MaxRecvMsgSize(grpcMsgSize),
 			grpc.MaxSendMsgSize(grpcMsgSize),
 		),
+		version: version,
 	}
 
 	pb.RegisterFramesServer(server.server, server)
@@ -349,16 +351,11 @@ func (s *Server) History(request *pb.HistoryRequest, stream pb.Frames_HistorySer
 	return apiError
 }
 
-// Exec executes a command
-func (s *Server) Version(ctx context.Context, req *pb.VersionRequest) (*pb.VersionResponse, error) {
-	request := frames.VersionRequest{}
+// Version return server version
+func (s *Server) Version(ctx context.Context, _ *pb.VersionRequest) (*pb.VersionResponse, error) {
 
-	version, err := s.api.Version(&request)
-	if err != nil {
-		return nil, err
-	}
 	resp := &pb.VersionResponse{}
-	resp.Version = version
+	resp.Version = s.version
 
 	return resp, nil
 }

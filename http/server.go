@@ -55,9 +55,10 @@ type Server struct {
 	server  *fasthttp.Server
 	routes  map[string]func(*fasthttp.RequestCtx)
 
-	config *frames.Config
-	api    *api.API
-	logger logger.Logger
+	config  *frames.Config
+	api     *api.API
+	logger  logger.Logger
+	version string
 }
 
 // NewServer creates a new server
@@ -79,7 +80,7 @@ func NewServer(config *frames.Config, addr string, logger logger.Logger, history
 		}
 	}
 
-	api, err := api.New(logger, config, historyServer, version)
+	api, err := api.New(logger, config, historyServer)
 	if err != nil {
 		return nil, errors.Wrap(err, "can't create API")
 	}
@@ -91,6 +92,7 @@ func NewServer(config *frames.Config, addr string, logger logger.Logger, history
 		config:  config,
 		logger:  logger,
 		api:     api,
+		version: version,
 	}
 
 	srv.initRoutes()
@@ -445,25 +447,9 @@ func (s *Server) handleVersion(ctx *fasthttp.RequestCtx) {
 		ctx.Error("unsupported method", http.StatusMethodNotAllowed)
 	}
 
-	requestInner := &pb.VersionRequest{}
-	if err := json.Unmarshal(ctx.PostBody(), requestInner); err != nil {
-		s.logger.ErrorWith("can't decode request", "error", err)
-		ctx.Error(fmt.Sprintf("bad request - %s", err), http.StatusBadRequest)
-		return
-	}
-	request := &frames.VersionRequest{
-		Proto: requestInner,
-	}
-
-	version, err := s.api.Version(request)
-	if err != nil {
-		ctx.Error("can't exec", http.StatusInternalServerError)
-		return
-	}
-
 	ctx.SetStatusCode(http.StatusOK)
 	_ = json.NewEncoder(ctx).Encode(map[string]string{
-		"version": version,
+		"version": s.version,
 	})
 }
 
