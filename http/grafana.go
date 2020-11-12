@@ -118,14 +118,16 @@ func simpleJSONRequestFactory(method string, request []byte) ([]simpleJSONReques
 			requests = append(requests, currRequest)
 		}
 	case "search":
-		currRequest := &simpleJSONSearchRequest{simpleJSONQueryRequest{Backend: defaultBackend,
-			requestSimpleJSONBase: reqBase}}
+		currRequest :=
+			&simpleJSONSearchRequest{simpleJSONQueryRequest{requestSimpleJSONBase: reqBase}}
 		err := currRequest.ParseRequestFromTarget()
 		if err != nil {
 			return nil, err
 		}
 
-		requests = append(requests, currRequest)
+		if currRequest.Backend != "" && currRequest.Table != ""{
+			requests = append(requests, currRequest)
+		}
 	default:
 		return nil, fmt.Errorf("Unknown method, %s", method)
 	}
