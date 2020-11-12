@@ -125,7 +125,7 @@ func simpleJSONRequestFactory(method string, request []byte) ([]simpleJSONReques
 			return nil, err
 		}
 
-		if currRequest.Backend != "" && currRequest.Table != ""{
+		if currRequest.Backend != "" && currRequest.Table != "" {
 			requests = append(requests, currRequest)
 		}
 	default:
