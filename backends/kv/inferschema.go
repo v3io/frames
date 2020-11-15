@@ -183,6 +183,10 @@ func schemaFromKeys(keyField string, rowSet []map[string]interface{}) (v3ioutils
 			}
 			return nil, errors.Errorf("could not determine which column is the table's primary-key attribute, because %s", reason)
 		}
+	} else {
+		if val, ok := columnCanBeFullKey[keyField]; !ok || !val {
+			return nil, errors.Errorf("%s is not one of the columns", keyField)
+		}
 	}
 
 	newSchema := v3ioutils.NewSchemaWithHashingBuckets(keyField, sortingKeyField, hashingBuckets)

@@ -259,6 +259,18 @@ func (suite *InferSchemaTestSuite) TestInferSchemaWithKeyLikeHashed() {
 	suite.Require().Equal(0, concreteSchema.HashingBucketNum)
 }
 
+func (suite *InferSchemaTestSuite) TestInferSchemaWithInvalidKey() {
+	keyField := "invalid_key"
+	rowSet := []map[string]interface{}{
+		{"__name": "rocky", "name": "rocky", "animal": "dog", "age": 2},
+		{"__name": "mocha", "name": "mocha", "animal": "dog", "age": 3},
+		{"__name": "scratchy", "name": "scratchy", "animal": "cat", "age": 9},
+	}
+	_, err := schemaFromKeys(keyField, rowSet)
+	suite.Require().Error(err)
+	suite.Require().Equal("invalid_key is not one of the columns", err.Error())
+}
+
 func TestInferSchemaTestSuite(t *testing.T) {
 	suite.Run(t, new(InferSchemaTestSuite))
 }
