@@ -91,7 +91,8 @@ class Client(ClientBase):
         # create the session object, persist it between requests
         self._open_new_channel()
 
-        self._check_version()
+        if self._channel:
+            self._check_version()
 
     def __del__(self):
         self._channel.close()
@@ -102,6 +103,7 @@ class Client(ClientBase):
         return address
 
     def _open_new_channel(self):
+
         self._channel = grpc.intercept_channel(
             grpc.insecure_channel(self.address,
                                   options=self._channel_options),

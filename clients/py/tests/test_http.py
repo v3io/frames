@@ -38,13 +38,14 @@ class RequestSessionMock(object):
         self.write_frames = []
 
     def post(self, *args, **kw):
+        print("SESSION MOCK")
         self.requests.append((args, kw))
         if args[0].endswith('/read'):
             return self._read(*args, **kw)
         elif args[0].endswith('/write'):
             return self._write(*args, **kw)
         elif args[0].endswith('/version'):
-            return self._version(*args, **kw)
+            return self._version()
 
     def _read(self, *args, **kw):
         io = BytesIO()
@@ -82,10 +83,15 @@ class RequestSessionMock(object):
 
         return Response
 
-    def _version(self, *args, **kw):
+    def _version(self):
         class Response:
-            version = "test_Version"
             ok = True
+
+            @staticmethod
+            def json():
+                return {
+                    'version': 'test_version',
+                }
 
         return Response
 

@@ -66,7 +66,9 @@ class Client(ClientBase):
         # create the session object, persist it between requests
         self._establish_session()
 
-        self._check_version()
+        print("SESSION "+str(self._session))
+        if self._session:
+            self._check_version()
 
     def __del__(self):
         self._session.close()
@@ -232,11 +234,12 @@ class Client(ClientBase):
 
     @connection_error(VersionError)
     def _check_version(self):
-        request = {'session': pb2py(self.session)}
+        request = {}
 
         url = self._url_for('version')
         headers = self._get_headers()
         resp = self._session.post(url, headers=headers, json=request)
+        print("RESP "+str(resp))
         if not resp.ok:
             raise VersionError(resp.text)
 
