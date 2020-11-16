@@ -27,6 +27,7 @@ import v3io_frames as v3f
 import yaml
 
 has_session = v3f.SESSION_ENV_KEY in environ
+print(f'DO WE HAVE V#IO_SESSION - {has_session}')
 is_travis = 'TRAVIS' in environ
 test_id = uuid4().hex
 here = path.dirname(path.abspath(__file__))
@@ -66,6 +67,7 @@ def has_working_go():
 
 
 has_go = has_working_go()
+print(f'DO WE HAVE GO - {has_go}')
 
 
 def wait_for_server(port, timeout):
