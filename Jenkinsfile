@@ -26,7 +26,7 @@ podTemplate(label: "${git_project}-${label}", inheritFrom: "jnlp-docker-golang-p
                                         dir("${github.BUILD_FOLDER}/src/github.com/${git_project_upstream_user}/${git_project}") {
                                             common.shellc("pip install pipenv")
                                             common.shellc("make python-deps")
-                                            sh "make test-py"
+                                            sh "V3IO_SESSION='${session}'  make test-py"
                                         }
                                     }
                                 }
@@ -60,7 +60,7 @@ podTemplate(label: "${git_project}-${label}", inheritFrom: "jnlp-docker-golang-p
                                     dir("${github.BUILD_FOLDER}/src/github.com/${git_project_upstream_user}/${git_project}") {
                                         common.shellc("pip install pipenv")
                                         common.shellc("make python-deps")
-                                        sh "make test-py"
+                                        sh "V3IO_SESSION='${session}' make test-py"
                                     }
                                 }
                             }
@@ -185,7 +185,7 @@ podTemplate(label: "${git_project}-${label}", inheritFrom: "jnlp-docker-golang-p
                                                     ).trim()
                                                     common.shellc("pip install pipenv")
                                                     common.shellc("make python-deps")
-                                                    sh "make test-py"
+                                                    sh "V3IO_SESSION='${session}' make test-py"
                                                     try {
                                                         common.shellc("TRAVIS_REPO_SLUG=v3io/frames V3IO_PYPI_USER=${V3IO_PYPI_USER} V3IO_PYPI_PASSWORD=${V3IO_PYPI_PASSWORD} TRAVIS_TAG=${FRAMES_PYPI_VERSION} make pypi")
                                                     } catch (err) {

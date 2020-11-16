@@ -223,7 +223,7 @@ def test_kv_read_empty_df(framesd, session, protocol):
 
 @pytest.mark.skipif(not has_session, reason='No session found')
 @pytest.mark.skipif(not has_go, reason='Go SDK not found')
-@pytest.mark.parametrize('protocol', protocols)
+@pytest.mark.parametrize('protocol', ['grpc'])
 def test_datetime(framesd, session, protocol):
     backend = 'kv'
     test_id = uuid4().hex
@@ -232,7 +232,7 @@ def test_datetime(framesd, session, protocol):
     addr = getattr(framesd, '{}_addr'.format(protocol))
     client = v3f.Client(addr, **session)
 
-    col = pd.DataFrame(data=pd.Series([datetime.now(pytz.timezone("Africa/Abidjan")), datetime.now(pytz.timezone("America/Nassau")), None, datetime.now()]))
+    col = pd.Series([datetime.now(pytz.timezone("Africa/Abidjan")), datetime.now(pytz.timezone("America/Nassau")), None, datetime.now()])
     df = pd.DataFrame({'col': col})
     client.write(backend, table=tableName, dfs=df)
 
