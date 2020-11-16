@@ -80,6 +80,9 @@ class RequestSessionMock(object):
 
         return Response
 
+    def close(self):
+        pass
+
 
 def test_read():
     address = 'https://nuclio.io'
