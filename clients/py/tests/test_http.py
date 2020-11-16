@@ -43,6 +43,8 @@ class RequestSessionMock(object):
             return self._read(*args, **kw)
         elif args[0].endswith('/write'):
             return self._write(*args, **kw)
+        elif args[0].endswith('/version'):
+            return self._version(*args, **kw)
 
     def _read(self, *args, **kw):
         io = BytesIO()
@@ -77,6 +79,13 @@ class RequestSessionMock(object):
                     'num_frames': -1,
                     'num_rows': -1,
                 }
+
+        return Response
+
+    def _version(self, *args, **kw):
+        class Response:
+            version = "test_Version"
+            ok = True
 
         return Response
 

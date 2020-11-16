@@ -232,7 +232,7 @@ class Client(ClientBase):
 
     @connection_error(VersionError)
     def _check_version(self):
-        request = {}
+        request = {'session': pb2py(self.session)}
 
         url = self._url_for('version')
         headers = self._get_headers()

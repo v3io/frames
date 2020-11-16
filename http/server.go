@@ -448,9 +448,11 @@ func (s *Server) handleVersion(ctx *fasthttp.RequestCtx) {
 	}
 
 	ctx.SetStatusCode(http.StatusOK)
-	_ = json.NewEncoder(ctx).Encode(map[string]string{
+
+	reply := map[string]interface{}{
 		"version": s.version,
-	})
+	}
+	_ = s.replyJSON(ctx, reply)
 }
 
 func (s *Server) handleSimpleJSONQuery(ctx *fasthttp.RequestCtx) {
