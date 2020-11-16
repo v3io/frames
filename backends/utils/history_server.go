@@ -364,6 +364,15 @@ func (m *HistoryServer) GetLogs(request *frames.HistoryRequest, out chan frames.
 	iter, err := v3ioutils.NewFilesCursor(m.container, &v3io.GetContainerContentsInput{Path: m.LogsFolderPath + "/"})
 
 	if err != nil {
+		if errWithStatusCode, ok := err.(v3ioerrors.ErrorWithStatusCode); ok &&
+			errWithStatusCode.StatusCode() == http.StatusNotFound {
+			frame, err := frames.NewFrameWithNullValues(nil, nil, nil, nil)
+			if err != nil {
+				return err
+			}
+			out <- frame
+			return nil
+		}
 		return fmt.Errorf("Failed to list Frames History log folder %v for read, err: %v", m.LogsFolderPath, err)
 	}
 
