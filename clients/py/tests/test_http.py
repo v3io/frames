@@ -38,7 +38,6 @@ class RequestSessionMock(object):
         self.write_frames = []
 
     def post(self, *args, **kw):
-        print("SESSION MOCK")
         self.requests.append((args, kw))
         if args[0].endswith('/read'):
             return self._read(*args, **kw)
@@ -94,6 +93,9 @@ class RequestSessionMock(object):
                 }
 
         return Response
+
+    def close(self):
+        pass
 
 
 def test_read():

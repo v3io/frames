@@ -142,6 +142,7 @@ type BackendConfig struct {
 	V3ioGoRequestChanLength int    `json:"v3ioGoRequestChanLength"`
 	MaxConnections          int    `json:"maxConnections"`
 	DialTimeoutSeconds      int    `json:"dialTimeoutSeconds"`
+	MaxRecordsInferSchema   int    `json:"maxRecordsInferSchema"`
 
 	// backend specific options
 	Options map[string]interface{} `json:"options"`
@@ -231,5 +232,9 @@ func initBackendDefaults(cfg *BackendConfig, framesConfig *Config) {
 
 	if cfg.V3ioGoRequestChanLength == 0 {
 		cfg.V3ioGoRequestChanLength = cfg.V3ioGoWorkers * 256
+	}
+
+	if cfg.MaxRecordsInferSchema == 0 {
+		cfg.MaxRecordsInferSchema = 10
 	}
 }

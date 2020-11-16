@@ -23,6 +23,7 @@ package kv
 import (
 	"fmt"
 	"net/http"
+	"strings"
 
 	"github.com/pkg/errors"
 	"github.com/v3io/frames"
@@ -338,6 +339,16 @@ func init() {
 	}
 }
 
+func filterPartitions(dirs []v3io.CommonPrefix) []v3io.CommonPrefix {
+	tmp := dirs[:0]
+	for _, p := range dirs {
+		if strings.Contains(p.Prefix, "=") {
+			tmp = append(tmp, p)
+		}
+	}
+	return tmp
+}
+
 func (kv *Backend) getPartitions(path string, container v3io.Container) ([]string, error) {
 	var partitions []string
 	var done bool
@@ -352,6 +363,7 @@ func (kv *Backend) getPartitions(path string, container v3io.Container) ([]strin
 			res.Release() // Releasing underlying fasthttp response
 		}
 		out := res.Output.(*v3io.GetContainerContentsOutput)
+		out.CommonPrefixes = filterPartitions(out.CommonPrefixes)
 		if len(out.CommonPrefixes) > 0 {
 			for _, partition := range out.CommonPrefixes {
 				parts, err := kv.getPartitions(partition.Prefix, container)

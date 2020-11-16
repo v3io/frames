@@ -41,6 +41,7 @@ type Backend struct {
 	inactivityTimeout  time.Duration
 	framesConfig       *frames.Config
 	v3ioContext        v3io.Context
+	maxRecordsInfer    int
 }
 
 // NewBackend returns a new NoSQL (key/value) backend
@@ -52,6 +53,7 @@ func NewBackend(logger logger.Logger, v3ioContext v3io.Context, config *frames.B
 		framesConfig:       framesConfig,
 		v3ioContext:        v3ioContext,
 		inactivityTimeout:  0,
+		maxRecordsInfer:    config.MaxRecordsInferSchema,
 	}
 	return &newBackend, nil
 }
