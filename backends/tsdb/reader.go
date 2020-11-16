@@ -181,13 +181,13 @@ func (i *tsdbIterator) Next() bool {
 		columns[i], _ = frame.Column(colName) // Because we are iterating over the Names() it is safe to discard the error
 	}
 
-	var keys []string
+	var labelNames []string
 	labels := frame.Labels()
-	for key := range labels {
-		keys = append(keys, key)
+	for labelName := range labels {
+		labelNames = append(labelNames, labelName)
 	}
-	sort.Strings(keys)
-	for _, labelName := range keys {
+	sort.Strings(labelNames)
+	for _, labelName := range labelNames {
 		name := labelName
 		if name == config.PrometheusMetricNameAttribute {
 			name = "metric_name"
