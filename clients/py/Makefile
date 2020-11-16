@@ -40,7 +40,7 @@ test: clean_pyc flake8
 	    pipenv run python -m pytest -v \
 		--disable-warnings \
 		--benchmark-disable \
-		tests
+		-s tests
 
 README.html: README.md
 	kramdown -i GFM $< > $@
