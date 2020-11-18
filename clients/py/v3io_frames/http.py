@@ -239,7 +239,7 @@ class Client(ClientBase):
         url = self._url_for('version')
         headers = self._get_headers()
         resp = self._session.post(url, headers=headers, json=request)
-        print("RESP "+str(resp))
+
         if not resp.ok:
             raise VersionError(resp.text)
 
