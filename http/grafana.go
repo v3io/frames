@@ -309,24 +309,30 @@ func (req *simpleJSONSearchRequest) ParseRequestFromTarget() error {
 
 func (req *simpleJSONQueryRequest) parseQueryLine(fieldInput string) error {
 	// example query: fields=sentiment;table=stock_metrics;backend=tsdb;filter=symbol=="AAPL";container=container_name
-	re, err := regexp.Compile(`^\s*(filter|fields|table|backend|container|step|query)\s*=\s*(.*)\s*$`)
+	legalFieldsString := "filter|fields|table|backend|container|step|query"
+	re, err := regexp.Compile(`^\s*(` + legalFieldsString + `)\s*=\s*(.*)\s*$`)
 	if err != nil {
 		return err
 	}
 	for _, field := range strings.Split(fieldInput, querySeparator) {
-		match := re.FindStringSubmatch(field)
-		var value interface{}
-		if len(match) > 0 {
-			fieldName := strings.Title(match[1])
-			if fieldName == "Fields" {
-				value = strings.Split(match[2], fieldsItemsSeperator)
+		if len(field) > 0 {
+			match := re.FindStringSubmatch(field)
+			var value interface{}
+			if len(match) > 0 {
+				fieldName := strings.Title(match[1])
+				if fieldName == "Fields" {
+					value = strings.Split(match[2], fieldsItemsSeperator)
+				} else {
+					value = match[2]
+				}
+				if err := setField(req, fieldName, value); err != nil {
+					return err
+				}
 			} else {
-				value = match[2]
-			}
-			if err := setField(req, fieldName, value); err != nil {
-				return err
+				return fmt.Errorf("field %s is illegal. field should be one of %s", field, legalFieldsString)
 			}
 		}
+
 	}
 	return nil
 }
