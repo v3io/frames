@@ -158,4 +158,5 @@ def new_test_client(address='', session=None):
     return v3f.HTTPClient(
         address=address or 'http://example.com',
         session=session,
+        should_check_version=False,
     )

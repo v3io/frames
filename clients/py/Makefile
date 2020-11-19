@@ -29,7 +29,7 @@ flake8:
 	# --ignore=E121,E123,E126,E226,E24,E704 is the default.
 	# Additionally, E501 ignores long lines.
 	PIPENV_IGNORE_VIRTUALENVS=1 \
-	    FRAMES_PYTHON_DEBUG=true pipenv run flake8 \
+	    pipenv run flake8 \
 	        --ignore=E121,E123,E126,E226,E24,E704,E501 \
 	        --exclude 'frames_pb2*.py' \
 	        v3io_frames tests
@@ -37,7 +37,7 @@ flake8:
 .PHONY: test
 test: clean_pyc flake8
 	PIPENV_IGNORE_VIRTUALENVS=1 \
-	    FRAMES_PYTHON_DEBUG=true pipenv run python -m pytest -v \
+	    pipenv run python -m pytest -v \
 		--disable-warnings \
 		--benchmark-disable \
 		tests

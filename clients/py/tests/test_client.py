@@ -32,7 +32,7 @@ def test_client(proto, cls):
         'password': 'duck season',
     }
 
-    client = v3f.Client(address, **session_params)
+    client = v3f.Client(address, should_check_version=False, **session_params)
     assert client.__class__ is cls, 'wrong class'
     for key, value in session_params.items():
         key = 'url' if key == 'data_url' else key
@@ -52,7 +52,7 @@ def test_client_wrong_params(proto, cls):
     }
 
     try:
-        v3f.Client(address, **session_params)
+        v3f.Client(address, should_check_version=False, **session_params)
         raise ValueError('expected fail but finished successfully')
     except ValueError:
         return

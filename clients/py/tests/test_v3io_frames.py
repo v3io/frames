@@ -33,11 +33,11 @@ def setenv(key, value):
 
 
 def test_client():
-    c = v3f.Client('localhost:8081')
+    c = v3f.Client('localhost:8081', should_check_version=False)
     assert isinstance(c, v3f.gRPCClient), 'default is not grpc'
-    c = v3f.Client('grpc://localhost:8081')
+    c = v3f.Client('grpc://localhost:8081', should_check_version=False)
     assert isinstance(c, v3f.gRPCClient), 'not gRPC'
-    c = v3f.Client('http://localhost:8081')
+    c = v3f.Client('http://localhost:8081', should_check_version=False)
     assert isinstance(c, v3f.HTTPClient), 'not HTTP'
 
 
@@ -45,7 +45,7 @@ def test_client_env():
     url = 'localhost:8080'
     data = json.dumps({'url': url})
     with setenv(v3f.SESSION_ENV_KEY, data):
-        c = v3f.Client('localhost:8081')
+        c = v3f.Client('localhost:8081', should_check_version=False)
 
     assert c.session.url == url, 'missing URL from env'
 

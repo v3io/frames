@@ -19,7 +19,6 @@ from datetime import datetime
 from functools import partial, wraps
 from itertools import chain
 import warnings
-import os
 
 import requests
 from requests.exceptions import RequestException
@@ -67,7 +66,7 @@ class Client(ClientBase):
         # create the session object, persist it between requests
         self._establish_session()
 
-        if self._session and not os.environ.get("FRAMES_PYTHON_DEBUG"):
+        if self.should_check_version:
             self._check_version()
 
     def __del__(self):

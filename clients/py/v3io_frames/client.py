@@ -158,7 +158,7 @@ class RawFrame:
 
 class ClientBase:
     def __init__(self, address, session, persist_connection=False,
-                 frame_factory=pd.DataFrame, concat=pd.concat):
+                 frame_factory=pd.DataFrame, concat=pd.concat, should_check_version=True):
         """Creates a new Frames client object
 
         Parameters
@@ -176,6 +176,8 @@ class ClientBase:
             DataFrame factory; currently, pandas and cuDF are supported
         concat : function
             Function for concatenating DataFrames; default: pandas concat
+        should_check_version (Optional) : str
+            whether client and server version should be checked; default: true
 
         Return Value
         ----------
@@ -186,6 +188,7 @@ class ClientBase:
         self._persist_connection = persist_connection
         self.frame_factory = frame_factory
         self.concat = concat
+        self.should_check_version = should_check_version
 
     def read(self, backend, table='', query='', columns=None, filter='',
              group_by='', limit=0, data_format='', row_layout=False,

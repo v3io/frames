@@ -18,7 +18,6 @@ import typing
 from datetime import datetime
 from functools import wraps
 import warnings
-import os
 
 import pandas as pd
 
@@ -92,7 +91,7 @@ class Client(ClientBase):
         # create the session object, persist it between requests
         self._open_new_channel()
 
-        if self._channel and not os.environ.get("FRAMES_PYTHON_DEBUG"):
+        if self.should_check_version:
             self._check_version()
 
     def __del__(self):
