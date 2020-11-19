@@ -343,6 +343,12 @@ const (
 	FailOnError = pb.ErrorOptions_FAIL
 )
 
+type VersionRequest struct {
+	Proto    *pb.VersionRequest
+	Password SecretString
+	Token    SecretString
+}
+
 // ExecRequest is execution request
 type ExecRequest struct {
 	Proto    *pb.ExecRequest

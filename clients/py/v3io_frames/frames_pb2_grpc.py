@@ -44,6 +44,11 @@ class FramesStub(object):
         request_serializer=frames__pb2.HistoryRequest.SerializeToString,
         response_deserializer=frames__pb2.Frame.FromString,
         )
+    self.Version = channel.unary_unary(
+        '/pb.Frames/Version',
+        request_serializer=frames__pb2.VersionRequest.SerializeToString,
+        response_deserializer=frames__pb2.VersionResponse.FromString,
+        )
 
 
 class FramesServicer(object):
@@ -92,6 +97,13 @@ class FramesServicer(object):
     context.set_details('Method not implemented!')
     raise NotImplementedError('Method not implemented!')
 
+  def Version(self, request, context):
+    # missing associated documentation comment in .proto file
+    pass
+    context.set_code(grpc.StatusCode.UNIMPLEMENTED)
+    context.set_details('Method not implemented!')
+    raise NotImplementedError('Method not implemented!')
+
 
 def add_FramesServicer_to_server(servicer, server):
   rpc_method_handlers = {
@@ -124,6 +136,11 @@ def add_FramesServicer_to_server(servicer, server):
           servicer.History,
           request_deserializer=frames__pb2.HistoryRequest.FromString,
           response_serializer=frames__pb2.Frame.SerializeToString,
+      ),
+      'Version': grpc.unary_unary_rpc_method_handler(
+          servicer.Version,
+          request_deserializer=frames__pb2.VersionRequest.FromString,
+          response_serializer=frames__pb2.VersionResponse.SerializeToString,
       ),
   }
   generic_handler = grpc.method_handlers_generic_handler(

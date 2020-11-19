@@ -14,7 +14,7 @@
 
 __all__ = [
     'Error', 'BadRequest', 'MessageError', 'ReadError', 'CreateError',
-    'DeleteError', 'ExecuteError', 'WriteError'
+    'DeleteError', 'ExecuteError', 'WriteError', 'HistoryError', 'VersionError'
 ]
 
 
@@ -52,3 +52,7 @@ class ExecuteError(Error):
 
 class HistoryError(Error):
     """An error in querying history logs"""
+
+
+class VersionError(Error):
+    """An error in getting server version"""

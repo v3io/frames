@@ -34,7 +34,7 @@ _known_protocols = {'grpc', 'http', 'https'}
 
 def Client(address='', data_url='', container='', user='',
            password='', token='', session_id='', frame_factory=pd.DataFrame,
-           concat=pd.concat, persist_connection=False):
+           concat=pd.concat, persist_connection=False, should_check_version=True):
     """Creates a new Frames client object
     NOTE: User authentication must be done using any of the following methods:
     setting the `token` parameter or the V3IO_ACCESS_KEY environment variable
@@ -77,6 +77,8 @@ def Client(address='', data_url='', container='', user='',
         are made often. When True is used, due to the nature of the
         underlying clients, rapid instantiation of the client
         may cause failures (e.g. HTTP NewConnectionError)
+    should_check_version (Optional) : str
+            whether client and server version should be checked; default: true
 
     Return Value
     ----------
@@ -110,7 +112,7 @@ def Client(address='', data_url='', container='', user='',
 
     cls = gRPCClient if protocol == 'grpc' else HTTPClient
     return cls(address, session, persist_connection,
-               frame_factory=frame_factory, concat=concat)
+               frame_factory=frame_factory, concat=concat, should_check_version=should_check_version)
 
 
 def session_from_env():

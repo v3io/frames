@@ -43,7 +43,7 @@ func createServer() (*Server, error) {
 		},
 	}
 	address := ":8080"
-	return NewServer(cfg, address, nil, nil)
+	return NewServer(cfg, address, nil, nil, "")
 }
 
 func TestNew(t *testing.T) {

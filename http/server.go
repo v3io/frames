@@ -55,13 +55,14 @@ type Server struct {
 	server  *fasthttp.Server
 	routes  map[string]func(*fasthttp.RequestCtx)
 
-	config *frames.Config
-	api    *api.API
-	logger logger.Logger
+	config  *frames.Config
+	api     *api.API
+	logger  logger.Logger
+	version string
 }
 
 // NewServer creates a new server
-func NewServer(config *frames.Config, addr string, logger logger.Logger, historyServer *utils.HistoryServer) (*Server, error) {
+func NewServer(config *frames.Config, addr string, logger logger.Logger, historyServer *utils.HistoryServer, version string) (*Server, error) {
 	var err error
 
 	if err := config.Validate(); err != nil {
@@ -91,6 +92,7 @@ func NewServer(config *frames.Config, addr string, logger logger.Logger, history
 		config:  config,
 		logger:  logger,
 		api:     api,
+		version: version,
 	}
 
 	srv.initRoutes()
@@ -440,6 +442,19 @@ func (s *Server) handleExec(ctx *fasthttp.RequestCtx) {
 	})
 }
 
+func (s *Server) handleVersion(ctx *fasthttp.RequestCtx) {
+	if !ctx.IsPost() { // ctx.PostBody() blocks on GET
+		ctx.Error("unsupported method", http.StatusMethodNotAllowed)
+	}
+
+	ctx.SetStatusCode(http.StatusOK)
+
+	reply := map[string]interface{}{
+		"version": s.version,
+	}
+	_ = s.replyJSON(ctx, reply)
+}
+
 func (s *Server) handleSimpleJSONQuery(ctx *fasthttp.RequestCtx) {
 	s.handleSimpleJSON(ctx, "query")
 }
@@ -626,5 +641,6 @@ func (s *Server) initRoutes() {
 		"/":         s.handleStatus,
 		"/query":    s.handleSimpleJSONQuery,
 		"/search":   s.handleSimpleJSONSearch,
+		"/version":  s.handleVersion,
 	}
 }

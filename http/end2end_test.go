@@ -60,7 +60,7 @@ func TestEnd2End(t *testing.T) {
 		t.Fatal(err)
 	}
 
-	srv, err := http.NewServer(cfg, fmt.Sprintf(":%d", port), nil, nil)
+	srv, err := http.NewServer(cfg, fmt.Sprintf(":%d", port), nil, nil, "")
 	if err != nil {
 		t.Fatal(err)
 	}
