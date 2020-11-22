@@ -21,6 +21,7 @@ such restriction.
 package tsdb
 
 import (
+	"sort"
 	"strings"
 	"time"
 
@@ -180,13 +181,19 @@ func (i *tsdbIterator) Next() bool {
 		columns[i], _ = frame.Column(colName) // Because we are iterating over the Names() it is safe to discard the error
 	}
 
-	for labelName, labelValue := range frame.Labels() {
+	var labelNames []string
+	labels := frame.Labels()
+	for labelName := range labels {
+		labelNames = append(labelNames, labelName)
+	}
+	sort.Strings(labelNames)
+	for _, labelName := range labelNames {
 		name := labelName
 		if name == config.PrometheusMetricNameAttribute {
 			name = "metric_name"
 		}
 
-		icol, err := frames.NewLabelColumn(name, labelValue, frame.Len())
+		icol, err := frames.NewLabelColumn(name, labels[labelName], frame.Len())
 		if err != nil {
 			i.err = err
 			return false

@@ -17,15 +17,17 @@ import time
 import typing
 from datetime import datetime
 from functools import wraps
+import warnings
 
 import pandas as pd
 
 import grpc
 from . import frames_pb2 as fpb  # noqa
 from . import frames_pb2_grpc as fgrpc  # noqa
+from . import __version__
 from .client import ClientBase, RawFrame
 from .errors import (CreateError, DeleteError, ExecuteError, ReadError,
-                     WriteError, HistoryError)
+                     WriteError, HistoryError, VersionError)
 from .http import format_go_time
 from .pbutils import msg2df, pb_map, df2msg
 from .pdutils import concat_dfs, should_reorder_columns
@@ -37,6 +39,8 @@ channel_options = [
     ('grpc.max_send_message_length', GRPC_MESSAGE_SIZE),
     ('grpc.max_receive_message_length', GRPC_MESSAGE_SIZE),
 ]
+
+warnings.formatwarning = lambda msg, *args, **kwargs: f'{msg}\n'
 
 
 def grpc_raise(err_cls):
@@ -87,6 +91,9 @@ class Client(ClientBase):
         # create the session object, persist it between requests
         self._open_new_channel()
 
+        if self.should_check_version:
+            self._check_version()
+
     def __del__(self):
         self._channel.close()
 
@@ -96,6 +103,7 @@ class Client(ClientBase):
         return address
 
     def _open_new_channel(self):
+
         self._channel = grpc.intercept_channel(
             grpc.insecure_channel(self.address,
                                   options=self._channel_options),
@@ -231,6 +239,17 @@ class Client(ClientBase):
         )
         for frame in stub.History(request):
             yield msg2df(frame, self.frame_factory)
+
+    @grpc_raise(VersionError)
+    def _check_version(self):
+        stub = fgrpc.FramesStub(self._channel)
+        request = fpb.VersionRequest()
+        resp = stub.Version(request)
+        if resp.version:
+            if __version__ != resp.version:
+                warnings.warn("Warning - Server version \'" + resp.version + "\' is different from client version \'" + __version__ + "\'. Some operations may not work as expected.")
+        else:
+            warnings.warn("Warning - Cannot resolve server version. Make sure client version is compatible.")
 
 
 def write_stream(request, frames):

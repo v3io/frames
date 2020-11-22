@@ -18,6 +18,7 @@ from base64 import b64decode
 from datetime import datetime
 from functools import partial, wraps
 from itertools import chain
+import warnings
 
 import requests
 from requests.exceptions import RequestException
@@ -26,13 +27,16 @@ from urllib3.exceptions import HTTPError
 from . import frames_pb2 as fpb
 from .client import ClientBase, RawFrame
 from .errors import (CreateError, DeleteError, Error, ExecuteError, ReadError,
-                     WriteError, HistoryError)
+                     WriteError, HistoryError, VersionError)
 from .frames_pb2 import Frame
 from .pbutils import df2msg, msg2df, pb2py
 from .pdutils import concat_dfs, should_reorder_columns
+from . import __version__
 
 header_fmt = '<q'
 header_fmt_size = struct.calcsize(header_fmt)
+
+warnings.formatwarning = lambda msg, *args, **kwargs: f'{msg}\n'
 
 
 def connection_error(error_cls):
@@ -61,6 +65,9 @@ class Client(ClientBase):
 
         # create the session object, persist it between requests
         self._establish_session()
+
+        if self.should_check_version:
+            self._check_version()
 
     def __del__(self):
         self._session.close()
@@ -223,6 +230,30 @@ class Client(ClientBase):
         dfs = self._iter_dfs(resp.raw, None, False)
 
         return concat_dfs(dfs, "", self.frame_factory, self.concat)
+
+    @connection_error(VersionError)
+    def _check_version(self):
+        request = {}
+
+        url = self._url_for('version')
+        headers = self._get_headers()
+        resp = self._session.post(url, headers=headers, json=request)
+
+        if not resp.ok:
+            raise VersionError(resp.text)
+
+        try:
+            out = resp.json()
+        except json.JSONDecodeError as err:
+            raise VersionError(str(err))
+
+        version = out.get('version')
+        if not version:
+            warnings.warn("Warning - Cannot resolve server version. Make sure client version is compatible.")
+            return
+
+        if __version__ != version:
+            warnings.warn("Warning - Server version \'" + version + "\' is different from client version \'" + __version__ + "\'. Some operations may not work as expected.")
 
     def _url_for(self, action):
         return self.address + '/' + action
