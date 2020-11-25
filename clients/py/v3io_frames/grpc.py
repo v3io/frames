@@ -111,7 +111,7 @@ class Client(ClientBase):
 
     @grpc_raise(ReadError)
     def do_read(self, backend, table, query, columns, filter, group_by, limit,
-                data_format, row_layout, max_in_message, marker, get_raw, **kw):
+                data_format, row_layout, max_in_message, marker, get_raw, infer_schema, write_schema, **kw):
         stub = fgrpc.FramesStub(self._channel)
         request = fpb.ReadRequest(
             session=self.session,
@@ -125,6 +125,8 @@ class Client(ClientBase):
             limit=limit,
             row_layout=row_layout,
             marker=marker,
+            infer_schema=infer_schema,
+            write_schema=write_schema,
             **kw
         )
         do_reorder = should_reorder_columns(backend, query, columns)
@@ -139,10 +141,10 @@ class Client(ClientBase):
     # (do_read) it'll always return a generator
     @grpc_raise(WriteError)
     def _read(self, backend, table, query, columns, filter, group_by, limit,
-              data_format, row_layout, max_in_message, marker, iterator, get_raw, **kw):
+              data_format, row_layout, max_in_message, marker, iterator, get_raw, infer_schema, write_schema, **kw):
         dfs = self.do_read(
             backend, table, query, columns, filter, group_by, limit,
-            data_format, row_layout, max_in_message, marker, get_raw, **kw)
+            data_format, row_layout, max_in_message, marker, get_raw, infer_schema, write_schema, **kw)
         if not iterator and not get_raw:
             multi_index = kw.get('multi_index', False)
             return concat_dfs(dfs, backend, self.frame_factory, self.concat, multi_index)

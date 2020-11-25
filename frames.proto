@@ -136,6 +136,8 @@ message ReadRequest {
     repeated string sharding_keys = 18;
     string sort_key_range_start = 19;
     string sort_key_range_end = 20;
+    bool infer_schema = 30;
+    bool write_schema = 31;
 
     // TSDB
     string start = 21;

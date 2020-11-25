@@ -83,6 +83,8 @@ var globalRequestFieldsByRequestType = map[reflect.Type]map[string]bool{
 		"MessageLimit": true,
 		"Marker":       true,
 		"ResetIndex":   true,
+		"InferSchema":  true,
+		"WriteSchema":  true,
 	},
 	reflect.TypeOf(frames.WriteRequest{}): {
 		"Session":       true,

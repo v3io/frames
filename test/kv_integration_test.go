@@ -677,6 +677,7 @@ func (kvSuite *KvTestSuite) TestRequestSystemAttrs() {
 
 	kvSuite.Require().NoError(it.Err())
 }
+
 func (kvSuite *KvTestSuite) TestNonExistingColumns() {
 	table := fmt.Sprintf("TestNonExistingColumns%d", time.Now().UnixNano())
 
@@ -1124,4 +1125,65 @@ func (kvSuite *KvTestSuite) TestWritePartitionedTableWithNullValues() {
 			Path: fmt.Sprintf("%v/%v", table, subPath)})
 		kvSuite.Require().NoError(err, "item %v was not found", subPath)
 	}
+}
+
+func (kvSuite *KvTestSuite) TestReadWithInfer() {
+	table := fmt.Sprintf("TestReadWithInfer%d", time.Now().UnixNano())
+	frame := kvSuite.generateRandomSampleFrame(5, "idx", []string{"n1", "n2"})
+	wreq := &frames.WriteRequest{
+		Backend: kvSuite.backendName,
+		Table:   table,
+	}
+
+	appender, err := kvSuite.client.Write(wreq)
+	kvSuite.Require().NoError(err)
+	err = appender.Add(frame)
+	kvSuite.Require().NoError(err)
+	err = appender.WaitForComplete(3 * time.Second)
+	kvSuite.Require().NoError(err)
+
+	//delete schema
+	schemaInput := &v3io.DeleteObjectInput{Path: table + "/.#schema"}
+	err = kvSuite.v3ioContainer.DeleteObjectSync(schemaInput)
+	kvSuite.Require().NoError(err)
+
+	kvSuite.T().Log("read")
+	rreq_check := &pb.ReadRequest{
+		Backend: kvSuite.backendName,
+		Table:   table,
+	}
+
+	it, _ := kvSuite.client.Read(rreq_check)
+	it.Next()
+	kvSuite.Require().Error(it.Err(), "can't query: Failed to find a schema for table %v; use the `execute` 'infer' command to infer the schema and generate a schema file.", table)
+
+	rreq := &pb.ReadRequest{
+		Backend:     kvSuite.backendName,
+		Table:       table,
+		InferSchema: true,
+		WriteSchema: false,
+	}
+
+	it, _ = kvSuite.client.Read(rreq)
+	it.Next()
+	kvSuite.Require().NoError(it.Err())
+
+	it, _ = kvSuite.client.Read(rreq_check)
+	it.Next()
+	kvSuite.Require().Error(it.Err(), "can't query: Failed to find a schema for table %v; use the `execute` 'infer' command to infer the schema and generate a schema file.", table)
+
+	rreq = &pb.ReadRequest{
+		Backend:     kvSuite.backendName,
+		Table:       table,
+		InferSchema: true,
+		WriteSchema: true,
+	}
+
+	it, _ = kvSuite.client.Read(rreq)
+	it.Next()
+	kvSuite.Require().NoError(it.Err())
+
+	it, _ = kvSuite.client.Read(rreq_check)
+	it.Next()
+	kvSuite.Require().NoError(it.Err())
 }

@@ -192,7 +192,7 @@ class ClientBase:
 
     def read(self, backend, table='', query='', columns=None, filter='',
              group_by='', limit=0, data_format='', row_layout=False,
-             max_rows_in_msg=0, marker='', iterator=False, get_raw=False, **kw):
+             max_rows_in_msg=0, marker='', iterator=False, get_raw=False, infer_schema=False, write_schema=True, **kw):
         """Reads data from a data collection (runs a data query)
 
         Common Parameters
@@ -235,6 +235,10 @@ class ClientBase:
         get_raw (Optional) : bool
             True to return the data in raw format instead as pandas DataFrames
             [For internal use]
+        infer_schema (Optional) : bool
+            True to infer schema
+        write_schema (Optional) : bool
+            False to not write the inferred schema (should be used with infer_schema=True)
         **kw
             Variable-length list of additional keyword (named) arguments
 
@@ -251,7 +255,7 @@ class ClientBase:
         return self._read(
             self._alias_backends(backend), table, query, columns, filter,
             group_by, limit, data_format, row_layout,
-            max_rows_in_msg, marker, iterator, get_raw, **kw)
+            max_rows_in_msg, marker, iterator, get_raw, infer_schema, write_schema, **kw)
 
     def write(self, backend, table, dfs, expression='', condition='',
               labels=None, max_rows_in_msg=0, index_cols=None,
