@@ -232,7 +232,7 @@ def test_datetime(framesd, session, protocol):
     addr = getattr(framesd, '{}_addr'.format(protocol))
     client = v3f.Client(addr, **session)
 
-    col = pd.DataFrame(data=pd.Series([datetime.now(pytz.timezone("Africa/Abidjan")), datetime.now(pytz.timezone("America/Nassau")), None, datetime.now()]))
+    col = pd.Series([datetime.now(pytz.timezone("Africa/Abidjan")), datetime.now(pytz.timezone("America/Nassau")), None, datetime.now()])
     df = pd.DataFrame({'col': col})
     client.write(backend, table=tableName, dfs=df)
 
