@@ -47,6 +47,7 @@ var allowedReadRequestFields = map[string]bool{
 	"Seek":     true,
 	"ShardId":  true,
 	"Sequence": true,
+	"Start":    true,
 }
 
 func (b *Backend) Read(request *frames.ReadRequest) (frames.FrameIterator, error) {
