@@ -134,7 +134,7 @@ func (b *Backend) put(request *frames.ExecRequest) error {
 	}
 
 	partitionKey := ""
-	if val, ok := request.Proto.Args["partition"]; ok {
+	if val, ok := request.Proto.Args["partition_key"]; ok {
 		partitionKey = val.GetSval()
 	}
 
