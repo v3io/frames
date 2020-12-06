@@ -134,7 +134,7 @@ func (b *Backend) put(request *frames.ExecRequest) error {
 	}
 
 	partitionKey := ""
-	if val, ok := request.Proto.Args["partition"]; ok {
+	if val, ok := request.Proto.Args["partition_key"]; ok {
 		partitionKey = val.GetSval()
 	}
 
@@ -143,7 +143,7 @@ func (b *Backend) put(request *frames.ExecRequest) error {
 		return err
 	}
 
-	b.logger.DebugWith("put record", "path", path, "len", len(data), "client", clientInfo, "partition", partitionKey)
+	b.logger.DebugWith("put record", "path", path, "len", len(data), "client", clientInfo, "partition_key", partitionKey)
 	records := []*v3io.StreamRecord{{
 		Data: []byte(data), ClientInfo: []byte(clientInfo), PartitionKey: partitionKey,
 	}}
