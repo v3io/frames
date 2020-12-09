@@ -185,7 +185,7 @@ func schemaFromKeys(keyField string, rowSet []map[string]interface{}) (v3ioutils
 		}
 	} else {
 		if val, ok := columnCanBeFullKey[keyField]; !ok || !val {
-			return nil, errors.Errorf("%s is not one of the columns", keyField)
+			return nil, errors.Errorf("%s is not one of the optional key columns", keyField)
 		}
 	}
 
