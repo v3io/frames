@@ -82,7 +82,11 @@ func (it *rowIterator) init() {
 		for i, col := range it.frame.Indices() {
 			name := col.Name()
 			if name == "" {
-				name = fmt.Sprintf("index-%d", i)
+				if i == 0 {
+					name = "idx"
+				} else {
+					name = fmt.Sprintf("idx-%d", i)
+				}
 				noNames[it.numCols+i] = name
 			}
 
