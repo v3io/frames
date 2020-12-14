@@ -268,7 +268,7 @@ func (suite *InferSchemaTestSuite) TestInferSchemaWithInvalidKey() {
 	}
 	_, err := schemaFromKeys(keyField, rowSet)
 	suite.Require().Error(err)
-	suite.Require().Equal("invalid_key is not one of the columns", err.Error())
+	suite.Require().Equal("invalid_key is not one of the optional key columns", err.Error())
 }
 
 func TestInferSchemaTestSuite(t *testing.T) {

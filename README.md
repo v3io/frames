@@ -849,7 +849,7 @@ The following `execute` commands are specific to the `stream` backend; for more 
   ```python
   client.execute('stream', table="mystream", command='put',
                  args={'data': '{"cpu": 12.4, "mem": 31.1, "disk": 12.7}',
-                       "client_info": "my custom info", "partition": "PK1"})
+                       "client_info": "my custom info", "partition_key": "PK1"})
   ```
 
 <a id="method-history"></a>
