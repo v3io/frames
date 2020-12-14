@@ -75,6 +75,7 @@ github.com/v3io/v3io-tsdb v0.11.3/go.mod h1:kp586KxTfROIGwb/nzNxwDbX2Wterxro+Hbi
 github.com/v3io/v3io-tsdb v0.11.4 h1:tDw+EdFNregIy6r4fPqtOybkAj4ngUl4WRQNH24Xe0M=
 github.com/v3io/v3io-tsdb v0.11.4/go.mod h1:kp586KxTfROIGwb/nzNxwDbX2Wterxro+HbiZHmK548=
 github.com/v3io/v3io-tsdb v0.11.5/go.mod h1:kp586KxTfROIGwb/nzNxwDbX2Wterxro+HbiZHmK548=
+github.com/v3io/v3io-tsdb v0.11.6/go.mod h1:uyk46LJxROChqmlhg5M5Kw7qK1WfJD3hrqNHR6kLjeg=
 github.com/valyala/bytebufferpool v1.0.0 h1:GqA5TC/0021Y/b9FG4Oi9Mr3q7XYx6KllzawFIhcdPw=
 github.com/valyala/bytebufferpool v1.0.0/go.mod h1:6bBcMArwyJ5K/AmCkWv1jt77kVWyCJ6HpOuEn7z0Csc=
 github.com/valyala/fasthttp v1.2.0 h1:dzZJf2IuMiclVjdw0kkT+f9u4YdrapbNyGAN47E/qnk=
