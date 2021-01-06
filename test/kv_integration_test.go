@@ -1206,7 +1206,7 @@ func (kvSuite *KvTestSuite) TestUpdateExpressionWithCondition() {
 	for iter.Next() {
 		currentRow := iter.GetItem()
 		key, _ := currentRow.GetFieldString("__name")
-		if key == ".#schema"{
+		if key == ".#schema" {
 			continue
 		}
 		num, _ := currentRow.GetFieldInt("nums")
