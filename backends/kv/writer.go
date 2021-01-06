@@ -53,7 +53,6 @@ type Appender struct {
 const (
 	errorCodeString                        = "ErrorCode"
 	falseConditionOuterErrorCode           = "16777244"
-	falseConditionInnerErrorCode           = "16777245"
 	createNewItemOnlyExistingItemErrorCode = "369098809"
 
 	maximumAttributeNameLength = 256
@@ -571,9 +570,8 @@ func (a *Appender) updateItemWorker(doneChan chan<- struct{}) {
 func isFalseConditionError(err error) bool {
 	errString := err.Error()
 
-	if strings.Count(errString, errorCodeString) == 2 &&
-		strings.Contains(errString, falseConditionOuterErrorCode) &&
-		strings.Contains(errString, falseConditionInnerErrorCode) {
+	if strings.Count(errString, errorCodeString) == 1 &&
+		strings.Contains(errString, falseConditionOuterErrorCode){
 		return true
 	}
 
