@@ -571,7 +571,7 @@ func isFalseConditionError(err error) bool {
 	errString := err.Error()
 
 	if strings.Count(errString, errorCodeString) == 1 &&
-		strings.Contains(errString, falseConditionOuterErrorCode){
+		strings.Contains(errString, falseConditionOuterErrorCode) {
 		return true
 	}
 
