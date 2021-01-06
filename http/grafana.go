@@ -37,7 +37,6 @@ import (
 
 const querySeparator = ";"
 const fieldsItemsSeperator = ","
-const defaultBackend = "tsdb"
 
 type outputType int
 
@@ -108,14 +107,15 @@ func simpleJSONRequestFactory(method string, request []byte) ([]simpleJSONReques
 	switch method {
 	case "query":
 		for _, target := range reqBase.Targets {
-			currRequest := &simpleJSONQueryRequest{Backend: defaultBackend, requestSimpleJSONBase: reqBase}
+			currRequest := &simpleJSONQueryRequest{requestSimpleJSONBase: reqBase}
 			currRequest.Type = target["type"].(string)
 			fieldInput := target["target"].(string)
 			if err := currRequest.parseQueryLine(fieldInput); err != nil {
 				return nil, errors.Wrap(err, "Failed to parse target")
 			}
-
-			requests = append(requests, currRequest)
+			if currRequest.Backend != "" {
+				requests = append(requests, currRequest)
+			}
 		}
 	case "search":
 		currRequest :=
