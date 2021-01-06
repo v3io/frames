@@ -102,13 +102,47 @@ func (kv *Backend) Read(request *frames.ReadRequest) (frames.FrameIterator, erro
 		switch typedError := err.(type) {
 		case v3ioerrors.ErrorWithStatusCode:
 			if typedError.StatusCode() == http.StatusNotFound {
-				return nil, errors.New(
-					fmt.Sprintf("Failed to find a schema for table \"/%s/%s\"; "+
-						"use the `execute` 'infer' command to infer the schema and generate a schema file.",
-						request.Proto.Session.Container, request.Proto.Table))
+				if !request.Proto.InferSchema {
+					return nil, errors.New(
+						fmt.Sprintf("Failed to find a schema for table \"/%s/%s\"; "+
+							"use the `execute` 'infer' command to infer the schema and generate a schema file.",
+							request.Proto.Session.Container, request.Proto.Table))
+				}
+
+				iterInfer, err := v3ioutils.NewAsyncItemsCursor(
+					container, &input, kv.numWorkers, request.Proto.ShardingKeys, kv.logger, kv.maxRecordsInfer, partitions,
+					request.Proto.SortKeyRangeStart, request.Proto.SortKeyRangeEnd)
+				if err != nil {
+					return nil, err
+				}
+
+				//infer the schema
+				var rowSet []map[string]interface{}
+				for rowNum := 0; iterInfer.Next(); rowNum++ {
+					row := iterInfer.GetFields()
+					rowSet = append(rowSet, row)
+				}
+				if iterInfer.Err() != nil {
+					return nil, iterInfer.Err()
+				}
+
+				schemaInterface, err = schemaFromKeys("", rowSet)
+				if err != nil {
+					return nil, err
+				}
+				if request.Proto.WriteSchema {
+					nullSchema := v3ioutils.NewSchema("", "")
+					err = nullSchema.UpdateSchema(container, tablePath, schemaInterface)
+					if err != nil {
+						return nil, err
+					}
+				}
+			} else {
+				return nil, err
 			}
+		default:
+			return nil, err
 		}
-		return nil, err
 	}
 	schemaObj := schemaInterface.(*v3ioutils.OldV3ioSchema)
 

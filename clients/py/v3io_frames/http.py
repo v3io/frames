@@ -84,7 +84,7 @@ class Client(ClientBase):
 
     @connection_error(ReadError)
     def _read(self, backend, table, query, columns, filter, group_by, limit,
-              data_format, row_layout, max_in_message, marker, iterator, get_raw, **kw):
+              data_format, row_layout, max_in_message, marker, iterator, get_raw, infer_schema, write_schema, **kw):
         request = {
             'session': pb2py(self.session),
             'backend': backend,
@@ -98,6 +98,8 @@ class Client(ClientBase):
             'row_layout': row_layout,
             'message_limit': max_in_message,
             'marker': marker,
+            'infer_schema': infer_schema,
+            'write_schema': write_schema
         }
 
         convert_go_times(kw, ('start', 'end'))
