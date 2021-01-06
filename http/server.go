@@ -470,18 +470,20 @@ func (s *Server) handleSimpleJSON(ctx *fasthttp.RequestCtx, method string) {
 		ctx.Error(fmt.Sprintf("bad request - %s", err), http.StatusBadRequest)
 		return
 	}
-
 	var results interface{}
-	for _, req := range requests {
-		result, err := s.executeSimpleJSONSubRequest(req, ctx)
-		if err != nil {
-			ctx.Error(fmt.Sprintf("Error querying: %s", err.Error()), http.StatusInternalServerError)
-			return
+	if len(requests) > 0 {
+		for _, req := range requests {
+			result, err := s.executeSimpleJSONSubRequest(req, ctx)
+			if err != nil {
+				ctx.Error(fmt.Sprintf("Error querying: %s", err.Error()), http.StatusInternalServerError)
+				return
+			}
+			results = appendSimpleJSONResults(results, result)
 		}
-
-		results = appendSimpleJSONResults(results, result)
+	} else {
+		a := make([]string, 0)
+		results = a
 	}
-
 	_ = s.replyJSON(ctx, results)
 }
 
