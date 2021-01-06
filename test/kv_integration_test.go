@@ -1125,3 +1125,99 @@ func (kvSuite *KvTestSuite) TestWritePartitionedTableWithNullValues() {
 		kvSuite.Require().NoError(err, "item %v was not found", subPath)
 	}
 }
+
+func (kvSuite *KvTestSuite) TestUpdateExpressionWithCondition() {
+	table := fmt.Sprintf("kv_test_update_with_condition_%d", time.Now().UnixNano())
+
+	index := []string{"mike", "joe", "jim", "nil"}
+	icol, err := frames.NewSliceColumn("idx", index)
+	kvSuite.Require().NoError(err)
+
+	//boolCol
+	bools := []bool{true, true, false, false}
+	boolCol, err := frames.NewSliceColumn("bools", bools)
+	if err != nil {
+		kvSuite.Require().NoError(err)
+	}
+
+	numbers := []int{1, 1, 1, 1}
+	numbersCol, err := frames.NewSliceColumn("nums", numbers)
+	if err != nil {
+		kvSuite.Require().NoError(err)
+	}
+
+	columns := []frames.Column{numbersCol, boolCol}
+
+	frame, err := frames.NewFrame(columns, []frames.Column{icol}, nil)
+	kvSuite.Require().NoError(err)
+
+	kvSuite.T().Log("write: prepare")
+	wreq := &frames.WriteRequest{
+		Backend: kvSuite.backendName,
+		Table:   table,
+	}
+
+	appender, err := kvSuite.client.Write(wreq)
+	kvSuite.Require().NoError(err)
+
+	err = appender.Add(frame)
+	kvSuite.Require().NoError(err)
+
+	err = appender.WaitForComplete(3 * time.Second)
+	kvSuite.Require().NoError(err)
+
+	// Second Phase: Update existing rows with condition
+	kvSuite.T().Log("write: update with condition")
+	wreq = &frames.WriteRequest{
+		Backend:   kvSuite.backendName,
+		Table:     table,
+		SaveMode:  frames.UpdateItem,
+		Condition: "bools==True",
+	}
+
+	appender, err = kvSuite.client.Write(wreq)
+	kvSuite.Require().NoError(err)
+
+	newNumbers := []int{9, 9, 9, 9}
+	newNumbersCol, err := frames.NewSliceColumn("nums", newNumbers)
+	if err != nil {
+		kvSuite.Require().NoError(err)
+	}
+
+	newColumns := []frames.Column{newNumbersCol}
+
+	frame, err = frames.NewFrame(newColumns, []frames.Column{icol}, nil)
+	kvSuite.Require().NoError(err)
+
+	err = appender.Add(frame)
+	kvSuite.Require().NoError(err)
+
+	err = appender.WaitForComplete(3 * time.Second)
+	kvSuite.Require().NoError(err)
+
+	input := v3io.GetItemsInput{AttributeNames: []string{"__name", "nums", "bools"}}
+
+	iter, err := v3ioutils.NewAsyncItemsCursor(
+		kvSuite.v3ioContainer, &input, 1,
+		nil, kvSuite.internalLogger,
+		0, []string{table + "/"},
+		"", "")
+
+	for iter.Next() {
+		currentRow := iter.GetItem()
+		key, _ := currentRow.GetFieldString("__name")
+		if key == ".#schema"{
+			continue
+		}
+		num, _ := currentRow.GetFieldInt("nums")
+		b := currentRow.GetField("bools").(bool)
+
+		if b {
+			kvSuite.Require().Equal(9, num)
+		} else {
+			kvSuite.Require().Equal(1, num)
+		}
+	}
+
+	kvSuite.Require().NoError(iter.Err())
+}

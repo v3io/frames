@@ -437,6 +437,7 @@ func pbWriteReq(req *frames.WriteRequest) (*pb.InitialWriteRequest, error) {
 		More:          req.HaveMore,
 		SaveMode:      req.SaveMode.String(),
 		PartitionKeys: req.PartitionKeys,
+		Condition:     req.Condition,
 	}
 
 	return msg, nil

@@ -52,7 +52,7 @@ type Appender struct {
 
 const (
 	errorCodeString                        = "ErrorCode"
-	falseConditionOuterErrorCode           = "16777244"
+	falseConditionErrorCode                = "16777244"
 	createNewItemOnlyExistingItemErrorCode = "369098809"
 
 	maximumAttributeNameLength = 256
@@ -571,7 +571,7 @@ func isFalseConditionError(err error) bool {
 	errString := err.Error()
 
 	if strings.Count(errString, errorCodeString) == 1 &&
-		strings.Contains(errString, falseConditionOuterErrorCode) {
+		strings.Contains(errString, falseConditionErrorCode) {
 		return true
 	}
 
