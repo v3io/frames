@@ -84,6 +84,7 @@ func (kvSuite *KvTestSuite) TestSaveModeOverwriteTableExists() {
 	err = appender.WaitForComplete(time.Second)
 	kvSuite.Require().NoError(err)
 
+	
 	rreq := &pb.ReadRequest{
 		Backend: kvSuite.backendName,
 		Table:   table,
