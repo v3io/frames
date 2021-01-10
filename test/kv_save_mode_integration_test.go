@@ -81,7 +81,7 @@ func (kvSuite *KvTestSuite) TestSaveModeOverwriteTableExists() {
 	err = appender.Add(frame2)
 	kvSuite.Require().NoError(err, "failed to write frame")
 
-	err = appender.WaitForComplete(time.Second)
+	err = appender.WaitForComplete(2 * time.Second)
 	kvSuite.Require().NoError(err)
 
 	rreq := &pb.ReadRequest{

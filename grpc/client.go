@@ -125,6 +125,7 @@ func (c *Client) Write(request *frames.WriteRequest) (frames.FrameAppender, erro
 		More:          request.HaveMore,
 		SaveMode:      request.SaveMode.String(),
 		PartitionKeys: request.PartitionKeys,
+		Condition:     request.Condition,
 	}
 
 	req := &pb.WriteRequest{
