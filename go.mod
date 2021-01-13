@@ -11,8 +11,8 @@ require (
 	github.com/nuclio/zap v0.0.2
 	github.com/pkg/errors v0.8.1
 	github.com/stretchr/testify v1.4.0
-	github.com/v3io/v3io-go v0.1.9
-	github.com/v3io/v3io-tsdb v0.11.6
+	github.com/v3io/v3io-go v0.2.5-0.20210113095419-6c806b8d5186
+	github.com/v3io/v3io-tsdb v0.11.7
 	github.com/valyala/fasthttp v1.2.0
 	github.com/xwb1989/sqlparser v0.0.0-20180606152119-120387863bf2
 	golang.org/x/net v0.0.0-20190311183353-d8887717615a
@@ -21,6 +21,6 @@ require (
 
 replace (
 	github.com/v3io/frames => ./
-	github.com/xwb1989/sqlparser => github.com/v3io/sqlparser v0.0.0-20190306105200-4d7273501871
 	github.com/v3io/v3io-go => github.com/v3io/v3io-go v0.2.4-0.20201209122348-e01fabe35df8
+	github.com/xwb1989/sqlparser => github.com/v3io/sqlparser v0.0.0-20190306105200-4d7273501871
 )

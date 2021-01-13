@@ -23,6 +23,7 @@ github.com/golang/protobuf v1.2.0 h1:P3YflyNX/ehuJFLhxviNdFxQPkGK5cDcApsge1SqnvM
 github.com/golang/protobuf v1.2.0/go.mod h1:6lQm79b+lXiMfvg/cZm0SGofjICqVBUtrP5yJMmIC1U=
 github.com/imdario/mergo v0.3.7 h1:Y+UAYTZ7gDEuOfhxKWy+dvb5dRQ6rJjFSdX2HZY1/gI=
 github.com/imdario/mergo v0.3.7/go.mod h1:2EnlNZ0deacrJVfApfmtdGgDfMuh/nq6Ok1EcJh5FfA=
+github.com/inconshreveable/mousetrap v1.0.0/go.mod h1:PxqpIevigyE2G7u3NXJIT2ANytuPF1OarO4DADm73n8=
 github.com/klauspost/compress v1.4.0 h1:8nsMz3tWa9SWWPL60G1V6CUsf4lLjWLTNEtibhe8gh8=
 github.com/klauspost/compress v1.4.0/go.mod h1:RyIbtBH6LamlWaDj8nUwkbUhJ87Yi3uG0guNDohfE1A=
 github.com/klauspost/cpuid v0.0.0-20180405133222-e7e905edc00e h1:+lIPJOWl+jSiJOc70QXJ07+2eg2Jy2EC7Mi11BWujeM=
@@ -76,6 +77,7 @@ github.com/v3io/v3io-tsdb v0.11.4 h1:tDw+EdFNregIy6r4fPqtOybkAj4ngUl4WRQNH24Xe0M
 github.com/v3io/v3io-tsdb v0.11.4/go.mod h1:kp586KxTfROIGwb/nzNxwDbX2Wterxro+HbiZHmK548=
 github.com/v3io/v3io-tsdb v0.11.5/go.mod h1:kp586KxTfROIGwb/nzNxwDbX2Wterxro+HbiZHmK548=
 github.com/v3io/v3io-tsdb v0.11.6/go.mod h1:uyk46LJxROChqmlhg5M5Kw7qK1WfJD3hrqNHR6kLjeg=
+github.com/v3io/v3io-tsdb v0.11.7/go.mod h1:zAz77gck9fjlC+lPbbq4JBHitP3rv4KLWR/YUuFjJcU=
 github.com/valyala/bytebufferpool v1.0.0 h1:GqA5TC/0021Y/b9FG4Oi9Mr3q7XYx6KllzawFIhcdPw=
 github.com/valyala/bytebufferpool v1.0.0/go.mod h1:6bBcMArwyJ5K/AmCkWv1jt77kVWyCJ6HpOuEn7z0Csc=
 github.com/valyala/fasthttp v1.2.0 h1:dzZJf2IuMiclVjdw0kkT+f9u4YdrapbNyGAN47E/qnk=
