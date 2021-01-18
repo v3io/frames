@@ -299,7 +299,7 @@ class ClientBase:
             Write result
         """
         self._validate_request(backend, table, WriteError)
-        if isinstance(dfs, pd.DataFrame):
+        if type(dfs).__name__ == 'DataFrame':  # This can a pandas.DataFrame or a pandas-compatible DataFrame such as cuDF
             dfs = [dfs]
 
         canonical_backend_name = self._alias_backends(backend)
