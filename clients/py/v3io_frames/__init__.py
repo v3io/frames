@@ -14,7 +14,7 @@
 
 """Stream data from/to Nuclio into pandas DataFrame"""
 
-__version__ = '0.4.1'
+__version__ = '0.8.13'
 
 import json
 import pandas as pd

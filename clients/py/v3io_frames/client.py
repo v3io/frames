@@ -299,8 +299,14 @@ class ClientBase:
             Write result
         """
         self._validate_request(backend, table, WriteError)
+
         if type(dfs).__name__ == 'DataFrame':  # This can a pandas.DataFrame or a pandas-compatible DataFrame such as cuDF
             dfs = [dfs]
+
+        if dfs is not None:
+            for i in range(len(dfs)):
+                if not isinstance(dfs[i], pd.DataFrame):
+                    dfs[i] = dfs[i].to_pandas()
 
         canonical_backend_name = self._alias_backends(backend)
 
@@ -412,7 +418,8 @@ class ClientBase:
         self._validate_request(backend, table, ExecuteError)
         return self._execute(self._alias_backends(backend), table, command, args, expression=None)
 
-    def history(self, backend='', container='', table='', user='', action='', min_start_time='', max_start_time='', min_duration=0, max_duration=0):
+    def history(self, backend='', container='', table='', user='', action='', min_start_time='', max_start_time='', min_duration=0,
+                max_duration=0):
         """Returns usage history logs for frames service
 
         Parameters
@@ -447,7 +454,8 @@ class ClientBase:
         HistoryError
             On request error
         """
-        df = self._history(self._alias_backends(backend), container, table, user, action, min_start_time, max_start_time, min_duration, max_duration)
+        df = self._history(self._alias_backends(backend), container, table, user, action, min_start_time, max_start_time, min_duration,
+                           max_duration)
 
         if not df.empty:
             df.sort_values('StartTime', inplace=True, ignore_index=True)
