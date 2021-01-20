@@ -299,6 +299,10 @@ class ClientBase:
             Write result
         """
         self._validate_request(backend, table, WriteError)
+
+        if dfs is None:
+            return
+
         if type(dfs).__name__ == 'DataFrame':  # This can a pandas.DataFrame or a pandas-compatible DataFrame such as cuDF
             dfs = [dfs]
 
