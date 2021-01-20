@@ -300,15 +300,13 @@ class ClientBase:
         """
         self._validate_request(backend, table, WriteError)
 
-        if dfs is None:
-            return
-
         if type(dfs).__name__ == 'DataFrame':  # This can a pandas.DataFrame or a pandas-compatible DataFrame such as cuDF
             dfs = [dfs]
 
-        for i in range(len(dfs)):
-            if not isinstance(dfs[i], pd.DataFrame):
-                dfs[i] = dfs[i].to_pandas()
+        if dfs is not None:
+            for i in range(len(dfs)):
+                if not isinstance(dfs[i], pd.DataFrame):
+                    dfs[i] = dfs[i].to_pandas()
 
         canonical_backend_name = self._alias_backends(backend)
 
