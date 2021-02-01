@@ -216,7 +216,7 @@ func (ki *Iterator) Next() bool {
 
 	for ; rowNum < int(ki.request.Proto.MessageLimit) && ki.iter.Next(); rowNum++ {
 		row := ki.iter.GetFields()
-		fmt.Printf("row %v\n", row)
+
 		// Skip table schema object
 		rowIndex, ok := row[indexColKey]
 		if (ok && rowIndex == ".#schema") || len(row) == 0 {
@@ -277,9 +277,7 @@ func (ki *Iterator) Next() bool {
 		return false
 	}
 
-	fmt.Printf("rowNum %v\n", rowNum)
-
-	if rowNum == 0 || (rowNum == 1 && numOfSchemaFiles == 1){
+	if rowNum == 0 || (rowNum == 1 && numOfSchemaFiles == 1) {
 		return false
 	}
 
@@ -307,8 +305,6 @@ func (ki *Iterator) Next() bool {
 		ki.err = err
 		return false
 	}
-
-	fmt.Printf("returning %v\n", ki.currFrame)
 
 	return true
 }
