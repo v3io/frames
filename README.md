@@ -63,9 +63,9 @@ Frames currently supports the following backend types:
   <br/><br/>
   > **Note:** The documentation uses the `"nosql"` alias to the `"kv"` type, which was added in Frames v0.6.10-v0.9.13; `"kv"` is still supported for backwards compatibility with earlier releases.
 - `stream` &mdash; a platform data stream **[Tech Preview]**.
-  See the [platform TSDB backend API reference](https://www.iguazio.com/docs/latest-release/reference/api-reference/frames/tsdb/).
-- `tsdb` &mdash; a time-series database (TSDB).
   See the [platform streaming backend API reference](https://www.iguazio.com/docs/latest-release/reference/api-reference/frames/stream/).
+- `tsdb` &mdash; a time-series database (TSDB).
+  See the [platform TSDB backend API reference](https://www.iguazio.com/docs/latest-release/reference/api-reference/frames/tsdb/).
 - `csv` &mdash; a comma-separated-value (CSV) file.
   This backend type is used only for testing purposes.
 
