@@ -63,9 +63,11 @@ Frames currently supports the following backend types:
   <br/><br/>
   > **Note:** The documentation uses the `"nosql"` alias to the `"kv"` type, which was added in Frames v0.6.10-v0.9.13; `"kv"` is still supported for backwards compatibility with earlier releases.
 - `stream` &mdash; a platform data stream **[Tech Preview]**.
-  See the [platform TSDB backend API reference](https://www.iguazio.com/docs/latest-release/reference/api-reference/frames/tsdb/).
-- `tsdb` &mdash; a time-series database (TSDB).
+  <!-- [FRAMES-STREAMING-NO-SUPPORT]
   See the [platform streaming backend API reference](https://www.iguazio.com/docs/latest-release/reference/api-reference/frames/stream/).
+  -->
+- `tsdb` &mdash; a time-series database (TSDB).
+  See the [platform TSDB backend API reference](https://www.iguazio.com/docs/latest-release/reference/api-reference/frames/tsdb/).
 - `csv` &mdash; a comma-separated-value (CSV) file.
   This backend type is used only for testing purposes.
 
@@ -277,7 +279,8 @@ The following `create` parameters are specific to the `tsdb` backend and are pas
 <a id="method-create-params-stream"></a>
 #### `stream` Backend `create` Parameters
 
-The following `create` parameters are specific to the `stream` backend and are passed as keyword arguments via the `kw` parameter; for more information and examples, see the platform's [Frames streaming-backend reference](https://www.iguazio.com/docs/latest-release/reference/api-reference/frames/stream/create/):
+The following `create` parameters are specific to the `stream` backend and are passed as keyword arguments via the `kw` parameter<!--; for more information and examples, see the platform's [Frames streaming-backend reference](https://www.iguazio.com/docs/latest-release/reference/api-reference/frames/stream/create/)-->:
+<!-- [FRAMES-STREAMING-NO-SUPPORT] -->
 
 - <a id="method-create-stream-param-shards"></a>**shards** &mdash; The number of stream shards to create.
 
@@ -612,7 +615,8 @@ The following parameters are passed as keyword arguments via the `kw` parameter:
 <a id="method-read-params-stream"></a>
 #### `stream` Backend `read` Parameters
 
-The following `read` parameters are specific to the `stream` backend and are passed as keyword arguments via the `kw` parameter; for more information and examples, see the platform's [Frames streaming-backend reference](https://www.iguazio.com/docs/latest-release/reference/api-reference/frames/stream/read/):
+The following `read` parameters are specific to the `stream` backend and are passed as keyword arguments via the `kw` parameter<!--; for more information and examples, see the platform's [Frames streaming-backend reference](https://www.iguazio.com/docs/latest-release/reference/api-reference/frames/stream/read/)-->:
+<!-- [FRAMES-STREAMING-NO-SUPPORT] -->
 
 - <a id="method-read-stream-param-seek"></a>**seek** &mdash; Seek type.
   <br/>
@@ -841,7 +845,8 @@ The following `execute` commands are specific to the `nosql` backend; for more i
 <a id="method-execute-stream-cmds"></a>
 #### `stream` Backend `execute` Commands
 
-The following `execute` commands are specific to the `stream` backend; for more information and examples, see the platform's [Frames streaming-backend reference](https://www.iguazio.com/docs/latest-release/reference/api-reference/frames/stream/execute/):
+The following `execute` commands are specific to the `stream` backend<!--; for more information and examples, see the platform's [Frames streaming-backend reference](https://www.iguazio.com/docs/latest-release/reference/api-reference/frames/stream/execute/)-->:
+<!-- [FRAMES-STREAMING-NO-SUPPORT] -->
 
 - <a id="method-execute-stream-cmd-put"></a>**put** &mdash; Adds records to a stream shard.
 
