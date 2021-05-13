@@ -1,0 +1,8 @@
+flake8>0
+ipython>0
+numpydoc>0
+pytest~=4.2
+pyyaml>0
+sphinx>0
+twine~=1.12
+pytest-benchmark>0

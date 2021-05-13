@@ -83,6 +83,10 @@ update-tsdb-deps:
 	GO111MODULE=on go get github.com/v3io/v3io-tsdb@master
 	@echo "Done. Don't forget to commit ☺"
 
+.PHONY: python-deps
+python-deps:
+	cd clients/py && $(MAKE) sync-deps
+
 .PHONY: bench
 bench:
 	@echo Go

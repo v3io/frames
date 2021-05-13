@@ -50,6 +50,11 @@ update-deps:
 	PIPENV_IGNORE_VIRTUALENVS=1 \
 	    pipenv update
 
+.PHONY: sync-deps
+sync-deps:
+	PIPENV_IGNORE_VIRTUALENVS=1 pipenv install -r requirements.txt
+	PIPENV_IGNORE_VIRTUALENVS=1 pipenv install -r dev-requirements.txt
+
 .PHONY: bench
 bench:
 	PIPENV_IGNORE_VIRTUALENVS=1 \
