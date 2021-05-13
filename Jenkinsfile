@@ -25,7 +25,6 @@ podTemplate(label: "${git_project}-${label}", inheritFrom: "jnlp-docker-golang-p
                                     stage('test-py') {
                                         dir("${github.BUILD_FOLDER}/src/github.com/${git_project_upstream_user}/${git_project}") {
                                             common.shellc("pip install pipenv")
-                                            common.shellc("make python-deps")
                                             sh "make test-py"
                                         }
                                     }
@@ -59,7 +58,6 @@ podTemplate(label: "${git_project}-${label}", inheritFrom: "jnlp-docker-golang-p
                                 stage('test-py') {
                                     dir("${github.BUILD_FOLDER}/src/github.com/${git_project_upstream_user}/${git_project}") {
                                         common.shellc("pip install pipenv")
-                                        common.shellc("make python-deps")
                                         sh "make test-py"
                                     }
                                 }
@@ -184,7 +182,6 @@ podTemplate(label: "${git_project}-${label}", inheritFrom: "jnlp-docker-golang-p
                                                             returnStdout: true
                                                     ).trim()
                                                     common.shellc("pip install pipenv")
-                                                    common.shellc("make python-deps")
                                                     sh "make test-py"
                                                     try {
                                                         common.shellc("TRAVIS_REPO_SLUG=v3io/frames V3IO_PYPI_USER=${V3IO_PYPI_USER} V3IO_PYPI_PASSWORD=${V3IO_PYPI_PASSWORD} TRAVIS_TAG=${FRAMES_PYPI_VERSION} make pypi")
