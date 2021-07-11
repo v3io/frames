@@ -213,6 +213,7 @@ func (ki *Iterator) Next() bool {
 			}
 		}
 	}
+
 	for ; rowNum < int(ki.request.Proto.MessageLimit) && ki.iter.Next(); rowNum++ {
 		row := ki.iter.GetFields()
 
@@ -276,7 +277,7 @@ func (ki *Iterator) Next() bool {
 		return false
 	}
 
-	if rowNum == 0 {
+	if rowNum == 0 || (rowNum == 1 && numOfSchemaFiles == 1) {
 		return false
 	}
 
