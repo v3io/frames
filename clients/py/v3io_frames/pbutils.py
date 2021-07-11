@@ -146,16 +146,16 @@ def msg2df(frame, frame_factory, columns=None, do_reorder=True):
 def col2series(col, index):
     current_dtype = ""
     if col.dtype == fpb.BOOLEAN:
-        data = col.bools
+        data = list(col.bools)
         current_dtype = "bool"
     elif col.dtype == fpb.FLOAT:
-        data = col.floats
+        data = list(col.floats)
         current_dtype = "float"
     elif col.dtype == fpb.INTEGER:
-        data = col.ints
+        data = list(col.ints)
         current_dtype = "int"
     elif col.dtype == fpb.STRING:
-        data = col.strings
+        data = list(col.strings)
         current_dtype = "object"
     elif col.dtype == fpb.TIME:
         data = [pd.Timestamp(t, unit='ns') for t in col.times]
