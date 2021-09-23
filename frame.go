@@ -173,11 +173,7 @@ func (fr *frameImpl) Labels() map[string]interface{} {
 
 // Len is the number of rows
 func (fr *frameImpl) Len() int {
-	if len(fr.columns) > 0 {
-		return fr.columns[0].Len()
-	}
-
-	return 0
+	return fr.indices[0].Len()
 }
 
 // Column gets a column by name

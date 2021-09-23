@@ -57,6 +57,8 @@ func (c *colImpl) Len() int {
 		return len(c.msg.Times)
 	case pb.DType_BOOLEAN:
 		return len(c.msg.Bools)
+	case pb.DType_NULL:
+		return -1
 	}
 
 	// TODO: panic?
