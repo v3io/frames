@@ -19,7 +19,7 @@
 # (don't forget to update the -p accordingly)
 
 
-FROM golang:1.12-stretch as build
+FROM golang:1.14-stretch as build
 
 WORKDIR /frames
 COPY . .
