@@ -173,10 +173,15 @@ func (fr *frameImpl) Labels() map[string]interface{} {
 
 // Len is the number of rows
 func (fr *frameImpl) Len() int {
-	if len(fr.columns) > 0 {
-		return fr.columns[0].Len()
+	// Use length of first index of length > 0, otherwise the first such column.
+	for _, slice := range [][]Column{fr.indices, fr.columns} {
+		for _, column := range slice {
+			len := column.Len()
+			if len >= 0 {
+				return len
+			}
+		}
 	}
-
 	return 0
 }
 

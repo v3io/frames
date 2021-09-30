@@ -168,7 +168,7 @@ func (api *API) Write(request *frames.WriteRequest, in chan frames.Frame) (int, 
 			return nFrames, nRows, errors.Wrap(err, msg)
 		}
 	} else {
-		api.logger.DebugWith("write request with zero rows", "frames", nFrames, "requst", request)
+		api.logger.DebugWith("write request with zero rows", "frames", nFrames, "request", request)
 	}
 
 	ingestDuration := time.Since(ingestStartTime)

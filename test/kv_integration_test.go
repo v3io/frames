@@ -453,6 +453,105 @@ func (kvSuite *KvTestSuite) TestNullValuesWrite() {
 	kvSuite.Require().NoError(iter.Err(), "error querying items got")
 }
 
+// IG-19426
+func (kvSuite *KvTestSuite) TestNullColumnWrite() {
+	table := fmt.Sprintf("kv_test_nulls%d", time.Now().UnixNano())
+
+	index := []string{"mike", "joe", "jim"}
+	indexCol := &pb.Column{
+		Kind:    pb.Column_SLICE,
+		Name:    "idx",
+		Dtype:   pb.DType_STRING,
+		Strings: index,
+	}
+
+	columns := []*pb.Column{
+		{
+			Kind:  pb.Column_SLICE,
+			Name:  "n1",
+			Dtype: pb.DType_NULL,
+		},
+		{
+			Kind:  pb.Column_SLICE,
+			Name:  "n2",
+			Dtype: pb.DType_INTEGER,
+			Ints:  []int64{1, 2, 3},
+		},
+	}
+
+	nullValues := initializeNullColumns(len(index))
+	nullValues[0].NullColumns["n1"] = true
+	nullValues[1].NullColumns["n1"] = true
+	nullValues[2].NullColumns["n1"] = true
+
+	frame := frames.NewFrameFromProto(&pb.Frame{
+		Columns:    columns,
+		Indices:    []*pb.Column{indexCol},
+		NullValues: nullValues,
+	})
+
+	wreq := &frames.WriteRequest{
+		Backend: kvSuite.backendName,
+		Table:   table,
+	}
+
+	appender, err := kvSuite.client.Write(wreq)
+	kvSuite.Require().NoError(err)
+
+	err = appender.Add(frame)
+	kvSuite.Require().NoError(err)
+
+	err = appender.WaitForComplete(3 * time.Second)
+	kvSuite.Require().NoError(err)
+
+	input := v3io.GetItemsInput{AttributeNames: []string{"__name", "n1", "n2"}}
+
+	iter, err := v3ioutils.NewAsyncItemsCursor(
+		kvSuite.v3ioContainer, &input, 1,
+		nil, kvSuite.internalLogger,
+		0, []string{table + "/"},
+		"", "")
+
+	var numRows int
+	for iter.Next() {
+		currentRow := iter.GetItem()
+
+		key, _ := currentRow.GetFieldString("__name")
+
+		if key != ".#schema" {
+			numRows++
+		}
+
+		switch key {
+		case ".#schema":
+			continue
+		case "mike":
+			kvSuite.Require().Nil(currentRow.GetField("n1"),
+				"item %v - key n1 supposed to be null but got %v", key, currentRow.GetField("n1"))
+
+			kvSuite.Require().NotNil(currentRow.GetField("n2"),
+				"item %v - key n2 supposed to be null but got %v", key, currentRow.GetField("n2"))
+		case "joe":
+			kvSuite.Require().Nil(currentRow.GetField("n1"),
+				"item %v - key n1 supposed to be null but got %v", key, currentRow.GetField("n1"))
+
+			kvSuite.Require().NotNil(currentRow.GetField("n2"),
+				"item %v - key n2 supposed to be null but got %v", key, currentRow.GetField("n2"))
+		case "jim":
+			kvSuite.Require().Nil(currentRow.GetField("n1"),
+				"item %v - key n1 supposed to be null but got %v", key, currentRow.GetField("n1"))
+			kvSuite.Require().NotNil(currentRow.GetField("n2"),
+				"item %v - key n2 supposed to be null but got %v", key, currentRow.GetField("n2"))
+		default:
+			kvSuite.T().Fatalf("got an unexpected key '%v'", key)
+		}
+	}
+
+	kvSuite.Require().Equal(3, numRows)
+
+	kvSuite.Require().NoError(iter.Err(), "error querying items got")
+}
+
 func (kvSuite *KvTestSuite) TestNullValuesRead() {
 	table := fmt.Sprintf("kv_test_nulls_read%d", time.Now().UnixNano())
 
