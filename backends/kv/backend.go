@@ -119,6 +119,10 @@ func (b *Backend) updateItem(request *frames.ExecRequest) error {
 
 func (b *Backend) newConnection(session *frames.Session, password string, token string, path string, addSlash bool) (v3io.Container, string, error) {
 
+	// Copy the session to avoid populating the session we received with credentials that may get logged later.
+	newSession := *session
+	session = &newSession
+
 	session = frames.InitSessionDefaults(session, b.framesConfig)
 	containerName, newPath, err := v3ioutils.ProcessPaths(session, path, addSlash)
 	if err != nil {
