@@ -133,7 +133,6 @@ func (b *Backend) newConnection(session *frames.Session, password string, token 
 		token,
 		b.logger)
 
-
 	// clear token and password so we won't accidentally log it in the future
 	session.Token = ""
 	session.Password = ""
