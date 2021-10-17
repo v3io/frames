@@ -25,40 +25,32 @@ def version():
                 _, version = line.split('=')
                 return version.replace("'", '').strip()
 
+def is_ignored(line):
+    line = line.strip()
+    return (not line) or (line[0] == "#")
 
-def load_deps(section):
-    """Load dependencies from Pipfile, we can't assume toml is installed"""
-    # [packages]
-    header = '[{}]'.format(section)
-    with open('Pipfile') as fp:
-        in_section = False
+def load_deps(path):
+    """Load dependencies from requirements file"""
+    with open(path) as fp:
+        deps = []
         for line in fp:
+            if is_ignored(line):
+                continue
             line = line.strip()
-            if not line:
+
+            # e.g.: git+https://github.com/nuclio/nuclio-jupyter.git@some-branch#egg=nuclio-jupyter
+            if "#egg=" in line:
+                _, package = line.split("#egg=")
+                deps.append(f"{package} @ {line}")
                 continue
 
-            if line == header:
-                in_section = True
-                continue
-
-            if line.startswith('['):
-                in_section = False
-                continue
-
-            if in_section:
-                # ipython = ">=6.5"
-                i = line.find('=')
-                assert i != -1, 'bad dependency - {}'.format(line)
-                pkg = line[:i].strip()
-                version = line[i+1:].strip().replace('"', '')
-                if version == '*':
-                    yield pkg
-                else:
-                    yield '{}{}'.format(pkg, version.replace('"', ''))
+            # append package
+            deps.append(line)
+        return deps
 
 
-install_requires = list(load_deps('packages'))
-tests_require = list(load_deps('dev-packages'))
+install_requires = load_deps('requirements.txt')
+tests_require = load_deps('dev-requirements.txt')
 
 with open('README.md') as fp:
     long_desc = fp.read()
