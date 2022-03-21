@@ -13,9 +13,9 @@ require (
 	github.com/stretchr/testify v1.4.0
 	github.com/v3io/v3io-go v0.2.5-0.20210113095419-6c806b8d5186
 	github.com/v3io/v3io-tsdb v0.13.1
-	github.com/valyala/fasthttp v1.2.0
+	github.com/valyala/fasthttp v1.34.0
 	github.com/xwb1989/sqlparser v0.0.0-20180606152119-120387863bf2
-	golang.org/x/net v0.0.0-20190311183353-d8887717615a
+	golang.org/x/net v0.0.0-20220225172249-27dd8689420f
 	google.golang.org/grpc v1.20.0
 )
 
