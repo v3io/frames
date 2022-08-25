@@ -131,7 +131,9 @@ func (b *Backend) newAdapter(session *frames.Session, password string, token str
 
 // Get underlying bytes of string for read-only purposes to avoid allocating a slice.
 func getBytes(str string) []byte {
+	// nolint: govet
 	hdr := *(*reflect.StringHeader)(unsafe.Pointer(&str))
+	// nolint: govet
 	return *(*[]byte)(unsafe.Pointer(&reflect.SliceHeader{
 		Data: hdr.Data,
 		Len:  hdr.Len,
