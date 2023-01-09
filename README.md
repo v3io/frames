@@ -6,8 +6,6 @@
 V3IO Frames (**"Frames"**) is a multi-model open-source data-access library that provides a unified high-performance DataFrame API for working with different types of data sources (backends).
 The library was developed by Iguazio to simplify working with data in the [Iguazio Data Science Platform](https://www.iguazio.com) (**"the platform"**), but it can be extended to support additional backend types.
 
-> **Note:** For a full API reference of the Frames platform backends, including detailed examples, see the Frames API reference in [the platform documentation](https://www.iguazio.com/docs/latest-release/data-layer/reference/frames/).
-
 #### In This Document
 
 - [Client Python API Reference](#client-python-api-reference)
