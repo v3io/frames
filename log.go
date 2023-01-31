@@ -21,9 +21,10 @@ such restriction.
 package frames
 
 import (
+	"os"
+
 	"github.com/nuclio/logger"
 	nucliozap "github.com/nuclio/zap"
-	"os"
 )
 
 var (

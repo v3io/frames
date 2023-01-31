@@ -30,7 +30,7 @@ import (
 )
 
 func run(configContents string, configPath string) error {
-	loggerInstance, err := nucliozap.NewNuclioZapCmd("framulate", nucliozap.DebugLevel)
+	loggerInstance, err := nucliozap.NewNuclioZapCmd("framulate", nucliozap.DebugLevel, os.Stdout)
 	if err != nil {
 		return errors.Wrap(err, "Failed to create logger")
 	}
