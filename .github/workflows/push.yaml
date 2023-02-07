@@ -110,9 +110,10 @@ jobs:
           GOPATH: ${{ github.workspace }}/go
           GOARCH: amd64
           GOOS: ${{ matrix.go-os }}
+          FRAMES_TAG: ${{ github.ref_name }}
 
       - name: Upload binaries
         uses: AButler/upload-release-assets@v2.0
         with:
-          files: ${{ github.workspace }}/go/bin/framesd-*
+          files: framesd-*
           repo-token: ${{ secrets.GITHUB_TOKEN }}
