@@ -21,6 +21,8 @@ such restriction.
 package frames
 
 import (
+	"os"
+
 	"github.com/nuclio/logger"
 	nucliozap "github.com/nuclio/zap"
 )
@@ -37,5 +39,5 @@ func NewLogger(verbose string) (logger.Logger, error) {
 	}
 
 	logLevel := nucliozap.GetLevelByName(verbose)
-	return nucliozap.NewNuclioZapCmd("v3io-frames", logLevel)
+	return nucliozap.NewNuclioZapCmd("v3io-frames", logLevel, os.Stdout)
 }

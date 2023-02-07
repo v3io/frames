@@ -21,7 +21,7 @@ such restriction.
 package csv
 
 import (
-	"io/ioutil"
+	"os"
 	"path"
 	"testing"
 
@@ -163,7 +163,7 @@ func loadTempCSV(t *testing.T, req *frames.ReadRequest) []frames.Frame {
 }
 
 func tmpCSV() (string, error) {
-	tmp, err := ioutil.TempFile("", "csv-test")
+	tmp, err := os.CreateTemp("", "csv-test")
 	if err != nil {
 		return "", err
 	}

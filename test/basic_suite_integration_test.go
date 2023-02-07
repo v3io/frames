@@ -154,12 +154,39 @@ func sessionInfo(t testing.TB) *frames.Session {
 		Address string
 		frames.Session
 	}
+
+	// Support var1=val1,var2=val2,... format
+	data = strings.TrimSpace(data)
+	if !strings.HasPrefix(data, "{") {
+		parts := strings.Split(data, ",")
+		newData := map[string]string{}
+		for _, part := range parts {
+			pair := strings.SplitN(part, "=", 2)
+			if len(pair) != 2 {
+				return nil
+			}
+			newData[pair[0]] = pair[1]
+		}
+		bytes, err := json.Marshal(newData)
+		data = string(bytes)
+		if err != nil {
+			return nil
+		}
+	}
+
 	if err := json.Unmarshal([]byte(data), &s); err != nil {
 		t.Fatal(err)
 	}
 
 	if s.Address != "" {
 		s.Session.Url = s.Address
+	}
+
+	if s.Session.Url == "" {
+		s.Session.Url = os.Getenv("V3IO_API")
+	}
+	if s.Session.Token == "" {
+		s.Session.Token = os.Getenv("V3IO_ACCESS_KEY")
 	}
 
 	return &s.Session

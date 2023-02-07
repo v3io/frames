@@ -33,6 +33,8 @@ import (
 	"github.com/pkg/errors"
 	"github.com/v3io/frames"
 	"github.com/v3io/frames/pb"
+	"golang.org/x/text/cases"
+	"golang.org/x/text/language"
 )
 
 const querySeparator = ";"
@@ -314,12 +316,13 @@ func (req *simpleJSONQueryRequest) parseQueryLine(fieldInput string) error {
 	if err != nil {
 		return err
 	}
+	caser := cases.Title(language.English)
 	for _, field := range strings.Split(fieldInput, querySeparator) {
 		if len(field) > 0 {
 			match := re.FindStringSubmatch(field)
 			var value interface{}
 			if len(match) > 0 {
-				fieldName := strings.Title(match[1])
+				fieldName := caser.String(match[1])
 				if fieldName == "Fields" {
 					value = strings.Split(match[2], fieldsItemsSeperator)
 				} else {

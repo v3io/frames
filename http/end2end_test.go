@@ -23,9 +23,9 @@ package http_test
 import (
 	"encoding/json"
 	"fmt"
-	"io/ioutil"
 	"net"
 	nhttp "net/http"
+	"os"
 	"reflect"
 	"testing"
 	"time"
@@ -36,7 +36,7 @@ import (
 )
 
 func TestEnd2End(t *testing.T) {
-	tmpDir, err := ioutil.TempDir("", "frames-e2e")
+	tmpDir, err := os.MkdirTemp("", "frames-e2e")
 	if err != nil {
 		t.Fatal(err)
 	}
