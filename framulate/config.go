@@ -20,7 +20,7 @@ such restriction.
 package framulate
 
 import (
-	"io/ioutil"
+	"os"
 	"time"
 
 	"github.com/ghodss/yaml"
@@ -77,7 +77,7 @@ func NewConfigFromContentsOrPath(configContents []byte, configPath string) (*Con
 			return nil, errors.New("Config contents or path must be specified")
 		}
 
-		configContents, err = ioutil.ReadFile(configPath)
+		configContents, err = os.ReadFile(configPath)
 		if err != nil {
 			return nil, errors.Wrapf(err, "Failed to config file at %s", configPath)
 		}

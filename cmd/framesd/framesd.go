@@ -23,7 +23,6 @@ package main
 import (
 	"flag"
 	"fmt"
-	"io/ioutil"
 	"log"
 	"net/http"
 	_ "net/http/pprof"
@@ -63,7 +62,7 @@ func main() {
 		log.Fatal("error: no config file given")
 	}
 
-	data, err := ioutil.ReadFile(config.file)
+	data, err := os.ReadFile(config.file)
 	if err != nil {
 		log.Fatalf("error: can't read config - %s", err)
 	}
