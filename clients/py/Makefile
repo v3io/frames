@@ -28,7 +28,7 @@ clean_pyc:
 flake8:
 	# --ignore=E121,E123,E126,E226,E24,E704 is the default.
 	# Additionally, E501 ignores long lines.
-	flake8 \
+	python -m flake8 \
 		--ignore=E121,E123,E126,E226,E24,E704,E501 \
 	    --exclude 'frames_pb2*.py' \
 	    v3io_frames tests
