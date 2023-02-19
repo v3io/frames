@@ -18,7 +18,7 @@ all:
 
 .PHONY: upload
 upload:
-	pipenv run python pypi_upload.py --force
+	python pypi_upload.py --force
 
 .PHONY: clean_pyc
 clean_pyc:
@@ -28,37 +28,28 @@ clean_pyc:
 flake8:
 	# --ignore=E121,E123,E126,E226,E24,E704 is the default.
 	# Additionally, E501 ignores long lines.
-	PIPENV_IGNORE_VIRTUALENVS=1 \
-	    pipenv run flake8 \
-	        --ignore=E121,E123,E126,E226,E24,E704,E501 \
-	        --exclude 'frames_pb2*.py' \
-	        v3io_frames tests
+	flake8 \
+		--ignore=E121,E123,E126,E226,E24,E704,E501 \
+	    --exclude 'frames_pb2*.py' \
+	    v3io_frames tests
 
 .PHONY: test
 test: clean_pyc flake8
-	PIPENV_IGNORE_VIRTUALENVS=1 \
-	    pipenv run python -m pytest -v \
-		--disable-warnings \
-		--benchmark-disable \
-		tests
+	python -m pytest -v \
+	    --disable-warnings \
+	    --benchmark-disable \
+	    tests
 
 README.html: README.md
 	kramdown -i GFM $< > $@
 
-.PHONY: update-deps
-update-deps:
-	PIPENV_IGNORE_VIRTUALENVS=1 \
-	    pipenv update
-
 .PHONY: sync-deps
 sync-deps:
-	PIPENV_IGNORE_VIRTUALENVS=1 pipenv install -r requirements.txt
-	PIPENV_IGNORE_VIRTUALENVS=1 pipenv install -r dev-requirements.txt
+	pip install -r requirements.txt -r dev-requirements.txt
 
 .PHONY: bench
 bench:
-	PIPENV_IGNORE_VIRTUALENVS=1 \
-	    pipenv run python -m pytest \
-		--disable-warnings \
-		--benchmark-json /tmp/framesd-py-bench.json \
-		tests/test_benchmark.py
+	python -m pytest \
+	    --disable-warnings \
+	    --benchmark-json /tmp/framesd-py-bench.json \
+	    tests/test_benchmark.py

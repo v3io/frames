@@ -21,8 +21,8 @@ on:
       - 'v[0-9]+.[0-9]+.x'
 
 jobs:
-  test:
-    name: Lint & test
+  test-go:
+    name: Lint & test Go code
     runs-on: ubuntu-latest
 
     steps:
@@ -56,3 +56,37 @@ jobs:
           V3IO_API: ${{ secrets.V3IO_API }}
           V3IO_ACCESS_KEY: ${{ secrets.V3IO_ACCESS_KEY }}
           V3IO_SESSION: container=bigdata,user=admin
+
+  test-py:
+    name: Lint & test Python code
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Dump github context
+        run: echo "$GITHUB_CONTEXT"
+        env:
+          GITHUB_CONTEXT: ${{ toJson(github) }}
+
+      - name: Dump runner context
+        run: echo "$RUNNER_CONTEXT"
+        env:
+          RUNNER_CONTEXT: ${{ toJson(runner) }}
+
+      - name: Dump github ref
+        run: echo "$GITHUB_REF"
+
+      - uses: actions/checkout@v3
+
+      - name: Set up python ${{ matrix.python-version }}
+        uses: actions/setup-python@v4
+        with:
+          python-version: 3.7
+
+      - name: Install dependencies
+        run: make python-deps
+
+      - name: Lint Python code
+        run: make flake8
+
+      - name: Run Python tests
+        run: make test-py

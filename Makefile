@@ -24,7 +24,7 @@ build:
 	docker build \
 		--build-arg FRAMES_VERSION=$(FRAMES_TAG) \
 		--file cmd/framesd/Dockerfile \
-		--tag $(FRAMES_REPOSITORY)frames:$(FRAMES_TAG) \
+		--tag $(FRAMES_REPOSITORY)framesd:$(FRAMES_TAG) \
 		.
 
 build-framulate:
@@ -59,7 +59,7 @@ grpc-go:
 .PHONY: grpc-py
 grpc-py:
 	cd clients/py && \
-	pipenv run python -m grpc_tools.protoc \
+	python -m grpc_tools.protoc \
 		-I../.. --python_out=v3io_frames\
 		--grpc_python_out=v3io_frames \
 		../../frames.proto
@@ -68,8 +68,7 @@ grpc-py:
 
 .PHONY: pypi
 pypi:
-	cd clients/py && \
-	    pipenv run make upload
+	cd clients/py && make upload
 
 .PHONY: cloc
 cloc:
@@ -85,17 +84,6 @@ update-go-deps:
 	go mod tidy
 	git add go.mod go.sum
 	@echo "Don't forget to test & commit"
-
-.PHONY: update-py-deps
-update-py-deps:
-	cd clients/py && $(MAKE) update-deps
-	git add clients/py/Pipfile*
-	@echo "Don't forget to test & commit"
-
-.PHONY: update-tsdb-deps
-update-tsdb-deps:
-	GO111MODULE=on go get github.com/v3io/v3io-tsdb@master
-	@echo "Done. Don't forget to commit ☺"
 
 .PHONY: python-deps
 python-deps:
