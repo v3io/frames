@@ -34,6 +34,10 @@ build-framulate:
 		--tag $(FRAMES_REPOSITORY)framulate:$(FRAMES_TAG) \
 		.
 
+.PHONY: flake8
+flake8:
+	cd clients/py && make flake8
+
 .PHONY: test
 test: test-go test-py
 
