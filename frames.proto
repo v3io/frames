@@ -21,6 +21,8 @@ such restriction.
 syntax = "proto3";
 package pb;
 
+option go_package = ".pb";
+
 enum DType {
     NONE = 0;
     INTEGER = 1;

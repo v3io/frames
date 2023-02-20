@@ -58,7 +58,7 @@ grpc: grpc-go grpc-py
 
 .PHONY: grpc-go
 grpc-go:
-	protoc frames.proto --go_out=plugins=grpc:pb
+	protoc frames.proto --go_out=pb
 
 .PHONY: grpc-py
 grpc-py:
