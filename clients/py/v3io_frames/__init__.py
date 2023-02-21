@@ -121,5 +121,19 @@ def session_from_env():
     if data is None:
         return Session()
 
-    obj = json.loads(data)
+    if data.startswith("{"):
+        obj = json.loads(data)
+    else:
+        obj = {}
+        pairs = data.split(",")
+        for pair in pairs:
+            pair = pair.split("=")
+            if len(pair) != 2:
+                continue
+            obj[pair[0]] = pair[1]
+
+    v3io_api = environ.get("V3IO_API")
+    if v3io_api:
+        obj["url"] = v3io_api
+
     return Session(**obj)

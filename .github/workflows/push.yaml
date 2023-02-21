@@ -61,6 +61,10 @@ jobs:
   test-py:
     name: Lint & test Python code
     runs-on: ubuntu-latest
+    env:
+      V3IO_API: ${{ secrets.V3IO_API }}
+      V3IO_ACCESS_KEY: ${{ secrets.V3IO_ACCESS_KEY }}
+      V3IO_SESSION: container=bigdata
 
     steps:
       - name: Dump github context

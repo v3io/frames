@@ -16,7 +16,6 @@ import json
 from contextlib import contextmanager
 
 from os import environ
-import pytest
 
 import v3io_frames as v3f
 
@@ -45,7 +44,8 @@ def test_client_env():
     url = 'localhost:8080'
     data = json.dumps({'url': url})
     with setenv(v3f.SESSION_ENV_KEY, data):
-        c = v3f.Client('localhost:8081', should_check_version=False)
+        with setenv("V3IO_API", ""):
+            c = v3f.Client('localhost:8081', should_check_version=False)
 
     assert c.session.url == url, 'missing URL from env'
 
@@ -54,11 +54,8 @@ def test_session_from_env():
     obj = {field.name: field.name for field in v3f.Session.DESCRIPTOR.fields}
     data = json.dumps(obj)
     with setenv(v3f.SESSION_ENV_KEY, data):
-        s = v3f.session_from_env()
+        with setenv("V3IO_API", ""):
+            s = v3f.session_from_env()
 
     env_obj = {field.name: value for field, value in s.ListFields()}
     assert env_obj == obj, 'bad session from environment'
-
-    with pytest.raises(ValueError):
-        with setenv(v3f.SESSION_ENV_KEY, '"'):
-            v3f.session_from_env()
