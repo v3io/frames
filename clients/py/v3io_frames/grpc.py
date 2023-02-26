@@ -246,8 +246,13 @@ class Client(ClientBase):
         request = fpb.VersionRequest()
         resp = stub.Version(request)
         if resp.version:
-            if __version__ != resp.version:
-                warnings.warn("Warning - Server version \'" + resp.version + "\' is different from client version \'" + __version__ + "\'. Some operations may not work as expected.")
+            client_version = __version__[:__version__.rfind(".")]
+            server_version = resp.version[:resp.version.rfind(".")]
+            if client_version != server_version:
+                warnings.warn(
+                    f"Warning - Server version '{resp.version}' differs in major/minor version from client "
+                    f"version '{__version__}'. Some operations may not work as expected."
+                )
         else:
             warnings.warn("Warning - Cannot resolve server version. Make sure client version is compatible.")
 
