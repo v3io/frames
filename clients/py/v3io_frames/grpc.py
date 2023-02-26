@@ -250,8 +250,8 @@ class Client(ClientBase):
             server_version = resp.version[:resp.version.rfind(".")]
             if client_version != server_version:
                 warnings.warn(
-                    f"Warning - Server version '{resp.version}' is too different from client version '{__version__}'. "
-                    "Some operations may not work as expected."
+                    f"Warning - Server version '{resp.version}' differs in major/minor version from client "
+                    f"version '{__version__}'. Some operations may not work as expected."
                 )
         else:
             warnings.warn("Warning - Cannot resolve server version. Make sure client version is compatible.")
