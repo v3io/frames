@@ -31,17 +31,21 @@ def write_benchmark(client, df):
     client.write('csv', 'write-bench.csv', df)
 
 
-@pytest.mark.skipif(not has_go, reason='Go SDK not found')
 @pytest.mark.parametrize('protocol,backend', integ_params)
 def test_read(benchmark, framesd, protocol, backend):
+    if not has_go:
+        raise AssertionError("Go SDK not found")
+
     addr = getattr(framesd, '{}_addr'.format(protocol))
     client = v3f.Client(addr)
     benchmark(read_benchmark, client)
 
 
-@pytest.mark.skipif(not has_go, reason='Go SDK not found')
 @pytest.mark.parametrize('protocol,backend', integ_params)
 def test_write(benchmark, framesd, protocol, backend):
+    if not has_go:
+        raise AssertionError("Go SDK not found")
+
     addr = getattr(framesd, '{}_addr'.format(protocol))
     client = v3f.Client(addr)
     benchmark(write_benchmark, client, wdf)

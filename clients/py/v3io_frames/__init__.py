@@ -136,4 +136,10 @@ def session_from_env():
     if v3io_api:
         obj["url"] = v3io_api
 
+    token = environ.get("V3IO_ACCESS_KEY")
+    if token:
+        obj["token"] = token
+        # If token was provided, we don't need user
+        obj.pop("user", None)
+
     return Session(**obj)

@@ -41,9 +41,11 @@ def reader(id, n, c):
         sleep(random() / 10)
 
 
-@pytest.mark.skipif(not has_go, reason='Go SDK not found')
 @pytest.mark.parametrize('protocol', protocols)
 def test_concurrent(framesd, protocol):
+    if not has_go:
+        raise AssertionError("Go SDK not found")
+
     addr = getattr(framesd, '{}_addr'.format(protocol))
     c = v3f.Client(addr)
     start = monotonic()

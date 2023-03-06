@@ -47,8 +47,8 @@ def kv_df(size):
 
 
 def stream_df(size):
-    end = pd.Timestamp.now().replace(minute=0, second=0, microsecond=0)
-    index = pd.date_range(end=end, periods=60, freq='300s', tz='Israel')
+    end = pd.Timestamp.utcnow().replace(minute=0, second=0, microsecond=0)
+    index = pd.date_range(end=end, periods=60, freq='300s')
     columns = ['cpu', 'mem', 'disk']
     data = np.random.randn(len(index), len(columns))
     return pd.DataFrame(data, index=index, columns=columns)
@@ -111,9 +111,11 @@ schema = v3f.Schema(
 )
 
 
-@pytest.mark.skipif(not has_go, reason='Go SDK not found')
 @pytest.mark.parametrize('protocol,backend', integ_params)
 def test_integration(framesd, session, protocol, backend):
+    if not has_go:
+        raise AssertionError("Go SDK not found")
+
     test_id = uuid4().hex
     size = 293
     table = 'integtest{}'.format(test_id)
@@ -190,8 +192,10 @@ def compare_dfs_tsdb(df1, df2, backend):
     pass
 
 
-@pytest.mark.skipif(not has_go, reason='Go SDK not found')
 def test_integration_http_error(framesd):
+    if not has_go:
+        raise AssertionError("Go SDK not found")
+
     c = v3f.HTTPClient(framesd.http_addr, session=None)
 
     with pytest.raises(v3f.ReadError):
@@ -199,10 +203,14 @@ def test_integration_http_error(framesd):
             pass
 
 
-@pytest.mark.skipif(not has_session, reason='No session found')
-@pytest.mark.skipif(not has_go, reason='Go SDK not found')
 @pytest.mark.parametrize('protocol', protocols)
 def test_kv_read_empty_df(framesd, session, protocol):
+    if not has_go:
+        raise AssertionError("Go SDK not found")
+
+    if not has_session:
+        raise AssertionError("No session found")
+
     backend = 'kv'
     test_id = uuid4().hex
     tableName = 'integtest{}'.format(test_id)
@@ -221,10 +229,14 @@ def test_kv_read_empty_df(framesd, session, protocol):
     client.delete(backend, tableName)
 
 
-@pytest.mark.skipif(not has_session, reason='No session found')
-@pytest.mark.skipif(not has_go, reason='Go SDK not found')
 @pytest.mark.parametrize('protocol', protocols)
 def test_datetime(framesd, session, protocol):
+    if not has_go:
+        raise AssertionError("Go SDK not found")
+
+    if not has_session:
+        raise AssertionError("No session found")
+
     backend = 'kv'
     test_id = uuid4().hex
     tableName = 'integtest{}'.format(test_id)
@@ -241,10 +253,14 @@ def test_datetime(framesd, session, protocol):
     client.delete(backend, tableName)
 
 
-@pytest.mark.skipif(not has_session, reason='No session found')
-@pytest.mark.skipif(not has_go, reason='Go SDK not found')
 @pytest.mark.parametrize('protocol', protocols)
 def test_timestamp(framesd, session, protocol):
+    if not has_go:
+        raise AssertionError("Go SDK not found")
+
+    if not has_session:
+        raise AssertionError("No session found")
+
     backend = 'kv'
     test_id = uuid4().hex
     tableName = 'integtest{}'.format(test_id)

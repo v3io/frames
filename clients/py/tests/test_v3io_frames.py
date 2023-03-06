@@ -55,7 +55,8 @@ def test_session_from_env():
     data = json.dumps(obj)
     with setenv(v3f.SESSION_ENV_KEY, data):
         with setenv("V3IO_API", ""):
-            s = v3f.session_from_env()
+            with setenv("V3IO_ACCESS_KEY", ""):
+                s = v3f.session_from_env()
 
     env_obj = {field.name: value for field, value in s.ListFields()}
     assert env_obj == obj, 'bad session from environment'

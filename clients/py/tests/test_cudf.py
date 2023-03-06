@@ -29,8 +29,10 @@ except ImportError:
 
 
 @pytest.mark.skipif(not has_cudf, reason='cudf not found')
-@pytest.mark.skipif(not has_go, reason='Go SDK not found')
 def test_cudf(framesd, session):
+    if not has_go:
+        raise AssertionError("Go SDK not found")
+
     df = cudf.DataFrame({
         'a': [1, 2, 3],
         'b': [1.1, 2.2, 3.3],
