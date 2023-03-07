@@ -20,6 +20,10 @@ all:
 upload:
 	python pypi_upload.py --force
 
+.PHONY: dist
+dist: sync-deps
+	python -m build --sdist --wheel --outdir dist/ .
+
 .PHONY: clean_pyc
 clean_pyc:
 	find . -name '*.pyc' -exec rm {} \;

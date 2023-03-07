@@ -1,8 +1,9 @@
-flake8>0
-ipython>0
-numpydoc>0
+build
+flake8
+ipython
+numpydoc
 pytest>=4.2,<6
-pyyaml>0
-sphinx>0
+pyyaml
+sphinx
 twine~=1.12
-pytest-benchmark>0
+pytest-benchmark

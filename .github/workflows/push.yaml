@@ -132,9 +132,6 @@ jobs:
         with:
           python-version: 3.7
 
-      - name: Build v3io-frames python distribution
-        run: pip install wheel && make wheel
-
       - uses: actions/setup-go@v2
         with:
           go-version: "^1.19.5"
@@ -167,6 +164,9 @@ jobs:
 
       - name: Push images (release registry)
         run: docker push gcr.io/iguazio/framesd:${{ github.ref_name }}
+
+      - name: Build v3io-frames python distribution
+        run: pip install wheel && make wheel
 
       - name: Publish to PyPi
         uses: pypa/gh-action-pypi-publish@release/v1

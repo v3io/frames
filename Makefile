@@ -53,6 +53,10 @@ test-py:
 wheel:
 	cd clients/py && python setup.py bdist_wheel
 
+.PHONY: python-dist
+python-dist: python-deps
+	cd clients/py && $(MAKE) dist
+
 .PHONY: grpc
 grpc: grpc-go grpc-py
 
