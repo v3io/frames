@@ -133,7 +133,7 @@ jobs:
           python-version: 3.7
 
       - name: Build v3io-frames python distribution
-        run: make wheel
+        run: pip install wheel && make wheel
 
       - uses: actions/setup-go@v2
         with:
