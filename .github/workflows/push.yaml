@@ -158,7 +158,7 @@ jobs:
           FRAMES_TAG: ${{ github.ref_name }}
 
       - name: Push images (release registry)
-        run: docker push gcr.io/iguazio:framesd:${{ github.ref_name }}
+        run: docker push gcr.io/iguazio/framesd:${{ github.ref_name }}
 
       - name: Publish to PyPi
         uses: pypa/gh-action-pypi-publish@release/v1
