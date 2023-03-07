@@ -165,8 +165,11 @@ jobs:
       - name: Push images (release registry)
         run: docker push gcr.io/iguazio/framesd:${{ github.ref_name }}
 
+      - name: Set version
+        run: make set-version
+
       - name: Build v3io-frames python distribution
-        run: pip install wheel && make wheel
+        run: make python-dist
 
       - name: Publish to PyPi
         uses: pypa/gh-action-pypi-publish@release/v1
