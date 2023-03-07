@@ -57,6 +57,10 @@ wheel:
 python-dist: python-deps
 	cd clients/py && $(MAKE) dist
 
+.PHONY: set-version
+set-version:
+	cd clients/py && $(MAKE) set-version
+
 .PHONY: grpc
 grpc: grpc-go grpc-py
 

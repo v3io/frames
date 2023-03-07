@@ -24,6 +24,10 @@ upload:
 dist: sync-deps
 	python -m build --sdist --wheel --outdir dist/ .
 
+.PHONY: set-version
+set-version:
+	python set-version.py
+
 .PHONY: clean_pyc
 clean_pyc:
 	find . -name '*.pyc' -exec rm {} \;
