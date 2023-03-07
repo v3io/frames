@@ -48,8 +48,9 @@ jobs:
 
       - uses: actions/checkout@v2
 
-      - name: Lint
-        run: make lint
+      # This gets killed, probably due to memory usage
+      # - name: Lint
+      #   run: make lint
 
       - name: Run Go tests
         run: make test-go
