@@ -24,7 +24,7 @@ build:
 	docker build \
 		--build-arg FRAMES_VERSION=$(FRAMES_TAG) \
 		--file cmd/framesd/Dockerfile \
-		--tag $(FRAMES_REPOSITORY)framesd:$(FRAMES_TAG) \
+		--tag $(FRAMES_REPOSITORY)frames:$(FRAMES_TAG) \
 		.
 
 build-framulate:
