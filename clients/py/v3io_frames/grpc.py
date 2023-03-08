@@ -250,7 +250,7 @@ class Client(ClientBase):
             server_version = server_version[1:]
         if resp.version:
             client_major_minor_version = __version__[:__version__.rfind(".")]
-            server_major_minor__version = server_version[:resp.version.rfind(".")]
+            server_major_minor__version = server_version[:server_version.rfind(".")]
             if client_major_minor_version != server_major_minor__version:
                 warnings.warn(
                     f"Warning - Server version '{server_version}' differs in major/minor version from client "
