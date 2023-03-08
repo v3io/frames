@@ -247,13 +247,20 @@ class Client(ClientBase):
         except json.JSONDecodeError as err:
             raise VersionError(str(err))
 
-        version = out.get('version')
-        if not version:
+        server_version = out.get('version')
+        if server_version.startswith("v"):
+            server_version = server_version[1:]
+        if not server_version:
             warnings.warn("Warning - Cannot resolve server version. Make sure client version is compatible.")
             return
 
-        if __version__ != version:
-            warnings.warn("Warning - Server version \'" + version + "\' is different from client version \'" + __version__ + "\'. Some operations may not work as expected.")
+        client_major_minor_version = __version__[:__version__.rfind(".")]
+        server_major_minor__version = server_version[:resp.version.rfind(".")]
+        if client_major_minor_version != server_major_minor__version:
+            warnings.warn(
+                f"Warning - Server version '{server_version}' differs in major/minor version from client "
+                f"version '{__version__}'. Some operations may not work as expected."
+            )
 
     def _url_for(self, action):
         return self.address + '/' + action
