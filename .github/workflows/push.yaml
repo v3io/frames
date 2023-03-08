@@ -163,7 +163,7 @@ jobs:
           FRAMES_TAG: ${{ github.ref_name }}
 
       - name: Push images (release registry)
-        run: docker push gcr.io/iguazio/framesd:${{ github.ref_name }}
+        run: docker push gcr.io/iguazio/frames:${{ github.ref_name }}
 
       - name: Set version
         run: make set-version
