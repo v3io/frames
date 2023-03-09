@@ -155,7 +155,7 @@ jobs:
           GCR_JSON_KEY: ${{ secrets.GCR_IGUAZIO_JSON_KEY }}
 
       - name: Login to artifactory
-        run: docker login -u ${{ secrets.ARTIFACTORY_DOCKER_USERNAME }} -p ${{ secrets.ARTIFACTORY_DOCKER_PASSWORD }} ${{ secrets.ARTIFACTORY_REGISTRY }}
+        run: docker login -u ${{ secrets.ARTIFACTORY_DOCKER_USERNAME }} -p ${{ secrets.ARTIFACTORY_DOCKER_PASSWORD }} ${{ vars.ARTIFACTORY_REGISTRY }}
 
       - name: Set image tag
         run: |
@@ -170,13 +170,13 @@ jobs:
           FRAMES_REPOSITORY: gcr.io/iguazio/
 
       - name: Tag frames image for artifactory
-        run: docker tag gcr.io/iguazio/frames:${{ env.FRAMES_TAG }} ${{ secrets.ARTIFACTORY_REGISTRY }}/iguazio/frames:${{ env.FRAMES_TAG }}
+        run: docker tag gcr.io/iguazio/frames:${{ env.FRAMES_TAG }} ${{ vars.ARTIFACTORY_REGISTRY }}/iguazio/frames:${{ env.FRAMES_TAG }}
 
       - name: Push frames image to GCR
         run: docker push gcr.io/iguazio/frames:${{ env.FRAMES_TAG }}
 
       - name: Push frames image to artifactory
-        run: docker push ${{ secrets.ARTIFACTORY_REGISTRY }}/iguazio/frames:${{ env.FRAMES_TAG }}
+        run: docker push ${{ vars.ARTIFACTORY_REGISTRY }}/iguazio/frames:${{ env.FRAMES_TAG }}
 
       - name: Set version
         run: make set-version
