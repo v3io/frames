@@ -119,12 +119,6 @@ jobs:
       - name: Dump github ref
         run: echo "$GITHUB_REF"
 
-      - name: Extract ref info
-        id: release_info
-        run: |
-          echo ::set-output name=REF_BRANCH::${GITHUB_REF#refs/heads/}
-          echo ::set-output name=REF_TAG::${GITHUB_REF#refs/tags/}
-
       - uses: actions/checkout@v3
 
       - uses: actions/setup-go@v3
@@ -139,10 +133,9 @@ jobs:
           FRAMES_TAG: ${{ github.ref_name }}
 
       - name: Upload binaries
-        uses: AButler/upload-release-assets@v2.0
-        with:
-          files: framesd-*
-          repo-token: ${{ secrets.GITHUB_TOKEN }}
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: gh release upload ${{ github.ref_name }} framesd-*
 
       - name: Login to GCR
         run: echo "$GCR_JSON_KEY" | docker login -u _json_key --password-stdin https://gcr.io
