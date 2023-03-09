@@ -154,16 +154,29 @@ jobs:
         env:
           GCR_JSON_KEY: ${{ secrets.GCR_IGUAZIO_JSON_KEY }}
 
+      - name: Login to artifactory
+        run: docker login -u ${{ secrets.ARTIFACTORY_DOCKER_USERNAME }} -p ${{ secrets.ARTIFACTORY_DOCKER_PASSWORD }} ${{ env.ARTIFACTORY_REGISTRY }}
+
+      - name: Set image tag
+        run: |
+          echo FRAMES_TAG=`echo ${{ github.ref_name }} | sed s/^v//` >> $GITHUB_ENV
+          cat $GITHUB_ENV
+
       - name: Build docker image
         run: make build
         env:
           GOARCH: amd64
           GOOS: linux
           FRAMES_REPOSITORY: gcr.io/iguazio/
-          FRAMES_TAG: ${{ github.ref_name }}
 
-      - name: Push images (release registry)
-        run: docker push gcr.io/iguazio/frames:${{ github.ref_name }}
+      - name: Tag frames image for artifactory
+        run: docker tag gcr.io/iguazio/frames:${{ env.FRAMES_TAG }} ${{ env.ARTIFACTORY_REGISTRY }}/iguazio/frames:${{ env.FRAMES_TAG }}
+
+      - name: Push frames image to GCR
+        run: docker push gcr.io/iguazio/frames:${{ env.FRAMES_TAG }}
+
+      - name: Push frames image to artifactory
+        run: docker push ${{ env.ARTIFACTORY_REGISTRY }}/iguazio/frames:${{ env.FRAMES_TAG }}
 
       - name: Set version
         run: make set-version
