@@ -42,11 +42,11 @@ jobs:
       - name: Dump github ref
         run: echo "$GITHUB_REF"
 
-      - uses: actions/setup-go@v2
+      - uses: actions/setup-go@v3
         with:
           go-version: "^1.19.5"
 
-      - uses: actions/checkout@v2
+      - uses: actions/checkout@v3
 
       # This gets killed, probably due to memory usage
       # - name: Lint
@@ -125,14 +125,14 @@ jobs:
           echo ::set-output name=REF_BRANCH::${GITHUB_REF#refs/heads/}
           echo ::set-output name=REF_TAG::${GITHUB_REF#refs/tags/}
 
-      - uses: actions/checkout@v2
+      - uses: actions/checkout@v3
 
       - name: Set up python ${{ matrix.python-version }}
         uses: actions/setup-python@v4
         with:
           python-version: 3.7
 
-      - uses: actions/setup-go@v2
+      - uses: actions/setup-go@v3
         with:
           go-version: "^1.19.5"
 
