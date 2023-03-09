@@ -99,7 +99,7 @@ jobs:
 
   release:
     name: Release
-    runs-on: [ self-hosted, Linux ]
+    runs-on: [ self-hosted, linux ]
     if: github.event_name == 'release'
     needs:
       - test-go
