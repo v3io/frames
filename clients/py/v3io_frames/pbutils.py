@@ -15,10 +15,10 @@
 import warnings
 from datetime import datetime
 
-import google.protobuf.pyext._message as message
 import numpy as np
 import pandas as pd
 import pytz
+import google._upb._message as message
 from google.protobuf.message import Message
 from pandas.api.types import is_datetime64_any_dtype as is_datetime
 from pandas.api.types import is_integer_dtype as is_integer
@@ -297,7 +297,7 @@ def insert_nulls_based_on_null_values_map(df, null_values):
         for col_name in null_values[i].nullColumns:
             # boolean columns should be converted to `object` to be able to
             # represent None.
-            if df[col_name].dtype == np.bool and \
+            if df[col_name].dtype == bool and \
                     col_name not in casted_columns:
                 casted_columns[col_name] = True
                 df[col_name] = df[col_name].astype(object)

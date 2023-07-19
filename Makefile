@@ -43,7 +43,7 @@ test: test-go test-py
 
 .PHONY: test-go
 test-go:
-	GO111MODULE=on go test -v $(testflags) -timeout 20m ./...
+	GO111MODULE=on go test -v -timeout 20m ./...
 
 .PHONY: test-py
 test-py:
@@ -66,7 +66,7 @@ grpc: grpc-go grpc-py
 
 .PHONY: grpc-go
 grpc-go:
-	protoc frames.proto --go_out=plugins=grpc:pb
+	protoc frames.proto --go_out=pb --go-grpc_out=pb --go-grpc_opt=require_unimplemented_servers=false
 
 .PHONY: grpc-py
 grpc-py:

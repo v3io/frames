@@ -107,7 +107,11 @@ func ValidateRequest(backend string, request interface{}, allowedFields map[stri
 	for i := 0; i < reftype.NumField(); i++ {
 		field := reftype.Field(i)
 		fieldName := field.Name
-		fieldValue := reflect.ValueOf(request).Elem().FieldByName(fieldName).Interface()
+		reflectedField := reflect.ValueOf(request).Elem().FieldByName(fieldName)
+		if !reflectedField.CanInterface() {
+			continue
+		}
+		fieldValue := reflectedField.Interface()
 		zeroValue := reflect.Zero(field.Type).Interface()
 		if !globalRequestFieldsByRequestType[reftype][fieldName] && !allowedFields[fieldName] && !reflect.DeepEqual(fieldValue, zeroValue) {
 			return errors.Errorf("%s cannot be used as an argument to a %s to %s backend", fieldName, reftype.Name(), backend)
