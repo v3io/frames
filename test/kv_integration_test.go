@@ -22,14 +22,14 @@ package test
 
 import (
 	"fmt"
-	"github.com/v3io/frames/pb"
-	"github.com/v3io/frames/v3ioutils"
 	"strings"
 	"time"
 
 	"github.com/nuclio/logger"
 	"github.com/stretchr/testify/suite"
 	"github.com/v3io/frames"
+	"github.com/v3io/frames/pb"
+	"github.com/v3io/frames/v3ioutils"
 	v3io "github.com/v3io/v3io-go/pkg/dataplane"
 	"github.com/v3io/v3io-tsdb/pkg/tsdb/tsdbtest"
 )

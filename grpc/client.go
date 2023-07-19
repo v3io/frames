@@ -32,6 +32,7 @@ import (
 	"github.com/v3io/frames"
 	"github.com/v3io/frames/pb"
 	"google.golang.org/grpc"
+	"google.golang.org/grpc/credentials/insecure"
 )
 
 // Client is frames gRPC client
@@ -57,7 +58,7 @@ func NewClient(address string, session *frames.Session, logger logger.Logger) (*
 
 	conn, err := grpc.Dial(
 		address,
-		grpc.WithInsecure(),
+		grpc.WithTransportCredentials(insecure.NewCredentials()),
 		grpc.WithDefaultCallOptions(grpc.MaxCallRecvMsgSize(grpcMsgSize)),
 	)
 	if err != nil {
