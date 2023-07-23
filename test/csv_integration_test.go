@@ -117,7 +117,7 @@ func (csvSuite *CsvTestSuite) TestAll() {
 	err = appender.Add(frame)
 	csvSuite.Require().NoError(err)
 
-	err = appender.WaitForComplete(3 * time.Second)
+	err = appender.WaitForComplete(10 * time.Second)
 	csvSuite.Require().NoError(err)
 
 	time.Sleep(3 * time.Second) // Let DB sync

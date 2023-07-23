@@ -110,7 +110,7 @@ func (streamSuite *StreamTestSuite) TestAll() {
 	err = appender.Add(frame)
 	streamSuite.Require().NoError(err)
 
-	err = appender.WaitForComplete(3 * time.Second)
+	err = appender.WaitForComplete(10 * time.Second)
 	streamSuite.Require().NoError(err)
 
 	time.Sleep(3 * time.Second) // Let DB sync

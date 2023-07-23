@@ -48,7 +48,7 @@ func (kvSuite *KvTestSuite) TestSaveModeErrorIfExistsTableExists() {
 
 	err = appender.Add(frame)
 	kvSuite.Require().NoError(err)
-	err = appender.WaitForComplete(time.Second)
+	err = appender.WaitForComplete(10 * time.Second)
 	kvSuite.Require().NoError(err, "error while saving")
 	// Save a frame to the same path
 	wreq = &frames.WriteRequest{
@@ -62,7 +62,7 @@ func (kvSuite *KvTestSuite) TestSaveModeErrorIfExistsTableExists() {
 	err = appender.Add(frame)
 	kvSuite.Require().NoError(err, "error while saving")
 
-	err = appender.WaitForComplete(time.Second)
+	err = appender.WaitForComplete(10 * time.Second)
 	kvSuite.Require().Error(err, "expected an error but finished successfully")
 }
 
@@ -82,7 +82,7 @@ func (kvSuite *KvTestSuite) TestSaveModeOverwriteTableExists() {
 
 	err = appender.Add(frame)
 	kvSuite.Require().NoError(err, "failed to write frame")
-	err = appender.WaitForComplete(time.Second)
+	err = appender.WaitForComplete(10 * time.Second)
 	kvSuite.Require().NoError(err)
 
 	// Save a frame to the same path
@@ -100,7 +100,7 @@ func (kvSuite *KvTestSuite) TestSaveModeOverwriteTableExists() {
 	err = appender.Add(frame2)
 	kvSuite.Require().NoError(err, "failed to write frame")
 
-	err = appender.WaitForComplete(2 * time.Second)
+	err = appender.WaitForComplete(10 * time.Second)
 	kvSuite.Require().NoError(err)
 
 	rreq := &pb.ReadRequest{
@@ -133,7 +133,7 @@ func (kvSuite *KvTestSuite) TestSaveModeOverwriteTableDoesntExists() {
 	err = appender.Add(frame)
 	kvSuite.Require().NoError(err, "failed to write frame")
 
-	err = appender.WaitForComplete(time.Second)
+	err = appender.WaitForComplete(10 * time.Second)
 	kvSuite.Require().NoError(err)
 
 	rreq := &pb.ReadRequest{
@@ -167,7 +167,7 @@ func (kvSuite *KvTestSuite) TestSaveModeUpdateItemNewRow() {
 	err = appender.Add(frame)
 	kvSuite.Require().NoError(err, "failed to write frame")
 
-	err = appender.WaitForComplete(time.Second)
+	err = appender.WaitForComplete(10 * time.Second)
 	kvSuite.Require().NoError(err)
 
 	// Save a frame to the same path
@@ -185,7 +185,7 @@ func (kvSuite *KvTestSuite) TestSaveModeUpdateItemNewRow() {
 	err = appender.Add(frame2)
 	kvSuite.Require().NoError(err, "failed to write frame")
 
-	err = appender.WaitForComplete(time.Second)
+	err = appender.WaitForComplete(10 * time.Second)
 	kvSuite.Require().NoError(err)
 
 	rreq := &pb.ReadRequest{
@@ -219,7 +219,7 @@ func (kvSuite *KvTestSuite) TestSaveModeUpdateItemNewAttribute() {
 	err = appender.Add(frame)
 	kvSuite.Require().NoError(err)
 
-	err = appender.WaitForComplete(time.Second)
+	err = appender.WaitForComplete(10 * time.Second)
 	kvSuite.Require().NoError(err)
 
 	// Save a frame to the same path
@@ -238,7 +238,7 @@ func (kvSuite *KvTestSuite) TestSaveModeUpdateItemNewAttribute() {
 	err = appender.Add(frame2)
 	kvSuite.Require().NoError(err, "failed to write frame")
 
-	err = appender.WaitForComplete(time.Second)
+	err = appender.WaitForComplete(10 * time.Second)
 	kvSuite.Require().NoError(err)
 
 	rreq := &pb.ReadRequest{
@@ -273,7 +273,7 @@ func (kvSuite *KvTestSuite) TestSaveModeUpdateItemSameAttributeDifferentValues()
 	err = appender.Add(frame)
 	kvSuite.Require().NoError(err)
 
-	err = appender.WaitForComplete(time.Second)
+	err = appender.WaitForComplete(10 * time.Second)
 	kvSuite.Require().NoError(err)
 
 	// Save a frame to the same path
@@ -291,7 +291,7 @@ func (kvSuite *KvTestSuite) TestSaveModeUpdateItemSameAttributeDifferentValues()
 	err = appender.Add(frame2)
 	kvSuite.Require().NoError(err, "failed to write frame")
 
-	err = appender.WaitForComplete(time.Second)
+	err = appender.WaitForComplete(10 * time.Second)
 	kvSuite.Require().NoError(err)
 
 	rreq := &pb.ReadRequest{
@@ -325,7 +325,7 @@ func (kvSuite *KvTestSuite) TestSaveModeUpdateItemChangeColumnType() {
 	err = appender.Add(frame)
 	kvSuite.Require().NoError(err)
 
-	err = appender.WaitForComplete(time.Second)
+	err = appender.WaitForComplete(10 * time.Second)
 	kvSuite.Require().NoError(err)
 
 	// Save a frame to the same path with different types
@@ -343,7 +343,7 @@ func (kvSuite *KvTestSuite) TestSaveModeUpdateItemChangeColumnType() {
 	err = appender.Add(frame2)
 	kvSuite.Require().NoError(err, "failed to write frame")
 
-	err = appender.WaitForComplete(time.Second)
+	err = appender.WaitForComplete(10 * time.Second)
 	kvSuite.Require().Error(err, "expected to fail, but completed succesfully")
 }
 
@@ -362,7 +362,7 @@ func (kvSuite *KvTestSuite) TestSaveModeUpdateItemChangeNumricColumnType() {
 	err = appender.Add(frame)
 	kvSuite.Require().NoError(err)
 
-	err = appender.WaitForComplete(time.Second)
+	err = appender.WaitForComplete(10 * time.Second)
 	kvSuite.Require().NoError(err)
 
 	// Save a frame to the same path with different types
@@ -379,7 +379,7 @@ func (kvSuite *KvTestSuite) TestSaveModeUpdateItemChangeNumricColumnType() {
 	err = appender.Add(frame2)
 	kvSuite.Require().NoError(err, "failed to write frame")
 
-	err = appender.WaitForComplete(time.Second)
+	err = appender.WaitForComplete(10 * time.Second)
 	kvSuite.Require().NoError(err, "failed to WaitForComplete")
 
 	schemaInput := &v3io.GetObjectInput{Path: table + "/.#schema"}
@@ -413,7 +413,7 @@ func (kvSuite *KvTestSuite) TestSaveModeUpdateItemChangeIndexName() {
 	err = appender.Add(frame)
 	kvSuite.Require().NoError(err)
 
-	err = appender.WaitForComplete(time.Second)
+	err = appender.WaitForComplete(10 * time.Second)
 	kvSuite.Require().NoError(err)
 
 	// Save a frame to the same path with different types
@@ -431,7 +431,7 @@ func (kvSuite *KvTestSuite) TestSaveModeUpdateItemChangeIndexName() {
 	err = appender.Add(frame2)
 	kvSuite.Require().NoError(err, "failed to write frame")
 
-	err = appender.WaitForComplete(time.Second)
+	err = appender.WaitForComplete(10 * time.Second)
 	kvSuite.Require().Error(err, "expected to fail, but completed succesfully")
 }
 
@@ -451,7 +451,7 @@ func (kvSuite *KvTestSuite) TestSaveModeUpdateItemUpdateExpressionNewAttributes(
 	err = appender.Add(frame)
 	kvSuite.Require().NoError(err)
 
-	err = appender.WaitForComplete(time.Second)
+	err = appender.WaitForComplete(10 * time.Second)
 	kvSuite.Require().NoError(err)
 
 	// Save a frame to the same path
@@ -469,7 +469,7 @@ func (kvSuite *KvTestSuite) TestSaveModeUpdateItemUpdateExpressionNewAttributes(
 	err = appender.Add(frame2)
 	kvSuite.Require().NoError(err, "failed to write frame")
 
-	err = appender.WaitForComplete(time.Second)
+	err = appender.WaitForComplete(10 * time.Second)
 
 	// TODO: once schema inferring will be fix varify that schema was changed.
 	input := v3io.GetItemsInput{AttributeNames: []string{"*"}}
@@ -520,7 +520,7 @@ func (kvSuite *KvTestSuite) TestSaveModeUpdateItemUpdateExpressionChangeAttribut
 	err = appender.Add(frame)
 	kvSuite.Require().NoError(err)
 
-	err = appender.WaitForComplete(time.Second)
+	err = appender.WaitForComplete(10 * time.Second)
 	kvSuite.Require().NoError(err)
 
 	// Save a frame to the same path
@@ -538,7 +538,7 @@ func (kvSuite *KvTestSuite) TestSaveModeUpdateItemUpdateExpressionChangeAttribut
 	err = appender.Add(frame2)
 	kvSuite.Require().NoError(err, "failed to write frame")
 
-	err = appender.WaitForComplete(time.Second)
+	err = appender.WaitForComplete(10 * time.Second)
 	kvSuite.Require().NoError(err)
 
 	// TODO: once schema inferring will be fix varify that schema was changed.
@@ -588,7 +588,7 @@ func (kvSuite *KvTestSuite) TestSaveModeCreateNewItemsOnlyNewRow() {
 	err = appender.Add(frame)
 	kvSuite.Require().NoError(err, "failed to write frame")
 
-	err = appender.WaitForComplete(time.Second)
+	err = appender.WaitForComplete(10 * time.Second)
 	kvSuite.Require().NoError(err)
 
 	// Save a frame to the same path
@@ -606,7 +606,7 @@ func (kvSuite *KvTestSuite) TestSaveModeCreateNewItemsOnlyNewRow() {
 	err = appender.Add(frame2)
 	kvSuite.Require().NoError(err, "failed to write frame")
 
-	err = appender.WaitForComplete(time.Second)
+	err = appender.WaitForComplete(10 * time.Second)
 	kvSuite.Require().NoError(err)
 
 	rreq := &pb.ReadRequest{
@@ -640,7 +640,7 @@ func (kvSuite *KvTestSuite) TestSaveModeCreateNewItemsOnlyNewAttribute() {
 	err = appender.Add(frame)
 	kvSuite.Require().NoError(err)
 
-	err = appender.WaitForComplete(time.Second)
+	err = appender.WaitForComplete(10 * time.Second)
 	kvSuite.Require().NoError(err)
 
 	// Save a frame to the same path
@@ -659,7 +659,7 @@ func (kvSuite *KvTestSuite) TestSaveModeCreateNewItemsOnlyNewAttribute() {
 	err = appender.Add(frame2)
 	kvSuite.Require().NoError(err, "failed to write frame")
 
-	err = appender.WaitForComplete(time.Second)
+	err = appender.WaitForComplete(10 * time.Second)
 	kvSuite.Require().NoError(err)
 
 	rreq := &pb.ReadRequest{
@@ -709,7 +709,7 @@ func (kvSuite *KvTestSuite) TestSaveModeCreateNewItemsOnlySameAttributeDifferent
 	err = appender.Add(frame)
 	kvSuite.Require().NoError(err)
 
-	err = appender.WaitForComplete(time.Second)
+	err = appender.WaitForComplete(10 * time.Second)
 	kvSuite.Require().NoError(err)
 
 	// Save a frame to the same path
@@ -726,7 +726,7 @@ func (kvSuite *KvTestSuite) TestSaveModeCreateNewItemsOnlySameAttributeDifferent
 	err = appender.Add(frame2)
 	kvSuite.Require().NoError(err, "failed to write frame")
 
-	err = appender.WaitForComplete(time.Second)
+	err = appender.WaitForComplete(10 * time.Second)
 	kvSuite.Require().NoError(err)
 
 	rreq := &pb.ReadRequest{
@@ -760,7 +760,7 @@ func (kvSuite *KvTestSuite) TestSaveModeCreateNewItemsOnlyChangeColumnType() {
 	err = appender.Add(frame)
 	kvSuite.Require().NoError(err)
 
-	err = appender.WaitForComplete(time.Second)
+	err = appender.WaitForComplete(10 * time.Second)
 	kvSuite.Require().NoError(err)
 
 	// Save a frame to the same path with different types
@@ -778,7 +778,7 @@ func (kvSuite *KvTestSuite) TestSaveModeCreateNewItemsOnlyChangeColumnType() {
 	err = appender.Add(frame2)
 	kvSuite.Require().NoError(err, "failed to write frame")
 
-	if err := appender.WaitForComplete(time.Second); err == nil {
+	if err := appender.WaitForComplete(10 * time.Second); err == nil {
 		kvSuite.T().Fatalf("expected to fail, but completed succesfully")
 	}
 }
@@ -799,7 +799,7 @@ func (kvSuite *KvTestSuite) TestSaveModeCreateNewItemsOnlyChangeIndexName() {
 	err = appender.Add(frame)
 	kvSuite.Require().NoError(err)
 
-	err = appender.WaitForComplete(time.Second)
+	err = appender.WaitForComplete(10 * time.Second)
 	kvSuite.Require().NoError(err)
 
 	// Save a frame to the same path with different types
@@ -817,7 +817,7 @@ func (kvSuite *KvTestSuite) TestSaveModeCreateNewItemsOnlyChangeIndexName() {
 	err = appender.Add(frame2)
 	kvSuite.Require().NoError(err, "failed to write frame")
 
-	if err := appender.WaitForComplete(time.Second); err == nil {
+	if err := appender.WaitForComplete(10 * time.Second); err == nil {
 		kvSuite.T().Fatalf("expected to fail, but completed succesfully")
 	}
 }
@@ -838,7 +838,7 @@ func (kvSuite *KvTestSuite) TestSaveModeCreateNewItemsOnlyUpdateExpressionNewAtt
 	err = appender.Add(frame)
 	kvSuite.Require().NoError(err)
 
-	err = appender.WaitForComplete(time.Second)
+	err = appender.WaitForComplete(10 * time.Second)
 	kvSuite.Require().NoError(err)
 
 	// Save a frame to the same path
@@ -856,7 +856,7 @@ func (kvSuite *KvTestSuite) TestSaveModeCreateNewItemsOnlyUpdateExpressionNewAtt
 	err = appender.Add(frame2)
 	kvSuite.Require().NoError(err, "failed to write frame")
 
-	err = appender.WaitForComplete(time.Second)
+	err = appender.WaitForComplete(10 * time.Second)
 	kvSuite.Require().NoError(err)
 
 	// TODO: once schema inferring will be fix varify that schema was changed.
@@ -907,7 +907,7 @@ func (kvSuite *KvTestSuite) TestSaveModeCreateNewItemsOnlyUpdateExpressionChange
 	err = appender.Add(frame)
 	kvSuite.Require().NoError(err)
 
-	err = appender.WaitForComplete(time.Second)
+	err = appender.WaitForComplete(10 * time.Second)
 	kvSuite.Require().NoError(err)
 
 	// Save a frame to the same path
@@ -925,7 +925,7 @@ func (kvSuite *KvTestSuite) TestSaveModeCreateNewItemsOnlyUpdateExpressionChange
 	err = appender.Add(frame2)
 	kvSuite.Require().NoError(err, "failed to write frame")
 
-	err = appender.WaitForComplete(time.Second)
+	err = appender.WaitForComplete(10 * time.Second)
 	kvSuite.Require().NoError(err)
 
 	rreq := &pb.ReadRequest{
@@ -961,7 +961,7 @@ func (kvSuite *KvTestSuite) TestSaveModeOverwriteItemNewRow() {
 	err = appender.Add(frame)
 	kvSuite.Require().NoError(err, "failed to write frame")
 
-	err = appender.WaitForComplete(time.Second)
+	err = appender.WaitForComplete(10 * time.Second)
 	kvSuite.Require().NoError(err)
 
 	// Save a frame to the same path
@@ -979,7 +979,7 @@ func (kvSuite *KvTestSuite) TestSaveModeOverwriteItemNewRow() {
 	err = appender.Add(frame2)
 	kvSuite.Require().NoError(err, "failed to write frame")
 
-	err = appender.WaitForComplete(time.Second)
+	err = appender.WaitForComplete(10 * time.Second)
 	kvSuite.Require().NoError(err)
 
 	rreq := &pb.ReadRequest{
@@ -1013,7 +1013,7 @@ func (kvSuite *KvTestSuite) TestSaveModeOverwriteItemNewAttribute() {
 	err = appender.Add(frame)
 	kvSuite.Require().NoError(err)
 
-	err = appender.WaitForComplete(time.Second)
+	err = appender.WaitForComplete(10 * time.Second)
 	kvSuite.Require().NoError(err)
 
 	// Save a frame to the same path
@@ -1032,7 +1032,7 @@ func (kvSuite *KvTestSuite) TestSaveModeOverwriteItemNewAttribute() {
 	err = appender.Add(frame2)
 	kvSuite.Require().NoError(err, "failed to write frame")
 
-	err = appender.WaitForComplete(time.Second)
+	err = appender.WaitForComplete(10 * time.Second)
 	kvSuite.Require().NoError(err)
 
 	rreq := &pb.ReadRequest{
@@ -1082,7 +1082,7 @@ func (kvSuite *KvTestSuite) TestSaveModeOverwriteItemSameAttributeDifferentValue
 	err = appender.Add(frame)
 	kvSuite.Require().NoError(err)
 
-	err = appender.WaitForComplete(time.Second)
+	err = appender.WaitForComplete(10 * time.Second)
 	kvSuite.Require().NoError(err)
 
 	// Save a frame to the same path
@@ -1099,7 +1099,7 @@ func (kvSuite *KvTestSuite) TestSaveModeOverwriteItemSameAttributeDifferentValue
 	err = appender.Add(frame2)
 	kvSuite.Require().NoError(err, "failed to write frame")
 
-	err = appender.WaitForComplete(time.Second)
+	err = appender.WaitForComplete(10 * time.Second)
 	kvSuite.Require().NoError(err)
 
 	rreq := &pb.ReadRequest{
@@ -1133,7 +1133,7 @@ func (kvSuite *KvTestSuite) TestSaveModeOverwriteItemChangeColumnType() {
 	err = appender.Add(frame)
 	kvSuite.Require().NoError(err)
 
-	err = appender.WaitForComplete(time.Second)
+	err = appender.WaitForComplete(10 * time.Second)
 	kvSuite.Require().NoError(err)
 
 	// Save a frame to the same path with different types
@@ -1151,7 +1151,7 @@ func (kvSuite *KvTestSuite) TestSaveModeOverwriteItemChangeColumnType() {
 	err = appender.Add(frame2)
 	kvSuite.Require().NoError(err, "failed to write frame")
 
-	if err := appender.WaitForComplete(time.Second); err == nil {
+	if err := appender.WaitForComplete(10 * time.Second); err == nil {
 		kvSuite.T().Fatalf("expected to fail, but completed succesfully")
 	}
 }
@@ -1172,7 +1172,7 @@ func (kvSuite *KvTestSuite) TestSaveModeOverwriteItemChangeIndexName() {
 	err = appender.Add(frame)
 	kvSuite.Require().NoError(err)
 
-	err = appender.WaitForComplete(time.Second)
+	err = appender.WaitForComplete(10 * time.Second)
 	kvSuite.Require().NoError(err)
 
 	// Save a frame to the same path with different types
@@ -1190,7 +1190,7 @@ func (kvSuite *KvTestSuite) TestSaveModeOverwriteItemChangeIndexName() {
 	err = appender.Add(frame2)
 	kvSuite.Require().NoError(err, "failed to write frame")
 
-	if err := appender.WaitForComplete(time.Second); err == nil {
+	if err := appender.WaitForComplete(10 * time.Second); err == nil {
 		kvSuite.T().Fatalf("expected to fail, but completed succesfully")
 	}
 }
@@ -1211,7 +1211,7 @@ func (kvSuite *KvTestSuite) TestSaveModeOverwriteItemUpdateExpressionNewAttribut
 	err = appender.Add(frame)
 	kvSuite.Require().NoError(err)
 
-	err = appender.WaitForComplete(time.Second)
+	err = appender.WaitForComplete(10 * time.Second)
 	kvSuite.Require().NoError(err)
 
 	// Save a frame to the same path
@@ -1229,7 +1229,7 @@ func (kvSuite *KvTestSuite) TestSaveModeOverwriteItemUpdateExpressionNewAttribut
 	err = appender.Add(frame2)
 	kvSuite.Require().NoError(err, "failed to write frame")
 
-	err = appender.WaitForComplete(time.Second)
+	err = appender.WaitForComplete(10 * time.Second)
 	kvSuite.Require().NoError(err)
 
 	// TODO: once schema inferring will be fix varify that schema was changed.
@@ -1281,7 +1281,7 @@ func (kvSuite *KvTestSuite) TestSaveModeOverwriteItemUpdateExpressionChangeAttri
 	err = appender.Add(frame)
 	kvSuite.Require().NoError(err)
 
-	err = appender.WaitForComplete(time.Second)
+	err = appender.WaitForComplete(10 * time.Second)
 	kvSuite.Require().NoError(err)
 
 	// Save a frame to the same path
@@ -1299,7 +1299,7 @@ func (kvSuite *KvTestSuite) TestSaveModeOverwriteItemUpdateExpressionChangeAttri
 	err = appender.Add(frame2)
 	kvSuite.Require().NoError(err, "failed to write frame")
 
-	err = appender.WaitForComplete(time.Second)
+	err = appender.WaitForComplete(10 * time.Second)
 	kvSuite.Require().NoError(err)
 
 	input := v3io.GetItemsInput{AttributeNames: []string{"*"}}

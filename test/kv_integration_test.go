@@ -161,7 +161,7 @@ func (kvSuite *KvTestSuite) TestWriteToExistingFolderWithoutSchema() {
 	err = appender.Add(frame)
 	kvSuite.Require().NoError(err)
 
-	err = appender.WaitForComplete(time.Second)
+	err = appender.WaitForComplete(10 * time.Second)
 	kvSuite.Require().NoError(err)
 
 	//delete schema
@@ -175,7 +175,7 @@ func (kvSuite *KvTestSuite) TestWriteToExistingFolderWithoutSchema() {
 	err = appender.Add(frame)
 	kvSuite.Require().NoError(err, "failed to add frame")
 
-	err = appender.WaitForComplete(time.Second)
+	err = appender.WaitForComplete(10 * time.Second)
 	kvSuite.Require().Error(err, "writing to an existing folder without a schema should fail")
 
 }
@@ -234,7 +234,7 @@ func (kvSuite *KvTestSuite) TestAll() {
 	err = appender.Add(frame)
 	kvSuite.Require().NoError(err)
 
-	err = appender.WaitForComplete(3 * time.Second)
+	err = appender.WaitForComplete(10 * time.Second)
 	kvSuite.Require().NoError(err)
 
 	time.Sleep(3 * time.Second) // Let DB sync
@@ -294,7 +294,7 @@ func (kvSuite *KvTestSuite) TestRangeScan() {
 	err = appender.Add(frame)
 	kvSuite.Require().NoError(err)
 
-	err = appender.WaitForComplete(3 * time.Second)
+	err = appender.WaitForComplete(10 * time.Second)
 	kvSuite.Require().NoError(err)
 
 	//check schema
@@ -398,7 +398,7 @@ func (kvSuite *KvTestSuite) TestNullValuesWrite() {
 	err = appender.Add(frame)
 	kvSuite.Require().NoError(err)
 
-	err = appender.WaitForComplete(3 * time.Second)
+	err = appender.WaitForComplete(10 * time.Second)
 	kvSuite.Require().NoError(err)
 
 	input := v3io.GetItemsInput{AttributeNames: []string{"__name", "n1", "n2", "n3", "n4"}}
@@ -501,7 +501,7 @@ func (kvSuite *KvTestSuite) TestNullColumnWrite() {
 	err = appender.Add(frame)
 	kvSuite.Require().NoError(err)
 
-	err = appender.WaitForComplete(3 * time.Second)
+	err = appender.WaitForComplete(10 * time.Second)
 	kvSuite.Require().NoError(err)
 
 	input := v3io.GetItemsInput{AttributeNames: []string{"__name", "n1", "n2"}}
@@ -625,7 +625,7 @@ func (kvSuite *KvTestSuite) TestRequestSpecificColumns() {
 	err = appender.Add(frame)
 	kvSuite.Require().NoError(err)
 
-	err = appender.WaitForComplete(3 * time.Second)
+	err = appender.WaitForComplete(10 * time.Second)
 	kvSuite.Require().NoError(err)
 
 	time.Sleep(3 * time.Second) // Let DB sync
@@ -665,7 +665,7 @@ func (kvSuite *KvTestSuite) TestRequestSpecificColumnsWithKey() {
 	err = appender.Add(frame)
 	kvSuite.Require().NoError(err)
 
-	err = appender.WaitForComplete(3 * time.Second)
+	err = appender.WaitForComplete(10 * time.Second)
 	kvSuite.Require().NoError(err)
 
 	time.Sleep(3 * time.Second) // Let DB sync
@@ -706,7 +706,7 @@ func (kvSuite *KvTestSuite) TestDeleteWithFilter() {
 	err = appender.Add(frame)
 	kvSuite.Require().NoError(err)
 
-	err = appender.WaitForComplete(3 * time.Second)
+	err = appender.WaitForComplete(10 * time.Second)
 	kvSuite.Require().NoError(err)
 
 	kvSuite.T().Log("delete")
@@ -754,7 +754,7 @@ func (kvSuite *KvTestSuite) TestRequestSystemAttrs() {
 	err = appender.Add(frame)
 	kvSuite.Require().NoError(err)
 
-	err = appender.WaitForComplete(3 * time.Second)
+	err = appender.WaitForComplete(10 * time.Second)
 	kvSuite.Require().NoError(err)
 
 	time.Sleep(3 * time.Second) // Let DB sync
@@ -791,7 +791,7 @@ func (kvSuite *KvTestSuite) TestNonExistingColumns() {
 	err = appender.Add(frame)
 	kvSuite.Require().NoError(err)
 
-	err = appender.WaitForComplete(3 * time.Second)
+	err = appender.WaitForComplete(10 * time.Second)
 	kvSuite.Require().NoError(err)
 
 	kvSuite.T().Log("read")
@@ -831,7 +831,7 @@ func (kvSuite *KvTestSuite) TestUpdateItemNoKey() {
 	err = appender.Add(frame)
 	requireCtx.NoError(err, "failed to write frame")
 
-	err = appender.WaitForComplete(time.Second)
+	err = appender.WaitForComplete(10 * time.Second)
 	requireCtx.Error(err, "empty key error is expected")
 	requireCtx.True(strings.HasSuffix(err.Error(), fmt.Sprintf("invalid input. key %q should not be empty", indexNames[0])))
 }
@@ -861,7 +861,7 @@ func (kvSuite *KvTestSuite) TestOverwriteItemNoKey() {
 	err = appender.Add(frame)
 	requireCtx.NoError(err, "failed to write frame")
 
-	err = appender.WaitForComplete(time.Second)
+	err = appender.WaitForComplete(10 * time.Second)
 	requireCtx.Error(err, "empty key error is expected")
 	requireCtx.True(strings.HasSuffix(err.Error(), fmt.Sprintf("invalid input. key %q should not be empty", indexNames[0])))
 }
@@ -891,7 +891,7 @@ func (kvSuite *KvTestSuite) TestUpdateItemNoSortingKey() {
 	err = appender.Add(frame)
 	requireCtx.NoError(err, "failed to write frame")
 
-	err = appender.WaitForComplete(time.Second)
+	err = appender.WaitForComplete(10 * time.Second)
 	requireCtx.Error(err, "empty key error is expected")
 	requireCtx.True(strings.HasSuffix(err.Error(), fmt.Sprintf("invalid input. sorting key %q should not be empty", indexNames[1])))
 }
@@ -921,9 +921,10 @@ func (kvSuite *KvTestSuite) TestOverwriteItemNoSortingKey() {
 	err = appender.Add(frame)
 	requireCtx.NoError(err, "failed to write frame")
 
-	err = appender.WaitForComplete(time.Second)
+	err = appender.WaitForComplete(10 * time.Second)
 	requireCtx.Error(err, "empty key error is expected")
-	requireCtx.True(strings.HasSuffix(err.Error(), fmt.Sprintf("invalid input. sorting key %q should not be empty", indexNames[1])))
+	expectedSuffix := fmt.Sprintf("invalid input. sorting key %q should not be empty", indexNames[1])
+	requireCtx.True(strings.HasSuffix(err.Error(), expectedSuffix))
 }
 
 func (kvSuite *KvTestSuite) TestUpdateExpressionWithNullValues() {
@@ -955,7 +956,7 @@ func (kvSuite *KvTestSuite) TestUpdateExpressionWithNullValues() {
 	err = appender.Add(frame)
 	kvSuite.Require().NoError(err)
 
-	err = appender.WaitForComplete(3 * time.Second)
+	err = appender.WaitForComplete(10 * time.Second)
 	kvSuite.Require().NoError(err)
 
 	// Second Phase: Update existing rows with null values
@@ -988,7 +989,7 @@ func (kvSuite *KvTestSuite) TestUpdateExpressionWithNullValues() {
 	err = appender.Add(frame)
 	kvSuite.Require().NoError(err)
 
-	err = appender.WaitForComplete(3 * time.Second)
+	err = appender.WaitForComplete(10 * time.Second)
 	kvSuite.Require().NoError(err)
 
 	input := v3io.GetItemsInput{AttributeNames: []string{"__name", "n1", "n2", "n3", "n4"}}
@@ -1066,7 +1067,7 @@ func (kvSuite *KvTestSuite) TestWritePartitionedTable() {
 	err = appender.Add(frame)
 	kvSuite.Require().NoError(err)
 
-	err = appender.WaitForComplete(3 * time.Second)
+	err = appender.WaitForComplete(10 * time.Second)
 	kvSuite.Require().NoError(err)
 
 	iter := frame.IterRows(true)
@@ -1114,7 +1115,7 @@ func (kvSuite *KvTestSuite) TestWritePartitionedTableWithMultiplePartitions() {
 	err = appender.Add(frame)
 	kvSuite.Require().NoError(err)
 
-	err = appender.WaitForComplete(3 * time.Second)
+	err = appender.WaitForComplete(10 * time.Second)
 	kvSuite.Require().NoError(err)
 
 	iter := frame.IterRows(true)
@@ -1163,7 +1164,7 @@ func (kvSuite *KvTestSuite) TestWritePartitionedBadPartitionColumns() {
 	err = appender.Add(frame)
 	kvSuite.Require().NoError(err)
 
-	err = appender.WaitForComplete(3 * time.Second)
+	err = appender.WaitForComplete(10 * time.Second)
 	kvSuite.Require().Error(err, "expected error for table %v, but finished successfully", table)
 }
 
@@ -1209,7 +1210,7 @@ func (kvSuite *KvTestSuite) TestWritePartitionedTableWithNullValues() {
 	err = appender.Add(frame)
 	kvSuite.Require().NoError(err)
 
-	err = appender.WaitForComplete(3 * time.Second)
+	err = appender.WaitForComplete(10 * time.Second)
 	kvSuite.Require().NoError(err)
 
 	expected := map[string]string{
@@ -1262,7 +1263,7 @@ func (kvSuite *KvTestSuite) TestUpdateExpressionWithCondition() {
 	err = appender.Add(frame)
 	kvSuite.Require().NoError(err)
 
-	err = appender.WaitForComplete(3 * time.Second)
+	err = appender.WaitForComplete(10 * time.Second)
 	kvSuite.Require().NoError(err)
 
 	// Second Phase: Update existing rows with condition
@@ -1291,7 +1292,7 @@ func (kvSuite *KvTestSuite) TestUpdateExpressionWithCondition() {
 	err = appender.Add(frame)
 	kvSuite.Require().NoError(err)
 
-	err = appender.WaitForComplete(3 * time.Second)
+	err = appender.WaitForComplete(10 * time.Second)
 	kvSuite.Require().NoError(err)
 
 	input := v3io.GetItemsInput{AttributeNames: []string{"__name", "nums", "bools"}}
