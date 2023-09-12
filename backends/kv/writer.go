@@ -681,6 +681,22 @@ func valueToTypedExpressionString(value interface{}) string {
 		seconds := typedVal.Unix()
 		nanos := typedVal.Nanosecond()
 		return fmt.Sprintf("%v:%v", seconds, nanos)
+	case bool:
+		// Python/storey compatibility by capitalizing
+		// IG-22141
+		if typedVal {
+			return "True"
+		}
+		return "False"
+	case float64, float32:
+		// Python/storey compatibility by deleting trailing zeros (except one trailing zero after period)
+		// IG-22140
+		str := fmt.Sprintf("%f", typedVal)
+		str = strings.TrimRight(str, "0")
+		if strings.HasSuffix(str, ".") {
+			str += "0"
+		}
+		return str
 	default:
 		return fmt.Sprintf("%v", value)
 	}
