@@ -364,10 +364,9 @@ func (a *Appender) Add(frame frames.Frame) error {
 
 func (a *Appender) formatKeyName(key interface{}, sortingVal interface{}) string {
 	var format string
+	format = valueToTypedExpressionString(key)
 	if sortingVal != nil {
-		format = fmt.Sprintf("%v.%v", key, sortingVal)
-	} else {
-		format = fmt.Sprintf("%v", key)
+		format = fmt.Sprintf("%s.%s", key, valueToTypedExpressionString(sortingVal))
 	}
 	return format
 }
