@@ -22,8 +22,8 @@ package grpc_test
 
 import (
 	"fmt"
-	"io/ioutil"
 	"net"
+	"os"
 	"reflect"
 	"testing"
 	"time"
@@ -34,7 +34,7 @@ import (
 )
 
 func TestEnd2End(t *testing.T) {
-	tmpDir, err := ioutil.TempDir("", "frames-grpc-e2e")
+	tmpDir, err := os.MkdirTemp("", "frames-grpc-e2e")
 	if err != nil {
 		t.Fatal(err)
 	}

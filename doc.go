@@ -18,7 +18,8 @@ under the Apache 2.0 license is conditioned upon your compliance with
 such restriction.
 */
 
-/*Package frames provides an efficient way of moving data from various sources.
+/*
+Package frames provides an efficient way of moving data from various sources.
 
 The package is composed os a HTTP web server that can serve data from various
 sources and from clients in Go and in Python.
