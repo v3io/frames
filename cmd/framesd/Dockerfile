@@ -19,7 +19,7 @@
 # (don't forget to update the -p accordingly)
 
 
-FROM golang:1.19-stretch as build
+FROM golang:1.19-bullseye as build
 
 WORKDIR /frames
 COPY . .
