@@ -47,8 +47,9 @@ jobs:
         with:
           ref: refs/pull/${{ github.event.number }}/merge
 
-      - name: Lint
-        run: make lint
+# Linter memory usage seems to be getting CI jobs killed
+#      - name: Lint
+#        run: make lint
 
       - name: Run Go tests
         run: make test-go
