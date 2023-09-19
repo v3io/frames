@@ -76,6 +76,8 @@ jobs:
         run: echo "$GITHUB_REF"
 
       - uses: actions/checkout@v3
+        with:
+          ref: refs/pull/${{ github.event.number }}/merge
 
       - name: Set up python ${{ matrix.python-version }}
         uses: actions/setup-python@v4
