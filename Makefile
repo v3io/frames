@@ -1,3 +1,17 @@
+# Copyright 2018 Iguazio
+#
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+#
+#     http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
+#
 FRAMES_TAG ?= latest
 FRAMES_REPOSITORY ?= iguazio/
 FRAMES_PATH ?= src/github.com/v3io/frames
@@ -20,12 +34,16 @@ build-framulate:
 		--tag $(FRAMES_REPOSITORY)framulate:$(FRAMES_TAG) \
 		.
 
+.PHONY: flake8
+flake8:
+	cd clients/py && make flake8
+
 .PHONY: test
 test: test-go test-py
 
 .PHONY: test-go
 test-go:
-	GO111MODULE=on go test -v $(testflags) -timeout 20m ./...
+	GO111MODULE=on go test -v -timeout 20m ./...
 
 .PHONY: test-py
 test-py:
@@ -35,17 +53,25 @@ test-py:
 wheel:
 	cd clients/py && python setup.py bdist_wheel
 
+.PHONY: python-dist
+python-dist: python-deps
+	cd clients/py && $(MAKE) dist
+
+.PHONY: set-version
+set-version:
+	cd clients/py && $(MAKE) set-version
+
 .PHONY: grpc
 grpc: grpc-go grpc-py
 
 .PHONY: grpc-go
 grpc-go:
-	protoc frames.proto --go_out=plugins=grpc:pb
+	protoc frames.proto --go_out=pb --go-grpc_out=pb --go-grpc_opt=require_unimplemented_servers=false
 
 .PHONY: grpc-py
 grpc-py:
 	cd clients/py && \
-	pipenv run python -m grpc_tools.protoc \
+	python -m grpc_tools.protoc \
 		-I../.. --python_out=v3io_frames\
 		--grpc_python_out=v3io_frames \
 		../../frames.proto
@@ -54,8 +80,7 @@ grpc-py:
 
 .PHONY: pypi
 pypi:
-	cd clients/py && \
-	    pipenv run make upload
+	cd clients/py && make upload
 
 .PHONY: cloc
 cloc:
@@ -71,17 +96,6 @@ update-go-deps:
 	go mod tidy
 	git add go.mod go.sum
 	@echo "Don't forget to test & commit"
-
-.PHONY: update-py-deps
-update-py-deps:
-	cd clients/py && $(MAKE) update-deps
-	git add clients/py/Pipfile*
-	@echo "Don't forget to test & commit"
-
-.PHONY: update-tsdb-deps
-update-tsdb-deps:
-	GO111MODULE=on go get github.com/v3io/v3io-tsdb@master
-	@echo "Done. Don't forget to commit ☺"
 
 .PHONY: python-deps
 python-deps:
@@ -115,7 +129,7 @@ frames:
 		--env GOOS=$(GOOS) \
 		--env GOARCH=$(GOARCH) \
 		--env FRAMES_TAG=$(FRAMES_TAG) \
-		golang:1.14 \
+		golang:1.19 \
 		make frames-bin
 
 PHONY: gofmt
