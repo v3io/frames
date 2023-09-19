@@ -1,7 +1,7 @@
 build
-flake8
 # https://stackoverflow.com/questions/73929564/entrypoints-object-has-no-attribute-get-digital-ocean
 importlib-metadata<5
+flake8
 ipython
 numpydoc
 pytest>=4.2,<6
