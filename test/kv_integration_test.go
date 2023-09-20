@@ -23,13 +23,13 @@ package test
 import (
 	"encoding/json"
 	"fmt"
+	"github.com/v3io/frames/pb"
 	"strings"
 	"time"
 
 	"github.com/nuclio/logger"
 	"github.com/stretchr/testify/suite"
 	"github.com/v3io/frames"
-	"github.com/v3io/frames/pb"
 	"github.com/v3io/frames/v3ioutils"
 	v3io "github.com/v3io/v3io-go/pkg/dataplane"
 	"github.com/v3io/v3io-tsdb/pkg/tsdb/tsdbtest"
@@ -180,6 +180,24 @@ func (kvSuite *KvTestSuite) TestWriteToExistingFolderWithoutSchema() {
 
 }
 
+func (kvSuite *KvTestSuite) generateColumn(columnName string, columnType string, size int) frames.Column {
+	switch columnType {
+	case "string":
+		return StringCol(kvSuite.T(), columnName, size)
+	case "float":
+		return FloatCol(kvSuite.T(), columnName, size)
+	case "bool":
+		return BoolCol(kvSuite.T(), columnName, size)
+	case "time":
+		return TimeCol(kvSuite.T(), columnName, size)
+	case "int":
+		return IntCol(kvSuite.T(), columnName, size)
+	default:
+		kvSuite.T().Fatalf("type %v not supported", columnType)
+		return nil // no-op
+	}
+}
+
 func (kvSuite *KvTestSuite) generateSequentialSampleFrameWithTypes(size int, indexName string, columnNames map[string]string) frames.Frame {
 	var icol frames.Column
 
@@ -194,21 +212,7 @@ func (kvSuite *KvTestSuite) generateSequentialSampleFrameWithTypes(size int, ind
 	columns := make([]frames.Column, len(columnNames))
 	i := 0
 	for columnName, columnType := range columnNames {
-		switch columnType {
-		case "string":
-			columns[i] = StringCol(kvSuite.T(), columnName, size)
-		case "float":
-			columns[i] = FloatCol(kvSuite.T(), columnName, size)
-		case "bool":
-			columns[i] = BoolCol(kvSuite.T(), columnName, size)
-		case "time":
-			columns[i] = TimeCol(kvSuite.T(), columnName, size)
-		case "int":
-			columns[i] = IntCol(kvSuite.T(), columnName, size)
-		default:
-			kvSuite.T().Fatalf("type %v not supported", columnType)
-		}
-
+		columns[i] = kvSuite.generateColumn(columnName, columnType, size)
 		i++
 	}
 
@@ -216,6 +220,110 @@ func (kvSuite *KvTestSuite) generateSequentialSampleFrameWithTypes(size int, ind
 	kvSuite.Require().NoError(err)
 
 	return frame
+}
+
+func (kvSuite *KvTestSuite) generateSequentialSampleFrameWithTypesV2(size int, indexColumnName string, columnNames map[string]string) frames.Frame {
+	indexColumnType, ok := columnNames[indexColumnName]
+	kvSuite.Require().True(ok)
+	delete(columnNames, indexColumnName)
+
+	icol := kvSuite.generateColumn(indexColumnName, indexColumnType, size)
+
+	columns := make([]frames.Column, len(columnNames))
+	i := 0
+	for columnName, columnType := range columnNames {
+		columns[i] = kvSuite.generateColumn(columnName, columnType, size)
+		i++
+	}
+
+	frame, err := frames.NewFrame(columns, []frames.Column{icol}, nil)
+	kvSuite.Require().NoError(err)
+
+	return frame
+}
+
+// IG-22141
+func (kvSuite *KvTestSuite) TestFloatIndexColumn() {
+	table := fmt.Sprintf("frames_ci/TestFloatIndexColumn%d", time.Now().UnixNano())
+
+	columnNames := map[string]string{"idx": "float", "n": "int"}
+	frame := kvSuite.generateSequentialSampleFrameWithTypesV2(3, "idx", columnNames)
+	wreq := &frames.WriteRequest{
+		Backend: kvSuite.backendName,
+		Table:   table,
+	}
+
+	appender, err := kvSuite.client.Write(wreq)
+	kvSuite.Require().NoError(err)
+
+	err = appender.Add(frame)
+	kvSuite.Require().NoError(err)
+
+	err = appender.WaitForComplete(10 * time.Second)
+	kvSuite.Require().NoError(err)
+
+	input := v3io.GetItemsInput{AttributeNames: []string{"__name", "n"}}
+
+	iter, err := v3ioutils.NewAsyncItemsCursor(
+		kvSuite.v3ioContainer, &input, 1,
+		nil, kvSuite.internalLogger,
+		0, []string{table + "/"},
+		"", "")
+
+	for iter.Next() {
+		currentRow := iter.GetItem()
+
+		key, _ := currentRow.GetFieldString("__name")
+		switch key {
+		case ".#schema":
+			continue
+		default:
+			name := currentRow.GetField("__name").(string)
+			kvSuite.Require().True(strings.HasSuffix(name, ".0"))
+		}
+	}
+}
+
+// IG-22140
+func (kvSuite *KvTestSuite) TestBoolIndexColumn() {
+	table := fmt.Sprintf("frames_ci/TestFloatIndexColumn%d", time.Now().UnixNano())
+
+	columnNames := map[string]string{"idx": "bool", "n": "int"}
+	frame := kvSuite.generateSequentialSampleFrameWithTypesV2(1, "idx", columnNames)
+	wreq := &frames.WriteRequest{
+		Backend: kvSuite.backendName,
+		Table:   table,
+	}
+
+	appender, err := kvSuite.client.Write(wreq)
+	kvSuite.Require().NoError(err)
+
+	err = appender.Add(frame)
+	kvSuite.Require().NoError(err)
+
+	err = appender.WaitForComplete(10 * time.Second)
+	kvSuite.Require().NoError(err)
+
+	input := v3io.GetItemsInput{AttributeNames: []string{"__name", "n"}}
+
+	iter, err := v3ioutils.NewAsyncItemsCursor(
+		kvSuite.v3ioContainer, &input, 1,
+		nil, kvSuite.internalLogger,
+		0, []string{table + "/"},
+		"", "")
+
+	for iter.Next() {
+		currentRow := iter.GetItem()
+
+		key, _ := currentRow.GetFieldString("__name")
+		switch key {
+		case ".#schema":
+			continue
+		default:
+			name := currentRow.GetField("__name").(string)
+			kvSuite.Require().Equal(name, "True")
+		}
+	}
 }
 
 func (kvSuite *KvTestSuite) TestAll() {
