@@ -689,10 +689,6 @@ func valueToKeyString(value interface{}) string {
 	switch typedVal := value.(type) {
 	case string:
 		return typedVal
-	case time.Time:
-		seconds := typedVal.Unix()
-		nanos := typedVal.Nanosecond()
-		return fmt.Sprintf("%v:%v", seconds, nanos)
 	case bool:
 		// Python/storey compatibility by capitalizing
 		// IG-22141
