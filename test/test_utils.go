@@ -17,10 +17,9 @@ import (
 type SuiteCreateFunc = func(frames.Client, v3io.Container, logger.Logger) suite.TestingSuite
 
 func FloatCol(t testing.TB, name string, size int) frames.Column {
-	random := rand.New(rand.NewSource(time.Now().UnixNano()))
 	floats := make([]float64, size)
 	for i := range floats {
-		floats[i] = random.Float64()
+		floats[i] = float64(i)
 	}
 
 	col, err := frames.NewSliceColumn(name, floats)

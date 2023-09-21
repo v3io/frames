@@ -363,13 +363,12 @@ func (a *Appender) Add(frame frames.Frame) error {
 }
 
 func (a *Appender) formatKeyName(key interface{}, sortingVal interface{}) string {
-	var format string
+	var formattedKey string
+	formattedKey = valueToKeyString(key)
 	if sortingVal != nil {
-		format = fmt.Sprintf("%v.%v", key, sortingVal)
-	} else {
-		format = fmt.Sprintf("%v", key)
+		formattedKey = fmt.Sprintf("%s.%s", formattedKey, valueToKeyString(sortingVal))
 	}
-	return format
+	return formattedKey
 }
 
 // update updates rows from a frame
@@ -681,6 +680,31 @@ func valueToTypedExpressionString(value interface{}) string {
 		seconds := typedVal.Unix()
 		nanos := typedVal.Nanosecond()
 		return fmt.Sprintf("%v:%v", seconds, nanos)
+	default:
+		return fmt.Sprintf("%v", value)
+	}
+}
+
+func valueToKeyString(value interface{}) string {
+	switch typedVal := value.(type) {
+	case string:
+		return typedVal
+	case bool:
+		// Python/storey compatibility by capitalizing
+		// IG-22141
+		if typedVal {
+			return "True"
+		}
+		return "False"
+	case float64, float32:
+		// Python/storey compatibility by deleting trailing zeros (except one trailing zero after period)
+		// IG-22140
+		str := fmt.Sprintf("%f", typedVal)
+		str = strings.TrimRight(str, "0")
+		if strings.HasSuffix(str, ".") {
+			str += "0"
+		}
+		return str
 	default:
 		return fmt.Sprintf("%v", value)
 	}
