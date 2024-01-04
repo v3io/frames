@@ -23,7 +23,9 @@ on:
 jobs:
   test-go:
     name: Lint & test Go code
-    runs-on: ubuntu-latest
+    runs-on: [ self-hosted, Linux ]
+    container:
+      image: python:3.9.18
 
     steps:
       - name: Dump github context
@@ -59,7 +61,9 @@ jobs:
 
   test-py:
     name: Lint & test Python code
-    runs-on: ubuntu-latest
+    runs-on: [ self-hosted, Linux ]
+    container:
+      image: python:3.9.18
 
     steps:
       - name: Dump github context
