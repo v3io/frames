@@ -15,10 +15,10 @@
 import warnings
 from datetime import datetime
 
+import google.protobuf.pyext._message as message
 import numpy as np
 import pandas as pd
 import pytz
-import google._upb._message as message
 from google.protobuf.message import Message
 from pandas.api.types import is_datetime64_any_dtype as is_datetime
 from pandas.api.types import is_integer_dtype as is_integer
