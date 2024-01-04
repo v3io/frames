@@ -232,7 +232,7 @@ def series2col_with_dtype(s, name, dtype):
     elif dtype == fpb.FLOAT:
         kw['dtype'] = fpb.FLOAT
         kw['floats'] = s
-    elif dtype == fpb.STRING:  # Pandas dtype for str is object
+    elif dtype == fpb.STRING:
         kw['strings'] = s
         kw['dtype'] = fpb.STRING
     elif dtype == fpb.BOOLEAN:
@@ -263,7 +263,7 @@ def series2col(s, name):
     elif is_float(s.dtype):
         kw['dtype'] = fpb.FLOAT
         kw['floats'] = s
-    elif s.dtype == np.object:  # Pandas dtype for str is object
+    elif s.dtype == object:
         kw['strings'] = s
         kw['dtype'] = fpb.STRING
     elif is_bool(s.dtype):
@@ -278,7 +278,7 @@ def series2col(s, name):
         kw['times'] = s.astype(np.int64)
         kw['dtype'] = fpb.TIME
     elif is_categorical_dtype(s.dtype):
-        # We assume catgorical data is strings
+        # We assume categorical data is strings
         kw['strings'] = s.astype(str)
         kw['dtype'] = fpb.STRING
     else:
@@ -297,7 +297,7 @@ def insert_nulls_based_on_null_values_map(df, null_values):
         for col_name in null_values[i].nullColumns:
             # boolean columns should be converted to `object` to be able to
             # represent None.
-            if df[col_name].dtype == np.bool and \
+            if df[col_name].dtype == bool and \
                     col_name not in casted_columns:
                 casted_columns[col_name] = True
                 df[col_name] = df[col_name].astype(object)

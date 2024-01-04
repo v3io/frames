@@ -28,7 +28,7 @@ def test_encode_df():
 
     df = pd.read_csv('{}/weather.csv'.format(here))
     df['STATION_CAT'] = df['STATION'].astype('category')
-    df['WDF2_F'] = df['WDF2'].astype(np.float)
+    df['WDF2_F'] = df['WDF2'].astype(float)
     msg = pbutils.df2msg(df, labels)
 
     names = [col.name for col in msg.columns]
