@@ -85,6 +85,10 @@ jobs:
       - name: Lint Python code
         run: make flake8
 
+      - uses: actions/setup-go@v3
+        with:
+          go-version: "^1.19.13"
+
       - name: Run Python tests
         run: make test-py
         env:
