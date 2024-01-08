@@ -191,7 +191,7 @@ jobs:
       - name: Set up python ${{ matrix.python-version }}
         uses: actions/setup-python@v4
         with:
-          python-version: 3.7
+          python-version: 3.9
 
       - name: Set version
         run: make set-version

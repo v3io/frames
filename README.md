@@ -37,7 +37,7 @@ The library was developed by Iguazio to simplify working with data in the [Iguaz
 <a id="python-version"></a>
 #### Python Version
 
-The current version of Frames supports Python 3.6 and 3.7.
+The current version of Frames supports Python 3.7 and 3.9.
 
 <a id="initialization"></a>
 #### Initialization
