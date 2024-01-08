@@ -83,7 +83,7 @@ func (csvSuite *CsvTestSuite) generateSampleFrame(t testing.TB) frames.Frame {
 }
 
 func (csvSuite *CsvTestSuite) TestAll() {
-	table := fmt.Sprintf("frames_ci/csv_test_all%d", time.Now().UnixNano())
+	table := fmt.Sprintf("csv_test_all%d", time.Now().UnixNano())
 
 	csvSuite.T().Log("write")
 	frame := csvSuite.generateSampleFrame(csvSuite.T())
@@ -98,7 +98,7 @@ func (csvSuite *CsvTestSuite) TestAll() {
 	err = appender.Add(frame)
 	csvSuite.Require().NoError(err)
 
-	err = appender.WaitForComplete(3 * time.Second)
+	err = appender.WaitForComplete(10 * time.Second)
 	csvSuite.Require().NoError(err)
 
 	time.Sleep(3 * time.Second) // Let DB sync
