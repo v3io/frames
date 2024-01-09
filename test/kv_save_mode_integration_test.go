@@ -15,7 +15,7 @@ import (
 // === SaveMode - errorIfTableExists
 
 func (kvSuite *KvTestSuite) TestSaveModeErrorIfExistsTableExists() {
-	table := fmt.Sprintf("TestSaveModeErrorIfExistsTableExists%d", time.Now().UnixNano())
+	table := fmt.Sprintf("frames_ci/TestSaveModeErrorIfExistsTableExists%d", time.Now().UnixNano())
 
 	frame := kvSuite.generateRandomSampleFrame(5, "idx", []string{"n1", "n2"})
 
@@ -50,7 +50,7 @@ func (kvSuite *KvTestSuite) TestSaveModeErrorIfExistsTableExists() {
 // === SaveMode - OverwriteTable
 
 func (kvSuite *KvTestSuite) TestSaveModeOverwriteTableExists() {
-	table := fmt.Sprintf("TestSaveModeOverwriteTableExists%d", time.Now().UnixNano())
+	table := fmt.Sprintf("frames_ci/TestSaveModeOverwriteTableExists%d", time.Now().UnixNano())
 
 	frame := kvSuite.generateRandomSampleFrame(5, "idx", []string{"n1", "n2"})
 	wreq := &frames.WriteRequest{
@@ -98,7 +98,7 @@ func (kvSuite *KvTestSuite) TestSaveModeOverwriteTableExists() {
 }
 
 func (kvSuite *KvTestSuite) TestSaveModeOverwriteTableDoesntExists() {
-	table := fmt.Sprintf("TestSaveModeOverwriteTableDoesntExists%d", time.Now().UnixNano())
+	table := fmt.Sprintf("frames_ci/TestSaveModeOverwriteTableDoesntExists%d", time.Now().UnixNano())
 
 	newColumns := []string{"n3", "n4"}
 	frame := kvSuite.generateRandomSampleFrame(5, "idx", newColumns)
@@ -133,7 +133,7 @@ func (kvSuite *KvTestSuite) TestSaveModeOverwriteTableDoesntExists() {
 // === SaveMode - UpdateItem
 
 func (kvSuite *KvTestSuite) TestSaveModeUpdateItemNewRow() {
-	table := fmt.Sprintf("TestSaveModeUpdateItemNewRow%d", time.Now().UnixNano())
+	table := fmt.Sprintf("frames_ci/TestSaveModeUpdateItemNewRow%d", time.Now().UnixNano())
 
 	columnNames := []string{"n1", "n2"}
 	frame := kvSuite.generateRandomSampleFrame(3, "idx", columnNames)
@@ -185,7 +185,7 @@ func (kvSuite *KvTestSuite) TestSaveModeUpdateItemNewRow() {
 }
 
 func (kvSuite *KvTestSuite) TestSaveModeUpdateItemNewAttribute() {
-	table := fmt.Sprintf("TestSaveModeUpdateItemNewAttribute%d", time.Now().UnixNano())
+	table := fmt.Sprintf("frames_ci/TestSaveModeUpdateItemNewAttribute%d", time.Now().UnixNano())
 
 	columnNames := []string{"n1", "n2"}
 	frame := kvSuite.generateSequentialSampleFrame(3, "idx", columnNames)
@@ -239,7 +239,7 @@ func (kvSuite *KvTestSuite) TestSaveModeUpdateItemNewAttribute() {
 }
 
 func (kvSuite *KvTestSuite) TestSaveModeUpdateItemSameAttributeDifferentValues() {
-	table := fmt.Sprintf("TestSaveModeUpdateItemSameAttributeDifferentValues%d", time.Now().UnixNano())
+	table := fmt.Sprintf("frames_ci/TestSaveModeUpdateItemSameAttributeDifferentValues%d", time.Now().UnixNano())
 
 	columnNames := []string{"n1", "n2"}
 	frame := kvSuite.generateSequentialSampleFrame(3, "idx", columnNames)
@@ -291,7 +291,7 @@ func (kvSuite *KvTestSuite) TestSaveModeUpdateItemSameAttributeDifferentValues()
 }
 
 func (kvSuite *KvTestSuite) TestSaveModeUpdateItemChangeColumnType() {
-	table := fmt.Sprintf("TestSaveModeUpdateItemChangeColumnType%d", time.Now().UnixNano())
+	table := fmt.Sprintf("frames_ci/TestSaveModeUpdateItemChangeColumnType%d", time.Now().UnixNano())
 
 	columnNames := []string{"n1", "n2"}
 	frame := kvSuite.generateSequentialSampleFrame(3, "idx", columnNames)
@@ -329,7 +329,7 @@ func (kvSuite *KvTestSuite) TestSaveModeUpdateItemChangeColumnType() {
 }
 
 func (kvSuite *KvTestSuite) TestSaveModeUpdateItemChangeNumricColumnType() {
-	table := fmt.Sprintf("TestSaveModeUpdateItemChangeNumricColumnType%d", time.Now().UnixNano())
+	table := fmt.Sprintf("frames_ci/TestSaveModeUpdateItemChangeNumricColumnType%d", time.Now().UnixNano())
 
 	frame := kvSuite.generateSequentialSampleFrameWithTypes(3, "idx", map[string]string{"n1": "float", "n2": "int"})
 	wreq := &frames.WriteRequest{
@@ -379,7 +379,7 @@ func (kvSuite *KvTestSuite) TestSaveModeUpdateItemChangeNumricColumnType() {
 }
 
 func (kvSuite *KvTestSuite) TestSaveModeUpdateItemChangeIndexName() {
-	table := fmt.Sprintf("TestSaveModeUpdateItemChangeIndexName%d", time.Now().UnixNano())
+	table := fmt.Sprintf("frames_ci/TestSaveModeUpdateItemChangeIndexName%d", time.Now().UnixNano())
 
 	columnNames := []string{"n1", "n2"}
 	frame := kvSuite.generateSequentialSampleFrame(3, "idx", columnNames)
@@ -417,7 +417,7 @@ func (kvSuite *KvTestSuite) TestSaveModeUpdateItemChangeIndexName() {
 }
 
 func (kvSuite *KvTestSuite) TestSaveModeUpdateItemUpdateExpressionNewAttributes() {
-	table := fmt.Sprintf("TestSaveModeUpdateItemUpdateExpressionNewAttributes%d", time.Now().UnixNano())
+	table := fmt.Sprintf("frames_ci/TestSaveModeUpdateItemUpdateExpressionNewAttributes%d", time.Now().UnixNano())
 
 	columnNames := []string{"n1", "n2"}
 	frame := kvSuite.generateSequentialSampleFrame(3, "idx", columnNames)
@@ -486,7 +486,7 @@ func (kvSuite *KvTestSuite) TestSaveModeUpdateItemUpdateExpressionNewAttributes(
 }
 
 func (kvSuite *KvTestSuite) TestSaveModeUpdateItemUpdateExpressionChangeAttributeValue() {
-	table := fmt.Sprintf("TestSaveModeUpdateItemUpdateExpressionChangeAttributeValue%d", time.Now().UnixNano())
+	table := fmt.Sprintf("frames_ci/TestSaveModeUpdateItemUpdateExpressionChangeAttributeValue%d", time.Now().UnixNano())
 
 	columnNames := []string{"n1", "n2"}
 	frame := kvSuite.generateSequentialSampleFrame(3, "idx", columnNames)
@@ -554,7 +554,7 @@ func (kvSuite *KvTestSuite) TestSaveModeUpdateItemUpdateExpressionChangeAttribut
 // === SaveMode - CreateNewItemsOnly
 
 func (kvSuite *KvTestSuite) TestSaveModeCreateNewItemsOnlyNewRow() {
-	table := fmt.Sprintf("TestSaveModeCreateNewItemsOnlyNewRow%d", time.Now().UnixNano())
+	table := fmt.Sprintf("frames_ci/TestSaveModeCreateNewItemsOnlyNewRow%d", time.Now().UnixNano())
 
 	columnNames := []string{"n1", "n2"}
 	frame := kvSuite.generateRandomSampleFrame(3, "idx", columnNames)
@@ -606,7 +606,7 @@ func (kvSuite *KvTestSuite) TestSaveModeCreateNewItemsOnlyNewRow() {
 }
 
 func (kvSuite *KvTestSuite) TestSaveModeCreateNewItemsOnlyNewAttribute() {
-	table := fmt.Sprintf("TestSaveModeCreateNewItemsOnlyNewAttribute%d", time.Now().UnixNano())
+	table := fmt.Sprintf("frames_ci/TestSaveModeCreateNewItemsOnlyNewAttribute%d", time.Now().UnixNano())
 
 	columnNames := []string{"n1", "n2"}
 	frame := kvSuite.generateSequentialSampleFrame(3, "idx", columnNames)
@@ -675,7 +675,7 @@ func (kvSuite *KvTestSuite) TestSaveModeCreateNewItemsOnlyNewAttribute() {
 }
 
 func (kvSuite *KvTestSuite) TestSaveModeCreateNewItemsOnlySameAttributeDifferentValues() {
-	table := fmt.Sprintf("TestSaveModeCreateNewItemsOnlySameAttributeDifferentValues%d", time.Now().UnixNano())
+	table := fmt.Sprintf("frames_ci/TestSaveModeCreateNewItemsOnlySameAttributeDifferentValues%d", time.Now().UnixNano())
 
 	columnNames := []string{"n1", "n2"}
 	frame := kvSuite.generateSequentialSampleFrame(3, "idx", columnNames)
@@ -726,7 +726,7 @@ func (kvSuite *KvTestSuite) TestSaveModeCreateNewItemsOnlySameAttributeDifferent
 }
 
 func (kvSuite *KvTestSuite) TestSaveModeCreateNewItemsOnlyChangeColumnType() {
-	table := fmt.Sprintf("TestSaveModeCreateNewItemsOnlyChangeColumnType%d", time.Now().UnixNano())
+	table := fmt.Sprintf("frames_ci/TestSaveModeCreateNewItemsOnlyChangeColumnType%d", time.Now().UnixNano())
 
 	columnNames := []string{"n1", "n2"}
 	frame := kvSuite.generateSequentialSampleFrame(3, "idx", columnNames)
@@ -765,7 +765,7 @@ func (kvSuite *KvTestSuite) TestSaveModeCreateNewItemsOnlyChangeColumnType() {
 }
 
 func (kvSuite *KvTestSuite) TestSaveModeCreateNewItemsOnlyChangeIndexName() {
-	table := fmt.Sprintf("TestSaveModeCreateNewItemsOnlyChangeIndexName%d", time.Now().UnixNano())
+	table := fmt.Sprintf("frames_ci/TestSaveModeCreateNewItemsOnlyChangeIndexName%d", time.Now().UnixNano())
 
 	columnNames := []string{"n1", "n2"}
 	frame := kvSuite.generateSequentialSampleFrame(3, "idx", columnNames)
@@ -804,7 +804,7 @@ func (kvSuite *KvTestSuite) TestSaveModeCreateNewItemsOnlyChangeIndexName() {
 }
 
 func (kvSuite *KvTestSuite) TestSaveModeCreateNewItemsOnlyUpdateExpressionNewAttributes() {
-	table := fmt.Sprintf("TestSaveModeCreateNewItemsOnlyUpdateExpressionNewAttributes%d", time.Now().UnixNano())
+	table := fmt.Sprintf("frames_ci/TestSaveModeCreateNewItemsOnlyUpdateExpressionNewAttributes%d", time.Now().UnixNano())
 
 	columnNames := []string{"n1", "n2"}
 	frame := kvSuite.generateSequentialSampleFrame(3, "idx", columnNames)
@@ -873,7 +873,7 @@ func (kvSuite *KvTestSuite) TestSaveModeCreateNewItemsOnlyUpdateExpressionNewAtt
 }
 
 func (kvSuite *KvTestSuite) TestSaveModeCreateNewItemsOnlyUpdateExpressionChangeAttributeValue() {
-	table := fmt.Sprintf("TestSaveModeCreateNewItemsOnlyUpdateExpressionChangeAttributeValue%d", time.Now().UnixNano())
+	table := fmt.Sprintf("frames_ci/TestSaveModeCreateNewItemsOnlyUpdateExpressionChangeAttributeValue%d", time.Now().UnixNano())
 
 	columnNames := []string{"n1", "n2"}
 	frame := kvSuite.generateSequentialSampleFrame(3, "idx", columnNames)
@@ -927,7 +927,7 @@ func (kvSuite *KvTestSuite) TestSaveModeCreateNewItemsOnlyUpdateExpressionChange
 // === SaveMode - OverwriteItem
 
 func (kvSuite *KvTestSuite) TestSaveModeOverwriteItemNewRow() {
-	table := fmt.Sprintf("TestSaveModeOverwriteItemNewRow%d", time.Now().UnixNano())
+	table := fmt.Sprintf("frames_ci/TestSaveModeOverwriteItemNewRow%d", time.Now().UnixNano())
 
 	columnNames := []string{"n1", "n2"}
 	frame := kvSuite.generateRandomSampleFrame(3, "idx", columnNames)
@@ -979,7 +979,7 @@ func (kvSuite *KvTestSuite) TestSaveModeOverwriteItemNewRow() {
 }
 
 func (kvSuite *KvTestSuite) TestSaveModeOverwriteItemNewAttribute() {
-	table := fmt.Sprintf("TestSaveModeOverwriteItemNewAttribute%d", time.Now().UnixNano())
+	table := fmt.Sprintf("frames_ci/TestSaveModeOverwriteItemNewAttribute%d", time.Now().UnixNano())
 
 	columnNames := []string{"n1", "n2"}
 	frame := kvSuite.generateSequentialSampleFrame(3, "idx", columnNames)
@@ -1048,7 +1048,7 @@ func (kvSuite *KvTestSuite) TestSaveModeOverwriteItemNewAttribute() {
 }
 
 func (kvSuite *KvTestSuite) TestSaveModeOverwriteItemSameAttributeDifferentValues() {
-	table := fmt.Sprintf("TestSaveModeOverwriteItemSameAttributeDifferentValues%d", time.Now().UnixNano())
+	table := fmt.Sprintf("frames_ci/TestSaveModeOverwriteItemSameAttributeDifferentValues%d", time.Now().UnixNano())
 
 	columnNames := []string{"n1", "n2"}
 	frame := kvSuite.generateSequentialSampleFrame(3, "idx", columnNames)
@@ -1099,7 +1099,7 @@ func (kvSuite *KvTestSuite) TestSaveModeOverwriteItemSameAttributeDifferentValue
 }
 
 func (kvSuite *KvTestSuite) TestSaveModeOverwriteItemChangeColumnType() {
-	table := fmt.Sprintf("TestSaveModeOverwriteItemChangeColumnType%d", time.Now().UnixNano())
+	table := fmt.Sprintf("frames_ci/TestSaveModeOverwriteItemChangeColumnType%d", time.Now().UnixNano())
 
 	columnNames := []string{"n1", "n2"}
 	frame := kvSuite.generateSequentialSampleFrame(3, "idx", columnNames)
@@ -1138,7 +1138,7 @@ func (kvSuite *KvTestSuite) TestSaveModeOverwriteItemChangeColumnType() {
 }
 
 func (kvSuite *KvTestSuite) TestSaveModeOverwriteItemChangeIndexName() {
-	table := fmt.Sprintf("TestSaveModeOverwriteItemChangeIndexName%d", time.Now().UnixNano())
+	table := fmt.Sprintf("frames_ci/TestSaveModeOverwriteItemChangeIndexName%d", time.Now().UnixNano())
 
 	columnNames := []string{"n1", "n2"}
 	frame := kvSuite.generateSequentialSampleFrame(3, "idx", columnNames)
@@ -1177,7 +1177,7 @@ func (kvSuite *KvTestSuite) TestSaveModeOverwriteItemChangeIndexName() {
 }
 
 func (kvSuite *KvTestSuite) TestSaveModeOverwriteItemUpdateExpressionNewAttributes() {
-	table := fmt.Sprintf("TestSaveModeOverwriteItemUpdateExpressionNewAttributes%d", time.Now().UnixNano())
+	table := fmt.Sprintf("frames_ci/TestSaveModeOverwriteItemUpdateExpressionNewAttributes%d", time.Now().UnixNano())
 
 	columnNames := []string{"n1", "n2"}
 	frame := kvSuite.generateSequentialSampleFrame(3, "idx", columnNames)
@@ -1247,7 +1247,7 @@ func (kvSuite *KvTestSuite) TestSaveModeOverwriteItemUpdateExpressionNewAttribut
 }
 
 func (kvSuite *KvTestSuite) TestSaveModeOverwriteItemUpdateExpressionChangeAttributeValue() {
-	table := fmt.Sprintf("TestSaveModeOverwriteItemUpdateExpressionChangeAttributeValue%d", time.Now().UnixNano())
+	table := fmt.Sprintf("frames_ci/TestSaveModeOverwriteItemUpdateExpressionChangeAttributeValue%d", time.Now().UnixNano())
 
 	columnNames := []string{"n1", "n2"}
 	frame := kvSuite.generateSequentialSampleFrame(3, "idx", columnNames)

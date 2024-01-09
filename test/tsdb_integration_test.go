@@ -91,7 +91,7 @@ func (tsdbSuite *TsdbTestSuite) SetupSuite() {
 }
 
 func (tsdbSuite *TsdbTestSuite) TestAll() {
-	table := fmt.Sprintf("tsdb_test_all%d", time.Now().UnixNano())
+	table := fmt.Sprintf("frames_ci/tsdb_test_all%d", time.Now().UnixNano())
 
 	tsdbSuite.T().Log("create")
 	req := &pb.CreateRequest{
@@ -154,7 +154,7 @@ func (tsdbSuite *TsdbTestSuite) TestAll() {
 }
 
 func (tsdbSuite *TsdbTestSuite) TestRegressionIG14560() {
-	table := fmt.Sprintf("tsdb_test_all%d", time.Now().UnixNano())
+	table := fmt.Sprintf("frames_ci/tsdb_test_all%d", time.Now().UnixNano())
 
 	tsdbSuite.T().Log("create")
 	req := &pb.CreateRequest{
@@ -235,7 +235,7 @@ func (tsdbSuite *TsdbTestSuite) TestRegressionIG14560() {
 }
 
 func (tsdbSuite *TsdbTestSuite) TestAllStringMetric() {
-	table := fmt.Sprintf("tsdb_test_all%d", time.Now().UnixNano())
+	table := fmt.Sprintf("frames_ci/tsdb_test_all%d", time.Now().UnixNano())
 
 	tsdbSuite.T().Log("create")
 	req := &pb.CreateRequest{
@@ -296,7 +296,7 @@ func (tsdbSuite *TsdbTestSuite) TestAllStringMetric() {
 }
 
 func (tsdbSuite *TsdbTestSuite) TestDeleteWithTimestamp() {
-	table := fmt.Sprintf("TestDeleteWithTimestamp%d", time.Now().UnixNano())
+	table := fmt.Sprintf("frames_ci/TestDeleteWithTimestamp%d", time.Now().UnixNano())
 
 	tsdbSuite.T().Log("create")
 	req := &pb.CreateRequest{
@@ -351,7 +351,7 @@ func (tsdbSuite *TsdbTestSuite) TestDeleteWithTimestamp() {
 }
 
 func (tsdbSuite *TsdbTestSuite) TestDeleteWithRelativeTime() {
-	table := fmt.Sprintf("TestDeleteWithRelativeTime%d", time.Now().UnixNano())
+	table := fmt.Sprintf("frames_ci/TestDeleteWithRelativeTime%d", time.Now().UnixNano())
 
 	tsdbSuite.T().Log("create")
 	req := &pb.CreateRequest{
@@ -405,7 +405,7 @@ func (tsdbSuite *TsdbTestSuite) TestDeleteWithRelativeTime() {
 }
 
 func (tsdbSuite *TsdbTestSuite) TestDeleteWithRFC3339Time() {
-	table := fmt.Sprintf("TestDeleteWithRFC3339Time%d", time.Now().UnixNano())
+	table := fmt.Sprintf("frames_ci/TestDeleteWithRFC3339Time%d", time.Now().UnixNano())
 
 	tsdbSuite.T().Log("create")
 	req := &pb.CreateRequest{
@@ -461,7 +461,7 @@ func (tsdbSuite *TsdbTestSuite) TestDeleteWithRFC3339Time() {
 }
 
 func (tsdbSuite *TsdbTestSuite) TestDeleteAll() {
-	table := fmt.Sprintf("TestDeleteAll%d", time.Now().UnixNano())
+	table := fmt.Sprintf("frames_ci/TestDeleteAll%d", time.Now().UnixNano())
 
 	tsdbSuite.T().Log("create")
 	req := &pb.CreateRequest{
@@ -508,7 +508,7 @@ func (tsdbSuite *TsdbTestSuite) TestDeleteAll() {
 }
 
 func (tsdbSuite *TsdbTestSuite) TestDeleteAllSamplesButNotTable() {
-	table := fmt.Sprintf("TestDeleteAllSamplesButNotTable%d", time.Now().UnixNano())
+	table := fmt.Sprintf("frames_ci/TestDeleteAllSamplesButNotTable%d", time.Now().UnixNano())
 
 	tsdbSuite.T().Log("create")
 	req := &pb.CreateRequest{

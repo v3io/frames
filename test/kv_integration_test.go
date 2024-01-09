@@ -145,7 +145,7 @@ func (kvSuite *KvTestSuite) generateSequentialSampleFrame(size int, indexName st
 }
 
 func (kvSuite *KvTestSuite) TestWriteToExistingFolderWithoutSchema() {
-	table := fmt.Sprintf("TestWriteToExistingFolderWithoutSchema%d", time.Now().UnixNano())
+	table := fmt.Sprintf("frames_ci/TestWriteToExistingFolderWithoutSchema%d", time.Now().UnixNano())
 
 	columnNames := []string{"n1", "n2"}
 	frame := kvSuite.generateSequentialSampleFrame(3, "idx", columnNames)
@@ -244,7 +244,7 @@ func (kvSuite *KvTestSuite) generateSequentialSampleFrameWithTypesV2(size int, i
 
 // IG-22141
 func (kvSuite *KvTestSuite) TestFloatIndexColumn() {
-	table := fmt.Sprintf("frames_ci/TestFloatIndexColumn%d", time.Now().UnixNano())
+	table := fmt.Sprintf("frames_ci/frames_ci/TestFloatIndexColumn%d", time.Now().UnixNano())
 
 	columnNames := map[string]string{"idx": "float", "n": "int"}
 	frame := kvSuite.generateSequentialSampleFrameWithTypesV2(3, "idx", columnNames)
@@ -286,7 +286,7 @@ func (kvSuite *KvTestSuite) TestFloatIndexColumn() {
 
 // IG-22140
 func (kvSuite *KvTestSuite) TestBoolIndexColumn() {
-	table := fmt.Sprintf("frames_ci/TestFloatIndexColumn%d", time.Now().UnixNano())
+	table := fmt.Sprintf("frames_ci/frames_ci/TestFloatIndexColumn%d", time.Now().UnixNano())
 
 	columnNames := map[string]string{"idx": "bool", "n": "int"}
 	frame := kvSuite.generateSequentialSampleFrameWithTypesV2(1, "idx", columnNames)
@@ -327,7 +327,7 @@ func (kvSuite *KvTestSuite) TestBoolIndexColumn() {
 }
 
 func (kvSuite *KvTestSuite) TestAll() {
-	table := fmt.Sprintf("kv_test_all%d", time.Now().UnixNano())
+	table := fmt.Sprintf("frames_ci/kv_test_all%d", time.Now().UnixNano())
 
 	kvSuite.T().Log("write")
 	frame := kvSuite.generateRandomSampleFrame(5, "idx", []string{"n1", "n2", "n3"})
@@ -375,7 +375,7 @@ func (kvSuite *KvTestSuite) TestAll() {
 }
 
 func (kvSuite *KvTestSuite) TestRangeScan() {
-	table := fmt.Sprintf("kv_range_scan%d", time.Now().UnixNano())
+	table := fmt.Sprintf("frames_ci/kv_range_scan%d", time.Now().UnixNano())
 
 	index := []string{"mike", "joe", "mike", "jim", "mike"}
 	icol, err := frames.NewSliceColumn("key", index)
@@ -471,7 +471,7 @@ func (kvSuite *KvTestSuite) TestRangeScan() {
 }
 
 func (kvSuite *KvTestSuite) TestNullValuesWrite() {
-	table := fmt.Sprintf("kv_test_nulls%d", time.Now().UnixNano())
+	table := fmt.Sprintf("frames_ci/kv_test_nulls%d", time.Now().UnixNano())
 
 	index := []string{"mike", "joe", "jim"}
 	icol, err := frames.NewSliceColumn("idx", index)
@@ -563,7 +563,7 @@ func (kvSuite *KvTestSuite) TestNullValuesWrite() {
 
 // IG-19426
 func (kvSuite *KvTestSuite) TestNullColumnWrite() {
-	table := fmt.Sprintf("kv_test_nulls%d", time.Now().UnixNano())
+	table := fmt.Sprintf("frames_ci/kv_test_nulls%d", time.Now().UnixNano())
 
 	index := []string{"mike", "joe", "jim"}
 	indexCol := &pb.Column{
@@ -661,7 +661,7 @@ func (kvSuite *KvTestSuite) TestNullColumnWrite() {
 }
 
 func (kvSuite *KvTestSuite) TestNullValuesRead() {
-	table := fmt.Sprintf("kv_test_nulls_read%d", time.Now().UnixNano())
+	table := fmt.Sprintf("frames_ci/kv_test_nulls_read%d", time.Now().UnixNano())
 
 	data := make(map[string]map[string]interface{})
 	data["mike"] = map[string]interface{}{"idx": "mike", "n2": "dsad", "n3": true, "n4": time.Now()}
@@ -719,7 +719,7 @@ func (kvSuite *KvTestSuite) TestNullValuesRead() {
 }
 
 func (kvSuite *KvTestSuite) TestRequestSpecificColumns() {
-	table := fmt.Sprintf("TestRequestSpecificColumns%d", time.Now().UnixNano())
+	table := fmt.Sprintf("frames_ci/TestRequestSpecificColumns%d", time.Now().UnixNano())
 
 	frame := kvSuite.generateRandomSampleFrame(6, "idx", []string{"n1", "n2", "n3"})
 	wreq := &frames.WriteRequest{
@@ -759,7 +759,7 @@ func (kvSuite *KvTestSuite) TestRequestSpecificColumns() {
 }
 
 func (kvSuite *KvTestSuite) TestRequestSpecificColumnsWithKey() {
-	table := fmt.Sprintf("TestRequestSpecificColumnsWithKey%d", time.Now().UnixNano())
+	table := fmt.Sprintf("frames_ci/TestRequestSpecificColumnsWithKey%d", time.Now().UnixNano())
 
 	frame := kvSuite.generateRandomSampleFrame(6, "idx", []string{"n1", "n2", "n3"})
 	wreq := &frames.WriteRequest{
@@ -800,7 +800,7 @@ func (kvSuite *KvTestSuite) TestRequestSpecificColumnsWithKey() {
 }
 
 func (kvSuite *KvTestSuite) TestDeleteWithFilter() {
-	table := fmt.Sprintf("kv_delete_filter%d", time.Now().UnixNano())
+	table := fmt.Sprintf("frames_ci/kv_delete_filter%d", time.Now().UnixNano())
 
 	frame := kvSuite.generateRandomSampleFrame(5, "idx", []string{"n1", "n2"})
 	wreq := &frames.WriteRequest{
@@ -848,7 +848,7 @@ func (kvSuite *KvTestSuite) TestDeleteWithFilter() {
 }
 
 func (kvSuite *KvTestSuite) TestRequestSystemAttrs() {
-	table := fmt.Sprintf("TestRequestSystemAttrs%d", time.Now().UnixNano())
+	table := fmt.Sprintf("frames_ci/TestRequestSystemAttrs%d", time.Now().UnixNano())
 
 	frame := kvSuite.generateRandomSampleFrame(5, "idx", []string{"n1", "n2"})
 	wreq := &frames.WriteRequest{
@@ -885,7 +885,7 @@ func (kvSuite *KvTestSuite) TestRequestSystemAttrs() {
 	kvSuite.Require().NoError(it.Err())
 }
 func (kvSuite *KvTestSuite) TestNonExistingColumns() {
-	table := fmt.Sprintf("TestNonExistingColumns%d", time.Now().UnixNano())
+	table := fmt.Sprintf("frames_ci/TestNonExistingColumns%d", time.Now().UnixNano())
 
 	frame := kvSuite.generateRandomSampleFrame(5, "idx", []string{"n1", "n2"})
 	wreq := &frames.WriteRequest{
@@ -915,7 +915,7 @@ func (kvSuite *KvTestSuite) TestNonExistingColumns() {
 }
 
 func (kvSuite *KvTestSuite) TestUpdateItemNoKey() {
-	table := fmt.Sprintf("TestUpdateItemNoKey_%d", time.Now().UnixNano())
+	table := fmt.Sprintf("frames_ci/TestUpdateItemNoKey_%d", time.Now().UnixNano())
 	requireCtx := kvSuite.Require()
 
 	columnNames := []string{"col_1", "col_2"}
@@ -945,7 +945,7 @@ func (kvSuite *KvTestSuite) TestUpdateItemNoKey() {
 }
 
 func (kvSuite *KvTestSuite) TestOverwriteItemNoKey() {
-	table := fmt.Sprintf("TestOverwriteItemNoKey_%d", time.Now().UnixNano())
+	table := fmt.Sprintf("frames_ci/TestOverwriteItemNoKey_%d", time.Now().UnixNano())
 	requireCtx := kvSuite.Require()
 
 	columnNames := []string{"col1", "col_2"}
@@ -975,7 +975,7 @@ func (kvSuite *KvTestSuite) TestOverwriteItemNoKey() {
 }
 
 func (kvSuite *KvTestSuite) TestUpdateItemNoSortingKey() {
-	table := fmt.Sprintf("TestUpdateItemNoSortingKey_%d", time.Now().UnixNano())
+	table := fmt.Sprintf("frames_ci/TestUpdateItemNoSortingKey_%d", time.Now().UnixNano())
 	requireCtx := kvSuite.Require()
 
 	columnNames := []string{"col_1", "col_2"}
@@ -1005,7 +1005,7 @@ func (kvSuite *KvTestSuite) TestUpdateItemNoSortingKey() {
 }
 
 func (kvSuite *KvTestSuite) TestOverwriteItemNoSortingKey() {
-	table := fmt.Sprintf("TestOverwriteItemNoSortingKey_%d", time.Now().UnixNano())
+	table := fmt.Sprintf("frames_ci/TestOverwriteItemNoSortingKey_%d", time.Now().UnixNano())
 	requireCtx := kvSuite.Require()
 
 	columnNames := []string{"col1", "col_2"}
@@ -1035,7 +1035,7 @@ func (kvSuite *KvTestSuite) TestOverwriteItemNoSortingKey() {
 }
 
 func (kvSuite *KvTestSuite) TestUpdateExpressionWithNullValues() {
-	table := fmt.Sprintf("kv_test_update_with_nulls_%d", time.Now().UnixNano())
+	table := fmt.Sprintf("frames_ci/kv_test_update_with_nulls_%d", time.Now().UnixNano())
 
 	index := []string{"mike", "joe", "jim", "nil"}
 	icol, err := frames.NewSliceColumn("idx", index)
@@ -1159,7 +1159,7 @@ func (kvSuite *KvTestSuite) TestUpdateExpressionWithNullValues() {
 }
 
 func (kvSuite *KvTestSuite) TestWritePartitionedTable() {
-	table := fmt.Sprintf("TestWritePartitionedTable%d", time.Now().UnixNano())
+	table := fmt.Sprintf("frames_ci/TestWritePartitionedTable%d", time.Now().UnixNano())
 
 	frame := kvSuite.generateRandomSampleFrame(5, "idx", []string{"n1", "n2", "n3"})
 	wreq := &frames.WriteRequest{
@@ -1207,7 +1207,7 @@ func (kvSuite *KvTestSuite) TestWritePartitionedTable() {
 }
 
 func (kvSuite *KvTestSuite) TestWritePartitionedTableWithMultiplePartitions() {
-	table := fmt.Sprintf("TestWritePartitionedTable%d", time.Now().UnixNano())
+	table := fmt.Sprintf("frames_ci/TestWritePartitionedTable%d", time.Now().UnixNano())
 
 	frame := kvSuite.generateRandomSampleFrame(5, "idx", []string{"n1", "n2", "n3", "n4"})
 	wreq := &frames.WriteRequest{
@@ -1255,7 +1255,7 @@ func (kvSuite *KvTestSuite) TestWritePartitionedTableWithMultiplePartitions() {
 }
 
 func (kvSuite *KvTestSuite) TestWritePartitionedBadPartitionColumns() {
-	table := fmt.Sprintf("TestWritePartitionedTable%d", time.Now().UnixNano())
+	table := fmt.Sprintf("frames_ci/TestWritePartitionedTable%d", time.Now().UnixNano())
 
 	frame := kvSuite.generateRandomSampleFrame(5, "idx", []string{"n1", "n2", "n3"})
 	wreq := &frames.WriteRequest{
@@ -1276,7 +1276,7 @@ func (kvSuite *KvTestSuite) TestWritePartitionedBadPartitionColumns() {
 }
 
 func (kvSuite *KvTestSuite) TestWritePartitionedTableWithNullValues() {
-	table := fmt.Sprintf("TestWritePartitionedTableWithNullValues%d", time.Now().UnixNano())
+	table := fmt.Sprintf("frames_ci/TestWritePartitionedTableWithNullValues%d", time.Now().UnixNano())
 
 	index := []string{"mike", "joe"}
 	icol, err := frames.NewSliceColumn("idx", index)
@@ -1334,7 +1334,7 @@ func (kvSuite *KvTestSuite) TestWritePartitionedTableWithNullValues() {
 }
 
 func (kvSuite *KvTestSuite) TestUpdateExpressionWithCondition() {
-	table := fmt.Sprintf("kv_test_update_with_condition_%d", time.Now().UnixNano())
+	table := fmt.Sprintf("frames_ci/kv_test_update_with_condition_%d", time.Now().UnixNano())
 
 	index := []string{"mike", "joe", "jim", "nil"}
 	icol, err := frames.NewSliceColumn("idx", index)

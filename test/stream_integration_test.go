@@ -64,7 +64,7 @@ func (streamSuite *StreamTestSuite) SetupSuite() {
 }
 
 func (streamSuite *StreamTestSuite) TestAll() {
-	table := fmt.Sprintf("stream_test_all%d", time.Now().UnixNano())
+	table := fmt.Sprintf("frames_ci/stream_test_all%d", time.Now().UnixNano())
 
 	streamSuite.T().Log("create")
 	req := &pb.CreateRequest{

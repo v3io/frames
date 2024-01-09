@@ -245,12 +245,15 @@ class Client(ClientBase):
         stub = fgrpc.FramesStub(self._channel)
         request = fpb.VersionRequest()
         resp = stub.Version(request)
+        server_version = resp.version
+        if server_version.startswith("v"):
+            server_version = server_version[1:]
         if resp.version:
-            client_version = __version__[:__version__.rfind(".")]
-            server_version = resp.version[:resp.version.rfind(".")]
-            if client_version != server_version:
+            client_major_minor_version = __version__[:__version__.rfind(".")]
+            server_major_minor__version = server_version[:server_version.rfind(".")]
+            if client_major_minor_version != server_major_minor__version:
                 warnings.warn(
-                    f"Warning - Server version '{resp.version}' differs in major/minor version from client "
+                    f"Warning - Server version '{server_version}' differs in major/minor version from client "
                     f"version '{__version__}'. Some operations may not work as expected."
                 )
         else:
