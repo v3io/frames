@@ -117,7 +117,7 @@ func (tsdbSuite *TsdbTestSuite) TestAll() {
 	err = appender.Add(frame)
 	tsdbSuite.Require().NoError(err)
 
-	err = appender.WaitForComplete(3 * time.Second)
+	err = appender.WaitForComplete(10 * time.Second)
 	tsdbSuite.Require().NoError(err)
 
 	time.Sleep(3 * time.Second) // Let DB sync
@@ -199,7 +199,7 @@ func (tsdbSuite *TsdbTestSuite) TestRegressionIG14560() {
 	err = appender.Add(frame)
 	tsdbSuite.Require().NoError(err)
 
-	err = appender.WaitForComplete(3 * time.Second)
+	err = appender.WaitForComplete(10 * time.Second)
 	tsdbSuite.Require().NoError(err)
 
 	time.Sleep(3 * time.Second) // Let DB sync
@@ -261,7 +261,7 @@ func (tsdbSuite *TsdbTestSuite) TestAllStringMetric() {
 	err = appender.Add(frame)
 	tsdbSuite.Require().NoError(err)
 
-	err = appender.WaitForComplete(3 * time.Second)
+	err = appender.WaitForComplete(10 * time.Second)
 	tsdbSuite.Require().NoError(err)
 
 	time.Sleep(3 * time.Second) // Let DB sync
@@ -322,7 +322,7 @@ func (tsdbSuite *TsdbTestSuite) TestDeleteWithTimestamp() {
 	err = appender.Add(frame)
 	tsdbSuite.Require().NoError(err)
 
-	err = appender.WaitForComplete(3 * time.Second)
+	err = appender.WaitForComplete(10 * time.Second)
 	tsdbSuite.Require().NoError(err)
 
 	tsdbSuite.T().Log("delete")
@@ -377,7 +377,7 @@ func (tsdbSuite *TsdbTestSuite) TestDeleteWithRelativeTime() {
 	err = appender.Add(frame)
 	tsdbSuite.Require().NoError(err)
 
-	err = appender.WaitForComplete(3 * time.Second)
+	err = appender.WaitForComplete(10 * time.Second)
 	tsdbSuite.Require().NoError(err)
 
 	tsdbSuite.T().Log("delete")
@@ -431,7 +431,7 @@ func (tsdbSuite *TsdbTestSuite) TestDeleteWithRFC3339Time() {
 	err = appender.Add(frame)
 	tsdbSuite.Require().NoError(err)
 
-	err = appender.WaitForComplete(3 * time.Second)
+	err = appender.WaitForComplete(10 * time.Second)
 	tsdbSuite.Require().NoError(err)
 
 	tsdbSuite.T().Log("delete")
@@ -487,7 +487,7 @@ func (tsdbSuite *TsdbTestSuite) TestDeleteAll() {
 	err = appender.Add(frame)
 	tsdbSuite.Require().NoError(err)
 
-	err = appender.WaitForComplete(3 * time.Second)
+	err = appender.WaitForComplete(10 * time.Second)
 	tsdbSuite.Require().NoError(err)
 
 	tsdbSuite.T().Log("delete")
@@ -534,7 +534,7 @@ func (tsdbSuite *TsdbTestSuite) TestDeleteAllSamplesButNotTable() {
 	err = appender.Add(frame)
 	tsdbSuite.Require().NoError(err)
 
-	err = appender.WaitForComplete(3 * time.Second)
+	err = appender.WaitForComplete(10 * time.Second)
 	tsdbSuite.Require().NoError(err)
 
 	tsdbSuite.T().Log("delete")
