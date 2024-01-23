@@ -5,7 +5,7 @@ go 1.19
 require (
 	github.com/ghodss/yaml v1.0.0
 	github.com/golang/groupcache v0.0.0-20191027212112-611e8accdfc9
-	github.com/golang/protobuf v1.2.0
+	github.com/golang/protobuf v1.5.3
 	github.com/nuclio/errors v0.0.4
 	github.com/nuclio/logger v0.0.1
 	github.com/nuclio/zap v0.1.2
@@ -17,7 +17,7 @@ require (
 	github.com/xwb1989/sqlparser v0.0.0-20180606152119-120387863bf2
 	golang.org/x/net v0.17.0
 	golang.org/x/text v0.13.0
-	google.golang.org/grpc v1.20.0
+	google.golang.org/grpc v1.56.3
 )
 
 require (
@@ -35,7 +35,8 @@ require (
 	go.uber.org/multierr v1.6.0 // indirect
 	golang.org/x/sync v0.1.0 // indirect
 	golang.org/x/sys v0.13.0 // indirect
-	google.golang.org/genproto v0.0.0-20180817151627-c66870c02cf8 // indirect
+	google.golang.org/genproto v0.0.0-20230410155749-daa745c078e1 // indirect
+	google.golang.org/protobuf v1.30.0 // indirect
 	gopkg.in/yaml.v2 v2.2.8 // indirect
 	gopkg.in/yaml.v3 v3.0.1 // indirect
 	zombiezen.com/go/capnproto2 v2.17.0+incompatible // indirect
