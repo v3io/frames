@@ -173,7 +173,7 @@ class Client(ClientBase):
         # TODO: Make it DELETE ?
         resp = self._session.post(url, headers=headers, json=request)
         if not resp.ok:
-            raise CreateError(resp.text)
+            raise DeleteError(resp.text)
 
     @connection_error(ExecuteError)
     def _execute(self, backend, table, command, args, expression):

@@ -21,7 +21,9 @@ import pytest
 import v3io_frames as v3f
 from datetime import datetime
 import pytz
+
 from conftest import has_go, test_backends, protocols, has_session
+from v3io_frames import DeleteError
 
 tsdb_span = 5  # hours
 integ_params = [(p, b) for p in protocols for b in test_backends]
@@ -219,6 +221,10 @@ def test_kv_read_empty_df(framesd, session, protocol):
     assert isinstance(df, pd.DataFrame), 'iterator=False returned generator'
 
     client.delete(backend, tableName)
+
+    # calling delete again should raise an error
+    with pytest.raises(DeleteError):
+        client.delete(backend, tableName)
 
 
 @pytest.mark.skipif(not has_session, reason='No session found')
