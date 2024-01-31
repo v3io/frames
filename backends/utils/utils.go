@@ -112,7 +112,7 @@ func NewColumnFromType(t string, size int) (interface{}, error) {
 		return make([]bool, size), nil
 	}
 
-	return nil, fmt.Errorf("unknown type - %T", t)
+	return nil, fmt.Errorf("unknown type - %s", t)
 }
 
 // AppendNil appends an empty value to data
