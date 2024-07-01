@@ -241,7 +241,8 @@ def series2col_with_dtype(s, name, dtype):
     elif dtype == fpb.TIME:
         s = pd.to_datetime(s, utc=True)
         s = s.dt.tz_convert('UTC')
-        kw['times'] = s.astype(np.int64)
+        # ML-6855: this results in nanoseconds regardless of datetime granularity, unlike s.astype(np.int64)
+        kw['times'] = s.apply(lambda x: x.value)
         kw['dtype'] = fpb.TIME
     elif dtype == fpb.NULL:
         kw['dtype'] = fpb.NULL
