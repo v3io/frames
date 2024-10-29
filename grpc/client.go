@@ -56,7 +56,7 @@ func NewClient(address string, session *frames.Session, logger logger.Logger) (*
 		return nil, fmt.Errorf("empty address")
 	}
 
-	conn, err := grpc.Dial(
+	conn, err := grpc.NewClient(
 		address,
 		grpc.WithTransportCredentials(insecure.NewCredentials()),
 		grpc.WithDefaultCallOptions(grpc.MaxCallRecvMsgSize(grpcMsgSize)),
