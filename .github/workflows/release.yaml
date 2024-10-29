@@ -40,7 +40,7 @@ jobs:
       - name: Dump github ref
         run: echo "$GITHUB_REF"
 
-      - uses: actions/checkout@v3
+      - uses: actions/checkout@v4
 
       # This gets killed, probably due to memory usage
       # - name: Lint
@@ -78,7 +78,7 @@ jobs:
       - name: Dump github ref
         run: echo "$GITHUB_REF"
 
-      - uses: actions/checkout@v3
+      - uses: actions/checkout@v4
 
       - name: Install dependencies
         run: make python-deps
@@ -115,7 +115,7 @@ jobs:
       - name: Dump github ref
         run: echo "$GITHUB_REF"
 
-      - uses: actions/checkout@v3
+      - uses: actions/checkout@v4
 
       - uses: actions/setup-go@v3
         with:
@@ -186,7 +186,7 @@ jobs:
       - release-docker-internal
 
     steps:
-      - uses: actions/checkout@v3
+      - uses: actions/checkout@v4
 
       - name: Set up python ${{ matrix.python-version }}
         uses: actions/setup-python@v4

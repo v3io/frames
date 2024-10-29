@@ -41,7 +41,7 @@ jobs:
       - name: Dump github ref
         run: echo "$GITHUB_REF"
 
-      - uses: actions/checkout@v3
+      - uses: actions/checkout@v4
 
       # This gets killed, probably due to memory usage
       # - name: Lint
@@ -79,7 +79,7 @@ jobs:
       - name: Dump github ref
         run: echo "$GITHUB_REF"
 
-      - uses: actions/checkout@v3
+      - uses: actions/checkout@v4
 
       - name: Install dependencies
         run: make python-deps
