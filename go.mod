@@ -1,6 +1,6 @@
 module github.com/v3io/frames
 
-go 1.23
+go 1.19
 
 require (
 	github.com/ghodss/yaml v1.0.0
