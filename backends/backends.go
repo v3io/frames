@@ -25,6 +25,7 @@ import (
 	"reflect"
 	"strings"
 	"sync"
+	"unicode"
 
 	"github.com/nuclio/logger"
 	"github.com/pkg/errors"
@@ -107,6 +108,9 @@ func ValidateRequest(backend string, request interface{}, allowedFields map[stri
 	for i := 0; i < reftype.NumField(); i++ {
 		field := reftype.Field(i)
 		fieldName := field.Name
+		if unicode.IsLower(rune(fieldName[0])) {
+			continue
+		}
 		fieldValue := reflect.ValueOf(request).Elem().FieldByName(fieldName).Interface()
 		zeroValue := reflect.Zero(field.Type).Interface()
 		if !globalRequestFieldsByRequestType[reftype][fieldName] && !allowedFields[fieldName] && !reflect.DeepEqual(fieldValue, zeroValue) {

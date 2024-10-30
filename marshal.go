@@ -28,9 +28,9 @@ import (
 	"fmt"
 	"io"
 
-	"github.com/golang/protobuf/proto"
 	"github.com/pkg/errors"
 	"github.com/v3io/frames/pb"
+	"google.golang.org/protobuf/proto"
 )
 
 var (

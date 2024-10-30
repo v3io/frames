@@ -19,15 +19,15 @@
 # (don't forget to update the -p accordingly)
 
 
-FROM golang:1.19-bullseye as build
+FROM --platform=linux/amd64 golang:1.19-bullseye as build
 
 WORKDIR /frames
 COPY . .
 ARG FRAMES_VERSION=unknown
-RUN go build -ldflags="-X main.Version=${FRAMES_VERSION}" ./cmd/framesd
+RUN GOOS=linux GOARCH=amd64 go build -ldflags="-X main.Version=${FRAMES_VERSION}" ./cmd/framesd
 RUN cp framesd /usr/local/bin
 
-FROM debian:jessie-slim
+FROM --platform=linux/amd64 debian:jessie-slim
 COPY --from=build /usr/local/bin/framesd /usr/local/bin
 
 VOLUME /etc/framesd
