@@ -15,7 +15,7 @@
 import warnings
 from datetime import datetime
 
-import google.protobuf.pyext._message as message
+from google.protobuf.pyext import cpp_message
 import numpy as np
 import pandas as pd
 import pytz
@@ -32,8 +32,8 @@ from .dtypes import dtype_of
 from .errors import MessageError, WriteError
 
 pb_list_types = (
-    message.RepeatedCompositeContainer,
-    message.RepeatedScalarContainer,
+    cpp_message._message.RepeatedCompositeContainer,
+    cpp_message._message.RepeatedScalarContainer,
 )
 
 
@@ -77,7 +77,7 @@ def pb2py(obj):
     if isinstance(obj, pb_list_types):
         return [pb2py(v) for v in obj]
 
-    if isinstance(obj, message.MessageMapContainer):
+    if isinstance(obj, cpp_message._message.MessageMapContainer):
         return {
             key: pb2py(value) for key, value in obj.items()
         }
