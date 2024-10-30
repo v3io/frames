@@ -77,11 +77,6 @@ def pb2py(obj):
     if isinstance(obj, pb_list_types):
         return [pb2py(v) for v in obj]
 
-    if isinstance(obj, cpp_message._message.MessageMapContainer):
-        return {
-            key: pb2py(value) for key, value in obj.items()
-        }
-
     return obj
 
 
