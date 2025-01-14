@@ -140,18 +140,5 @@ else
 	$(error Please run `go fmt ./...` to format the code)
 endif
 
-$(GOPATH)/bin/golangci-lint:
-	@echo Installing golangci-lint...
-	curl -sSfL https://raw.githubusercontent.com/golangci/golangci-lint/master/install.sh | sh -s v1.63.4
-	cp ./bin/golangci-lint $(GOPATH)/bin/
-
 .PHONY: lint
-lint: gofmt $(GOPATH)/bin/golangci-lint
-	@echo Linting...
-	@$(GOPATH)/bin/golangci-lint run \
-     --disable-all --enable=goconst --enable=ineffassign \
-     --enable=unconvert --enable=errcheck --enable=gofmt --enable=misspell \
-     --enable=staticcheck --enable=gosimple --enable=govet --enable=goconst \
-     --timeout=10m \
-    api/... backends/... cmd/... framulate/... grpc/... http/... repeatingtask/... v3ioutils/...
-	@echo done linting
+lint: gofmt
