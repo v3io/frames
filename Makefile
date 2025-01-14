@@ -155,7 +155,7 @@ impi:
 
 $(GOPATH)/bin/golangci-lint:
 	@echo Installing golangci-lint...
-	curl -sSfL https://raw.githubusercontent.com/golangci/golangci-lint/master/install.sh | sh -s v1.49.0
+	curl -sSfL https://raw.githubusercontent.com/golangci/golangci-lint/master/install.sh | sh -s v1.63.4
 	cp ./bin/golangci-lint $(GOPATH)/bin/
 
 .PHONY: lint
