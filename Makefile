@@ -162,8 +162,8 @@ $(GOPATH)/bin/golangci-lint:
 lint: gofmt impi $(GOPATH)/bin/golangci-lint
 	@echo Linting...
 	@$(GOPATH)/bin/golangci-lint run \
-     --disable-all --enable=deadcode --enable=goconst --enable=golint --enable=ineffassign \
-     --enable=interfacer --enable=unconvert --enable=varcheck --enable=errcheck --enable=gofmt --enable=misspell \
+     --disable-all --enable=goconst --enable=ineffassign \
+     --enable=unconvert --enable=errcheck --enable=gofmt --enable=misspell \
      --enable=staticcheck --enable=gosimple --enable=govet --enable=goconst \
      --timeout=10m \
     api/... backends/... cmd/... framulate/... grpc/... http/... repeatingtask/... v3ioutils/...
