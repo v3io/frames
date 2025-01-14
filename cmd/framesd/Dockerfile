@@ -19,7 +19,7 @@
 # (don't forget to update the -p accordingly)
 
 
-FROM --platform=linux/amd64 golang:1.19-bullseye as build
+FROM --platform=linux/amd64 golang:1.23-bullseye as build
 
 WORKDIR /frames
 COPY . .
