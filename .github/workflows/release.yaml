@@ -24,7 +24,7 @@ jobs:
     name: Lint & test Go code
     runs-on: [ self-hosted, Linux ]
     container:
-      image: golang:1.23-bookworm
+      image: golang:1.23-alpine
 
     steps:
       - name: Dump github context
