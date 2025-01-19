@@ -30,7 +30,7 @@ FROM --platform=linux/amd64 debian:jessie-slim
 COPY --from=build /usr/local/bin/framesd /usr/local/bin
 
 VOLUME /etc/framesd
-ENV V3IO_GRPC_PORT 8081
-ENV V3IO_HTTP_PORT 8080
+ENV V3IO_GRPC_PORT=8081
+ENV V3IO_HTTP_PORT=8080
 
 CMD framesd -grpcAddr :${V3IO_GRPC_PORT} -httpAddr :${V3IO_HTTP_PORT} -config /etc/framesd.yaml
