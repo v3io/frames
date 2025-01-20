@@ -18,16 +18,13 @@
 # You can also use -e V3IO_GRPC_PORT=9999 and -e V3IO_HTTP_PORT=9998 to set ports
 # (don't forget to update the -p accordingly)
 
-FROM golang:1.23-bookworm AS build
+FROM --platform=linux/amd64 golang:1.23-alpine AS build
 
 WORKDIR /frames
 COPY . .
 ARG FRAMES_VERSION=unknown
 RUN GOOS=linux GOARCH=amd64 go build -ldflags="-X main.Version=${FRAMES_VERSION}" ./cmd/framesd
 RUN cp framesd /usr/local/bin
-
-FROM --platform=linux/amd64 debian:jessie-slim
-COPY --from=build /usr/local/bin/framesd /usr/local/bin
 
 VOLUME /etc/framesd
 ENV V3IO_GRPC_PORT=8081
