@@ -25,6 +25,7 @@ COPY . .
 ARG FRAMES_VERSION=unknown
 RUN GOOS=linux GOARCH=amd64 go build -ldflags="-X main.Version=${FRAMES_VERSION}" ./cmd/framesd
 RUN cp framesd /usr/local/bin
+RUN apk add bash
 
 VOLUME /etc/framesd
 ENV V3IO_GRPC_PORT=8081
