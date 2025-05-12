@@ -24,7 +24,7 @@ jobs:
     name: Lint & test Go code
     runs-on: [ self-hosted, Linux ]
     container:
-      image: golang:1.23-alpine
+      image: golang:1.24-alpine
 
     steps:
       - name: Dump github context
@@ -91,7 +91,7 @@ jobs:
 
       - uses: actions/setup-go@v3
         with:
-          go-version: "^1.23.4"
+          go-version: "^1.24.3"
 
       - name: Run Python tests
         run: make test-py
@@ -122,7 +122,7 @@ jobs:
 
       - uses: actions/setup-go@v3
         with:
-          go-version: "^1.19.13"
+          go-version: "^1.24.3"
 
       - name: Build binaries for ${{ matrix.go-os }}
         run: make frames-bin
