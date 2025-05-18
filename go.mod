@@ -7,16 +7,16 @@ require (
 	github.com/golang/groupcache v0.0.0-20191027212112-611e8accdfc9
 	github.com/nuclio/errors v0.0.4
 	github.com/nuclio/logger v0.0.1
-	github.com/nuclio/zap v0.1.2
+	github.com/nuclio/zap v0.3.1
 	github.com/pkg/errors v0.8.1
-	github.com/stretchr/testify v1.8.1
+	github.com/stretchr/testify v1.8.4
 	github.com/v3io/v3io-go v0.3.0
 	github.com/v3io/v3io-tsdb v0.14.1
 	github.com/valyala/fasthttp v1.44.0
 	github.com/xwb1989/sqlparser v0.0.0-20180606152119-120387863bf2
-	golang.org/x/text v0.21.0
-	google.golang.org/grpc v1.64.1
-	google.golang.org/protobuf v1.34.2
+	golang.org/x/text v0.25.0
+	google.golang.org/grpc v1.72.0
+	google.golang.org/protobuf v1.36.6
 )
 
 require (
@@ -25,17 +25,17 @@ require (
 	github.com/davecgh/go-spew v1.1.1 // indirect
 	github.com/imdario/mergo v0.3.7 // indirect
 	github.com/klauspost/compress v1.15.9 // indirect
-	github.com/liranbg/uberzap v1.20.0-nuclio.1 // indirect
-	github.com/logrusorgru/aurora/v3 v3.0.0 // indirect
+	github.com/logrusorgru/aurora/v4 v4.0.0 // indirect
 	github.com/pmezard/go-difflib v1.0.0 // indirect
 	github.com/rcrowley/go-metrics v0.0.0-20181016184325-3113b8401b8a // indirect
+	github.com/rogpeppe/go-internal v1.14.1 // indirect
 	github.com/valyala/bytebufferpool v1.0.0 // indirect
-	go.uber.org/atomic v1.7.0 // indirect
-	go.uber.org/multierr v1.6.0 // indirect
-	golang.org/x/net v0.34.0 // indirect
-	golang.org/x/sync v0.10.0 // indirect
-	golang.org/x/sys v0.29.0 // indirect
-	google.golang.org/genproto v0.0.0-20230410155749-daa745c078e1 // indirect
+	go.uber.org/multierr v1.11.0 // indirect
+	go.uber.org/zap v1.27.0 // indirect
+	golang.org/x/net v0.40.0 // indirect
+	golang.org/x/sync v0.14.0 // indirect
+	golang.org/x/sys v0.33.0 // indirect
+	google.golang.org/genproto/googleapis/rpc v0.0.0-20250512202823-5a2f75b736a9 // indirect
 	gopkg.in/yaml.v2 v2.2.8 // indirect
 	gopkg.in/yaml.v3 v3.0.1 // indirect
 	zombiezen.com/go/capnproto2 v2.17.0+incompatible // indirect
