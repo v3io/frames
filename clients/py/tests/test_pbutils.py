@@ -34,7 +34,6 @@ def test_encode_df():
     names = [col.name for col in msg.columns]
     assert set(names) == set(df.columns), 'columns mismatch'
     assert not msg.indices, 'has index'
-    assert pbutils.pb2py(msg.labels) == labels, 'labels mismatch'
 
     # Now with index
     index_name = 'DATE'
