@@ -60,7 +60,7 @@ jobs:
     name: Lint & test Python code
     runs-on: [ self-hosted, Linux ]
     container:
-      image: python:3.9.18
+      image: python:3.11.11
 
     env:
       V3IO_API: ${{ secrets.V3IO_API }}

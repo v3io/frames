@@ -75,7 +75,7 @@ jobs:
     runs-on: [ self-hosted, Linux ]
     if: ${{ contains( github.event.pull_request.labels.*.name, 'safe-to-test') }}
     container:
-      image: python:3.9.18
+      image: python:3.11.11
 
     steps:
       - name: Dump github context
