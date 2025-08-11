@@ -15,6 +15,7 @@
 import warnings
 from datetime import datetime
 
+from google.protobuf.internal import containers
 from google.protobuf.pyext import cpp_message
 import numpy as np
 import pandas as pd
@@ -30,6 +31,10 @@ from pandas.core.dtypes.dtypes import CategoricalDtype
 from . import frames_pb2 as fpb
 from .dtypes import dtype_of
 from .errors import MessageError, WriteError
+
+import google.protobuf
+
+IS_PROTOBUF_4 = google.protobuf.__version__.startswith('4.')
 
 pb_list_types = (
     cpp_message._message.RepeatedCompositeContainer,
@@ -77,7 +82,7 @@ def pb2py(obj):
     if isinstance(obj, pb_list_types):
         return [pb2py(v) for v in obj]
 
-    if isinstance(obj, cpp_message._message.MessageMapContainer):
+    if isinstance(obj, cpp_message._message.MessageMapContainer if IS_PROTOBUF_4 else containers.MessageMap):
         return {
             key: pb2py(value) for key, value in obj.items()
         }
