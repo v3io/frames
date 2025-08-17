@@ -32,7 +32,6 @@ var (
 	kvSuites     = []SuiteCreateFunc{GetKvTestsConstructorFunc()}
 	tsdbSuites   = []SuiteCreateFunc{GetTsdbTestsConstructorFunc()}
 	streamSuites = []SuiteCreateFunc{GetStreamTestsConstructorFunc()}
-	csvSuites    = []SuiteCreateFunc{GetCsvTestsConstructorFunc()}
 )
 
 type testInfo struct {
@@ -94,13 +93,6 @@ func (mainSuite *mainTestSuite) TestStreamBackend() {
 		mainSuite.T().Skip("skipping stream backend tests")
 	}
 	mainSuite.runSubSuites(streamSuites)
-}
-
-func (mainSuite *mainTestSuite) TestCSVBackend() {
-	if !strings.Contains(mainSuite.info.backendsToTest, "csv") {
-		mainSuite.T().Skip("skipping csv backend tests")
-	}
-	mainSuite.runSubSuites(csvSuites)
 }
 
 func (mainSuite *mainTestSuite) runSubSuites(suites []SuiteCreateFunc) {
@@ -193,12 +185,7 @@ func sessionInfo(t testing.TB) *frames.Session {
 }
 
 func generateConfig(root string, session *frames.Session) *frames.Config {
-	backends := []*frames.BackendConfig{
-		{
-			Type:    "csv",
-			RootDir: root,
-		},
-	}
+	var backends []*frames.BackendConfig
 
 	if session != nil {
 		backends = append(backends, &frames.BackendConfig{
@@ -297,7 +284,7 @@ func setupTest(t testing.TB, internalLogger logger.Logger) *testInfo {
 	info.debugMode = strings.ToLower(os.Getenv("DEBUG")) == "true"
 	info.backendsToTest = os.Getenv("TEST_BACKENDS")
 	if info.backendsToTest == "" {
-		info.backendsToTest = "kv,tsdb,stream,csv"
+		info.backendsToTest = "kv,tsdb,stream"
 	}
 
 	info.root = setupRoot(t)

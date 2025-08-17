@@ -11,5 +11,3 @@ backends:
   - type: "stream"
   - type: "tsdb"
     workers: 16
-  - type: "csv"
-    rootdir: "/mnt/csvroot"

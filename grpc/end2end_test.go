@@ -44,13 +44,6 @@ func TestEnd2End(t *testing.T) {
 		Log: frames.LogConfig{
 			Level: "debug",
 		},
-		Backends: []*frames.BackendConfig{
-			{
-				Name:    backendName,
-				Type:    "csv",
-				RootDir: tmpDir,
-			},
-		},
 	}
 
 	port, err := freePort()

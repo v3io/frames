@@ -34,8 +34,6 @@ log:
 
 backends:
   - type: "kv"
-  - type: "csv"
-    rootDir = "/tmp"
 `)
 
 func ExampleServer() {

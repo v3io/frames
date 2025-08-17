@@ -34,14 +34,7 @@ const (
 )
 
 func createServer() (*Server, error) {
-	cfg := &frames.Config{
-		Backends: []*frames.BackendConfig{
-			{
-				Name: "weather",
-				Type: "csv",
-			},
-		},
-	}
+	cfg := &frames.Config{}
 	address := ":8080"
 	return NewServer(cfg, address, nil, nil, "")
 }

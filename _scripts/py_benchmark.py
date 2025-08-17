@@ -40,7 +40,6 @@ with open(bench_json) as fp:
     data = json.load(fp)
 
 for bench in data['benchmarks']:
-    # test_read[http-csv]
     match = re.match(r'test_(\w+)\[([a-z]+)', bench['name'])
     if not match:
         raise SystemExit('error: bad test name - {}'.format(bench['name']))

@@ -106,12 +106,7 @@ func sessionInfo(t testing.TB) *frames.Session {
 }
 
 func genConfig(root string, session *frames.Session) *frames.Config {
-	backends := []*frames.BackendConfig{
-		{
-			Type:    "csv",
-			RootDir: root,
-		},
-	}
+	var backends []*frames.BackendConfig
 
 	if session != nil {
 		backends = append(backends, &frames.BackendConfig{
