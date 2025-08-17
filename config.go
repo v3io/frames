@@ -134,7 +134,7 @@ func (c *Config) Validate() error {
 
 // BackendConfig is default backend configuration
 type BackendConfig struct {
-	Type                    string `json:"type"` // v3io, csv, ...
+	Type                    string `json:"type"` // v3io, ...
 	Name                    string `json:"name"`
 	Workers                 int    `json:"workers"`
 	UpdateWorkersPerVN      int    `json:"updateWorkersPerVN"`
@@ -223,7 +223,7 @@ func initBackendDefaults(cfg *BackendConfig, framesConfig *Config) {
 
 	if cfg.V3ioGoWorkers == 0 {
 		switch cfg.Name {
-		case "csv", "stream":
+		case "stream":
 			cfg.V3ioGoWorkers = 256
 		default:
 			cfg.V3ioGoWorkers = 1024

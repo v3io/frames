@@ -198,7 +198,7 @@ class ClientBase:
         Common Parameters
         ----------
         backend (Required) : str
-            Backend name - 'nosql'/'kv' | 'tsdb' | 'stream' | 'csv' (for tests)
+            Backend name - 'nosql'/'kv' | 'tsdb' | 'stream'
         table : str
             Path to the collection to query; ignored when the path is set in
             the `query` parameter (currently supported for the 'tsdb' backend)
@@ -261,7 +261,7 @@ class ClientBase:
         Parameters
         ----------
         backend (Required) : str
-            Backend name - 'nosql'/'kv' | 'tsdb' | 'stream' | 'csv' (for tests)
+            Backend name - 'nosql'/'kv' | 'tsdb' | 'stream'
         table (Required) : str
             Path to the collection to write
         dfs (Required) : a single DataFrame (DF), a DF list, or a DF iterator
@@ -327,11 +327,11 @@ class ClientBase:
         Parameters
         ----------
         backend (Required) : str
-            Backend name - 'nosql'/'kv' | 'tsdb' | 'stream' | 'csv' (for tests)
+            Backend name - 'nosql'/'kv' | 'tsdb' | 'stream'
         table (Required) : str
             Table to create
-        schema (Optional) : Backend-specific data schema or None
-            Table schema; used for testing purposes with the 'csv' backend
+        schema (defunct) : Backend-specific data schema or None
+            Table schema; formerly used for testing purposes with the 'csv' backend
         if_exists (Optional) : int (frames_pb2 pb.ErrorOptions)
             Determines the behavior when the specified collection already
             exists - `FAIL` (default) to raise an error or `IGNORE` to ignore
@@ -353,7 +353,7 @@ class ClientBase:
         Parameters
         ----------
         backend (Required) : str
-            Backend name - 'nosql'/'kv' | 'tsdb' | 'stream' | 'csv' (for tests)
+            Backend name - 'nosql'/'kv' | 'tsdb' | 'stream'
         table (Required) : str
             Path to the collection to delete or from which to delete items
         filter (Optional) : str
@@ -396,7 +396,7 @@ class ClientBase:
         Parameters
         ----------
         backend (Required) : str
-            Backend name - 'nosql'/'kv' | 'tsdb' | 'stream' | 'csv' (for tests)
+            Backend name - 'nosql'/'kv' | 'tsdb' | 'stream'
         table (Required) : str
             Path to the collection on which to execute the specified command
         command (Required) : str
@@ -425,7 +425,7 @@ class ClientBase:
         Parameters
         ----------
         backend (Optional) : str
-            Filter by Backend name - 'nosql'/'kv' | 'tsdb' | 'stream' | 'csv' (for tests)
+            Filter by Backend name - 'nosql'/'kv' | 'tsdb' | 'stream'
         container (Optional) : str
             Filter by associated v3io container
         table (Optional) : str

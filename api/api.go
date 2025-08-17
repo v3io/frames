@@ -33,7 +33,6 @@ import (
 	"github.com/v3io/frames"
 	"github.com/v3io/frames/backends"
 	// Load backends (make sure they register)
-	_ "github.com/v3io/frames/backends/csv"
 	_ "github.com/v3io/frames/backends/kv"
 	_ "github.com/v3io/frames/backends/stream"
 	_ "github.com/v3io/frames/backends/tsdb"

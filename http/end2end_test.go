@@ -25,7 +25,6 @@ import (
 	"fmt"
 	"net"
 	nhttp "net/http"
-	"os"
 	"reflect"
 	"testing"
 	"time"
@@ -36,11 +35,6 @@ import (
 )
 
 func TestEnd2End(t *testing.T) {
-	tmpDir, err := os.MkdirTemp("", "frames-e2e")
-	if err != nil {
-		t.Fatal(err)
-	}
-
 	backendName := "e2e-backend"
 	cfg := &frames.Config{
 		Log: frames.LogConfig{
@@ -48,9 +42,8 @@ func TestEnd2End(t *testing.T) {
 		},
 		Backends: []*frames.BackendConfig{
 			{
-				Name:    backendName,
-				Type:    "csv",
-				RootDir: tmpDir,
+				Name: backendName,
+				Type: "kv",
 			},
 		},
 	}
@@ -84,8 +77,9 @@ func TestEnd2End(t *testing.T) {
 
 	tableName := "e2e"
 	writeReq := &frames.WriteRequest{
-		Backend: backendName,
-		Table:   tableName,
+		Backend:  backendName,
+		Table:    tableName,
+		SaveMode: frames.OverwriteTable,
 	}
 
 	appender, err := client.Write(writeReq)
@@ -131,17 +125,6 @@ func TestEnd2End(t *testing.T) {
 	}
 
 	testGrafana(t, url, backendName, tableName)
-
-	// Exec
-	execReq := &pb.ExecRequest{
-		Backend: backendName,
-		Table:   tableName,
-		Command: "ping",
-	}
-
-	if _, err := client.Exec(execReq); err != nil {
-		t.Fatalf("can't exec - %s", err)
-	}
 }
 
 func testGrafana(t *testing.T, baseURL string, backend string, table string) {

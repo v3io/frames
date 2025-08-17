@@ -63,8 +63,6 @@ Frames currently supports the following backend types:
   <!-- [FRAMES-STREAMING-NO-SUPPORT]
   -->
 - `tsdb` &mdash; a time-series database (TSDB).
-- `csv` &mdash; a comma-separated-value (CSV) file.
-  This backend type is used only for testing purposes.
 
 <a id="client-methods"></a>
 #### `Client` Methods
@@ -185,7 +183,7 @@ All client methods receive the following common parameters; additional, method-s
 
   - **Type:** `str`
   - **Requirement:** Required
-  - **Valid Values:**  `"nosql"` | `"stream"` | `"tsdb"` | `"csv"` (for testing)
+  - **Valid Values:**  `"nosql"` | `"stream"` | `"tsdb"`
 
 - <a id="client-method-param-table"></a>**table** &mdash; The relative path to a data collection of the specified backend type in the target data container (as configured for the client object).
   For example, `"mytable"` or `"/examples/tsdb/my_metrics"`.

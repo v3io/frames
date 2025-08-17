@@ -38,7 +38,7 @@ func createServer() (*Server, error) {
 		Backends: []*frames.BackendConfig{
 			{
 				Name: "weather",
-				Type: "csv",
+				Type: "kv",
 			},
 		},
 	}

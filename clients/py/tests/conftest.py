@@ -45,7 +45,7 @@ extra_backends = [
     {'type': 'tsdb', 'workers': 16},
 ]
 
-test_backends = ['csv']
+test_backends = []
 if has_session:
     test_backends.extend(backend['type'] for backend in extra_backends)
 
@@ -101,12 +101,7 @@ def framesd():
         'log': {
             'level': 'debug',
         },
-        'backends': [
-            {
-                'type': 'csv',
-                'rootDir': root_dir,
-            },
-        ]
+        'backends': []
     }
 
     if has_session:
