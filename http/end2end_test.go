@@ -25,7 +25,6 @@ import (
 	"fmt"
 	"net"
 	nhttp "net/http"
-	"os"
 	"reflect"
 	"testing"
 	"time"
@@ -36,11 +35,6 @@ import (
 )
 
 func TestEnd2End(t *testing.T) {
-	tmpDir, err := os.MkdirTemp("", "frames-e2e")
-	if err != nil {
-		t.Fatal(err)
-	}
-
 	backendName := "e2e-backend"
 	cfg := &frames.Config{
 		Log: frames.LogConfig{

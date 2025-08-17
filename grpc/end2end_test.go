@@ -23,7 +23,6 @@ package grpc_test
 import (
 	"fmt"
 	"net"
-	"os"
 	"reflect"
 	"testing"
 	"time"
@@ -34,11 +33,6 @@ import (
 )
 
 func TestEnd2End(t *testing.T) {
-	tmpDir, err := os.MkdirTemp("", "frames-grpc-e2e")
-	if err != nil {
-		t.Fatal(err)
-	}
-
 	backendName := "e2e-backend"
 	cfg := &frames.Config{
 		Log: frames.LogConfig{
