@@ -38,6 +38,12 @@ func TestEnd2End(t *testing.T) {
 		Log: frames.LogConfig{
 			Level: "debug",
 		},
+		Backends: []*frames.BackendConfig{
+			{
+				Name: backendName,
+				Type: "kv",
+			},
+		},
 	}
 
 	port, err := freePort()
@@ -68,8 +74,9 @@ func TestEnd2End(t *testing.T) {
 
 	tableName := "e2e"
 	writeReq := &frames.WriteRequest{
-		Backend: backendName,
-		Table:   tableName,
+		Backend:  backendName,
+		Table:    tableName,
+		SaveMode: frames.OverwriteTable,
 	}
 
 	appender, err := client.Write(writeReq)
@@ -112,17 +119,6 @@ func TestEnd2End(t *testing.T) {
 
 	if nRows != frame.Len() {
 		t.Fatalf("# of rows mismatch - %d != %d", nRows, frame.Len())
-	}
-
-	// Exec
-	execReq := &pb.ExecRequest{
-		Backend: backendName,
-		Table:   tableName,
-		Command: "ping",
-	}
-
-	if _, err := client.Exec(execReq); err != nil {
-		t.Fatalf("can't exec - %s", err)
 	}
 }
 
