@@ -12,12 +12,9 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-from time import sleep, time
-
 import pandas as pd
 import pytest
 import v3io_frames as v3f
-from conftest import has_go
 from conftest import test_backends
 
 try:
