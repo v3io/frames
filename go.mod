@@ -10,11 +10,11 @@ require (
 	github.com/nuclio/zap v0.3.1
 	github.com/pkg/errors v0.8.1
 	github.com/stretchr/testify v1.8.4
-	github.com/v3io/v3io-go v0.3.0
-	github.com/v3io/v3io-tsdb v0.14.1
+	github.com/v3io/v3io-go v0.3.12
+	github.com/v3io/v3io-tsdb v0.15.0
 	github.com/valyala/fasthttp v1.44.0
 	github.com/xwb1989/sqlparser v0.0.0-20180606152119-120387863bf2
-	golang.org/x/text v0.25.0
+	golang.org/x/text v0.28.0
 	google.golang.org/grpc v1.72.0
 	google.golang.org/protobuf v1.36.6
 )
@@ -32,9 +32,9 @@ require (
 	github.com/valyala/bytebufferpool v1.0.0 // indirect
 	go.uber.org/multierr v1.11.0 // indirect
 	go.uber.org/zap v1.27.0 // indirect
-	golang.org/x/net v0.40.0 // indirect
-	golang.org/x/sync v0.14.0 // indirect
-	golang.org/x/sys v0.33.0 // indirect
+	golang.org/x/net v0.43.0 // indirect
+	golang.org/x/sync v0.16.0 // indirect
+	golang.org/x/sys v0.35.0 // indirect
 	google.golang.org/genproto/googleapis/rpc v0.0.0-20250512202823-5a2f75b736a9 // indirect
 	gopkg.in/yaml.v2 v2.2.8 // indirect
 	gopkg.in/yaml.v3 v3.0.1 // indirect
