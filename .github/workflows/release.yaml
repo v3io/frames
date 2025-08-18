@@ -19,6 +19,9 @@ on:
     types:
       - created
 
+permissions:
+  contents: read
+
 jobs:
   test-go:
     name: Lint & test Go code
