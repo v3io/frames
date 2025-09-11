@@ -319,7 +319,7 @@ def format_go_time(dt):
     prefix = dt.strftime('%Y-%m-%dT%H:%M:%S')
     nsec = dt.microsecond * 1000
     tz = dt.strftime('%z') or '+0000'
-    return '{}.{}{}:{}'.format(prefix, nsec, tz[:3], tz[3:5])
+    return '{}.{:09d}{}:{}'.format(prefix, nsec, tz[:3], tz[3:5])
 
 
 def convert_go_times(d, keys):
