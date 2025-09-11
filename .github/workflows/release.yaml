@@ -28,6 +28,9 @@ jobs:
     runs-on: [ self-hosted, Linux ]
     container:
       image: golang:1.24-alpine
+      credentials:
+        username: ${{ secrets.DOCKER_HUB_USERNAME }}
+        password: ${{ secrets.DOCKER_HUB_TOKEN }}
 
     steps:
       - name: Dump github context
@@ -64,6 +67,9 @@ jobs:
     runs-on: [ self-hosted, Linux ]
     container:
       image: python:3.11.11
+      credentials:
+        username: ${{ secrets.DOCKER_HUB_USERNAME }}
+        password: ${{ secrets.DOCKER_HUB_TOKEN }}
 
     env:
       V3IO_API: ${{ secrets.V3IO_API }}
