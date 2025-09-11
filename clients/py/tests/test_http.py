@@ -154,6 +154,14 @@ def test_format_go_time():
     assert offset == tz.utcoffset(now).total_seconds(), 'bad offset'
 
 
+# ML-10926
+def test_format_go_time_with_leading_zeroes():
+    dt = datetime.fromisoformat("2025-09-10T12:00:35.001000")
+    ts = v3f.http.format_go_time(dt)
+
+    assert ts == "2025-09-10T12:00:35.001000000+00:00"
+
+
 def new_test_client(address='', session=None):
     return v3f.HTTPClient(
         address=address or 'http://example.com',
