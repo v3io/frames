@@ -20,7 +20,7 @@ on:
       - created
 
 permissions:
-  contents: read
+  contents: write
 
 jobs:
   test-go:
