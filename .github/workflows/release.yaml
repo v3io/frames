@@ -27,7 +27,7 @@ jobs:
     name: Lint & test Go code
     runs-on: [ self-hosted, Linux ]
     container:
-      image: golang:1.24-alpine
+      image: golang:1.19
       credentials:
         username: ${{ secrets.DOCKER_HUB_USERNAME }}
         password: ${{ secrets.DOCKER_HUB_TOKEN }}
@@ -66,7 +66,7 @@ jobs:
     name: Lint & test Python code
     runs-on: [ self-hosted, Linux ]
     container:
-      image: python:3.11.11
+      image: python:3.9.18
       credentials:
         username: ${{ secrets.DOCKER_HUB_USERNAME }}
         password: ${{ secrets.DOCKER_HUB_TOKEN }}
@@ -100,7 +100,7 @@ jobs:
 
       - uses: actions/setup-go@v3
         with:
-          go-version: "^1.24.3"
+          go-version: "^1.19.13"
 
       - name: Run Python tests
         run: make test-py
@@ -131,7 +131,7 @@ jobs:
 
       - uses: actions/setup-go@v3
         with:
-          go-version: "^1.24.3"
+          go-version: "^1.19.13"
 
       - name: Build binaries for ${{ matrix.go-os }}
         run: make frames-bin

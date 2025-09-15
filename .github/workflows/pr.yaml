@@ -37,7 +37,7 @@ jobs:
     runs-on: [ self-hosted, Linux ]
     if: ${{ contains( github.event.pull_request.labels.*.name, 'safe-to-test') }}
     container:
-      image: golang:1.24-alpine
+      image: golang:1.19
       credentials:
         username: ${{ secrets.DOCKER_HUB_USERNAME }}
         password: ${{ secrets.DOCKER_HUB_TOKEN }}
@@ -78,7 +78,7 @@ jobs:
     runs-on: [ self-hosted, Linux ]
     if: ${{ contains( github.event.pull_request.labels.*.name, 'safe-to-test') }}
     container:
-      image: python:3.11.11
+      image: python:3.9.18
       credentials:
         username: ${{ secrets.DOCKER_HUB_USERNAME }}
         password: ${{ secrets.DOCKER_HUB_TOKEN }}
@@ -109,7 +109,7 @@ jobs:
 
       - uses: actions/setup-go@v3
         with:
-          go-version: "^1.24.3"
+          go-version: "^1.19.13"
 
       - name: Run Python tests
         run: make test-py
