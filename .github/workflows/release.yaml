@@ -19,12 +19,18 @@ on:
     types:
       - created
 
+permissions:
+  contents: write
+
 jobs:
   test-go:
     name: Lint & test Go code
     runs-on: [ self-hosted, Linux ]
     container:
-      image: golang:1.19
+      image: golang:1.24-alpine
+      credentials:
+        username: ${{ secrets.DOCKER_HUB_USERNAME }}
+        password: ${{ secrets.DOCKER_HUB_TOKEN }}
 
     steps:
       - name: Dump github context
@@ -40,7 +46,10 @@ jobs:
       - name: Dump github ref
         run: echo "$GITHUB_REF"
 
-      - uses: actions/checkout@v3
+      - uses: actions/checkout@v4
+
+      - name: Install Make
+        run: apk add make
 
       # This gets killed, probably due to memory usage
       # - name: Lint
@@ -57,7 +66,10 @@ jobs:
     name: Lint & test Python code
     runs-on: [ self-hosted, Linux ]
     container:
-      image: python:3.9.18
+      image: python:3.11.11
+      credentials:
+        username: ${{ secrets.DOCKER_HUB_USERNAME }}
+        password: ${{ secrets.DOCKER_HUB_TOKEN }}
 
     env:
       V3IO_API: ${{ secrets.V3IO_API }}
@@ -78,7 +90,7 @@ jobs:
       - name: Dump github ref
         run: echo "$GITHUB_REF"
 
-      - uses: actions/checkout@v3
+      - uses: actions/checkout@v4
 
       - name: Install dependencies
         run: make python-deps
@@ -88,7 +100,7 @@ jobs:
 
       - uses: actions/setup-go@v3
         with:
-          go-version: "^1.19.13"
+          go-version: "^1.24.3"
 
       - name: Run Python tests
         run: make test-py
@@ -115,11 +127,11 @@ jobs:
       - name: Dump github ref
         run: echo "$GITHUB_REF"
 
-      - uses: actions/checkout@v3
+      - uses: actions/checkout@v4
 
       - uses: actions/setup-go@v3
         with:
-          go-version: "^1.19.13"
+          go-version: "^1.24.3"
 
       - name: Build binaries for ${{ matrix.go-os }}
         run: make frames-bin
@@ -186,7 +198,7 @@ jobs:
       - release-docker-internal
 
     steps:
-      - uses: actions/checkout@v3
+      - uses: actions/checkout@v4
 
       - name: Set up python ${{ matrix.python-version }}
         uses: actions/setup-python@v4
