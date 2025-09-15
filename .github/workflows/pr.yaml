@@ -60,9 +60,6 @@ jobs:
         with:
           ref: refs/pull/${{ github.event.number }}/merge
 
-      - name: Install Make
-        run: apk add make
-
       - name: Lint
         run: make lint
 
