@@ -19,7 +19,7 @@ from io import BytesIO
 from os.path import abspath, dirname
 
 import pandas as pd
-import pytz
+from zoneinfo import ZoneInfo
 
 import v3io_frames as v3f
 from v3io_frames import frames_pb2 as fpb
@@ -138,7 +138,7 @@ def col_name(msg):
 
 
 def test_format_go_time():
-    tz = pytz.timezone('Asia/Jerusalem')
+    tz = ZoneInfo('Asia/Jerusalem')
     now = datetime.now()
     dt = now.astimezone(tz)
     ts = v3f.http.format_go_time(dt)

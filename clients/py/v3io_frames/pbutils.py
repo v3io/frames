@@ -13,13 +13,12 @@
 # limitations under the License.
 
 import warnings
-from datetime import datetime
+from datetime import datetime, timezone
 
 from google.protobuf.internal import containers
 from google.protobuf.pyext import cpp_message
 import numpy as np
 import pandas as pd
-import pytz
 from google.protobuf.message import Message
 from pandas.api.types import is_datetime64_any_dtype as is_datetime
 from pandas.api.types import is_integer_dtype as is_integer
@@ -278,7 +277,7 @@ def series2col(s, name):
     elif is_datetime(s.dtype):
         if s.dt.tz:
             try:
-                s = s.dt.tz_localize(pytz.UTC)
+                s = s.dt.tz_localize(timezone.utc)
             except TypeError:
                 s = s.dt.tz_convert('UTC')
         kw['times'] = s.astype(np.int64)
@@ -349,7 +348,7 @@ def get_empty_value_by_type(dtype):
     elif dtype == fpb.STRING:
         return ''
     elif dtype == fpb.TIME:
-        return datetime.fromtimestamp(0, pytz.UTC)
+        return datetime.fromtimestamp(0, timezone.utc)
     elif dtype == fpb.BOOLEAN:
         return False
     elif dtype == fpb.NULL:

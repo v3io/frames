@@ -20,7 +20,7 @@ import pandas as pd
 import pytest
 import v3io_frames as v3f
 from datetime import datetime
-import pytz
+from zoneinfo import ZoneInfo
 
 from conftest import has_go, test_backends, protocols, has_session
 from v3io_frames import DeleteError
@@ -238,7 +238,7 @@ def test_datetime(framesd, session, protocol):
     addr = getattr(framesd, '{}_addr'.format(protocol))
     client = v3f.Client(addr, **session)
 
-    col = pd.Series([datetime.now(pytz.timezone("Africa/Abidjan")), datetime.now(pytz.timezone("America/Nassau")), None, datetime.now()])
+    col = pd.Series([datetime.now(ZoneInfo("Africa/Abidjan")), datetime.now(ZoneInfo("America/Nassau")), None, datetime.now()])
     df = pd.DataFrame({'col': col})
     client.write(backend, table=tableName, dfs=df)
 
