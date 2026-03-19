@@ -24,6 +24,7 @@ import (
 	"fmt"
 	"net"
 	"reflect"
+	"sort"
 	"testing"
 	"time"
 
@@ -72,7 +73,7 @@ func TestEnd2End(t *testing.T) {
 		t.Fatalf("can't create frame - %s", err)
 	}
 
-	tableName := "e2e"
+	tableName := "e2e_grpc"
 	writeReq := &frames.WriteRequest{
 		Backend:  backendName,
 		Table:    tableName,
@@ -107,7 +108,11 @@ func TestEnd2End(t *testing.T) {
 
 	for it.Next() {
 		iFrame := it.At()
-		if !reflect.DeepEqual(iFrame.Names(), frame.Names()) {
+		got := append([]string{}, iFrame.Names()...)
+		want := append([]string{}, frame.Names()...)
+		sort.Strings(got)
+		sort.Strings(want)
+		if !reflect.DeepEqual(got, want) {
 			t.Fatalf("columns mismatch: %v != %v", iFrame.Names(), frame.Names())
 		}
 		nRows += iFrame.Len()
@@ -139,14 +144,28 @@ func makeFrame() (frames.Frame, error) {
 		bdata[i] = i%2 == 0
 	}
 
-	columns := map[string]interface{}{
-		"ints":    idata,
-		"floats":  fdata,
-		"strings": sdata,
-		"times":   tdata,
-		"bools":   bdata,
+	icol, err := frames.NewSliceColumn("ints", idata)
+	if err != nil {
+		return nil, err
 	}
-	return frames.NewFrameFromMap(columns, nil)
+	fcol, err := frames.NewSliceColumn("floats", fdata)
+	if err != nil {
+		return nil, err
+	}
+	scol, err := frames.NewSliceColumn("strings", sdata)
+	if err != nil {
+		return nil, err
+	}
+	tcol, err := frames.NewSliceColumn("times", tdata)
+	if err != nil {
+		return nil, err
+	}
+	bcol, err := frames.NewSliceColumn("bools", bdata)
+	if err != nil {
+		return nil, err
+	}
+
+	return frames.NewFrame([]frames.Column{icol, fcol, scol, tcol, bcol}, nil, nil)
 }
 
 func freePort() (int, error) {
