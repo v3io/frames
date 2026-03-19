@@ -1,6 +1,6 @@
 module github.com/v3io/frames
 
-go 1.24
+go 1.24.0
 
 require (
 	github.com/ghodss/yaml v1.0.0
@@ -14,9 +14,9 @@ require (
 	github.com/v3io/v3io-tsdb v0.15.0
 	github.com/valyala/fasthttp v1.44.0
 	github.com/xwb1989/sqlparser v0.0.0-20180606152119-120387863bf2
-	golang.org/x/text v0.28.0
-	google.golang.org/grpc v1.72.0
-	google.golang.org/protobuf v1.36.6
+	golang.org/x/text v0.32.0
+	google.golang.org/grpc v1.79.3
+	google.golang.org/protobuf v1.36.10
 )
 
 require (
@@ -32,10 +32,10 @@ require (
 	github.com/valyala/bytebufferpool v1.0.0 // indirect
 	go.uber.org/multierr v1.11.0 // indirect
 	go.uber.org/zap v1.27.0 // indirect
-	golang.org/x/net v0.43.0 // indirect
-	golang.org/x/sync v0.16.0 // indirect
-	golang.org/x/sys v0.35.0 // indirect
-	google.golang.org/genproto/googleapis/rpc v0.0.0-20250512202823-5a2f75b736a9 // indirect
+	golang.org/x/net v0.48.0 // indirect
+	golang.org/x/sync v0.19.0 // indirect
+	golang.org/x/sys v0.39.0 // indirect
+	google.golang.org/genproto/googleapis/rpc v0.0.0-20251202230838-ff82c1b0f217 // indirect
 	gopkg.in/yaml.v2 v2.2.8 // indirect
 	gopkg.in/yaml.v3 v3.0.1 // indirect
 	zombiezen.com/go/capnproto2 v2.17.0+incompatible // indirect
