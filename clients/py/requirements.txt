@@ -2,5 +2,5 @@ googleapis-common-protos>=1.5.3
 grpcio-tools>=1.49
 # lower limit of >=4 for compatibility, upper limit of <7 to avoid potential breakage when protobuf 7 is released
 protobuf>=4,<7
-pandas>=0.23.4
+pandas>=0.23.4,<3
 requests>=2.19.1

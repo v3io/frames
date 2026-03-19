@@ -268,7 +268,7 @@ def series2col(s, name):
     elif is_float(s.dtype):
         kw['dtype'] = fpb.FLOAT
         kw['floats'] = s
-    elif is_string(s.dtype):
+    elif s.dtype == object:
         kw['strings'] = s
         kw['dtype'] = fpb.STRING
     elif is_bool(s.dtype):
