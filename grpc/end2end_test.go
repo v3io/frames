@@ -73,7 +73,7 @@ func TestEnd2End(t *testing.T) {
 		t.Fatalf("can't create frame - %s", err)
 	}
 
-	tableName := "e2e"
+	tableName := "e2e_grpc"
 	writeReq := &frames.WriteRequest{
 		Backend:  backendName,
 		Table:    tableName,
