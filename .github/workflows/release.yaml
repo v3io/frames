@@ -27,7 +27,7 @@ jobs:
     name: Lint & test Go code
     runs-on: [ self-hosted, Linux ]
     container:
-      image: golang:1.24-alpine
+      image: golang:1.27-alpine
       credentials:
         username: ${{ secrets.DOCKER_HUB_USERNAME }}
         password: ${{ secrets.DOCKER_HUB_TOKEN }}
@@ -100,7 +100,7 @@ jobs:
 
       - uses: actions/setup-go@v3
         with:
-          go-version: "^1.24.3"
+          go-version: "^1.27.3"
 
       - name: Run Python tests
         run: make test-py
@@ -131,7 +131,7 @@ jobs:
 
       - uses: actions/setup-go@v3
         with:
-          go-version: "^1.24.3"
+          go-version: "^1.27.3"
 
       - name: Build binaries for ${{ matrix.go-os }}
         run: make frames-bin
@@ -165,37 +165,12 @@ jobs:
       - name: Push frames image to GCR
         run: docker push gcr.io/iguazio/frames:${{ env.FRAMES_TAG }}
 
-  release-docker-internal:
-    name: Release to internal docker repository
-    runs-on: [ self-hosted, linux ]
-    if: github.event_name == 'release'
-    needs:
-      - release-docker
-
-    steps:
-      - name: Login to artifactory
-        run: docker login -u ${{ secrets.ARTIFACTORY_DOCKER_USERNAME }} -p ${{ secrets.ARTIFACTORY_DOCKER_PASSWORD }} ${{ vars.ARTIFACTORY_REGISTRY }}
-
-      - name: Set image tag
-        run: |
-          echo FRAMES_TAG=`echo ${{ github.event.release.tag_name }} | sed s/^v//` >> $GITHUB_ENV
-          cat $GITHUB_ENV
-
-      - name: Pull docker from public repository
-        run: docker pull gcr.io/iguazio/frames:${{ env.FRAMES_TAG }}
-
-      - name: Tag frames image for artifactory
-        run: docker tag gcr.io/iguazio/frames:${{ env.FRAMES_TAG }} ${{ vars.ARTIFACTORY_REGISTRY }}/iguazio/frames:${{ env.FRAMES_TAG }}
-
-      - name: Push frames image to artifactory
-        run: docker push ${{ vars.ARTIFACTORY_REGISTRY }}/iguazio/frames:${{ env.FRAMES_TAG }}
-
   release-python-library:
     name: Release python library
     runs-on: ubuntu-latest
     if: github.event_name == 'release'
     needs:
-      - release-docker-internal
+      - release-docker
 
     steps:
       - uses: actions/checkout@v4
