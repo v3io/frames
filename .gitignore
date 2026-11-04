@@ -148,3 +148,11 @@ dmypy.json
 
 # Pyre type checker
 .pyre/
+
+# macOS
+.DS_Store
+
+# Local framesd config and build outputs
+/config.yaml
+/framesd
+/framesd-*

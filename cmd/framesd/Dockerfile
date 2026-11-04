@@ -18,14 +18,20 @@
 # You can also use -e V3IO_GRPC_PORT=9999 and -e V3IO_HTTP_PORT=9998 to set ports
 # (don't forget to update the -p accordingly)
 
-FROM --platform=linux/amd64 golang:1.24-alpine AS build
+FROM --platform=linux/amd64 golang:1.27-alpine AS build
 
 WORKDIR /frames
+COPY go.mod go.sum ./
+RUN go mod download
 COPY . .
 ARG FRAMES_VERSION=unknown
-RUN GOOS=linux GOARCH=amd64 go build -ldflags="-X main.Version=${FRAMES_VERSION}" ./cmd/framesd
-RUN cp framesd /usr/local/bin
-RUN apk add bash
+RUN CGO_ENABLED=0 GOOS=linux GOARCH=amd64 go build -ldflags="-X main.Version=${FRAMES_VERSION}" -o /usr/local/bin/framesd ./cmd/framesd
+
+FROM --platform=linux/amd64 alpine:3.24
+
+# bash is required: the platform starts the framesd container via /bin/bash (IG-23283)
+RUN apk upgrade --no-cache && apk add --no-cache bash
+COPY --from=build /usr/local/bin/framesd /usr/local/bin/framesd
 
 VOLUME /etc/framesd
 ENV V3IO_GRPC_PORT=8081
